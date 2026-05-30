@@ -1,0 +1,25 @@
+/* Bridge @ch5me/workspace --ws-* tokens into Palot's shadcn theme */
+.workspace-shell {
+  --ws-bg: hsl(var(--background));
+  --ws-panel: hsl(var(--card));
+  --ws-panel-muted: hsl(var(--muted));
+  --ws-panel-raised: hsl(var(--accent));
+  --ws-canvas: hsl(var(--background));
+  --ws-border: hsl(var(--border));
+  --ws-border-strong: hsl(var(--border));
+  --ws-text-primary: hsl(var(--foreground));
+  --ws-text-secondary: hsl(var(--muted-foreground));
+  --ws-text-muted: hsl(var(--muted-foreground));
+  --ws-text-subtle: hsl(var(--muted-foreground));
+  --ws-accent: hsl(var(--primary));
+  --ws-accent-muted: hsl(var(--primary));
+  --ws-accent-bg: hsl(var(--primary) / 0.15);
+  --ws-accent-border: hsl(var(--primary) / 0.5);
+  --ws-accent-text: hsl(var(--primary-foreground));
+  --ws-success: hsl(142 76% 36%);
+  --ws-warning: hsl(38 92% 50%);
+  --ws-danger: hsl(0 84% 60%);
+  --ws-radius: 0.5rem;
+  --ws-radius-sm: 0.25rem;
+  --ws-radius-lg: 0.75rem;
+}

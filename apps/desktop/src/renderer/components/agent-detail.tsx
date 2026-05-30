@@ -9,6 +9,7 @@ import {
 import { Input } from "@ch5me/palot-ui/components/input"
 import { Popover, PopoverContent, PopoverTrigger } from "@ch5me/palot-ui/components/popover"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@ch5me/palot-ui/components/tooltip"
+import { Pane, PaneSeam, ResizablePanes } from "@ch5me/workspace"
 import { cn } from "@ch5me/palot-ui/lib/utils"
 import { useNavigate, useParams } from "@tanstack/react-router"
 import { useAtom, useAtomValue } from "jotai"
@@ -293,20 +294,22 @@ export function AgentDetail({
 	)
 
 	return (
-		<div className="flex h-full">
-			{/* Chat panel -- takes remaining space */}
-			<div className="min-w-0 flex-1 flex flex-col">{chatContent}</div>
-
-			{/* Review panel -- slides in/out from right */}
-			<div
-				className="shrink-0 overflow-hidden border-l border-border transition-[width] duration-250 ease-in-out"
-				style={{ width: reviewPanelOpen ? (reviewSettings.expanded ? "100%" : "40%") : 0 }}
-			>
-				{/* Keep ReviewPanel mounted so it retains state, just hidden at 0 width */}
-				<div className="h-full" style={{ minWidth: reviewSettings.expanded ? "100vw" : "40vw" }}>
-					<ReviewPanel sessionId={agent.sessionId} directory={agent.directory} />
-				</div>
-			</div>
+		<div className="h-full">
+			{reviewPanelOpen ? (
+				<ResizablePanes id="session-detail">
+					<Pane defaultSize="60%" minSize="30%">
+						<div className="min-w-0 h-full overflow-hidden flex flex-col">{chatContent}</div>
+					</Pane>
+					<PaneSeam />
+					<Pane defaultSize={reviewSettings.expanded ? "100%" : "40%"} minSize="20%">
+						<div className="h-full overflow-hidden border-l border-border">
+							<ReviewPanel sessionId={agent.sessionId} directory={agent.directory} />
+						</div>
+					</Pane>
+				</ResizablePanes>
+			) : (
+				<div className="min-w-0 h-full overflow-hidden flex flex-col">{chatContent}</div>
+			)}
 		</div>
 	)
 }

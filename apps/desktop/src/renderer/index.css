@@ -5,6 +5,7 @@
 @import "@fontsource/ibm-plex-mono/600.css";
 
 @import "@ch5me/palot-ui/styles/globals.css";
+@import "./workspace.css";
 
 body {
 	margin: 0;
