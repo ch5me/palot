@@ -1,0 +1,23 @@
+{
+  "version": 1,
+  "project": "palot",
+  "services": {
+    "server": {
+      "cwd": "apps/server",
+      "command": "OPENCODE_PORT=4096 bun run --hot src/index.ts",
+      "health": { "type": "port", "port": 30206 },
+      "dependsOn": [],
+      "env": {
+        "OPENCODE_PORT": "4096",
+        "OPENCODE_HOSTNAME": "127.0.0.1"
+      }
+    },
+    "web": {
+      "cwd": "apps/desktop",
+      "command": "bunx vite --config src/renderer/vite.web.config.ts",
+      "health": { "type": "port", "port": 20882 },
+      "dependsOn": ["server"],
+      "env": {}
+    }
+  }
+}
