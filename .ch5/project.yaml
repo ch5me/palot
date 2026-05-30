@@ -1,0 +1,19 @@
+id: palot
+version: 1
+project:
+  id: palot
+  name: Palot
+  kind: app
+  lifecycle: active
+  summary: Self-hostable, collaborative, AI-native design tool — think Figma, but open and yours.
+  tags:
+    - design
+    - editor
+    - figma
+    - collaborative
+    - ai-native
+  docs:
+    - locator: README.md
+      role: overview
+    - locator: AGENTS.md
+      role: agent-guide
