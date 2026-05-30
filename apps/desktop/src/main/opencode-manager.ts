@@ -40,7 +40,7 @@ let singleServer: {
 	process: ChildProcess | null
 } | null = null
 
-const DEFAULT_PORT = Number(process.env.OPENCODE_PORT) || 4101
+const DEFAULT_PORT = Number(process.env.OPENCODE_PORT) || 4096
 const DEFAULT_HOSTNAME = process.env.OPENCODE_HOSTNAME || "127.0.0.1"
 
 // ============================================================

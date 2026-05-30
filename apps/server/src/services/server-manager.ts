@@ -17,7 +17,7 @@ let singleServer: {
 	process: ReturnType<typeof Bun.spawn> | null
 } | null = null
 
-const OPENCODE_PORT = Number(process.env.OPENCODE_PORT) || 4101
+const OPENCODE_PORT = Number(process.env.OPENCODE_PORT) || 4096
 const OPENCODE_HOSTNAME = process.env.OPENCODE_HOSTNAME || "127.0.0.1"
 
 // ============================================================
