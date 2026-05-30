@@ -61,7 +61,7 @@ export default defineConfig({
 			format: "es",
 		},
 		server: {
-			port: 1420,
+			port: 20883,
 			strictPort: true,
 		},
 		build: {
