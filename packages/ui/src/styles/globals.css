@@ -59,11 +59,11 @@
 }
 
 /*
- * Default color palette: Cortex theme.
- * Cool neutral gray scale with blue accent.
+ * Default color palette: Firefly theme.
+ * Deep charcoal base with warm amber/gold accents.
  *
- * Light: clean whites (#ffffff) with near-black text (#0d0d0d)
- * Dark:  neutral darks (#181818) with white text (#ffffff)
+ * Light: warm off-whites (#fefcf8) with deep charcoal text (#1a1a1a)
+ * Dark:  rich blacks (#0f0f0f, #1a1a1a) with warm white text (#fffaf0)
  *
  * These values serve as the baseline for the theme system.
  * Named themes override these via dynamic <style> injection.
@@ -81,87 +81,87 @@
   --duration-normal: 0.2s;
   --duration-relaxed: 0.3s;
 
-  /* Light mode — Cortex neutral scale with Palot Blue accent */
-  --background: #ffffff;
-  --foreground: #0d0d0d;
-  --card: #ffffff;
-  --card-foreground: #0d0d0d;
-  --popover: #fcfcfc;
-  --popover-foreground: #0d0d0d;
-  --primary: #0d0d0d;
-  --primary-foreground: #ffffff;
-  --secondary: #f9f9f9;
-  --secondary-foreground: #0d0d0d;
-  --muted: #f9f9f9;
-  --muted-foreground: #414141;
-  --accent: #ededed;
-  --accent-foreground: #0d0d0d;
+  /* Light mode — Firefly warm scale with amber accent */
+  --background: #fefcf8;
+  --foreground: #1a1a1a;
+  --card: #fefcf8;
+  --card-foreground: #1a1a1a;
+  --popover: #fffaf0;
+  --popover-foreground: #1a1a1a;
+  --primary: #1a1a1a;
+  --primary-foreground: #fffaf0;
+  --secondary: #f5f0e8;
+  --secondary-foreground: #1a1a1a;
+  --muted: #f5f0e8;
+  --muted-foreground: #6b5c4a;
+  --accent: #fde68a;           /* warm amber-200 */
+  --accent-foreground: #1a1a1a;
   --destructive: #fa423e;
   --destructive-foreground: #ffffff;
-  --border: #ededed;
-  --input: #ededed;
-  --ring: #0080bd;              /* palot-blue-600 */
-  --chart-1: #05bdf5;           /* palot-blue-400 */
-  --chart-2: #04b84c;
-  --chart-3: #fb6a22;
-  --chart-4: #924ff7;
-  --chart-5: #ffc300;
-  --sidebar: #ffffff;
-  --sidebar-foreground: #212121;
-  --sidebar-primary: #0d0d0d;
-  --sidebar-primary-foreground: #ffffff;
-  --sidebar-accent: #a8ddf7;    /* palot-blue-200 */
-  --sidebar-accent-foreground: #0d0d0d;
-  --sidebar-border: #ededed;
-  --sidebar-ring: #0080bd;      /* palot-blue-600 */
+  --border: #e8e0d4;
+  --input: #e8e0d4;
+  --ring: #f59e0b;             /* amber-500 */
+  --chart-1: #f59e0b;          /* amber-500 */
+  --chart-2: #d97706;          /* amber-600 */
+  --chart-3: #92400e;          /* amber-800 */
+  --chart-4: #78716c;          /* stone-500 */
+  --chart-5: #a8a29e;          /* stone-400 */
+  --sidebar: #fefcf8;
+  --sidebar-foreground: #1a1a1a;
+  --sidebar-primary: #f59e0b;
+  --sidebar-primary-foreground: #1a1a1a;
+  --sidebar-accent: #fde68a;    /* amber-200 */
+  --sidebar-accent-foreground: #1a1a1a;
+  --sidebar-border: #e8e0d4;
+  --sidebar-ring: #f59e0b;      /* amber-500 */
 
   /* Diff colors */
-  --diff-addition: #04b84c;
-  --diff-addition-foreground: #00a240;
-  --diff-deletion: #fa423e;
-  --diff-deletion-foreground: #e02e2a;
+  --diff-addition: #22c55e;
+  --diff-addition-foreground: #16a34a;
+  --diff-deletion: #f59e0b;
+  --diff-deletion-foreground: #d97706;
 }
 
 .dark {
-  /* Dark mode — Cortex neutral scale with Palot Blue accent */
-  --background: #181818;
-  --foreground: #ffffff;
-  --card: #212121;
-  --card-foreground: #ffffff;
-  --popover: #282828;
-  --popover-foreground: #ffffff;
-  --primary: #ffffff;
-  --primary-foreground: #0d0d0d;
-  --secondary: #212121;
-  --secondary-foreground: #ffffff;
-  --muted: #282828;
-  --muted-foreground: #afafaf;
-  --accent: #282828;
-  --accent-foreground: #ffffff;
+  /* Dark mode — Firefly deep charcoal with warm amber accent */
+  --background: #0f0f0f;
+  --foreground: #fffaf0;
+  --card: #1a1a1a;
+  --card-foreground: #fffaf0;
+  --popover: #1f1f1f;
+  --popover-foreground: #fffaf0;
+  --primary: #f59e0b;            /* amber-500 */
+  --primary-foreground: #0f0f0f;
+  --secondary: #26220e;
+  --secondary-foreground: #fde68a;
+  --muted: #1f1f1f;
+  --muted-foreground: #a8a29e;
+  --accent: #f59e0b;             /* amber-500 */
+  --accent-foreground: #0f0f0f;
   --destructive: #fa423e;
   --destructive-foreground: #ffffff;
-  --border: #2e2e2e;
-  --input: #2e2e2e;
-  --ring: #6fcbf3;              /* palot-blue-300 */
-  --chart-1: #05bdf5;           /* palot-blue-400 */
-  --chart-2: #40c977;
-  --chart-3: #ff8549;
-  --chart-4: #ad7bf9;
-  --chart-5: #ffd240;
-  --sidebar: #0d0d0d;
-  --sidebar-foreground: #ffffff;
-  --sidebar-primary: #ffffff;
-  --sidebar-primary-foreground: #0d0d0d;
-  --sidebar-accent: #001a2b;    /* palot-blue-950 */
-  --sidebar-accent-foreground: #ffffff;
-  --sidebar-border: #ffffff;
-  --sidebar-ring: #6fcbf3;      /* palot-blue-300 */
+  --border: #2e2a1e;
+  --input: #2e2a1e;
+  --ring: #f59e0b;               /* amber-500 */
+  --chart-1: #f59e0b;           /* amber-500 */
+  --chart-2: #fbbf24;           /* amber-400 */
+  --chart-3: #d97706;           /* amber-600 */
+  --chart-4: #78716c;           /* stone-500 */
+  --chart-5: #a8a29e;           /* stone-400 */
+  --sidebar: #0f0f0f;
+  --sidebar-foreground: #fffaf0;
+  --sidebar-primary: #f59e0b;
+  --sidebar-primary-foreground: #0f0f0f;
+  --sidebar-accent: #2e2a1e;    /* amber-950 / warm dark */
+  --sidebar-accent-foreground: #fde68a;
+  --sidebar-border: #2e2a1e;
+  --sidebar-ring: #f59e0b;       /* amber-500 */
 
   /* Diff colors */
-  --diff-addition: #40c977;
-  --diff-addition-foreground: #40c977;
-  --diff-deletion: #ff6764;
-  --diff-deletion-foreground: #ff6764;
+  --diff-addition: #22c55e;
+  --diff-addition-foreground: #4ade80;
+  --diff-deletion: #f59e0b;
+  --diff-deletion-foreground: #fbbf24;
 }
 
 @layer base {

@@ -15,7 +15,7 @@ const app = new Hono()
 app.use(
 	"*",
 	cors({
-		origin: ["http://localhost:1420", "http://127.0.0.1:1420"],
+		origin: ["http://localhost:20882", "http://127.0.0.1:20882"],
 	}),
 )
 
@@ -31,7 +31,7 @@ export type AppType = typeof routes
 // Start
 // ============================================================
 
-const port = Number(process.env.PORT) || 3100
+const port = Number(process.env.PORT) || 30206
 
 console.log(`Palot server starting on port ${port}`)
 

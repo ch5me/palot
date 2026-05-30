@@ -3,7 +3,8 @@
  * Usage: bun run dev:web (or `vite --config src/renderer/vite.web.config.ts`)
  *
  * In this mode, the Palot Bun server (apps/server) must be running
- * on port 3100 to handle filesystem operations and process management.
+ * on port 30206 to handle filesystem operations and process management.
+ * Randomized high port to avoid conflicts with other projects.
  */
 
 import path from "node:path"
@@ -22,7 +23,7 @@ export default defineConfig({
 	},
 	clearScreen: false,
 	server: {
-		port: 1420,
+		port: 20882,
 		strictPort: true,
 	},
 })
