@@ -3,7 +3,7 @@ import {
 	ConversationContent,
 	ConversationScrollButton,
 	useStickToBottomContext,
-} from "@palot/ui/components/ai-elements/conversation"
+} from "@ch5me/palot-ui/components/ai-elements/conversation"
 import {
 	PromptInput,
 	PromptInputButton,
@@ -14,8 +14,8 @@ import {
 	PromptInputTools,
 	usePromptInputAttachments,
 	usePromptInputController,
-} from "@palot/ui/components/ai-elements/prompt-input"
-import { cn } from "@palot/ui/lib/utils"
+} from "@ch5me/palot-ui/components/ai-elements/prompt-input"
+import { cn } from "@ch5me/palot-ui/lib/utils"
 import { useAtomValue, useSetAtom } from "jotai"
 import {
 	ArrowUpToLineIcon,

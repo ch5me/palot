@@ -1,4 +1,4 @@
-import { Button } from "@palot/ui/components/button"
+import { Button } from "@ch5me/palot-ui/components/button"
 import { type ErrorComponentProps, useRouter } from "@tanstack/react-router"
 import { AlertTriangleIcon, ChevronDownIcon, RefreshCwIcon } from "lucide-react"
 import { useState } from "react"

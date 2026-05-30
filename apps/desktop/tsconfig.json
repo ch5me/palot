@@ -15,7 +15,7 @@
 		"noEmit": true,
 		"paths": {
 			"@/*": ["./src/renderer/*"],
-			"@palot/ui/*": ["../../packages/ui/src/*"]
+			"@ch5me/palot-ui/*": ["../../packages/ui/src/*"]
 		}
 	},
 	"include": [

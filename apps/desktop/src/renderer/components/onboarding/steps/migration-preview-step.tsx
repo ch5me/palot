@@ -6,8 +6,8 @@
  * Supports all migration providers (Claude Code, Cursor, OpenCode).
  */
 
-import { Button } from "@palot/ui/components/button"
-import { Spinner } from "@palot/ui/components/spinner"
+import { Button } from "@ch5me/palot-ui/components/button"
+import { Spinner } from "@ch5me/palot-ui/components/spinner"
 import {
 	AlertTriangleIcon,
 	ArrowLeftIcon,

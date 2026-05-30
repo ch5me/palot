@@ -1,4 +1,4 @@
-# @palot/configconv
+# @ch5me/palot-configconv
 
 ## 0.5.2
 

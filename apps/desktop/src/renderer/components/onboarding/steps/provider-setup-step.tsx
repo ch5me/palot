@@ -6,8 +6,8 @@
  * Reuses ConnectProviderDialog for the actual auth flows.
  */
 
-import { Button } from "@palot/ui/components/button"
-import { Spinner } from "@palot/ui/components/spinner"
+import { Button } from "@ch5me/palot-ui/components/button"
+import { Spinner } from "@ch5me/palot-ui/components/spinner"
 import { useQueryClient } from "@tanstack/react-query"
 import { CheckIcon, ExternalLinkIcon, LinkIcon, SparklesIcon, ZapIcon } from "lucide-react"
 import { motion } from "motion/react"

@@ -6,9 +6,9 @@
  * (from the complete step), so scanning happens on mount.
  */
 
-import { Button } from "@palot/ui/components/button"
-import { Checkbox } from "@palot/ui/components/checkbox"
-import { Spinner } from "@palot/ui/components/spinner"
+import { Button } from "@ch5me/palot-ui/components/button"
+import { Checkbox } from "@ch5me/palot-ui/components/checkbox"
+import { Spinner } from "@ch5me/palot-ui/components/spinner"
 import {
 	ArrowRightIcon,
 	BotIcon,

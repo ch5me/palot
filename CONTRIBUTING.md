@@ -31,7 +31,7 @@ apps/
   desktop/       Electron 40 + Vite + React 19 desktop app
   server/        Bun + Hono backend (browser-mode dev only)
 packages/
-  ui/            Shared shadcn/ui component library (@palot/ui)
+  ui/            Shared shadcn/ui component library (@ch5me/palot-ui)
   configconv/    Universal agent config converter
   configconv-cli/ CLI wrapper for the config converter
 ```

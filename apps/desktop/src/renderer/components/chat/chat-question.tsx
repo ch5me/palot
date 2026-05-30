@@ -1,4 +1,4 @@
-import { Button } from "@palot/ui/components/button"
+import { Button } from "@ch5me/palot-ui/components/button"
 import {
 	ArrowRightIcon,
 	Loader2Icon,

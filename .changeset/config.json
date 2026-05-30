@@ -3,7 +3,7 @@
 	"changelog": ["@changesets/changelog-github", { "repo": "ItsWendell/palot" }],
 	"commit": false,
 	"fixed": [],
-	"linked": [["@palot/desktop", "@palot/ui", "@palot/server", "@palot/configconv", "configconv"]],
+	"linked": [["@ch5me/palot-desktop", "@ch5me/palot-ui", "@ch5me/palot-server", "@ch5me/palot-configconv", "@ch5me/palot-configconv-cli"]],
 	"access": "restricted",
 	"baseBranch": "main",
 	"updateInternalDependencies": "patch",

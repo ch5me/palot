@@ -10,9 +10,9 @@
 	"scripts": {
 		"build": "turbo build",
 		"dev": "turbo dev",
-		"dev:desktop": "turbo dev --filter=@palot/desktop",
-		"dev:desktop:wayland": "turbo dev:wayland --filter=@palot/desktop",
-		"dev:web": "turbo dev:web --filter=@palot/desktop",
+		"dev:desktop": "turbo dev --filter=@ch5me/palot-desktop",
+		"dev:desktop:wayland": "turbo dev:wayland --filter=@ch5me/palot-desktop",
+		"dev:web": "turbo dev:web --filter=@ch5me/palot-desktop",
 		"lint": "biome check .",
 		"lint:fix": "biome check --write .",
 		"format": "biome format --write .",

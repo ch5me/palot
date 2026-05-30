@@ -8,30 +8,30 @@ import {
 	CommandItem,
 	CommandList,
 	CommandSeparator,
-} from "@palot/ui/components/command"
+} from "@ch5me/palot-ui/components/command"
 import {
 	DropdownMenu,
 	DropdownMenuContent,
 	DropdownMenuItem,
 	DropdownMenuTrigger,
-} from "@palot/ui/components/dropdown-menu"
-import { HoverCard, HoverCardContent, HoverCardTrigger } from "@palot/ui/components/hover-card"
+} from "@ch5me/palot-ui/components/dropdown-menu"
+import { HoverCard, HoverCardContent, HoverCardTrigger } from "@ch5me/palot-ui/components/hover-card"
 import {
 	InputGroup,
 	InputGroupAddon,
 	InputGroupButton,
 	InputGroupTextarea,
-} from "@palot/ui/components/input-group"
+} from "@ch5me/palot-ui/components/input-group"
 import {
 	Select,
 	SelectContent,
 	SelectItem,
 	SelectTrigger,
 	SelectValue,
-} from "@palot/ui/components/select"
-import { Spinner } from "@palot/ui/components/spinner"
-import { Tooltip, TooltipContent, TooltipTrigger } from "@palot/ui/components/tooltip"
-import { cn } from "@palot/ui/lib/utils"
+} from "@ch5me/palot-ui/components/select"
+import { Spinner } from "@ch5me/palot-ui/components/spinner"
+import { Tooltip, TooltipContent, TooltipTrigger } from "@ch5me/palot-ui/components/tooltip"
+import { cn } from "@ch5me/palot-ui/lib/utils"
 import type { ChatStatus, FileUIPart, SourceDocumentUIPart } from "ai"
 import { CornerDownLeftIcon, ImageIcon, PlusIcon, SquareIcon, XIcon } from "lucide-react"
 import { nanoid } from "nanoid"

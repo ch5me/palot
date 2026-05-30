@@ -1,4 +1,4 @@
-# @palot/server
+# @ch5me/palot-server
 
 ## 0.4.0
 

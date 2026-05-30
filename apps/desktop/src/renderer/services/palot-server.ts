@@ -6,7 +6,7 @@
  * so the desktop app doesn't need Bun types.
  */
 
-import { createClient } from "@palot/server/client"
+import { createClient } from "@ch5me/palot-server/client"
 
 const BASE_URL = "http://localhost:30206"
 

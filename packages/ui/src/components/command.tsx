@@ -4,10 +4,10 @@ import {
 	DialogDescription,
 	DialogHeader,
 	DialogTitle,
-} from "@palot/ui/components/dialog"
-import { InputGroup, InputGroupAddon } from "@palot/ui/components/input-group"
+} from "@ch5me/palot-ui/components/dialog"
+import { InputGroup, InputGroupAddon } from "@ch5me/palot-ui/components/input-group"
 
-import { cn } from "@palot/ui/lib/utils"
+import { cn } from "@ch5me/palot-ui/lib/utils"
 import { Command as CommandPrimitive } from "cmdk"
 import { CheckIcon, SearchIcon } from "lucide-react"
 import type * as React from "react"

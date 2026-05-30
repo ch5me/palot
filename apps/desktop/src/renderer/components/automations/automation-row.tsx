@@ -11,8 +11,8 @@ import {
 	ContextMenuItem,
 	ContextMenuSeparator,
 	ContextMenuTrigger,
-} from "@palot/ui/components/context-menu"
-import { Tooltip, TooltipContent, TooltipTrigger } from "@palot/ui/components/tooltip"
+} from "@ch5me/palot-ui/components/context-menu"
+import { Tooltip, TooltipContent, TooltipTrigger } from "@ch5me/palot-ui/components/tooltip"
 import { CircleIcon, PauseIcon, PencilIcon } from "lucide-react"
 import { memo, useState } from "react"
 import type { Automation } from "../../../preload/api"

@@ -5,7 +5,7 @@ import {
 	SidebarMenu,
 	SidebarMenuButton,
 	SidebarMenuItem,
-} from "@palot/ui/components/sidebar"
+} from "@ch5me/palot-ui/components/sidebar"
 import { Outlet, useNavigate, useRouterState } from "@tanstack/react-router"
 import {
 	ArrowLeftIcon,

@@ -8,17 +8,17 @@ import {
 	SearchableListPopoverSearch,
 	SearchableListPopoverTrigger,
 	useSearchableListPopoverSearch,
-} from "@palot/ui/components/searchable-list-popover"
+} from "@ch5me/palot-ui/components/searchable-list-popover"
 import {
 	Select,
 	SelectContent,
 	SelectItem,
 	SelectTrigger,
 	SelectValue,
-} from "@palot/ui/components/select"
-import { Separator } from "@palot/ui/components/separator"
-import { Tooltip, TooltipContent, TooltipTrigger } from "@palot/ui/components/tooltip"
-import { cn } from "@palot/ui/lib/utils"
+} from "@ch5me/palot-ui/components/select"
+import { Separator } from "@ch5me/palot-ui/components/separator"
+import { Tooltip, TooltipContent, TooltipTrigger } from "@ch5me/palot-ui/components/tooltip"
+import { cn } from "@ch5me/palot-ui/lib/utils"
 import { useAtomValue } from "jotai"
 import {
 	CheckIcon,

@@ -7,7 +7,7 @@
  * "Commit & Push" commits all changes and pushes the branch to origin.
  */
 
-import { Button } from "@palot/ui/components/button"
+import { Button } from "@ch5me/palot-ui/components/button"
 import {
 	Dialog,
 	DialogContent,
@@ -15,10 +15,10 @@ import {
 	DialogFooter,
 	DialogHeader,
 	DialogTitle,
-} from "@palot/ui/components/dialog"
-import { Input } from "@palot/ui/components/input"
-import { Textarea } from "@palot/ui/components/textarea"
-import { Tooltip, TooltipContent, TooltipTrigger } from "@palot/ui/components/tooltip"
+} from "@ch5me/palot-ui/components/dialog"
+import { Input } from "@ch5me/palot-ui/components/input"
+import { Textarea } from "@ch5me/palot-ui/components/textarea"
+import { Tooltip, TooltipContent, TooltipTrigger } from "@ch5me/palot-ui/components/tooltip"
 import {
 	ArrowDownToLineIcon,
 	ArrowUpFromLineIcon,

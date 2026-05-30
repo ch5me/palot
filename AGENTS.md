@@ -9,8 +9,8 @@ Do NOT add one-time setup notes, general knowledge, or things discoverable from 
 ## Project Structure
 
 - **Monorepo**: Turborepo + Bun workspaces (Bun 1.3.8)
-- **`packages/ui`**: Shared shadcn/ui component library (`@palot/ui`)
-- **`packages/configconv`**: Universal agent config converter library (`@palot/configconv`) -- converts between Claude Code, OpenCode, and Cursor formats
+- **`packages/ui`**: Shared shadcn/ui component library (`@ch5me/palot-ui`)
+- **`packages/configconv`**: Universal agent config converter library (`@ch5me/palot-configconv`) -- converts between Claude Code, OpenCode, and Cursor formats
 - **`packages/configconv-cli`**: Thin CLI wrapper (`configconv`) for the converter library
 - **`apps/desktop`**: Electron 40 + Vite + React 19 desktop app (via `electron-vite`)
 - **`apps/server`**: Bun + Hono backend -- used only in browser-mode dev (`dev:web`), NOT bundled with Electron
@@ -65,7 +65,7 @@ generic knowledge.
 - Use `import type { ... }` for type-only imports (Biome warns otherwise)
 - Order: external packages first, then internal/relative imports (no blank line between)
 - Main process: `node:` builtins first, then `electron`, then local
-- Renderer: `@palot/ui` -> `@tanstack/*` -> `lucide-react` -> `react` -> local atoms/hooks/services
+- Renderer: `@ch5me/palot-ui` -> `@tanstack/*` -> `lucide-react` -> `react` -> local atoms/hooks/services
 
 ### Naming Conventions
 

@@ -5,17 +5,17 @@ import {
 	CodeBlockCopyButton,
 	CodeBlockHeader,
 	CodeBlockTitle,
-} from "@palot/ui/components/ai-elements/code-block"
-import { Diff, DiffContent } from "@palot/ui/components/ai-elements/diff"
+} from "@ch5me/palot-ui/components/ai-elements/code-block"
+import { Diff, DiffContent } from "@ch5me/palot-ui/components/ai-elements/diff"
 import {
 	Terminal,
 	TerminalContent,
 	TerminalCopyButton,
 	TerminalHeader,
 	TerminalTitle,
-} from "@palot/ui/components/ai-elements/terminal"
-import { Dialog, DialogContent, DialogTitle, DialogTrigger } from "@palot/ui/components/dialog"
-import { cn } from "@palot/ui/lib/utils"
+} from "@ch5me/palot-ui/components/ai-elements/terminal"
+import { Dialog, DialogContent, DialogTitle, DialogTrigger } from "@ch5me/palot-ui/components/dialog"
+import { cn } from "@ch5me/palot-ui/lib/utils"
 
 import { useSetAtom } from "jotai"
 import {

@@ -4,8 +4,8 @@ import {
 	Collapsible,
 	CollapsibleContent,
 	CollapsibleTrigger,
-} from "@palot/ui/components/collapsible"
-import { cn } from "@palot/ui/lib/utils"
+} from "@ch5me/palot-ui/components/collapsible"
+import { cn } from "@ch5me/palot-ui/lib/utils"
 import { ChevronRightIcon, FileIcon, FolderIcon, FolderOpenIcon } from "lucide-react"
 import type { HTMLAttributes, ReactNode } from "react"
 import { createContext, useCallback, useContext, useMemo, useState } from "react"

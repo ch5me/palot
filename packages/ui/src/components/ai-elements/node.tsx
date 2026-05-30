@@ -6,8 +6,8 @@ import {
 	CardFooter,
 	CardHeader,
 	CardTitle,
-} from "@palot/ui/components/card"
-import { cn } from "@palot/ui/lib/utils"
+} from "@ch5me/palot-ui/components/card"
+import { cn } from "@ch5me/palot-ui/lib/utils"
 import { Handle, Position } from "@xyflow/react"
 import type { ComponentProps } from "react"
 

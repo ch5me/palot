@@ -1,15 +1,15 @@
-import { Button } from "@palot/ui/components/button"
+import { Button } from "@ch5me/palot-ui/components/button"
 import {
 	DropdownMenu,
 	DropdownMenuContent,
 	DropdownMenuItem,
 	DropdownMenuSeparator,
 	DropdownMenuTrigger,
-} from "@palot/ui/components/dropdown-menu"
-import { Input } from "@palot/ui/components/input"
-import { Popover, PopoverContent, PopoverTrigger } from "@palot/ui/components/popover"
-import { Tooltip, TooltipContent, TooltipTrigger } from "@palot/ui/components/tooltip"
-import { cn } from "@palot/ui/lib/utils"
+} from "@ch5me/palot-ui/components/dropdown-menu"
+import { Input } from "@ch5me/palot-ui/components/input"
+import { Popover, PopoverContent, PopoverTrigger } from "@ch5me/palot-ui/components/popover"
+import { Tooltip, TooltipContent, TooltipTrigger } from "@ch5me/palot-ui/components/tooltip"
+import { cn } from "@ch5me/palot-ui/lib/utils"
 import { useNavigate, useParams } from "@tanstack/react-router"
 import { useAtom, useAtomValue } from "jotai"
 import {

@@ -6,7 +6,7 @@
  * Includes configuration for the local server's hostname, port, and password.
  */
 
-import { Button } from "@palot/ui/components/button"
+import { Button } from "@ch5me/palot-ui/components/button"
 import {
 	Dialog,
 	DialogClose,
@@ -16,10 +16,10 @@ import {
 	DialogHeader,
 	DialogTitle,
 	DialogTrigger,
-} from "@palot/ui/components/dialog"
-import { Input } from "@palot/ui/components/input"
-import { Label } from "@palot/ui/components/label"
-import { Switch } from "@palot/ui/components/switch"
+} from "@ch5me/palot-ui/components/dialog"
+import { Input } from "@ch5me/palot-ui/components/input"
+import { Label } from "@ch5me/palot-ui/components/label"
+import { Switch } from "@ch5me/palot-ui/components/switch"
 import {
 	CheckCircle2Icon,
 	ChevronRightIcon,

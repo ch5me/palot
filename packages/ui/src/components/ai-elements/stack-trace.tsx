@@ -1,13 +1,13 @@
 "use client"
 
-import { Button } from "@palot/ui/components/button"
+import { Button } from "@ch5me/palot-ui/components/button"
 import {
 	Collapsible,
 	CollapsibleContent,
 	CollapsibleTrigger,
-} from "@palot/ui/components/collapsible"
-import { useControllableState } from "@palot/ui/hooks/use-controllable-state"
-import { cn } from "@palot/ui/lib/utils"
+} from "@ch5me/palot-ui/components/collapsible"
+import { useControllableState } from "@ch5me/palot-ui/hooks/use-controllable-state"
+import { cn } from "@ch5me/palot-ui/lib/utils"
 import { AlertTriangleIcon, CheckIcon, ChevronDownIcon, CopyIcon } from "lucide-react"
 import type { ComponentProps } from "react"
 import {

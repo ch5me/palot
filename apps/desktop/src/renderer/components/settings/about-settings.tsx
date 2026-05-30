@@ -1,4 +1,4 @@
-import { Button } from "@palot/ui/components/button"
+import { Button } from "@ch5me/palot-ui/components/button"
 import { CheckCircle2Icon, DownloadIcon, Loader2Icon } from "lucide-react"
 import { useCallback, useEffect, useState } from "react"
 import { useUpdater } from "../../hooks/use-updater"

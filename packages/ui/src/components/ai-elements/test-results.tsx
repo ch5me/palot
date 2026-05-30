@@ -1,12 +1,12 @@
 "use client"
 
-import { Badge } from "@palot/ui/components/badge"
+import { Badge } from "@ch5me/palot-ui/components/badge"
 import {
 	Collapsible,
 	CollapsibleContent,
 	CollapsibleTrigger,
-} from "@palot/ui/components/collapsible"
-import { cn } from "@palot/ui/lib/utils"
+} from "@ch5me/palot-ui/components/collapsible"
+import { cn } from "@ch5me/palot-ui/lib/utils"
 import {
 	CheckCircle2Icon,
 	ChevronRightIcon,

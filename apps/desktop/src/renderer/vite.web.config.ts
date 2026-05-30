@@ -18,7 +18,7 @@ export default defineConfig({
 	resolve: {
 		alias: {
 			"@": __dirname,
-			"@palot/ui": path.resolve(__dirname, "../../../../packages/ui/src"),
+			"@ch5me/palot-ui": path.resolve(__dirname, "../../../../packages/ui/src"),
 		},
 	},
 	clearScreen: false,

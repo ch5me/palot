@@ -6,10 +6,10 @@
  * servers on the network as an alternative connection path.
  */
 
-import { Button } from "@palot/ui/components/button"
-import { Input } from "@palot/ui/components/input"
-import { Label } from "@palot/ui/components/label"
-import { Spinner } from "@palot/ui/components/spinner"
+import { Button } from "@ch5me/palot-ui/components/button"
+import { Input } from "@ch5me/palot-ui/components/input"
+import { Label } from "@ch5me/palot-ui/components/label"
+import { Spinner } from "@ch5me/palot-ui/components/spinner"
 import { useAtomValue } from "jotai"
 import {
 	AlertCircleIcon,

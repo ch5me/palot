@@ -7,9 +7,9 @@
  * already been migrated.
  */
 
-import { Badge } from "@palot/ui/components/badge"
-import { Button } from "@palot/ui/components/button"
-import { Spinner } from "@palot/ui/components/spinner"
+import { Badge } from "@ch5me/palot-ui/components/badge"
+import { Button } from "@ch5me/palot-ui/components/button"
+import { Spinner } from "@ch5me/palot-ui/components/spinner"
 import { ArrowRightIcon, CheckCircle2Icon, CommandIcon, FlaskConicalIcon } from "lucide-react"
 import { motion } from "motion/react"
 import { useEffect, useRef, useState } from "react"

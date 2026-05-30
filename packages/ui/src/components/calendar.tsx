@@ -1,7 +1,7 @@
 "use client"
 
-import { Button, buttonVariants } from "@palot/ui/components/button"
-import { cn } from "@palot/ui/lib/utils"
+import { Button, buttonVariants } from "@ch5me/palot-ui/components/button"
+import { cn } from "@ch5me/palot-ui/lib/utils"
 import { ChevronDownIcon, ChevronLeftIcon, ChevronRightIcon } from "lucide-react"
 import * as React from "react"
 import { type DayButton, DayPicker, getDefaultClassNames, type Locale } from "react-day-picker"

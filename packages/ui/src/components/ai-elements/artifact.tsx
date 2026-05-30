@@ -1,13 +1,13 @@
 "use client"
 
-import { Button } from "@palot/ui/components/button"
+import { Button } from "@ch5me/palot-ui/components/button"
 import {
 	Tooltip,
 	TooltipContent,
 	TooltipProvider,
 	TooltipTrigger,
-} from "@palot/ui/components/tooltip"
-import { cn } from "@palot/ui/lib/utils"
+} from "@ch5me/palot-ui/components/tooltip"
+import { cn } from "@ch5me/palot-ui/lib/utils"
 import type { LucideIcon } from "lucide-react"
 import { XIcon } from "lucide-react"
 import type { ComponentProps, HTMLAttributes } from "react"

@@ -1,13 +1,13 @@
 "use client"
 
-import { Badge } from "@palot/ui/components/badge"
+import { Badge } from "@ch5me/palot-ui/components/badge"
 import {
 	Collapsible,
 	CollapsibleContent,
 	CollapsibleTrigger,
-} from "@palot/ui/components/collapsible"
-import { useControllableState } from "@palot/ui/hooks/use-controllable-state"
-import { cn } from "@palot/ui/lib/utils"
+} from "@ch5me/palot-ui/components/collapsible"
+import { useControllableState } from "@ch5me/palot-ui/hooks/use-controllable-state"
+import { cn } from "@ch5me/palot-ui/lib/utils"
 import type { LucideIcon } from "lucide-react"
 import { BrainIcon, ChevronDownIcon, DotIcon } from "lucide-react"
 import type { ComponentProps, ReactNode } from "react"

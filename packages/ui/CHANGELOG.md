@@ -1,4 +1,4 @@
-# @palot/ui
+# @ch5me/palot-ui
 
 ## 0.6.0
 

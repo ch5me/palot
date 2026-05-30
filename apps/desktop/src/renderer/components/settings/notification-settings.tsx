@@ -4,8 +4,8 @@ import {
 	SelectItem,
 	SelectTrigger,
 	SelectValue,
-} from "@palot/ui/components/select"
-import { Switch } from "@palot/ui/components/switch"
+} from "@ch5me/palot-ui/components/select"
+import { Switch } from "@ch5me/palot-ui/components/switch"
 import { useCallback } from "react"
 import { useSettings } from "../../hooks/use-settings"
 import { SettingsRow } from "./settings-row"

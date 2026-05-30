@@ -4,8 +4,8 @@ import {
 	SelectItem,
 	SelectTrigger,
 	SelectValue,
-} from "@palot/ui/components/select"
-import { Switch } from "@palot/ui/components/switch"
+} from "@ch5me/palot-ui/components/select"
+import { Switch } from "@ch5me/palot-ui/components/switch"
 import { useAtomValue, useSetAtom } from "jotai"
 import { MonitorIcon, MoonIcon, SunIcon } from "lucide-react"
 import { useCallback, useEffect, useState } from "react"

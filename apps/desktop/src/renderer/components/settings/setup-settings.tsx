@@ -2,8 +2,8 @@
  * Settings tab for environment setup, migration management, and re-running onboarding.
  */
 
-import { Button } from "@palot/ui/components/button"
-import { Spinner } from "@palot/ui/components/spinner"
+import { Button } from "@ch5me/palot-ui/components/button"
+import { Spinner } from "@ch5me/palot-ui/components/spinner"
 import { useAtomValue, useSetAtom } from "jotai"
 import {
 	AlertCircleIcon,
