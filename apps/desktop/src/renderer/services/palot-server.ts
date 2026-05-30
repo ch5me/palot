@@ -8,7 +8,7 @@
 
 import { createClient } from "@palot/server/client"
 
-const BASE_URL = "http://localhost:3100"
+const BASE_URL = "http://localhost:30206"
 
 /**
  * Pre-typed Hono RPC client.
