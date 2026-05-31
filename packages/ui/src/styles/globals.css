@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@import "@ch5me/firefly-design/tailwind.css";
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
 
@@ -81,39 +82,48 @@
   --duration-normal: 0.2s;
   --duration-relaxed: 0.3s;
 
-  /* Light mode — Firefly warm scale with amber accent */
-  --background: #fefcf8;
-  --foreground: #1a1a1a;
-  --card: #fefcf8;
-  --card-foreground: #1a1a1a;
-  --popover: #fffaf0;
-  --popover-foreground: #1a1a1a;
-  --primary: #1a1a1a;
-  --primary-foreground: #fffaf0;
-  --secondary: #f5f0e8;
-  --secondary-foreground: #1a1a1a;
-  --muted: #f5f0e8;
-  --muted-foreground: #6b5c4a;
-  --accent: #fde68a;           /* warm amber-200 */
-  --accent-foreground: #1a1a1a;
-  --destructive: #fa423e;
-  --destructive-foreground: #ffffff;
-  --border: #e8e0d4;
-  --input: #e8e0d4;
-  --ring: #f59e0b;             /* amber-500 */
+  /* Semantic bridge: Palot semantic vars reference canonical Firefly vars.
+   * Firefly defines --ff-bg, --ff-text, --ff-card, --ff-surface, --ff-surface-strong,
+   * --ff-subtle, --ff-border, --ff-primary, --ff-danger in its own :root block.
+   * Warm fallbacks preserve Palot's baseline when Firefly theme classes are absent. */
+  --background: var(--ff-bg, #fefcf8);
+  --foreground: var(--ff-text, #1a1a1a);
+  --card: var(--ff-card, #fefcf8);
+  --card-foreground: var(--ff-text, #1a1a1a);
+  --popover: var(--ff-surface, #fffaf0);
+  --popover-foreground: var(--ff-text, #1a1a1a);
+  --primary: var(--ff-text, #1a1a1a);
+  --primary-foreground: var(--ff-bg, #fffaf0);
+  --secondary: var(--ff-surface-strong, #f5f0e8);
+  --secondary-foreground: var(--ff-text, #1a1a1a);
+  --muted: var(--ff-surface-strong, #f5f0e8);
+  --muted-foreground: var(--ff-subtle, #6b5c4a);
+  /* --ff-accent-primary / --ff-accent-secondary: Palot-local warm vars — Firefly
+   * does not define accent-lane warm aliases; warm fallbacks preserve baseline. */
+  --ff-accent-primary: #fde68a;
+  --ff-accent-secondary: #f59e0b;
+  --ff-accent-primary-foreground: #1a1a1a;
+  --ff-accent-secondary-foreground: #0f0f0f;
+  --accent: var(--ff-accent-primary, #fde68a);           /* warm amber-200 */
+  --accent-foreground: var(--ff-accent-primary-foreground, #1a1a1a);
+  --destructive: var(--ff-danger, #fa423e);
+  --destructive-foreground: var(--ff-destructive-foreground, #ffffff);
+  --border: var(--ff-border, #e8e0d4);
+  --input: var(--ff-border, #e8e0d4);
+  --ring: var(--ff-primary, #f59e0b);             /* amber-500 */
   --chart-1: #f59e0b;          /* amber-500 */
   --chart-2: #d97706;          /* amber-600 */
   --chart-3: #92400e;          /* amber-800 */
   --chart-4: #78716c;          /* stone-500 */
   --chart-5: #a8a29e;          /* stone-400 */
-  --sidebar: #fefcf8;
-  --sidebar-foreground: #1a1a1a;
-  --sidebar-primary: #f59e0b;
-  --sidebar-primary-foreground: #1a1a1a;
-  --sidebar-accent: #fde68a;    /* amber-200 */
-  --sidebar-accent-foreground: #1a1a1a;
-  --sidebar-border: #e8e0d4;
-  --sidebar-ring: #f59e0b;      /* amber-500 */
+  --sidebar: var(--ff-card, #fefcf8);
+  --sidebar-foreground: var(--ff-text, #1a1a1a);
+  --sidebar-primary: var(--ff-accent-secondary, #f59e0b);
+  --sidebar-primary-foreground: var(--ff-accent-secondary-foreground, #1a1a1a);
+  --sidebar-accent: var(--ff-accent-primary, #fde68a);    /* amber-200 */
+  --sidebar-accent-foreground: var(--ff-accent-primary-foreground, #1a1a1a);
+  --sidebar-border: var(--ff-border, #e8e0d4);
+  --sidebar-ring: var(--ff-primary, #f59e0b);      /* amber-500 */
 
   /* Diff colors */
   --diff-addition: #22c55e;
@@ -123,39 +133,38 @@
 }
 
 .dark {
-  /* Dark mode — Firefly deep charcoal with warm amber accent */
-  --background: #0f0f0f;
-  --foreground: #fffaf0;
-  --card: #1a1a1a;
-  --card-foreground: #fffaf0;
-  --popover: #1f1f1f;
-  --popover-foreground: #fffaf0;
-  --primary: #f59e0b;            /* amber-500 */
-  --primary-foreground: #0f0f0f;
-  --secondary: #26220e;
-  --secondary-foreground: #fde68a;
-  --muted: #1f1f1f;
-  --muted-foreground: #a8a29e;
-  --accent: #f59e0b;             /* amber-500 */
-  --accent-foreground: #0f0f0f;
-  --destructive: #fa423e;
-  --destructive-foreground: #ffffff;
-  --border: #2e2a1e;
-  --input: #2e2a1e;
-  --ring: #f59e0b;               /* amber-500 */
+  --background: var(--ff-bg, #0f0f0f);
+  --foreground: var(--ff-text, #fffaf0);
+  --card: var(--ff-card, #1a1a1a);
+  --card-foreground: var(--ff-text, #fffaf0);
+  --popover: var(--ff-surface, #1f1f1f);
+  --popover-foreground: var(--ff-text, #fffaf0);
+  --primary: var(--ff-accent-secondary, #f59e0b);            /* amber-500 */
+  --primary-foreground: var(--ff-accent-secondary-foreground, #0f0f0f);
+  --secondary: var(--ff-surface-strong, #26220e);
+  --secondary-foreground: var(--ff-accent-primary, #fde68a);
+  --muted: var(--ff-surface-strong, #1f1f1f);
+  --muted-foreground: var(--ff-subtle, #a8a29e);
+  --accent: var(--ff-accent-secondary, #f59e0b);             /* amber-500 */
+  --accent-foreground: var(--ff-accent-secondary-foreground, #0f0f0f);
+  --destructive: var(--ff-danger, #fa423e);
+  --destructive-foreground: var(--ff-destructive-foreground, #ffffff);
+  --border: var(--ff-border, #2e2a1e);
+  --input: var(--ff-border, #2e2a1e);
+  --ring: var(--ff-primary, #f59e0b);               /* amber-500 */
   --chart-1: #f59e0b;           /* amber-500 */
   --chart-2: #fbbf24;           /* amber-400 */
   --chart-3: #d97706;           /* amber-600 */
   --chart-4: #78716c;           /* stone-500 */
   --chart-5: #a8a29e;           /* stone-400 */
-  --sidebar: #0f0f0f;
-  --sidebar-foreground: #fffaf0;
-  --sidebar-primary: #f59e0b;
-  --sidebar-primary-foreground: #0f0f0f;
-  --sidebar-accent: #2e2a1e;    /* amber-950 / warm dark */
-  --sidebar-accent-foreground: #fde68a;
-  --sidebar-border: #2e2a1e;
-  --sidebar-ring: #f59e0b;       /* amber-500 */
+  --sidebar: var(--ff-card, #0f0f0f);
+  --sidebar-foreground: var(--ff-text, #fffaf0);
+  --sidebar-primary: var(--ff-accent-secondary, #f59e0b);
+  --sidebar-primary-foreground: var(--ff-accent-secondary-foreground, #0f0f0f);
+  --sidebar-accent: var(--ff-surface-strong, #2e2a1e);    /* amber-950 / warm dark */
+  --sidebar-accent-foreground: var(--ff-accent-primary, #fde68a);
+  --sidebar-border: var(--ff-border, #2e2a1e);
+  --sidebar-ring: var(--ff-primary, #f59e0b);       /* amber-500 */
 
   /* Diff colors */
   --diff-addition: #22c55e;

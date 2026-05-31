@@ -22,6 +22,7 @@
 	"dependencies": {
 		"@base-ui/react": "^1.2.0",
 		"@hookform/resolvers": "^5.2.2",
+		"@ch5me/firefly-design": "workspace:*",
 		"@pierre/diffs": "^1.0.10",
 		"@rive-app/react-webgl2": "^4.26.2",
 		"@streamdown/cjk": "^1.0.2",

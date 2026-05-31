@@ -6,8 +6,10 @@
 	"workspaces": [
 		"apps/*",
 		"packages/*",
+		"../ch5-packages/packages/firefly/design",
 		"../ch5-packages/packages/workspace/contract"
 	],
+
 	"scripts": {
 		"build": "turbo build",
 		"dev": "turbo dev",
