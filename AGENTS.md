@@ -21,6 +21,21 @@ Do NOT add one-time setup notes, general knowledge, or things discoverable from 
 - **`preload/`** -- Electron preload bridge: exposes `window.palot` API via `contextBridge`
 - **`renderer/`** -- React app (browser context): components, hooks, services, atoms (Jotai)
 
+## Cross-Repo Development
+
+`@ch5me/workspace` is developed in `ch5-packages` and consumed here via bun workspace symlink.
+The symlink is in `package.json` workspaces: `../ch5-packages/packages/workspace/contract`.
+
+When the provider's `dist/` is stale (new exports not in built output), rebuild:
+```bash
+cd ~/src/ch5/ch5-packages/packages/workspace/contract && pnpm run build
+```
+
+Vite needs React dedup aliases because `@react-spring/web` resolves its own React.
+See `apps/desktop/src/renderer/vite.web.config.ts` for the aliases.
+
+For full details, load the `cross-repo-dev` skill.
+
 ## Skills
 
 Project-specific skills live in `.agents/skills/`. Load a skill before starting
@@ -182,6 +197,30 @@ Palot follows the XDG Base Directory Specification (same convention as OpenCode)
 ### electron-vite -- Three Build Targets
 
 `electron.vite.config.ts` has three sections: `main`, `preload`, `renderer`. Main and preload use `externalizeDepsPlugin()` to keep Node.js deps external.
+
+### OpenCode default port
+
+Default is **4096**. Both `server-manager.ts` and `opencode-manager.ts` read `OPENCODE_PORT` env var (default 4096). Chris's local OpenCode server runs on 4096.
+
+To connect to an existing server:
+```bash
+cd apps/desktop && OPENCODE_PORT=4096 node ../../node_modules/.bin/electron-vite dev
+```
+
+### Palot as Firefly Cloud integration
+
+The `@ch5me/palot-ui` package is published to GitHub Packages (`npm.pkg.github.com`) at `^0.6.0`. Consumer repos (e.g. Firefly Cloud) add it as a registry dependency:
+
+```json
+"@ch5me/palot-ui": "^0.6.0"
+```
+
+**Do NOT use cross-repo workspace links** (e.g. `workspace:*` pointing to `../palot/packages/*`) in pnpm workspaces. pnpm hoists `node_modules` from the workspace root, which creates cross-repo symlinks and causes duplicate React instances (different versions resolved from different workspace roots). This manifests as `useState`/`useEffect` errors in Electron.
+
+**Publishing workflow:**
+```bash
+cd packages/ui && npm publish   # requires NPM_TOKEN from Hush
+```
 
 ## Testing
 

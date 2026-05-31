@@ -19,6 +19,9 @@ export default defineConfig({
 		alias: {
 			"@": __dirname,
 			"@ch5me/palot-ui": path.resolve(__dirname, "../../../../packages/ui/src"),
+			"@ch5me/palot-server/client": path.resolve(__dirname, "../../../server/src/client.ts"),
+			react: path.resolve(__dirname, "../../../../node_modules/react"),
+			"react-dom": path.resolve(__dirname, "../../../../node_modules/react-dom"),
 		},
 	},
 	clearScreen: false,

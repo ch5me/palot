@@ -141,7 +141,7 @@ function SidebarProvider({
 					}
 					className={cn(
 						"group/sidebar-wrapper has-data-[variant=inset]:bg-sidebar flex w-full",
-						embedded ? "min-h-0 flex-1" : "min-h-svh",
+						embedded ? "min-h-0 h-full flex-1" : "min-h-svh",
 						className,
 					)}
 					{...props}
@@ -212,7 +212,7 @@ function Sidebar({
 	return (
 		<div
 			className={cn(
-				"group peer text-sidebar-foreground overflow-hidden",
+				"group peer h-full text-sidebar-foreground overflow-hidden",
 				embedded
 					? cn(
 							"w-(--sidebar-width) shrink-0 transition-[width] duration-250 ease-in-out",

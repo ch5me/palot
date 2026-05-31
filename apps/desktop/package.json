@@ -35,6 +35,7 @@
 		"clean": "rm -rf out release dist node_modules .turbo"
 	},
 	"dependencies": {
+		"@ch5me/firefly-design": "workspace:*",
 		"@ch5me/workspace": "workspace:*",
 		"@fontsource-variable/inter": "^5.2.8",
 		"@fontsource/ibm-plex-mono": "^5.2.7",

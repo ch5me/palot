@@ -4,6 +4,8 @@ import type { FileDiff } from "../lib/types"
 
 export const commandPaletteOpenAtom = atom(false)
 
+export const leftPanelOpenAtom = atom(true)
+
 /**
  * The session ID currently being viewed in the main content area.
  * Set by the router/session view when the user navigates to a session.

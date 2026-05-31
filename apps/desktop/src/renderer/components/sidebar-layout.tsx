@@ -1,21 +1,13 @@
-/**
- * Sidebar shell layout: wraps child routes with the sidebar + SidebarInset chrome.
- * Reads from SidebarSlotContext to allow child routes to override sidebar content.
- */
 import { Button } from "@ch5me/palot-ui/components/button"
-import {
-	Sidebar,
-	SidebarHeader,
-	SidebarInset,
-	SidebarProvider,
-	useSidebar,
-} from "@ch5me/palot-ui/components/sidebar"
+import { SidebarProvider } from "@ch5me/palot-ui/components/sidebar"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@ch5me/palot-ui/components/tooltip"
+import { SplitPane } from "@ch5me/workspace"
 import { Outlet, useNavigate } from "@tanstack/react-router"
-import { useAtomValue } from "jotai"
+import { useAtom, useAtomValue } from "jotai"
 import { PanelLeftIcon, PlusIcon } from "lucide-react"
 import { useCallback, useEffect, useRef, useState } from "react"
 import { activeServerConfigAtom, serverConnectedAtom } from "../atoms/connection"
+import { leftPanelOpenAtom } from "../atoms/ui"
 import { useAgents, useProjectList, useSetCommandPaletteOpen } from "../hooks/use-agents"
 import { useAgentActions } from "../hooks/use-server"
 import type { Agent } from "../lib/types"
@@ -27,71 +19,45 @@ import { AppSidebarContent } from "./sidebar"
 import { useSidebarSlot } from "./sidebar-slot-context"
 import { UpdateBanner } from "./update-banner"
 
-// ============================================================
-// Constants
-// ============================================================
-
 const isMac =
 	typeof window !== "undefined" && "palot" in window && window.palot.platform === "darwin"
 const isElectronEnv = typeof window !== "undefined" && "palot" in window
 
-/** Pixel offset from the left edge where window controls (toggle + new session) start */
 const WINDOW_CONTROLS_LEFT = isMac && isElectronEnv ? 93 : 8
-/** Total width reserved for traffic lights + window control buttons */
 const WINDOW_CONTROLS_INSET = isMac && isElectronEnv ? 160 : 72
-
-// ============================================================
-// NarrowWindowCollapser
-// ============================================================
-
-/**
- * Watches the window width and auto-collapses the sidebar when it drops below
- * COLLAPSE_THRESHOLD px, restoring it when the window grows back above the threshold.
- * Must be rendered inside a <SidebarProvider>.
- */
 const COLLAPSE_THRESHOLD = 600
 
 function NarrowWindowCollapser() {
-	const { open, setOpen } = useSidebar()
-	// Track whether the last collapse was triggered by us (vs. the user manually toggling)
+	const [, setLeftPanelOpen] = useAtom(leftPanelOpenAtom)
 	const collapsedByUsRef = useRef(false)
 
 	useEffect(() => {
 		const check = () => {
 			const narrow = window.innerWidth < COLLAPSE_THRESHOLD
-			if (narrow && open) {
+			if (narrow) {
 				collapsedByUsRef.current = true
-				setOpen(false)
-			} else if (!narrow && !open && collapsedByUsRef.current) {
-				// Only re-open if WE collapsed it — don't override the user's manual close
+				setLeftPanelOpen(false)
+			} else if (!narrow && collapsedByUsRef.current) {
 				collapsedByUsRef.current = false
-				setOpen(true)
-			} else if (!narrow) {
-				// Window grew back — reset the flag regardless so we don't re-open unexpectedly
-				if (!open) collapsedByUsRef.current = false
+				setLeftPanelOpen(true)
 			}
 		}
 
 		check()
 		window.addEventListener("resize", check)
 		return () => window.removeEventListener("resize", check)
-	}, [open, setOpen])
+	}, [setLeftPanelOpen])
 
 	return null
 }
 
-// ============================================================
-// WindowControls
-// ============================================================
-
-/**
- * Absolutely positioned window controls (sidebar toggle + new session) that
- * stay next to the macOS traffic lights regardless of sidebar state.
- * Must be rendered inside a SidebarProvider.
- */
 function WindowControls() {
-	const { toggleSidebar } = useSidebar()
+	const [, setLeftPanelOpen] = useAtom(leftPanelOpenAtom)
 	const navigate = useNavigate()
+
+	const handleToggleSidebar = useCallback(() => {
+		setLeftPanelOpen((prev) => !prev)
+	}, [setLeftPanelOpen])
 
 	return (
 		<div
@@ -110,7 +76,7 @@ function WindowControls() {
 							variant="ghost"
 							size="icon"
 							className="size-7 shrink-0"
-							onClick={toggleSidebar}
+							onClick={handleToggleSidebar}
 						/>
 					}
 				>
@@ -137,23 +103,18 @@ function WindowControls() {
 	)
 }
 
-// ============================================================
-// SidebarLayout
-// ============================================================
-
 export function SidebarLayout() {
 	const navigate = useNavigate()
+	const [leftPanelOpen, setLeftPanelOpen] = useAtom(leftPanelOpenAtom)
 	const { content: slotContent, footer: slotFooter } = useSidebarSlot()
-
-	// ---- Sidebar-specific data ----
 	const agents = useAgents()
 	const projects = useProjectList()
 	const setCommandPaletteOpen = useSetCommandPaletteOpen()
 	const { renameSession, deleteSession, forkSession } = useAgentActions()
 	const serverConnected = useAtomValue(serverConnectedAtom)
-
-	// Sub-agents are filtered at the API level (roots: true)
 	const visibleAgents = agents
+	const activeServer = useAtomValue(activeServerConfigAtom)
+	const [addProjectOpen, setAddProjectOpen] = useState(false)
 
 	const handleRenameSession = useCallback(
 		async (agent: Agent, title: string) => {
@@ -186,22 +147,34 @@ export function SidebarLayout() {
 		setCommandPaletteOpen(true)
 	}, [setCommandPaletteOpen])
 
-	// Add project: local servers use native picker, remote servers use a dialog
-	const activeServer = useAtomValue(activeServerConfigAtom)
-	const [addProjectOpen, setAddProjectOpen] = useState(false)
-
 	const handleAddProject = useCallback(async () => {
 		if (activeServer.type === "local") {
-			// Local server: open native folder picker directly
 			const directory = await pickDirectory()
 			if (!directory) return
 			await loadProjectSessions(directory)
 			navigate({ to: "/" })
-		} else {
-			// Remote server: show dialog with text input
-			setAddProjectOpen(true)
+			return
 		}
+
+		setAddProjectOpen(true)
 	}, [activeServer.type, navigate])
+
+	useEffect(() => {
+		const handleKeyDown = (e: KeyboardEvent) => {
+			const target = e.target as HTMLElement
+			if (target.tagName === "INPUT" || target.tagName === "TEXTAREA" || target.isContentEditable) {
+				return
+			}
+
+			if ((e.metaKey || e.ctrlKey) && !e.shiftKey && e.key.toLowerCase() === "b") {
+				e.preventDefault()
+				setLeftPanelOpen((prev) => !prev)
+			}
+		}
+
+		document.addEventListener("keydown", handleKeyDown)
+		return () => document.removeEventListener("keydown", handleKeyDown)
+	}, [setLeftPanelOpen])
 
 	const handleProjectAdded = useCallback(
 		(_directory: string) => {
@@ -210,66 +183,96 @@ export function SidebarLayout() {
 		[navigate],
 	)
 
+	const sidebarContent = slotContent ?? (
+		<AppSidebarContent
+			agents={visibleAgents}
+			projects={projects}
+			onOpenCommandPalette={handleOpenCommandPalette}
+			onAddProject={handleAddProject}
+			onRenameSession={handleRenameSession}
+			onDeleteSession={handleDeleteSession}
+			onForkSession={handleForkSession}
+			serverConnected={serverConnected}
+		/>
+	)
+
 	return (
-		<div
-			className="relative flex h-screen text-foreground"
-			style={
-				{
-					"--window-controls-inset": `${WINDOW_CONTROLS_INSET}px`,
-				} as React.CSSProperties
-			}
-		>
-			<SidebarProvider embedded defaultOpen={true}>
-				<NarrowWindowCollapser />
-				<Sidebar collapsible="offcanvas" variant="sidebar">
-					{/* Sidebar header -- reserves space to match the app bar height so
-					 * sidebar content aligns with the main content area. Also clears
-					 * the traffic lights + the absolutely-positioned toggle button. */}
-					<SidebarHeader
-						className="flex-row items-center gap-1 shrink-0"
-						style={{
-							height: APP_BAR_HEIGHT,
-							// Make header draggable on Electron (acts as title bar above sidebar)
-							// @ts-expect-error -- vendor-prefixed CSS property
-							WebkitAppRegion: "drag",
-						}}
-					/>
-					{slotContent ?? (
-					<AppSidebarContent
-						agents={visibleAgents}
-						projects={projects}
-						onOpenCommandPalette={handleOpenCommandPalette}
-						onAddProject={handleAddProject}
-						onRenameSession={handleRenameSession}
-						onDeleteSession={handleDeleteSession}
-						onForkSession={handleForkSession}
-						serverConnected={serverConnected}
-					/>
-					)}
-					{/* Footer: false = hide, ReactNode = render it, null = let default handle it.
-					 * When default sidebar is active, AppSidebarContent renders its own footer. */}
-					{slotFooter !== false && slotFooter}
-				</Sidebar>
-				<SidebarInset>
-					<UpdateBanner />
-					<AppBar />
-					{/* Flex-1 + min-h-0 wrapper: pages use h-full which would
-					    resolve to 100% of SidebarInset, ignoring AppBar height.
-					    This container takes remaining space after AppBar and
-					    constrains page content correctly. */}
-					<div data-slot="content-area" className="relative min-h-0 min-w-0 flex-1 overflow-hidden">
-						<Outlet />
-					</div>
-				</SidebarInset>
-				{/* Rendered last so it paints on top of the sidebar and app bar,
-				    whose transition properties create stacking contexts. */}
+		<>
+			<NarrowWindowCollapser />
+			<div
+				style={{
+					background: "var(--ws-bg, hsl(var(--background)))",
+					color: "var(--ws-text-primary, hsl(var(--foreground)))",
+					display: "grid",
+					gridTemplateRows: `${APP_BAR_HEIGHT}px 1fr`,
+					height: "100vh",
+					overflow: "hidden",
+					width: "100%",
+				}}
+			>
+			<div
+				className="relative"
+				style={
+					{
+						"--window-controls-inset": `${WINDOW_CONTROLS_INSET}px`,
+					} as React.CSSProperties
+				}
+			>
+				<UpdateBanner />
+				<AppBar />
 				<WindowControls />
-			</SidebarProvider>
+			</div>
+
+			<div style={{ minWidth: 0, overflow: "hidden" }}>
+
+					<SplitPane
+						side="left"
+						open={leftPanelOpen}
+						onOpenChange={setLeftPanelOpen}
+						defaultPanelWidth={320}
+						minPanelWidth={200}
+						maxPanelWidth={480}
+					panel={
+						<SidebarProvider
+							embedded
+							defaultOpen={leftPanelOpen}
+							open={leftPanelOpen}
+							onOpenChange={setLeftPanelOpen}
+						>
+							<div
+								className="flex h-full flex-col overflow-y-auto"
+								style={{ background: "hsl(var(--sidebar, var(--card)))" }}
+							>
+								<div
+									className="flex shrink-0 items-center gap-1"
+									style={{
+										height: APP_BAR_HEIGHT,
+										// @ts-expect-error -- vendor-prefixed CSS property
+										WebkitAppRegion: "drag",
+									}}
+								/>
+								{sidebarContent}
+								{slotFooter !== false && slotFooter}
+							</div>
+						</SidebarProvider>
+					}
+					>
+						<main
+							className="relative flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden"
+							style={{ background: "hsl(var(--background))" }}
+						>
+							<div data-slot="content-area" className="relative min-h-0 min-w-0 flex-1 overflow-hidden">
+								<Outlet />
+							</div>
+						</main>
+					</SplitPane>
+				</div>
+			</div>
 			<AddProjectDialog
 				open={addProjectOpen}
 				onOpenChange={setAddProjectOpen}
 				onAdded={handleProjectAdded}
 			/>
-		</div>
+		</>
 	)
 }

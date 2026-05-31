@@ -9,8 +9,8 @@ import {
 import { Input } from "@ch5me/palot-ui/components/input"
 import { Popover, PopoverContent, PopoverTrigger } from "@ch5me/palot-ui/components/popover"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@ch5me/palot-ui/components/tooltip"
-import { Pane, PaneSeam, ResizablePanes } from "@ch5me/workspace"
 import { cn } from "@ch5me/palot-ui/lib/utils"
+import { Pane, PaneSeam, ResizablePanes } from "@ch5me/workspace"
 import { useNavigate, useParams } from "@tanstack/react-router"
 import { useAtom, useAtomValue } from "jotai"
 import {
@@ -140,27 +140,24 @@ export function AgentDetail({
 	const [titleValue, setTitleValue] = useState(agent.name)
 	const titleInputRef = useRef<HTMLInputElement>(null)
 
-	// Review panel state
 	const [reviewPanelOpen, setReviewPanelOpen] = useAtom(reviewPanelOpenAtom)
 	const [reviewSettings, setReviewSettings] = useAtom(reviewPanelSettingsAtom)
 
-	// Keyboard shortcut: Cmd+Shift+D to toggle review panel
 	useEffect(() => {
 		const handleKeyDown = (e: KeyboardEvent) => {
-			if ((e.metaKey || e.ctrlKey) && e.shiftKey && e.key === "d") {
-				e.preventDefault()
-				setReviewPanelOpen((prev) => !prev)
-			}
-			if ((e.metaKey || e.ctrlKey) && e.shiftKey && e.key === "f") {
-				e.preventDefault()
-				if (reviewPanelOpen) {
+			if ((e.metaKey || e.ctrlKey) && e.shiftKey) {
+				if (e.key === "d" || e.key === "D") {
+					e.preventDefault()
+					setReviewPanelOpen((prev) => !prev)
+				} else if (e.key === "f" || e.key === "F") {
+					e.preventDefault()
 					setReviewSettings((prev) => ({ ...prev, expanded: !prev.expanded }))
 				}
 			}
 		}
 		document.addEventListener("keydown", handleKeyDown)
 		return () => document.removeEventListener("keydown", handleKeyDown)
-	}, [setReviewPanelOpen, setReviewSettings, reviewPanelOpen])
+	}, [setReviewPanelOpen, setReviewSettings])
 
 	// Close review panel when navigating to a session with no diffs
 	const prevSessionIdRef = useRef(agent.sessionId)
@@ -259,7 +256,6 @@ export function AgentDetail({
 				</button>
 			)}
 
-			{/* Chat -- full height */}
 			<div className="min-h-0 flex-1">
 				<ChatView
 					turns={chatTurns}
@@ -284,33 +280,33 @@ export function AgentDetail({
 					onUndo={onUndo}
 					onRedo={onRedo}
 					isReverted={isReverted}
-				onRevertToMessage={onRevertToMessage}
-				onForkFromTurn={onForkFromTurn}
-				onDeletePart={onDeletePart}
-				reviewPanelOpen={reviewPanelOpen}
+					onRevertToMessage={onRevertToMessage}
+					onForkFromTurn={onForkFromTurn}
+					onDeletePart={onDeletePart}
+					reviewPanelOpen={reviewPanelOpen}
 				/>
 			</div>
 		</>
 	)
 
+	if (reviewPanelOpen) {
+		return (
+			<ResizablePanes id="palot-workspace-center">
+				<Pane defaultSize="60%" minSize="30%">
+					<div className="min-h-0 min-w-0 h-full overflow-hidden flex flex-col">{chatContent}</div>
+				</Pane>
+				<PaneSeam aria-label="Resize review panel" />
+				<Pane defaultSize={reviewSettings.expanded ? "100%" : "40%"} minSize="20%">
+					<div className="min-h-0 min-w-0 h-full overflow-hidden border-l border-border">
+						<ReviewPanel sessionId={agent.sessionId} directory={agent.directory} />
+					</div>
+				</Pane>
+			</ResizablePanes>
+		)
+	}
+
 	return (
-		<div className="h-full">
-			{reviewPanelOpen ? (
-				<ResizablePanes id="session-detail">
-					<Pane defaultSize="60%" minSize="30%">
-						<div className="min-w-0 h-full overflow-hidden flex flex-col">{chatContent}</div>
-					</Pane>
-					<PaneSeam />
-					<Pane defaultSize={reviewSettings.expanded ? "100%" : "40%"} minSize="20%">
-						<div className="h-full overflow-hidden border-l border-border">
-							<ReviewPanel sessionId={agent.sessionId} directory={agent.directory} />
-						</div>
-					</Pane>
-				</ResizablePanes>
-			) : (
-				<div className="min-w-0 h-full overflow-hidden flex flex-col">{chatContent}</div>
-			)}
-		</div>
+		<div className="min-h-0 min-w-0 h-full overflow-hidden flex flex-col">{chatContent}</div>
 	)
 }
 
