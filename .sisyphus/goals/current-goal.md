@@ -46,25 +46,31 @@ Decision already made and published (`ch5-company/firefly-frontend-merge-plan.md
 
 ## Current State
 
-- **Decision + audit: DONE.** Published to `ch5-company/firefly-frontend-merge-plan.md` (`dc0abb0`). Full working plan: `~/.claude/plans/okay-i-d-like-you-adaptive-forest.md`.
-- **Firefly theming: DONE across products** (prior session handoff `handoff-20260531.md`). palot already bridges `@ch5me/firefly-design` tokens in `packages/ui/src/styles/globals.css`; warm brand fallbacks preserved. Repo `ahead 2` of origin/main with the firefly bridge commits.
-- **In-flight (other work, uncommitted):** `apps/desktop/src/renderer/components/side-panel/` (new), edits to `chat-view.tsx`, `review-panel.tsx`, `agent-detail.tsx`, `atoms/ui.ts`. Leave to its owner.
-- **Pane-shell + aios feature ports: NOT STARTED.**
+- **Decision + audit: DONE.** Published to `ch5-company/firefly-frontend-merge-plan.md` (`dc0abb0`). Full working plan: `~/.claude/plans/okay-i-d-like-you-adaptive-forest.md`. Goal doc committed `ec3dea0` (pushed).
+- **Firefly theming: DONE across products** (prior session handoff `handoff-20260531.md`). palot already bridges `@ch5me/firefly-design` tokens in `packages/ui/src/styles/globals.css`; warm brand fallbacks preserved.
+- **ARCHITECTURE CORRECTION (discovered 2026-06-01 by reading real renderer):** palot is **session-centric**, not a free-form pane grid. Shape = chat (session/Agent) in the main area + a **right-hand side panel with a TAB REGISTRY**. The pane system the goal needs ALREADY EXISTS in embryo:
+  - Registry contract: `components/side-panel/side-panel-tabs.tsx` → `SidePanelTabDef { id, label, icon, isAvailable(ctx), render(ctx) }` where `ctx = { agent }`.
+  - Host: `components/side-panel/session-side-panel.tsx` (vertical tab strip + content, firefly-themed via `@ch5me/palot-ui`).
+  - State: `atoms/ui.ts` → `SidePanelTabId = "review" | "browser"`, `sidePanelOpenAtom`, `sidePanelActiveTabAtom`.
+  - Tabs so far: `review` (real) + `browser` (PLACEHOLDER — `browser-panel.tsx` says "Full webview coming soon… placeholder to verify the tab system works").
+  - Flags: `atoms/feature-flags.ts` Jotai `atomWithStorage`, toggled via Cmd-K. (Currently only `automationsEnabledAtom`.)
+  - **Therefore: aios features land as side-panel tabs (+ routes for big ones), via THIS registry. Do NOT build a parallel workspace pane-grid.**
+- **In-flight (other worker, UNCOMMITTED — do not trample):** `side-panel/` dir + edits to `chat-view.tsx`, `review-panel.tsx`, `agent-detail.tsx`, `atoms/ui.ts`. This is the active surface-system slice. Coordinate before editing these files.
+- **aios feature ports: NOT STARTED** (blocked on coordinating with the in-flight side-panel slice).
 
-## Plan
+## Plan (corrected to palot's real architecture — side-panel tab registry, not a pane grid)
 
-1. **Orient in real renderer** — read `router.tsx`, root layout, `atoms/feature-flags.ts`, the in-flight side-panel, command palette wiring. Confirm extension points without colliding with live edits.
-2. **Workspace pane-shell layer** (additive, new `apps/desktop/src/renderer/workspace/`): `paneRegistry.ts`, `PaneGrid.tsx` (use existing `react-resizable-panels`), extend Cmd-K to spawn panes.
-3. **Flagship pane**: wrap current OpenCode chat IDE (chat + review) as the default-open registered pane.
-4. **Port aios features as flag-gated panes**, by native coupling:
-   - Pure-frontend first: Notes, Memory Graph (3d-force-graph), Pulse (`@ch5me/charts-web`).
-   - Electron-main reimpl: Terminal (node-pty, keep ON), Files (merge w/ review), Database (better-sqlite3/pg).
-   - Defer behind flags: Browser (WebContentsView), CRM, MotionBoards, Bridges, Plugins, Voice.
-5. **Feature-flag wiring**: one Jotai `atomWithStorage` per module in `atoms/feature-flags.ts`; registry filters by enabled flags. v1 = heavy panes OFF, nothing removed.
-6. **Federation seams**: `@ch5me/elf-auth-client` SSO, `@ch5me/log-client-*` telemetry, chat lifecycle aligned to Firefly tool-registry.
-7. **Verify end-to-end** each slice: typecheck/lint/build, dev launch, spawn panes, real chat turn, flag toggles; finally Mac package smoke-launch.
+0. **Orient: DONE.** Real renderer read; architecture corrected above.
+1. **Coordinate on the in-flight side-panel slice** — confirm who owns the live edits (Chris or another agent) and either take it over or wait for it to commit. The registry (`side-panel-tabs.tsx`, `atoms/ui.ts`) is the integration point; editing it while dirty risks conflicts. BLOCKER until resolved.
+2. **Generalize the tab registry for feature-flag gating** — add `enabledFlagAtom?` (or fold `isAvailable` to read flags) so any tab can be toggled from Cmd-K; widen `SidePanelTabId` as tabs are added. Extend `atoms/feature-flags.ts` with one atom per surface.
+3. **Land the first REAL aios surface as a tab**, cheapest pure-frontend first: **Notes** or **Pulse/Usage** (`@ch5me/charts-web`). Then **Memory Graph** (3d-force-graph). Each: new `components/side-panel/<x>-panel.tsx` + registry entry + flag.
+4. **Real Browser tab** — replace the placeholder `browser-panel.tsx` with an Electron `WebContentsView` driven from `apps/desktop/src/main/` (cross-platform; supersedes aios's macOS-only WKWebView).
+5. **Bigger surfaces as routes, not just tabs**, where they deserve full width: **Terminal** (node-pty in main, keep ON), **Database Workbench** (better-sqlite3/pg). Register in `router.tsx` + nav, flag-gated.
+6. **Remaining aios features flag-gated**: CRM/Contacts, MotionBoards Studio, Bridges, Plugins/Skills, Voice — present but OFF in v1.
+7. **Federation seams**: `@ch5me/elf-auth-client` SSO, `@ch5me/log-client-*` telemetry, chat lifecycle aligned to Firefly tool-registry.
+8. **Verify end-to-end** each slice: `bun run check-types && lint && build`, dev launch, open the tab, real chat turn, flag toggle; finally Mac package smoke-launch.
 
-Execution discipline: land in small, coherent, independently-verified slices. Commit each slice (goal doc + related code) and push. Update this doc when scope/criteria/state change.
+Execution discipline: small coherent independently-verified slices; commit (goal doc + related code) and push each; never sweep up another worker's uncommitted edits; update this doc as state changes.
 
 ## Next Update Triggers
 
