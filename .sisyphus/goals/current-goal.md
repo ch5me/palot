@@ -55,15 +55,18 @@ Decision already made and published (`ch5-company/firefly-frontend-merge-plan.md
   - Tabs so far: `review` (real) + `browser` (PLACEHOLDER — `browser-panel.tsx` says "Full webview coming soon… placeholder to verify the tab system works").
   - Flags: `atoms/feature-flags.ts` Jotai `atomWithStorage`, toggled via Cmd-K. (Currently only `automationsEnabledAtom`.)
   - **Therefore: aios features land as side-panel tabs (+ routes for big ones), via THIS registry. Do NOT build a parallel workspace pane-grid.**
-- **In-flight (other worker, UNCOMMITTED — do not trample):** `side-panel/` dir + edits to `chat-view.tsx`, `review-panel.tsx`, `agent-detail.tsx`, `atoms/ui.ts`. This is the active surface-system slice. Coordinate before editing these files.
-- **aios feature ports: NOT STARTED** (blocked on coordinating with the in-flight side-panel slice).
+- **Side-panel surface system: LANDED** (Chris said "take it over"). Committed + pushed:
+  - `38645d6` — took over the in-flight slice: session side-panel tab registry (review + browser placeholder), rendered in `@ch5me/workspace` ResizablePanes. Also fixed a broken install: `@ch5me/motion` declares `@ch5me/vitest-react-native-mocks` as a runtime `dependency` (manifest bug — it's test-only); resolved by linking that dir in palot `workspaces`. Typecheck clean.
+  - `17d2b01` — flag-gating mechanism: `browserPanelEnabledAtom` gates the Browser tab; Cmd-K > Features "Enable/Disable Browser Panel" toggle (mirrors Automations). **This is the reusable "disable without deleting" pattern every aios surface will use.** Typecheck + biome clean.
+- **TECH DEBT noted:** (a) `@ch5me/motion` should move `@ch5me/vitest-react-native-mocks` to devDependencies (cross-repo fix in ch5-packages); (b) the dir-link model (`../ch5-packages/...` in `workspaces`) leaks internal test deps — the company-correct end state is published `@ch5me/*` consumption from GitHub Packages.
+- **aios feature ports: STARTED** — pattern proven on Browser tab; remaining surfaces below are the bulk of the work.
 
 ## Plan (corrected to palot's real architecture — side-panel tab registry, not a pane grid)
 
-0. **Orient: DONE.** Real renderer read; architecture corrected above.
-1. **Coordinate on the in-flight side-panel slice** — confirm who owns the live edits (Chris or another agent) and either take it over or wait for it to commit. The registry (`side-panel-tabs.tsx`, `atoms/ui.ts`) is the integration point; editing it while dirty risks conflicts. BLOCKER until resolved.
-2. **Generalize the tab registry for feature-flag gating** — add `enabledFlagAtom?` (or fold `isAvailable` to read flags) so any tab can be toggled from Cmd-K; widen `SidePanelTabId` as tabs are added. Extend `atoms/feature-flags.ts` with one atom per surface.
-3. **Land the first REAL aios surface as a tab**, cheapest pure-frontend first: **Notes** or **Pulse/Usage** (`@ch5me/charts-web`). Then **Memory Graph** (3d-force-graph). Each: new `components/side-panel/<x>-panel.tsx` + registry entry + flag.
+0. **Orient: DONE.** Real renderer read; architecture corrected.
+1. **Coordinate / take over in-flight slice: DONE** (`38645d6`).
+2. **Feature-flag gating of side-panel surfaces: DONE** (`17d2b01`) — pattern: `<x>EnabledAtom` in `atoms/feature-flags.ts` + Cmd-K toggle + conditional registry entry in `agent-detail.tsx`.
+3. **Land REAL aios surfaces as tabs** (NEXT), cheapest pure-frontend first: **Notes**, **Pulse/Usage** (`@ch5me/charts-web`), **Memory Graph** (3d-force-graph). Each = new `components/side-panel/<x>-panel.tsx` + `SidePanelTabId` widen + flag + registry entry. Then **real Browser webview** (Electron `WebContentsView` from main, replacing the placeholder).
 4. **Real Browser tab** — replace the placeholder `browser-panel.tsx` with an Electron `WebContentsView` driven from `apps/desktop/src/main/` (cross-platform; supersedes aios's macOS-only WKWebView).
 5. **Bigger surfaces as routes, not just tabs**, where they deserve full width: **Terminal** (node-pty in main, keep ON), **Database Workbench** (better-sqlite3/pg). Register in `router.tsx` + nav, flag-gated.
 6. **Remaining aios features flag-gated**: CRM/Contacts, MotionBoards Studio, Bridges, Plugins/Skills, Voice — present but OFF in v1.
