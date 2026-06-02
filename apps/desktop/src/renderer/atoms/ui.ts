@@ -1,5 +1,6 @@
 import { atom } from "jotai"
 import { atomFamily, atomWithStorage } from "jotai/utils"
+import { fireflySurfacePreferencesAtom } from "./preferences"
 import type { FileDiff } from "../lib/types"
 
 export const commandPaletteOpenAtom = atom(false)
@@ -18,13 +19,20 @@ export const viewedSessionIdAtom = atom<string | null>(null)
 // ============================================================
 
 /** Available tab IDs for the session side panel */
-export type SidePanelTabId = "review" | "browser"
+export type SidePanelTabId = "review" | "browser" | "notes" | "pulse" | "memory"
 
 /** Whether the session side panel is open (resets to closed on app start) */
-export const sidePanelOpenAtom = atom(false)
+export const sidePanelOpenAtom = atomWithStorage<boolean>("palot:side-panel-open", false)
 
 /** Which tab is active in the side panel */
-export const sidePanelActiveTabAtom = atom<SidePanelTabId>("review")
+export const sidePanelActiveTabAtom = atom<SidePanelTabId>((get) => get(fireflySurfacePreferencesAtom).lastSidePanelTab)
+
+export const setSidePanelActiveTabAtom = atom(null, (get, set, tab: SidePanelTabId) => {
+	set(fireflySurfacePreferencesAtom, {
+		...get(fireflySurfacePreferencesAtom),
+		lastSidePanelTab: tab,
+	})
+})
 
 /** @deprecated Use sidePanelOpenAtom + sidePanelActiveTabAtom instead */
 export const reviewPanelOpenAtom = sidePanelOpenAtom
@@ -44,7 +52,7 @@ export const reviewPanelSelectedFileAtom = atom<string | null>(null)
  */
 export const viewFileInDiffPanelAtom = atom(null, (_get, set, filePath: string) => {
 	set(sidePanelOpenAtom, true)
-	set(sidePanelActiveTabAtom, "review" as SidePanelTabId)
+	set(setSidePanelActiveTabAtom, "review")
 	set(reviewPanelSelectedFileAtom, filePath)
 })
 

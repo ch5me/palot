@@ -16,6 +16,10 @@ export interface PersistedModelRef {
 	agent?: string
 }
 
+export interface FireflySurfacePreferences {
+	lastSidePanelTab: "review" | "browser" | "notes" | "pulse" | "memory"
+}
+
 // ============================================================
 // One-time migration from Zustand persist to Jotai atomWithStorage
 // ============================================================
@@ -102,6 +106,11 @@ export const projectModelsAtom = atomWithStorage<Record<string, PersistedModelRe
 export const automationsBannerDismissedAtom = atomWithStorage<boolean>(
 	"palot:automationsBannerDismissed",
 	false,
+)
+
+export const fireflySurfacePreferencesAtom = atomWithStorage<FireflySurfacePreferences>(
+	"palot:firefly-surface-preferences",
+	{ lastSidePanelTab: "review" },
 )
 
 // ============================================================

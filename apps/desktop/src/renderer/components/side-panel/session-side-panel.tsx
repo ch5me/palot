@@ -1,9 +1,14 @@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@ch5me/palot-ui/components/tabs"
 import { cn } from "@ch5me/palot-ui/lib/utils"
-import { useAtom } from "jotai"
+import { useAtom, useSetAtom } from "jotai"
 import { XIcon } from "lucide-react"
 import { useCallback, useMemo } from "react"
-import { sidePanelActiveTabAtom, sidePanelOpenAtom, type SidePanelTabId } from "../../atoms/ui"
+import {
+	sidePanelActiveTabAtom,
+	sidePanelOpenAtom,
+	setSidePanelActiveTabAtom,
+	type SidePanelTabId,
+} from "../../atoms/ui"
 import type { Agent } from "../../lib/types"
 import type { SidePanelTabDef } from "./side-panel-tabs"
 
@@ -13,12 +18,12 @@ interface SessionSidePanelProps {
 	className?: string
 }
 
-export function SessionSidePanel({ agent, tabs, className }: SessionSidePanelProps) {
-	const [activeTab, setActiveTab] = useAtom(sidePanelActiveTabAtom)
+export function SessionSidePanel({ agent: _agent, tabs, className }: SessionSidePanelProps) {
+	const [activeTab] = useAtom(sidePanelActiveTabAtom)
+	const setActiveTab = useSetAtom(setSidePanelActiveTabAtom)
 	const [, setOpen] = useAtom(sidePanelOpenAtom)
 
-	const ctx = useMemo(() => ({ agent }), [agent])
-	const availableTabs = useMemo(() => tabs.filter((t) => t.isAvailable(ctx)), [tabs, ctx])
+	const availableTabs = useMemo(() => tabs.filter((t) => t.availability.available), [tabs])
 	const showTabStrip = availableTabs.length > 1
 	const currentTab = availableTabs.find((t) => t.id === activeTab) ?? availableTabs[0]
 
@@ -39,12 +44,12 @@ export function SessionSidePanel({ agent, tabs, className }: SessionSidePanelPro
 						<div className="flex w-10 shrink-0 flex-col items-center gap-1 border-r border-border py-2">
 							<TabsList variant="line" className="h-auto w-full flex-col gap-0.5">
 								{availableTabs.map((tab) => (
-								<TabsTrigger
-									key={tab.id}
-									value={tab.id}
-									className="w-full justify-center px-0"
-									title={tab.label}
-								>
+									<TabsTrigger
+										key={tab.id}
+										value={tab.id}
+										className="w-full justify-center px-0"
+										title={tab.label}
+									>
 										{tab.icon}
 									</TabsTrigger>
 								))}
@@ -61,7 +66,7 @@ export function SessionSidePanel({ agent, tabs, className }: SessionSidePanelPro
 						<div className="flex-1 overflow-hidden">
 							{availableTabs.map((tab) => (
 								<TabsContent key={tab.id} value={tab.id} className="h-full overflow-hidden">
-									{tab.render(ctx)}
+									{tab.render()}
 								</TabsContent>
 							))}
 						</div>
@@ -78,7 +83,7 @@ export function SessionSidePanel({ agent, tabs, className }: SessionSidePanelPro
 							<XIcon className="size-3.5" />
 						</button>
 					</div>
-					<div className="min-h-0 flex-1 overflow-hidden">{currentTab.render(ctx)}</div>
+					<div className="min-h-0 flex-1 overflow-hidden">{currentTab.render()}</div>
 				</div>
 			)}
 		</div>

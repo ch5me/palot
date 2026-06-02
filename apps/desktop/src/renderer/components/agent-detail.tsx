@@ -21,14 +21,23 @@ import {
 	ExternalLinkIcon,
 	FileDiffIcon,
 	GitForkIcon,
-	GlobeIcon,
 	PencilIcon,
 	TerminalIcon,
 	XIcon,
 } from "lucide-react"
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import type { OpenInTarget } from "../../preload/api"
-import { browserPanelEnabledAtom } from "../atoms/feature-flags"
+import {
+	browserPanelEnabledAtom,
+	memorySurfaceEnabledAtom,
+	notesSurfaceEnabledAtom,
+	pulseSurfaceEnabledAtom,
+	reviewSurfaceEnabledAtom,
+} from "../atoms/feature-flags"
+import {
+	getFireflySurfaceTabs,
+	type FireflySurfaceContext,
+} from "../firefly-surface-registry"
 import {
 	reviewPanelSettingsAtom,
 	sessionDiffStatsFamily,
@@ -49,10 +58,8 @@ import { fetchOpenInTargets, isElectron, openInTarget } from "../services/backen
 import { useSetAppBarContent } from "./app-bar-context"
 import { ChatView } from "./chat"
 import { PalotWordmark } from "./palot-wordmark"
-import { BrowserPanel } from "./side-panel/browser-panel"
 import { SessionSidePanel } from "./side-panel/session-side-panel"
 import type { SidePanelTabDef } from "./side-panel/side-panel-tabs"
-import { ReviewPanel } from "./review/review-panel"
 import { SessionMetricsBar } from "./session-metrics-bar"
 import { WorktreeActions } from "./worktree-actions"
 
@@ -223,6 +230,7 @@ export function AgentDetail({
 				onRename={onRename}
 				projectSlug={projectSlug}
 				sidePanelOpen={sidePanelOpen}
+				sidePanelActiveTab={sidePanelActiveTab}
 				onToggleSidePanel={() => setSidePanelOpen((prev) => !prev)}
 			/>,
 		)
@@ -243,30 +251,41 @@ export function AgentDetail({
 	])
 
 	const browserPanelEnabled = useAtomValue(browserPanelEnabledAtom)
+	const reviewSurfaceEnabled = useAtomValue(reviewSurfaceEnabledAtom)
+	const notesSurfaceEnabled = useAtomValue(notesSurfaceEnabledAtom)
+	const pulseSurfaceEnabled = useAtomValue(pulseSurfaceEnabledAtom)
+	const memorySurfaceEnabled = useAtomValue(memorySurfaceEnabledAtom)
 
-	const sidePanelTabs: SidePanelTabDef[] = useMemo(
-		() => [
-			{
-				id: "review",
-				label: "Changes",
-				icon: <FileDiffIcon className="size-4" />,
-				isAvailable: () => diffStats.fileCount > 0,
-				render: () => <ReviewPanel sessionId={agent.sessionId} directory={agent.directory} />,
+	const sidePanelTabs: SidePanelTabDef[] = useMemo(() => {
+		const ctx: FireflySurfaceContext = {
+			agent,
+			diffStats,
+			flags: {
+				browserPanelEnabled,
+				review: reviewSurfaceEnabled,
+				notes: notesSurfaceEnabled,
+				pulse: pulseSurfaceEnabled,
+				memory: memorySurfaceEnabled,
 			},
-			...(browserPanelEnabled
-				? [
-						{
-							id: "browser" as const,
-							label: "Browser",
-							icon: <GlobeIcon className="size-4" />,
-							isAvailable: () => true,
-							render: () => <BrowserPanel agent={agent} />,
-						},
-					]
-				: []),
-		],
-		[agent, diffStats.fileCount, browserPanelEnabled],
-	)
+			chatTurnCount: chatTurns.length,
+		}
+		return getFireflySurfaceTabs(ctx)
+	}, [
+		agent,
+		diffStats,
+		browserPanelEnabled,
+		reviewSurfaceEnabled,
+		notesSurfaceEnabled,
+		pulseSurfaceEnabled,
+		memorySurfaceEnabled,
+		chatTurns.length,
+	])
+
+	useEffect(() => {
+		if (sidePanelTabs.length === 0 || !sidePanelTabs.some((tab) => tab.id === sidePanelActiveTab)) {
+			setSidePanelOpen(false)
+		}
+	}, [sidePanelActiveTab, sidePanelTabs, setSidePanelOpen])
 
 	const chatContent = (
 		<>
@@ -362,6 +381,7 @@ function SessionAppBarContent({
 	onRename,
 	projectSlug,
 	sidePanelOpen,
+	sidePanelActiveTab,
 	onToggleSidePanel,
 }: {
 	agent: Agent
@@ -375,6 +395,7 @@ function SessionAppBarContent({
 	onRename?: (agent: Agent, title: string) => Promise<void>
 	projectSlug?: string
 	sidePanelOpen: boolean
+	sidePanelActiveTab: SidePanelTabDef["id"]
 	onToggleSidePanel: () => void
 }) {
 	const navigate = useNavigate()
@@ -472,8 +493,12 @@ function SessionAppBarContent({
 							/>
 						}
 					>
-						<FileDiffIcon className="size-3.5" />
-						{diffStats.fileCount > 0 && (
+					<FileDiffIcon className="size-3.5" />
+					{sidePanelOpen && sidePanelActiveTab !== "review" && (
+						<span className="text-[11px] text-muted-foreground">{sidePanelActiveTab}</span>
+					)}
+					{diffStats.fileCount > 0 && (
+
 							<span className="flex items-center gap-1 text-[11px]">
 								<span className="text-green-500">+{diffStats.additions}</span>
 								<span className="text-red-500">-{diffStats.deletions}</span>
@@ -481,7 +506,7 @@ function SessionAppBarContent({
 						)}
 					</TooltipTrigger>
 					<TooltipContent>
-						{sidePanelOpen ? "Hide changes panel" : "Show changes panel"} (Cmd+Shift+D)
+						{sidePanelOpen ? "Hide side panel" : "Show side panel"} (Cmd+Shift+D)
 					</TooltipContent>
 				</Tooltip>
 

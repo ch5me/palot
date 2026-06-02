@@ -265,6 +265,7 @@ Palot is in early alpha and we welcome contributions! Here's how to get started:
 6. Open a pull request
 
 Please see the [AGENTS.md](AGENTS.md) file for code style conventions, naming patterns, and important architectural notes.
+For Firefly desktop surface work, also see [docs/firefly-surface-playbook.md](docs/firefly-surface-playbook.md).
 
 <br>
 

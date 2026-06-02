@@ -12,15 +12,17 @@ import { useNavigate, useParams } from "@tanstack/react-router"
 import { useAtom, useAtomValue, useSetAtom } from "jotai"
 import {
 	BotIcon,
+	BookTextIcon,
 	CheckIcon,
 	CloudIcon,
 	ContainerIcon,
+	DatabaseIcon,
 	EyeIcon,
 	EyeOffIcon,
+	FileDiffIcon,
 	FilmIcon,
 	GitBranchIcon,
 	GitForkIcon,
-	GlobeIcon,
 	MonitorIcon,
 	MoonIcon,
 	PaletteIcon,
@@ -38,9 +40,18 @@ import { sessionMetricsFamily } from "../atoms/derived/session-metrics"
 import {
 	automationsEnabledAtom,
 	browserPanelEnabledAtom,
+	memorySurfaceEnabledAtom,
+	notesSurfaceEnabledAtom,
+	pulseSurfaceEnabledAtom,
+	reviewSurfaceEnabledAtom,
 	toggleAutomationsAtom,
 	toggleBrowserPanelAtom,
+	toggleMemorySurfaceAtom,
+	toggleNotesSurfaceAtom,
+	togglePulseSurfaceAtom,
+	toggleReviewSurfaceAtom,
 } from "../atoms/feature-flags"
+import { getFireflySurfaceTabs, type FireflySurfaceContext } from "../firefly-surface-registry"
 import { isMockModeAtom, toggleMockModeAtom } from "../atoms/mock-mode"
 import { opaqueWindowsAtom } from "../atoms/preferences"
 import { isReactScanAtom, toggleReactScanAtom } from "../atoms/react-scan"
@@ -98,7 +109,15 @@ export function CommandPalette({ open, onOpenChange, agents, onForkSession }: Co
 	const automationsEnabled = useAtomValue(automationsEnabledAtom)
 	const toggleAutomations = useSetAtom(toggleAutomationsAtom)
 	const browserPanelEnabled = useAtomValue(browserPanelEnabledAtom)
+	const reviewSurfaceEnabled = useAtomValue(reviewSurfaceEnabledAtom)
+	const notesSurfaceEnabled = useAtomValue(notesSurfaceEnabledAtom)
+	const pulseSurfaceEnabled = useAtomValue(pulseSurfaceEnabledAtom)
+	const memorySurfaceEnabled = useAtomValue(memorySurfaceEnabledAtom)
 	const toggleBrowserPanel = useSetAtom(toggleBrowserPanelAtom)
+	const toggleReviewSurface = useSetAtom(toggleReviewSurfaceAtom)
+	const toggleNotesSurface = useSetAtom(toggleNotesSurfaceAtom)
+	const togglePulseSurface = useSetAtom(togglePulseSurfaceAtom)
+	const toggleMemorySurface = useSetAtom(toggleMemorySurfaceAtom)
 	const [reloading, setReloading] = useState(false)
 
 	const isElectron = typeof window !== "undefined" && "palot" in window
@@ -147,6 +166,38 @@ export function CommandPalette({ open, onOpenChange, agents, onForkSession }: Co
 	const activeSessions = useMemo(
 		() => (open ? agents.filter((a) => a.status === "running" || a.status === "waiting") : []),
 		[agents, open],
+	)
+
+	const surfaceContext = useMemo<FireflySurfaceContext | null>(() => {
+		if (!activeAgent) return null
+		return {
+			agent: activeAgent,
+			diffStats: {
+				additions: 0,
+				deletions: 0,
+				fileCount: 1,
+			},
+			flags: {
+				browserPanelEnabled,
+				review: reviewSurfaceEnabled,
+				notes: notesSurfaceEnabled,
+				pulse: pulseSurfaceEnabled,
+				memory: memorySurfaceEnabled,
+			},
+			chatTurnCount: 1,
+		}
+	}, [
+		activeAgent,
+		browserPanelEnabled,
+		reviewSurfaceEnabled,
+		notesSurfaceEnabled,
+		pulseSurfaceEnabled,
+		memorySurfaceEnabled,
+	])
+
+	const availableSurfaceTabs = useMemo(
+		() => (surfaceContext ? getFireflySurfaceTabs(surfaceContext) : []),
+		[surfaceContext],
 	)
 
 	// Whether session-level commands should be shown
@@ -294,17 +345,83 @@ export function CommandPalette({ open, onOpenChange, agents, onForkSession }: Co
 						{automationsEnabled && <CheckIcon className="ml-auto h-4 w-4" />}
 					</CommandItem>
 					<CommandItem
+						keywords={["review", "changes", "diff", "side panel"]}
+						onSelect={() => {
+							toggleReviewSurface()
+							onOpenChange(false)
+						}}
+					>
+						<FileDiffIcon />
+						<span>{reviewSurfaceEnabled ? "Disable Changes Surface" : "Enable Changes Surface"}</span>
+						{reviewSurfaceEnabled && <CheckIcon className="ml-auto h-4 w-4" />}
+					</CommandItem>
+					<CommandItem
 						keywords={["browser", "web", "webview", "inline browser", "panel"]}
 						onSelect={() => {
 							toggleBrowserPanel()
 							onOpenChange(false)
 						}}
 					>
-						<GlobeIcon />
+						{availableSurfaceTabs.find((surface) => surface.id === "browser")?.icon ?? <MonitorIcon />}
 						<span>{browserPanelEnabled ? "Disable Browser Panel" : "Enable Browser Panel"}</span>
 						{browserPanelEnabled && <CheckIcon className="ml-auto h-4 w-4" />}
 					</CommandItem>
+					<CommandItem
+						keywords={["notes", "surface", "side panel"]}
+						onSelect={() => {
+							toggleNotesSurface()
+							onOpenChange(false)
+						}}
+					>
+						<BookTextIcon />
+						<span>{notesSurfaceEnabled ? "Disable Notes Surface" : "Enable Notes Surface"}</span>
+						{notesSurfaceEnabled && <CheckIcon className="ml-auto h-4 w-4" />}
+					</CommandItem>
+					<CommandItem
+						keywords={["pulse", "surface", "heartbeat", "telemetry"]}
+						onSelect={() => {
+							togglePulseSurface()
+							onOpenChange(false)
+						}}
+					>
+						<SparklesIcon />
+						<span>{pulseSurfaceEnabled ? "Disable Pulse Surface" : "Enable Pulse Surface"}</span>
+						{pulseSurfaceEnabled && <CheckIcon className="ml-auto h-4 w-4" />}
+					</CommandItem>
+					<CommandItem
+						keywords={["memory", "surface", "context"]}
+						onSelect={() => {
+							toggleMemorySurface()
+							onOpenChange(false)
+						}}
+					>
+						<DatabaseIcon />
+						<span>{memorySurfaceEnabled ? "Disable Memory Surface" : "Enable Memory Surface"}</span>
+						{memorySurfaceEnabled && <CheckIcon className="ml-auto h-4 w-4" />}
+					</CommandItem>
 				</CommandGroup>
+				{hasSession && availableSurfaceTabs.length > 0 && (
+					<>
+						<CommandSeparator />
+						<CommandGroup heading="Surfaces">
+							{availableSurfaceTabs.map((surface) => (
+								<CommandItem
+									key={surface.id}
+									onSelect={() => {
+										onOpenChange(false)
+									}}
+									disabled={!surface.availability.available}
+								>
+									{surface.icon}
+									<span>{surface.title}</span>
+									{!surface.availability.available && "reason" in surface.availability && (
+										<span className="text-xs text-muted-foreground">{surface.availability.reason}</span>
+									)}
+								</CommandItem>
+							))}
+						</CommandGroup>
+					</>
+				)}
 
 				<CommandSeparator />
 				<CommandGroup heading="Developer">
@@ -392,11 +509,6 @@ export function CommandPalette({ open, onOpenChange, agents, onForkSession }: Co
 	)
 }
 
-/**
- * Small leaf component that reads session metrics for display in the command palette.
- * Only subscribes to the individual session's metrics atom, so metrics are only
- * computed for sessions visible in the command palette (and only when it's open).
- */
 function SessionMetricsLabel({ sessionId, project }: { sessionId: string; project: string }) {
 	const metrics = useAtomValue(sessionMetricsFamily(sessionId))
 	return (
