@@ -20,6 +20,7 @@ import {
 	FilmIcon,
 	GitBranchIcon,
 	GitForkIcon,
+	GlobeIcon,
 	MonitorIcon,
 	MoonIcon,
 	PaletteIcon,
@@ -34,7 +35,12 @@ import {
 } from "lucide-react"
 import { useCallback, useEffect, useMemo, useState } from "react"
 import { sessionMetricsFamily } from "../atoms/derived/session-metrics"
-import { automationsEnabledAtom, toggleAutomationsAtom } from "../atoms/feature-flags"
+import {
+	automationsEnabledAtom,
+	browserPanelEnabledAtom,
+	toggleAutomationsAtom,
+	toggleBrowserPanelAtom,
+} from "../atoms/feature-flags"
 import { isMockModeAtom, toggleMockModeAtom } from "../atoms/mock-mode"
 import { opaqueWindowsAtom } from "../atoms/preferences"
 import { isReactScanAtom, toggleReactScanAtom } from "../atoms/react-scan"
@@ -91,6 +97,8 @@ export function CommandPalette({ open, onOpenChange, agents, onForkSession }: Co
 	const toggleReactScan = useSetAtom(toggleReactScanAtom)
 	const automationsEnabled = useAtomValue(automationsEnabledAtom)
 	const toggleAutomations = useSetAtom(toggleAutomationsAtom)
+	const browserPanelEnabled = useAtomValue(browserPanelEnabledAtom)
+	const toggleBrowserPanel = useSetAtom(toggleBrowserPanelAtom)
 	const [reloading, setReloading] = useState(false)
 
 	const isElectron = typeof window !== "undefined" && "palot" in window
@@ -284,6 +292,17 @@ export function CommandPalette({ open, onOpenChange, agents, onForkSession }: Co
 						<BotIcon />
 						<span>{automationsEnabled ? "Disable Automations" : "Enable Automations"}</span>
 						{automationsEnabled && <CheckIcon className="ml-auto h-4 w-4" />}
+					</CommandItem>
+					<CommandItem
+						keywords={["browser", "web", "webview", "inline browser", "panel"]}
+						onSelect={() => {
+							toggleBrowserPanel()
+							onOpenChange(false)
+						}}
+					>
+						<GlobeIcon />
+						<span>{browserPanelEnabled ? "Disable Browser Panel" : "Enable Browser Panel"}</span>
+						{browserPanelEnabled && <CheckIcon className="ml-auto h-4 w-4" />}
 					</CommandItem>
 				</CommandGroup>
 

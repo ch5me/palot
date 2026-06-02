@@ -28,6 +28,7 @@ import {
 } from "lucide-react"
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import type { OpenInTarget } from "../../preload/api"
+import { browserPanelEnabledAtom } from "../atoms/feature-flags"
 import {
 	reviewPanelSettingsAtom,
 	sessionDiffStatsFamily,
@@ -241,6 +242,8 @@ export function AgentDetail({
 		setSidePanelOpen,
 	])
 
+	const browserPanelEnabled = useAtomValue(browserPanelEnabledAtom)
+
 	const sidePanelTabs: SidePanelTabDef[] = useMemo(
 		() => [
 			{
@@ -250,15 +253,19 @@ export function AgentDetail({
 				isAvailable: () => diffStats.fileCount > 0,
 				render: () => <ReviewPanel sessionId={agent.sessionId} directory={agent.directory} />,
 			},
-			{
-				id: "browser",
-				label: "Browser",
-				icon: <GlobeIcon className="size-4" />,
-				isAvailable: () => true,
-				render: () => <BrowserPanel agent={agent} />,
-			},
+			...(browserPanelEnabled
+				? [
+						{
+							id: "browser" as const,
+							label: "Browser",
+							icon: <GlobeIcon className="size-4" />,
+							isAvailable: () => true,
+							render: () => <BrowserPanel agent={agent} />,
+						},
+					]
+				: []),
 		],
-		[agent, diffStats.fileCount],
+		[agent, diffStats.fileCount, browserPanelEnabled],
 	)
 
 	const chatContent = (
