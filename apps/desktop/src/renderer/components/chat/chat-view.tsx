@@ -426,8 +426,7 @@ interface ChatViewProps {
 	onForkFromTurn?: (messageId?: string) => Promise<void>
 	/** Delete a specific part from a message (for error recovery) */
 	onDeletePart?: (sessionId: string, messageId: string, partId: string) => Promise<void>
-	/** Whether the review panel is open (removes max-w constraint) */
-	reviewPanelOpen?: boolean
+	sidePanelOpen?: boolean
 }
 
 /**
@@ -465,7 +464,7 @@ export function ChatView({
 	onRevertToMessage,
 	onForkFromTurn,
 	onDeletePart,
-	reviewPanelOpen,
+	sidePanelOpen,
 }: ChatViewProps) {
 	const isWorking = agent.status === "running"
 
@@ -607,7 +606,7 @@ export function ChatView({
 	}, [canUndo, canRedo, onUndo, onRedo])
 
 	// Width constraint class: remove max-w when review panel is open
-	const contentWidthClass = reviewPanelOpen
+	const contentWidthClass = sidePanelOpen
 		? "mx-auto w-full min-w-0"
 		: "mx-auto w-full min-w-0 max-w-4xl"
 
@@ -723,7 +722,7 @@ export function ChatView({
 					onRedo={onRedo}
 					isReverted={isReverted}
 					scrollRef={scrollRef}
-					reviewPanelOpen={reviewPanelOpen}
+					sidePanelOpen={sidePanelOpen}
 					onForkFromTurn={onForkFromTurn}
 				/>
 			)}
@@ -760,7 +759,7 @@ interface ChatInputSectionProps {
 	onRedo?: () => Promise<void>
 	isReverted?: boolean
 	scrollRef: React.RefObject<ScrollHandle | null>
-	reviewPanelOpen?: boolean
+	sidePanelOpen?: boolean
 	/** Fork the current session (full fork, no cutoff) */
 	onForkFromTurn?: (messageId?: string) => Promise<void>
 }
@@ -785,7 +784,7 @@ function ChatInputSection({
 	onRedo,
 	isReverted,
 	scrollRef,
-	reviewPanelOpen,
+	sidePanelOpen,
 	onForkFromTurn,
 }: ChatInputSectionProps) {
 	const [sending, setSending] = useState(false)
@@ -1285,7 +1284,7 @@ function ChatInputSection({
 	)
 
 	// Width constraint class: remove max-w when review panel is open
-	const inputWidthClass = reviewPanelOpen
+	const inputWidthClass = sidePanelOpen
 		? "mx-auto w-full min-w-0"
 		: "mx-auto w-full min-w-0 max-w-4xl"
 

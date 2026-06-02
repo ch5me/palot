@@ -14,11 +14,20 @@ export const leftPanelOpenAtom = atom(true)
 export const viewedSessionIdAtom = atom<string | null>(null)
 
 // ============================================================
-// Review Panel State
+// Side Panel State
 // ============================================================
 
-/** Whether the review panel is open (resets to closed on app start) */
-export const reviewPanelOpenAtom = atom(false)
+/** Available tab IDs for the session side panel */
+export type SidePanelTabId = "review" | "browser"
+
+/** Whether the session side panel is open (resets to closed on app start) */
+export const sidePanelOpenAtom = atom(false)
+
+/** Which tab is active in the side panel */
+export const sidePanelActiveTabAtom = atom<SidePanelTabId>("review")
+
+/** @deprecated Use sidePanelOpenAtom + sidePanelActiveTabAtom instead */
+export const reviewPanelOpenAtom = sidePanelOpenAtom
 
 /**
  * File path to highlight in the review panel.
@@ -34,7 +43,8 @@ export const reviewPanelSelectedFileAtom = atom<string | null>(null)
  *        `viewDiff("src/foo.ts")`
  */
 export const viewFileInDiffPanelAtom = atom(null, (_get, set, filePath: string) => {
-	set(reviewPanelOpenAtom, true)
+	set(sidePanelOpenAtom, true)
+	set(sidePanelActiveTabAtom, "review" as SidePanelTabId)
 	set(reviewPanelSelectedFileAtom, filePath)
 })
 

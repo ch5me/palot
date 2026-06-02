@@ -28,7 +28,6 @@ import {
 	MinusIcon,
 	PlusIcon,
 	RowsIcon,
-	XIcon,
 } from "lucide-react"
 import {
 	memo,
@@ -42,7 +41,6 @@ import {
 } from "react"
 import {
 	type DiffStyle,
-	reviewPanelOpenAtom,
 	reviewPanelSelectedFileAtom,
 	reviewPanelSettingsAtom,
 } from "../../atoms/ui"
@@ -173,7 +171,6 @@ export const ReviewPanel = memo(function ReviewPanel({
 }: ReviewPanelProps) {
 	const { diffs, stats, loading } = useSessionDiff(sessionId, directory)
 	const [settings, setSettings] = useAtom(reviewPanelSettingsAtom)
-	const setOpen = useAtom(reviewPanelOpenAtom)[1]
 	const [selectedFile, setSelectedFile] = useState<string | null>(null)
 	const { comments, addComment, removeComment, clearComments } = useDiffComments(sessionId)
 
@@ -254,7 +251,6 @@ export const ReviewPanel = memo(function ReviewPanel({
 	}, [sessionId])
 
 	// --- Handlers ---
-	const handleClose = useCallback(() => setOpen(false), [setOpen])
 	const handleToggleExpanded = useCallback(
 		() => setSettings((prev) => ({ ...prev, expanded: !prev.expanded })),
 		[setSettings],
@@ -339,14 +335,6 @@ export const ReviewPanel = memo(function ReviewPanel({
 						) : (
 							<MaximizeIcon className="size-3.5" />
 						)}
-					</button>
-					{/* Close */}
-					<button
-						type="button"
-						onClick={handleClose}
-						className="rounded-md p-1 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-					>
-						<XIcon className="size-3.5" />
 					</button>
 				</div>
 			</div>

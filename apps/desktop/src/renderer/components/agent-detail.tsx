@@ -21,13 +21,19 @@ import {
 	ExternalLinkIcon,
 	FileDiffIcon,
 	GitForkIcon,
+	GlobeIcon,
 	PencilIcon,
 	TerminalIcon,
 	XIcon,
 } from "lucide-react"
-import { useCallback, useEffect, useRef, useState } from "react"
+import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import type { OpenInTarget } from "../../preload/api"
-import { reviewPanelOpenAtom, reviewPanelSettingsAtom, sessionDiffStatsFamily } from "../atoms/ui"
+import {
+	reviewPanelSettingsAtom,
+	sessionDiffStatsFamily,
+	sidePanelActiveTabAtom,
+	sidePanelOpenAtom,
+} from "../atoms/ui"
 import type {
 	ConfigData,
 	ModelRef,
@@ -42,6 +48,9 @@ import { fetchOpenInTargets, isElectron, openInTarget } from "../services/backen
 import { useSetAppBarContent } from "./app-bar-context"
 import { ChatView } from "./chat"
 import { PalotWordmark } from "./palot-wordmark"
+import { BrowserPanel } from "./side-panel/browser-panel"
+import { SessionSidePanel } from "./side-panel/session-side-panel"
+import type { SidePanelTabDef } from "./side-panel/side-panel-tabs"
 import { ReviewPanel } from "./review/review-panel"
 import { SessionMetricsBar } from "./session-metrics-bar"
 import { WorktreeActions } from "./worktree-actions"
@@ -140,7 +149,8 @@ export function AgentDetail({
 	const [titleValue, setTitleValue] = useState(agent.name)
 	const titleInputRef = useRef<HTMLInputElement>(null)
 
-	const [reviewPanelOpen, setReviewPanelOpen] = useAtom(reviewPanelOpenAtom)
+	const [sidePanelOpen, setSidePanelOpen] = useAtom(sidePanelOpenAtom)
+	const [sidePanelActiveTab] = useAtom(sidePanelActiveTabAtom)
 	const [reviewSettings, setReviewSettings] = useAtom(reviewPanelSettingsAtom)
 
 	useEffect(() => {
@@ -148,7 +158,7 @@ export function AgentDetail({
 			if ((e.metaKey || e.ctrlKey) && e.shiftKey) {
 				if (e.key === "d" || e.key === "D") {
 					e.preventDefault()
-					setReviewPanelOpen((prev) => !prev)
+					setSidePanelOpen((prev) => !prev)
 				} else if (e.key === "f" || e.key === "F") {
 					e.preventDefault()
 					setReviewSettings((prev) => ({ ...prev, expanded: !prev.expanded }))
@@ -157,7 +167,7 @@ export function AgentDetail({
 		}
 		document.addEventListener("keydown", handleKeyDown)
 		return () => document.removeEventListener("keydown", handleKeyDown)
-	}, [setReviewPanelOpen, setReviewSettings])
+	}, [setSidePanelOpen, setReviewSettings])
 
 	// Close review panel when navigating to a session with no diffs
 	const prevSessionIdRef = useRef(agent.sessionId)
@@ -165,11 +175,11 @@ export function AgentDetail({
 	useEffect(() => {
 		if (prevSessionIdRef.current !== agent.sessionId) {
 			prevSessionIdRef.current = agent.sessionId
-			if (diffStats.fileCount === 0) {
-				setReviewPanelOpen(false)
+			if (diffStats.fileCount === 0 && sidePanelActiveTab === "review") {
+				setSidePanelOpen(false)
 			}
 		}
-	}, [agent.sessionId, diffStats.fileCount, setReviewPanelOpen])
+	}, [agent.sessionId, diffStats.fileCount, setSidePanelOpen, sidePanelActiveTab])
 
 	const startEditingTitle = useCallback(() => {
 		if (!onRename) return
@@ -211,12 +221,11 @@ export function AgentDetail({
 				onCancelEditing={cancelEditingTitle}
 				onRename={onRename}
 				projectSlug={projectSlug}
-				reviewPanelOpen={reviewPanelOpen}
-				onToggleReviewPanel={() => setReviewPanelOpen((prev) => !prev)}
+				sidePanelOpen={sidePanelOpen}
+				onToggleSidePanel={() => setSidePanelOpen((prev) => !prev)}
 			/>,
 		)
 
-		// Clean up when unmounting
 		return () => setAppBarContent(null)
 	}, [
 		agent,
@@ -228,9 +237,29 @@ export function AgentDetail({
 		onRename,
 		projectSlug,
 		setAppBarContent,
-		reviewPanelOpen,
-		setReviewPanelOpen,
+		sidePanelOpen,
+		setSidePanelOpen,
 	])
+
+	const sidePanelTabs: SidePanelTabDef[] = useMemo(
+		() => [
+			{
+				id: "review",
+				label: "Changes",
+				icon: <FileDiffIcon className="size-4" />,
+				isAvailable: () => diffStats.fileCount > 0,
+				render: () => <ReviewPanel sessionId={agent.sessionId} directory={agent.directory} />,
+			},
+			{
+				id: "browser",
+				label: "Browser",
+				icon: <GlobeIcon className="size-4" />,
+				isAvailable: () => true,
+				render: () => <BrowserPanel agent={agent} />,
+			},
+		],
+		[agent, diffStats.fileCount],
+	)
 
 	const chatContent = (
 		<>
@@ -283,22 +312,22 @@ export function AgentDetail({
 					onRevertToMessage={onRevertToMessage}
 					onForkFromTurn={onForkFromTurn}
 					onDeletePart={onDeletePart}
-					reviewPanelOpen={reviewPanelOpen}
+					sidePanelOpen={sidePanelOpen}
 				/>
 			</div>
 		</>
 	)
 
-	if (reviewPanelOpen) {
+	if (sidePanelOpen) {
 		return (
 			<ResizablePanes id="palot-workspace-center">
 				<Pane defaultSize="60%" minSize="30%">
 					<div className="min-h-0 min-w-0 h-full overflow-hidden flex flex-col">{chatContent}</div>
 				</Pane>
-				<PaneSeam aria-label="Resize review panel" />
+				<PaneSeam aria-label="Resize side panel" />
 				<Pane defaultSize={reviewSettings.expanded ? "100%" : "40%"} minSize="20%">
 					<div className="min-h-0 min-w-0 h-full overflow-hidden border-l border-border">
-						<ReviewPanel sessionId={agent.sessionId} directory={agent.directory} />
+						<SessionSidePanel agent={agent} tabs={sidePanelTabs} />
 					</div>
 				</Pane>
 			</ResizablePanes>
@@ -325,8 +354,8 @@ function SessionAppBarContent({
 	onCancelEditing,
 	onRename,
 	projectSlug,
-	reviewPanelOpen,
-	onToggleReviewPanel,
+	sidePanelOpen,
+	onToggleSidePanel,
 }: {
 	agent: Agent
 	isEditingTitle: boolean
@@ -338,8 +367,8 @@ function SessionAppBarContent({
 	onCancelEditing: () => void
 	onRename?: (agent: Agent, title: string) => Promise<void>
 	projectSlug?: string
-	reviewPanelOpen: boolean
-	onToggleReviewPanel: () => void
+	sidePanelOpen: boolean
+	onToggleSidePanel: () => void
 }) {
 	const navigate = useNavigate()
 	const diffStats = useAtomValue(sessionDiffStatsFamily(agent.sessionId))
@@ -421,16 +450,15 @@ function SessionAppBarContent({
 
 				{agent.worktreePath && <div className="hidden h-3 w-px shrink-0 bg-border/60 md:block" />}
 
-				{/* Review panel toggle with change stats badge */}
 				<Tooltip>
 					<TooltipTrigger
 						render={
 							<button
 								type="button"
-								onClick={onToggleReviewPanel}
+								onClick={onToggleSidePanel}
 								className={cn(
 									"flex items-center gap-1.5 rounded-md px-2 py-1 text-xs transition-colors",
-									reviewPanelOpen
+									sidePanelOpen
 										? "bg-muted text-foreground"
 										: "text-muted-foreground hover:bg-muted hover:text-foreground",
 								)}
@@ -446,7 +474,7 @@ function SessionAppBarContent({
 						)}
 					</TooltipTrigger>
 					<TooltipContent>
-						{reviewPanelOpen ? "Hide changes panel" : "Show changes panel"} (Cmd+Shift+D)
+						{sidePanelOpen ? "Hide changes panel" : "Show changes panel"} (Cmd+Shift+D)
 					</TooltipContent>
 				</Tooltip>
 
