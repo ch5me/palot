@@ -22,7 +22,10 @@ function formatRelativeTime(createdAt: number): string {
 	if (diffMinutes < 60) return `${diffMinutes}m ago`
 
 	const diffHours = Math.floor(diffMinutes / 60)
-	return `${diffHours}h ago`
+	if (diffHours < 24) return `${diffHours}h ago`
+
+	const diffDays = Math.floor(diffHours / 24)
+	return `${diffDays}d ago`
 }
 
 export function MemoryPanel({ agent, className }: MemoryPanelProps) {

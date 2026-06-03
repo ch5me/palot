@@ -24,12 +24,12 @@ export function NotesPanel({ agent, className }: NotesPanelProps) {
 		return `${lines.length} note${lines.length === 1 ? "" : "s"} captured for ${agent.project}.`
 	}, [agent.project, notes])
 
-	const handleSendToAI = async () => {
+	const handleCopyToClipboard = async () => {
 		if (!notes.trim()) return
 		setCopying(true)
 		try {
 			await navigator.clipboard.writeText(notes)
-			toast.success("Notes copied to clipboard — paste into chat with Cmd+V")
+			toast.success("Notes copied to clipboard")
 		} catch {
 			toast.error("Failed to copy notes to clipboard")
 		} finally {
@@ -59,10 +59,10 @@ export function NotesPanel({ agent, className }: NotesPanelProps) {
 							type="button"
 							variant="outline"
 							size="sm"
-							onClick={handleSendToAI}
+							onClick={handleCopyToClipboard}
 							disabled={!notes.trim() || copying}
 						>
-							Send to AI
+							Copy to clipboard
 						</Button>
 						<Button type="button" variant="outline" size="sm" onClick={clearDraft}>Clear</Button>
 					</div>
