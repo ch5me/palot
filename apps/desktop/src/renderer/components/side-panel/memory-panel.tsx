@@ -1,6 +1,6 @@
 import { PinIcon, SearchIcon, SparklesIcon, XIcon } from "lucide-react"
 import { useAtomValue, useSetAtom } from "jotai"
-import { useMemo, useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 import {
 	addPinnedFactAtom,
 	pinnedFactsAtom,
@@ -31,9 +31,15 @@ function formatRelativeTime(createdAt: number): string {
 export function MemoryPanel({ agent, className }: MemoryPanelProps) {
 	const [draft, setDraft] = useState("")
 	const [searchQuery, setSearchQuery] = useState("")
+	const [, setTick] = useState(0)
 	const factsByProject = useAtomValue(pinnedFactsAtom)
 	const addPinnedFact = useSetAtom(addPinnedFactAtom)
 	const removePinnedFact = useSetAtom(removePinnedFactAtom)
+
+	useEffect(() => {
+		const id = setInterval(() => setTick((t) => t + 1), 60_000)
+		return () => clearInterval(id)
+	}, [])
 	const projectFacts = useMemo(() => factsByProject[agent.project] ?? [], [agent.project, factsByProject])
 	const filteredFacts = useMemo(() => {
 		if (!searchQuery.trim()) return projectFacts
