@@ -94,7 +94,7 @@ export const FIREFLY_SURFACE_REGISTRY: FireflySurfaceDef[] = [
 			key: "browserPanelEnabled",
 			atom: browserPanelEnabledAtom,
 		},
-		defaultOn: true,
+		defaultOn: false,
 		availability: (ctx) =>
 			ctx.flags.browserPanelEnabled
 				? { available: true }

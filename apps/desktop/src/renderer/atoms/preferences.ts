@@ -20,6 +20,12 @@ export interface FireflySurfacePreferences {
 	lastSidePanelTab: "review" | "browser" | "notes" | "pulse" | "memory"
 }
 
+export interface PinnedFact {
+	id: string
+	text: string
+	createdAt: number
+}
+
 // ============================================================
 // One-time migration from Zustand persist to Jotai atomWithStorage
 // ============================================================
@@ -113,6 +119,11 @@ export const fireflySurfacePreferencesAtom = atomWithStorage<FireflySurfacePrefe
 	{ lastSidePanelTab: "review" },
 )
 
+export const pinnedFactsAtom = atomWithStorage<Record<string, PinnedFact[]>>(
+	"palot:pinnedFacts",
+	{},
+)
+
 // ============================================================
 // Derived atoms for drafts
 // ============================================================
@@ -157,5 +168,37 @@ export const setProjectModelAtom = atom(
 			agent: args.model.agent,
 		}
 		set(projectModelsAtom, models)
+	},
+)
+
+export const addPinnedFactAtom = atom(
+	null,
+	(get, set, args: { projectKey: string; text: string }) => {
+		const text = args.text.trim()
+		if (!text) return
+
+		const factsByProject = { ...get(pinnedFactsAtom) }
+		const nextFact: PinnedFact = {
+			id: crypto.randomUUID(),
+			text,
+			createdAt: Date.now(),
+		}
+		factsByProject[args.projectKey] = [nextFact, ...(factsByProject[args.projectKey] ?? [])]
+		set(pinnedFactsAtom, factsByProject)
+	},
+)
+
+export const removePinnedFactAtom = atom(
+	null,
+	(get, set, args: { projectKey: string; factId: string }) => {
+		const facts = get(pinnedFactsAtom)[args.projectKey] ?? []
+		const nextFacts = facts.filter((fact) => fact.id !== args.factId)
+		const factsByProject = { ...get(pinnedFactsAtom) }
+		if (nextFacts.length === 0) {
+			delete factsByProject[args.projectKey]
+		} else {
+			factsByProject[args.projectKey] = nextFacts
+		}
+		set(pinnedFactsAtom, factsByProject)
 	},
 )

@@ -2,7 +2,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@ch5me/palot-ui/compon
 import { cn } from "@ch5me/palot-ui/lib/utils"
 import { useAtom, useSetAtom } from "jotai"
 import { XIcon } from "lucide-react"
-import { useCallback, useMemo } from "react"
+import { useCallback, useEffect, useMemo } from "react"
 import {
 	sidePanelActiveTabAtom,
 	sidePanelOpenAtom,
@@ -28,6 +28,12 @@ export function SessionSidePanel({ agent: _agent, tabs, className }: SessionSide
 	const currentTab = availableTabs.find((t) => t.id === activeTab) ?? availableTabs[0]
 
 	const handleClose = useCallback(() => setOpen(false), [setOpen])
+
+	useEffect(() => {
+		if (availableTabs.length > 0 && currentTab && currentTab.id !== activeTab) {
+			setActiveTab(currentTab.id)
+		}
+	}, [activeTab, availableTabs, currentTab, setActiveTab])
 
 	if (!currentTab) return null
 

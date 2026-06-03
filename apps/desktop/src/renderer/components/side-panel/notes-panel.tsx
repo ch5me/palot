@@ -1,6 +1,8 @@
 import { Button } from "@ch5me/palot-ui/components/button"
 import { Textarea } from "@ch5me/palot-ui/components/textarea"
 import { useMemo, useState } from "react"
+import { toast } from "sonner"
+import { useDraft, useDraftActions } from "../../hooks/use-draft"
 import type { Agent } from "../../lib/types"
 
 interface NotesPanelProps {
@@ -9,7 +11,10 @@ interface NotesPanelProps {
 }
 
 export function NotesPanel({ agent, className }: NotesPanelProps) {
-	const [notes, setNotes] = useState("")
+	const draftKey = `notes:${agent.sessionId}`
+	const notes = useDraft(draftKey)
+	const { setDraft, clearDraft } = useDraftActions(draftKey)
+	const [copying, setCopying] = useState(false)
 	const summary = useMemo(() => {
 		if (!notes.trim()) return "No notes captured yet."
 		const lines = notes
@@ -18,6 +23,19 @@ export function NotesPanel({ agent, className }: NotesPanelProps) {
 			.filter(Boolean)
 		return `${lines.length} note${lines.length === 1 ? "" : "s"} captured for ${agent.project}.`
 	}, [agent.project, notes])
+
+	const handleSendToAI = async () => {
+		if (!notes.trim()) return
+		setCopying(true)
+		try {
+			await navigator.clipboard.writeText(notes)
+			toast.success("Notes copied to clipboard — paste into chat with Cmd+V")
+		} catch {
+			toast.error("Failed to copy notes to clipboard")
+		} finally {
+			setCopying(false)
+		}
+	}
 
 	return (
 		<div className={`flex h-full min-h-0 flex-col bg-background ${className ?? ""}`}>
@@ -30,13 +48,24 @@ export function NotesPanel({ agent, className }: NotesPanelProps) {
 			<div className="flex min-h-0 flex-1 flex-col gap-3 px-4 py-4">
 				<Textarea
 					value={notes}
-					onChange={(event) => setNotes(event.target.value)}
+					onChange={(event) => setDraft(event.target.value)}
 					placeholder="Write notes you want to keep visible while working this session."
 					className="min-h-[220px] flex-1 resize-none"
 				/>
 				<div className="flex items-center justify-between gap-2 text-xs text-muted-foreground">
 					<span>{summary}</span>
-					<Button type="button" variant="outline" size="sm" onClick={() => setNotes("")}>Clear</Button>
+					<div className="flex gap-2">
+						<Button
+							type="button"
+							variant="outline"
+							size="sm"
+							onClick={handleSendToAI}
+							disabled={!notes.trim() || copying}
+						>
+							Send to AI
+						</Button>
+						<Button type="button" variant="outline" size="sm" onClick={clearDraft}>Clear</Button>
+					</div>
 				</div>
 			</div>
 		</div>

@@ -1,0 +1,50 @@
+# Final Build Pipeline Evidence
+
+**Date:** 2026-05-30
+**Session:** ses_18541677affecH6bndTRt4LqQI
+
+## 1. Workspace Contract Typecheck
+
+```
+cd /Users/hassoncs/src/ch5/ch5-packages/packages/workspace/contract && bun run typecheck
+$ tsc --noEmit
+(exit 0)
+```
+
+## 2. Palot Typecheck (all packages)
+
+```
+cd /Users/hassoncs/src/ch5/palot && ./node_modules/.bin/turbo check-types
+Tasks: 6 successful, 6 total
+Time: 15.752s
+(exit 0)
+```
+
+## 3. Desktop Production Build
+
+```
+cd /Users/hassoncs/src/ch5/palot/apps/desktop && ../../node_modules/.bin/electron-vite build
+✓ built in 1m 41s
+(exit 0)
+```
+
+## 4. Palot Test Baseline
+
+```
+cd /Users/hassoncs/src/ch5/palot/packages/configconv && bun test
+226 pass, 0 fail, 964 expect() calls
+(exit 0)
+```
+
+## Visual QA
+
+Skipped per user instruction ("you can skip that for now").
+Panel state contract verified from source code:
+- All panels: leftPanelOpenAtom=true, reviewPanelOpenAtom=true
+- Left collapsed: Cmd+B toggles leftPanelOpenAtom
+- Right collapsed: Cmd+Shift+D toggles reviewPanelOpenAtom
+- Both collapsed: Cmd+B then Cmd+Shift+D
+
+## Lint
+
+Root `bun run lint` fails due to pre-existing Biome schema drift (v2.4.2 vs installed v2.4.15) and devmux.config.json formatting. NOT introduced by workspace-upgrade changes. All changed files pass LSP diagnostics.

@@ -1,4 +1,16 @@
-import { ActivityIcon, Clock3Icon, FolderKanbanIcon, GitBranchIcon } from "lucide-react"
+import { useAtomValue } from "jotai"
+import {
+	AlertTriangleIcon,
+	BrainIcon,
+	Clock3Icon,
+	DollarSignIcon,
+	GitBranchIcon,
+	HashIcon,
+	MessageSquareIcon,
+	WrenchIcon,
+	ZapIcon,
+} from "lucide-react"
+import { sessionMetricsFamily } from "../../atoms/derived/session-metrics"
 import type { Agent } from "../../lib/types"
 
 interface PulsePanelProps {
@@ -6,41 +18,76 @@ interface PulsePanelProps {
 	className?: string
 }
 
-const pulseCards = [
-	{
-		label: "Status",
-		icon: ActivityIcon,
-		value: "Live session",
-		detail: "Watch the current run state without leaving chat.",
-	},
-	{
-		label: "Branch",
-		icon: GitBranchIcon,
-		value: "Worktree aware",
-		detail: "Keeps branch context visible while reviewing actions.",
-	},
-	{
-		label: "Project",
-		icon: FolderKanbanIcon,
-		value: "Session scoped",
-		detail: "Shows signals for the active project only.",
-	},
-	{
-		label: "Freshness",
-		icon: Clock3Icon,
-		value: "Realtime",
-		detail: "Reserved for upcoming automation and orchestration telemetry.",
-	},
-] as const
-
 export function PulsePanel({ agent, className }: PulsePanelProps) {
+	const metrics = useAtomValue(sessionMetricsFamily(agent.sessionId))
+	const isActive = metrics.activeStartMs !== null
+	const primaryModel = metrics.modelDistributionDisplay[0]
+	const pulseCards = [
+		{
+			label: "Work Time",
+			icon: Clock3Icon,
+			value: metrics.workTime,
+			detail: isActive ? "Session Active" : "Session Idle",
+		},
+		{
+			label: "Cost",
+			icon: DollarSignIcon,
+			value: metrics.cost,
+			detail: metrics.assistantMessageCount > 0 ? `${metrics.assistantMessageCount} model runs` : "No model runs yet",
+		},
+		{
+			label: "Tokens",
+			icon: HashIcon,
+			value: metrics.tokens,
+			detail: `${metrics.userMessageCount} user messages`,
+		},
+		{
+			label: "Exchanges",
+			icon: MessageSquareIcon,
+			value: String(metrics.exchangeCount),
+			detail: `${metrics.assistantMessageCount} assistant responses`,
+		},
+		{
+			label: "Model",
+			icon: BrainIcon,
+			value: primaryModel?.name ?? "None",
+			detail: primaryModel ? `${primaryModel.count} runs` : "No model data yet",
+		},
+		{
+			label: "Cache",
+			icon: ZapIcon,
+			value: metrics.cacheEfficiencyFormatted,
+			detail: metrics.tokensRaw > 0 ? "Prompt cache efficiency" : "No cache activity yet",
+		},
+		{
+			label: "Errors",
+			icon: AlertTriangleIcon,
+			value: String(metrics.errorCount),
+			detail: metrics.retryCount > 0 ? `${metrics.retryCount} retries` : "No retries logged",
+		},
+		{
+			label: "Tools",
+			icon: WrenchIcon,
+			value: String(metrics.toolCallCount),
+			detail: metrics.toolCallCount > 0 ? "Tool calls recorded" : "No tool calls yet",
+		},
+	] as const
+
 	return (
 		<div className={`flex h-full min-h-0 flex-col bg-background ${className ?? ""}`}>
 			<div className="border-b border-border px-4 py-3">
-				<h3 className="text-sm font-medium text-foreground">Pulse</h3>
-				<p className="mt-1 text-xs text-muted-foreground">
-					A compact session heartbeat for {agent.project} and upcoming Firefly runtime signals.
-				</p>
+				<div className="flex items-center justify-between gap-3">
+					<div>
+						<h3 className="text-sm font-medium text-foreground">Pulse</h3>
+						<p className="mt-1 text-xs text-muted-foreground">
+							A compact session heartbeat for {agent.project} and upcoming Firefly runtime signals.
+						</p>
+					</div>
+					<div className="inline-flex items-center gap-2 rounded-full border border-border/70 bg-muted/30 px-2.5 py-1 text-[11px] font-medium text-muted-foreground">
+						<span className={`size-2 rounded-full ${isActive ? "bg-emerald-500" : "bg-muted-foreground/50"}`} />
+						{isActive ? "Session Active" : "Session Idle"}
+					</div>
+				</div>
 			</div>
 			<div className="grid gap-3 px-4 py-4 md:grid-cols-2">
 				{pulseCards.map(({ label, icon: Icon, value, detail }) => (
@@ -54,8 +101,9 @@ export function PulsePanel({ agent, className }: PulsePanelProps) {
 					</div>
 				))}
 			</div>
-			<div className="mt-auto border-t border-border px-4 py-3 text-[11px] text-muted-foreground">
-				Worktree: {agent.worktreeBranch ?? agent.branch}
+			<div className="mt-auto flex items-center gap-2 border-t border-border px-4 py-3 text-[11px] text-muted-foreground">
+				<GitBranchIcon className="size-3.5" />
+				<span>Worktree: {agent.worktreeBranch ?? agent.branch}</span>
 			</div>
 		</div>
 	)

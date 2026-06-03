@@ -25,7 +25,7 @@ export const toggleAutomationsAtom = atom(null, (get, set) => {
 
 export const fireflySurfaceDefaults = {
 	review: true,
-	browserPanelEnabled: true,
+	browserPanelEnabled: false,
 	notes: true,
 	pulse: false,
 	memory: false,
@@ -34,7 +34,7 @@ export const fireflySurfaceDefaults = {
 export type FireflySurfaceFlagKey = keyof typeof fireflySurfaceDefaults
 
 export const reviewSurfaceEnabledAtom = atomWithStorage<boolean>("palot:reviewSurfaceEnabled", true)
-export const browserPanelEnabledAtom = atomWithStorage<boolean>("palot:browserPanelEnabled", true)
+export const browserPanelEnabledAtom = atomWithStorage<boolean>("palot:browserPanelEnabled", false)
 export const notesSurfaceEnabledAtom = atomWithStorage<boolean>("palot:notesSurfaceEnabled", true)
 export const pulseSurfaceEnabledAtom = atomWithStorage<boolean>("palot:pulseSurfaceEnabled", false)
 export const memorySurfaceEnabledAtom = atomWithStorage<boolean>("palot:memorySurfaceEnabled", false)

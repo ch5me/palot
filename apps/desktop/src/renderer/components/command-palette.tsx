@@ -55,6 +55,7 @@ import { getFireflySurfaceTabs, type FireflySurfaceContext } from "../firefly-su
 import { isMockModeAtom, toggleMockModeAtom } from "../atoms/mock-mode"
 import { opaqueWindowsAtom } from "../atoms/preferences"
 import { isReactScanAtom, toggleReactScanAtom } from "../atoms/react-scan"
+import { setSidePanelActiveTabAtom, sidePanelOpenAtom } from "../atoms/ui"
 import { useSessionRevert } from "../hooks/use-commands"
 import {
 	useAvailableThemes,
@@ -118,6 +119,8 @@ export function CommandPalette({ open, onOpenChange, agents, onForkSession }: Co
 	const toggleNotesSurface = useSetAtom(toggleNotesSurfaceAtom)
 	const togglePulseSurface = useSetAtom(togglePulseSurfaceAtom)
 	const toggleMemorySurface = useSetAtom(toggleMemorySurfaceAtom)
+	const setSidePanelOpen = useSetAtom(sidePanelOpenAtom)
+	const setSidePanelTab = useSetAtom(setSidePanelActiveTabAtom)
 	const [reloading, setReloading] = useState(false)
 
 	const isElectron = typeof window !== "undefined" && "palot" in window
@@ -408,6 +411,8 @@ export function CommandPalette({ open, onOpenChange, agents, onForkSession }: Co
 								<CommandItem
 									key={surface.id}
 									onSelect={() => {
+										setSidePanelOpen(true)
+										setSidePanelTab(surface.id)
 										onOpenChange(false)
 									}}
 									disabled={!surface.availability.available}
