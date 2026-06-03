@@ -1,6 +1,7 @@
 import { useAtomValue } from "jotai"
 import {
 	AlertTriangleIcon,
+	BotIcon,
 	BrainIcon,
 	Clock3Icon,
 	DollarSignIcon,
@@ -11,6 +12,7 @@ import {
 	ZapIcon,
 } from "lucide-react"
 import { sessionMetricsFamily } from "../../atoms/derived/session-metrics"
+import { automationsAtom } from "../../atoms/automations"
 import type { Agent } from "../../lib/types"
 
 interface PulsePanelProps {
@@ -20,8 +22,11 @@ interface PulsePanelProps {
 
 export function PulsePanel({ agent, className }: PulsePanelProps) {
 	const metrics = useAtomValue(sessionMetricsFamily(agent.sessionId))
+	const automations = useAtomValue(automationsAtom)
 	const isActive = metrics.activeStartMs !== null
 	const primaryModel = metrics.modelDistributionDisplay[0]
+	const activeAutomations = automations.filter((a) => a.status === "active")
+	const runningAutomations = automations.filter((a) => a.nextRunAt === null && a.status === "active")
 	const pulseCards = [
 		{
 			label: "Work Time",
@@ -70,6 +75,16 @@ export function PulsePanel({ agent, className }: PulsePanelProps) {
 			icon: WrenchIcon,
 			value: String(metrics.toolCallCount),
 			detail: metrics.toolCallCount > 0 ? "Tool calls recorded" : "No tool calls yet",
+		},
+		{
+			label: "Automations",
+			icon: BotIcon,
+			value: String(activeAutomations.length),
+			detail: runningAutomations.length > 0
+				? `${runningAutomations.length} running now`
+				: activeAutomations.length > 0
+					? `${activeAutomations.length} scheduled`
+					: "No automations configured",
 		},
 	] as const
 

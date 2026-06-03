@@ -124,6 +124,22 @@ export const pinnedFactsAtom = atomWithStorage<Record<string, PinnedFact[]>>(
 	{},
 )
 
+export type MemoryMode = "local" | "hybrid" | "remote"
+
+export const memoryModeAtom = atomWithStorage<MemoryMode>("palot:memoryMode", "local")
+
+export interface MemoryApiConfig {
+	apiBaseUrl: string
+	projectId: string
+	userId: string
+}
+
+export const memoryApiConfigAtom = atomWithStorage<MemoryApiConfig>("palot:memoryApiConfig", {
+	apiBaseUrl: "",
+	projectId: "",
+	userId: "",
+})
+
 // ============================================================
 // Derived atoms for drafts
 // ============================================================
