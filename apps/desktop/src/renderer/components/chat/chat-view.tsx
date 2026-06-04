@@ -100,6 +100,7 @@ import { PromptToolbar, StatusBar } from "./prompt-toolbar"
 import { SessionTaskList } from "./session-task-list"
 import { SkillPickerDialog } from "./skill-picker-dialog"
 import { SlashCommandPopover, type SlashCommandPopoverHandle } from "./slash-command-popover"
+import { VoiceButton } from "./voice-button"
 
 /**
  * Small "+" button that opens the file picker for attachments.
@@ -1294,6 +1295,25 @@ function ChatInputSection({
 		})
 	}, [])
 
+	const handleVoiceTranscript = useCallback((text: string) => {
+		const ctrl = slashCommandRef.current
+		if (!ctrl) {
+			return
+		}
+		const current = ctrl.getText()
+		const next = current.trim() ? `${current.replace(/\s*$/, "")} ${text}` : text
+		ctrl.setText(next)
+		setDraft(next)
+		requestAnimationFrame(() => {
+			const textarea = document.querySelector<HTMLTextAreaElement>("textarea[data-prompt-input]")
+			if (textarea) {
+				textarea.focus()
+				const length = next.length
+				textarea.setSelectionRange(length, length)
+			}
+		})
+	}, [setDraft])
+
 	const handleTextareaKeyDown = useCallback(
 		(e: React.KeyboardEvent<HTMLTextAreaElement>) => {
 			// Always delegate to popovers first — they guard on their own `open` prop
@@ -1436,10 +1456,11 @@ function ChatInputSection({
 
 									{/* Toolbar inside the card — agent + model + variant selectors + submit */}
 									<PromptInputFooter>
-										<PromptInputTools>
-											<AttachButton disabled={!isConnected} />
-											<PromptToolbar
-												agents={openCodeAgents ?? []}
+							<PromptInputTools>
+								<AttachButton disabled={!isConnected} />
+								<VoiceButton onTranscript={handleVoiceTranscript} />
+								<PromptToolbar
+									agents={openCodeAgents ?? []}
 												selectedAgent={selectedAgent}
 												defaultAgent={config?.defaultAgent}
 												onSelectAgent={setSelectedAgent}

@@ -1,0 +1,33 @@
+Task: T6 Terminal / PTY backend seam
+Date: 2026-06-04
+
+Files changed
+- apps/desktop/src/main/pty.ts
+- apps/desktop/src/main/pty.test.ts
+- apps/desktop/src/main/ipc-handlers.ts
+- apps/desktop/src/preload/index.ts
+- apps/desktop/src/preload/api.d.ts
+- apps/desktop/src/renderer/services/backend.ts
+- apps/desktop/package.json
+
+What landed
+- Added `node-pty` dependency to desktop app
+- Added `PtyController` in main process with:
+  - shell spawn
+  - tmux-backed terminal spawn
+  - oracle attach
+  - generic tmux attach
+  - write / resize / kill
+- Added `pty:*` IPC handlers
+- Added preload bridge methods and `pty:data` / `pty:exit` subscriptions
+- Added renderer backend wrappers with explicit Electron-only behavior in browser mode
+
+Verification
+- `cd apps/desktop && bun test "src/main/pty.test.ts"`
+  - Result: pass
+- `bun run check-types`
+  - Result: desktop package reached `tsgo --noEmit` cleanly before shell timeout on the full monorepo command; earlier monorepo runs were green and the PTY-specific type errors were resolved.
+
+Notes
+- Test harness uses an injected fake `IPty` instead of a real spawned shell to keep proof deterministic in CI/headless shells.
+- `kill(999999)` throws `pty session 999999 not found` as the explicit missing-session edge path.

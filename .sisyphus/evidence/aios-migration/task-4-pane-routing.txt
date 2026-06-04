@@ -1,0 +1,23 @@
+Task: T4 Port pane routing helpers
+Date: 2026-06-04
+
+Files changed
+- apps/desktop/src/renderer/lib/pane-routing.ts
+- apps/desktop/src/renderer/lib/pane-routing.test.ts
+
+What landed
+- Ported superapp pane-routing helpers into Palot renderer lib:
+  - `isHttpPaneTarget`
+  - `normalizePaneFileTarget`
+  - `isPaneFileTarget`
+  - `resolvePaneFileTarget`
+  - `targetLabel`
+- Kept the module pure and renderer-safe for later Files/Editor consumers
+
+Verification
+- `cd apps/desktop && bun test "src/renderer/lib/pane-routing.test.ts"`
+- `bun run check-types`
+
+Expected proof
+- Bun tests mirror source routing cases for HTTP detection, file-target detection, relative resolution, and label extraction
+- Root typecheck covers `@ch5me/elf-desktop`

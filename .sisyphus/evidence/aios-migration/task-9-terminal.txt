@@ -1,0 +1,21 @@
+Task: T9 Terminal surface
+Date: 2026-06-04
+
+Files changed
+- apps/desktop/src/renderer/components/side-panel/terminal-panel.tsx
+
+What landed
+- Replaced the terminal proof shell with a live PTY-backed side-panel surface
+- Wired the panel to:
+  - `spawnPtyTerminal`
+  - `writePty`
+  - `resizePty`
+  - `killPty`
+  - `onPtyData`
+  - `onPtyExit`
+- Preserved existing feature-flag / registry / command-palette integration
+- Added pane-bus writer/submitter hooks so later cross-surface sends can target the terminal session
+
+Verification
+- `bun run check-types`
+- Manual smoke path in UI: open Terminal surface, click `Send \`echo hi\``, observe PTY output, resize panel, re-open via feature-flagged side panel

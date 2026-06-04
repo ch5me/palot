@@ -1,0 +1,19 @@
+Task: T8 Office -> PDF convert seam
+Date: 2026-06-04
+
+Files changed
+- apps/desktop/src/main/files.ts
+- apps/desktop/src/main/ipc-handlers.ts
+- apps/desktop/src/preload/index.ts
+- apps/desktop/src/preload/api.d.ts
+- apps/desktop/src/renderer/services/backend.ts
+- apps/desktop/src/main/office-preview.test.ts
+
+What landed
+- Added cached LibreOffice-backed conversion helper in main process
+- Exposed conversion through `office:convert` IPC and preload/backend wrappers
+- Added explicit unavailable/failure path for missing `soffice`
+
+Verification
+- `cd apps/desktop && bun test "src/main/office-preview.test.ts"`
+- `bun run check-types`

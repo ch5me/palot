@@ -1,0 +1,27 @@
+Task: T3 Port pane bus
+Date: 2026-06-04
+
+Files changed
+- apps/desktop/src/renderer/atoms/pane-bus.ts
+- apps/desktop/src/renderer/atoms/pane-bus.test.ts
+
+What landed
+- Preserved existing event-scoped pane bus atoms used by `use-pane-bus.ts` and `event-processor.ts`
+- Added superapp-compatible renderer registries and helpers:
+  - `paneWriters`
+  - `paneSubmitters`
+  - `chatHandles`
+  - `paneImageDrop`
+  - `registerOpenFile` / `openFileInPane`
+  - `registerOpenUrl` / `openUrlInPane`
+  - `onAiosDrag`
+- Added test-only reset helpers to keep mutable module state isolated across tests
+
+Verification
+- `cd apps/desktop && bun test "src/renderer/atoms/pane-bus.test.ts"`
+  - Result: 3 pass, 0 fail
+- `bun run check-types`
+  - Result: pass from repo root via Turbo (`@ch5me/elf-desktop:check-types` succeeded)
+
+Notes
+- `cd apps/desktop && bun run check-types` failed because local `tsgo` was not on PATH in that direct shell invocation; root `bun run check-types` succeeded and exercised the desktop package.

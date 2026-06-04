@@ -1,0 +1,67 @@
+F1 Migration Compliance Audit
+Date: 2026-06-04
+
+Verdict: APPROVE
+
+Per-feature audit
+- Terminal: APPROVE
+  - Surface: `apps/desktop/src/renderer/components/side-panel/terminal-panel.tsx`
+  - Backend seam: `apps/desktop/src/main/pty.ts`, `apps/desktop/src/preload/index.ts`, `apps/desktop/src/renderer/services/backend.ts`
+  - Flag/registry: `terminalSurfaceEnabledAtom`, `firefly-surface-registry.tsx`
+- Files: APPROVE
+  - Surface: `apps/desktop/src/renderer/components/side-panel/files-panel.tsx`
+  - Backend seam: `apps/desktop/src/main/files.ts`, `apps/desktop/src/preload/index.ts`, `apps/desktop/src/renderer/services/backend.ts`
+  - Flag/registry: `filesSurfaceEnabledAtom`, `firefly-surface-registry.tsx`
+- Editor: APPROVE
+  - Surface: `apps/desktop/src/renderer/components/side-panel/editor-panel.tsx`
+  - Backend seam: files seam reuse + Monaco bootstrap `apps/desktop/src/renderer/lib/monaco.ts`
+  - Flag/registry: `editorSurfaceEnabledAtom`, `firefly-surface-registry.tsx`
+- Oracle: APPROVE
+  - Surface: `apps/desktop/src/renderer/components/side-panel/oracle-panel.tsx`
+  - Backend seam: `apps/desktop/src/main/oracles.ts`, preload/backend wrappers
+  - Flag/registry: `oracleSurfaceEnabledAtom`, `firefly-surface-registry.tsx`
+- Voice: APPROVE
+  - Surface: `apps/desktop/src/renderer/components/side-panel/voice-panel.tsx`
+  - Backend seam: renderer runtime `apps/desktop/src/renderer/lib/voice.ts`, chat insertion via pane bus
+  - Flag/registry: `voiceSurfaceEnabledAtom`, `firefly-surface-registry.tsx`
+- Bridges: APPROVE
+  - Surface: `apps/desktop/src/renderer/components/side-panel/bridges-panel.tsx`
+  - Backend seam: `apps/desktop/src/main/bridges.ts`, preload/backend wrappers
+  - Flag/registry: `bridgesSurfaceEnabledAtom`, `firefly-surface-registry.tsx`
+- CRM / Contacts: APPROVE
+  - Surface: `apps/desktop/src/renderer/components/side-panel/crm-panel.tsx`
+  - Backend seam: `apps/desktop/src/main/crm.ts`, `apps/desktop/src/main/inbox.ts`, preload/backend wrappers
+  - Flag/registry: `crmSurfaceEnabledAtom`, `firefly-surface-registry.tsx`
+- Studio / Office: APPROVE
+  - Surface: `apps/desktop/src/renderer/components/side-panel/studio-panel.tsx`
+  - Backend seam: files seam + office convert seam
+  - Flag/registry: `studioSurfaceEnabledAtom`, `firefly-surface-registry.tsx`
+- Plugins: APPROVE
+  - Surface: `apps/desktop/src/renderer/components/side-panel/plugins-panel.tsx`
+  - Backend seam: OpenCode SDK inventory + onboarding provider detection
+  - Flag/registry: `pluginsSurfaceEnabledAtom`, `firefly-surface-registry.tsx`
+- Claude compatibility: APPROVE
+  - Surface: `apps/desktop/src/renderer/components/side-panel/claude-panel.tsx`
+  - Backend seam: onboarding detection / restore / OpenCode compatibility state
+  - Flag/registry: `claudeSurfaceEnabledAtom`, `firefly-surface-registry.tsx`
+- Browser hardening: APPROVE
+  - Surface: `apps/desktop/src/renderer/components/side-panel/browser-panel.tsx`
+  - Backend seam: existing browser surface, hardened persistence/failure handling
+  - Flag/registry: `browserPanelEnabledAtom`, `firefly-surface-registry.tsx`
+- Notes hardening: APPROVE
+  - Surface: `apps/desktop/src/renderer/components/side-panel/notes-panel.tsx`
+  - Backend seam: draft store + pane bus injection/send
+  - Flag/registry: `notesSurfaceEnabledAtom`, `firefly-surface-registry.tsx`
+- Pulse hardening: APPROVE
+  - Surface: `apps/desktop/src/renderer/components/side-panel/pulse-panel.tsx`
+  - Backend seam: `sessionMetricsFamily` + automations atoms
+  - Flag/registry: `pulseSurfaceEnabledAtom`, `firefly-surface-registry.tsx`
+- Memory hardening: APPROVE
+  - Surface: `apps/desktop/src/renderer/components/side-panel/memory-panel.tsx`
+  - Backend seam: `apps/desktop/src/renderer/services/memory-service.ts`
+  - Flag/registry: `memorySurfaceEnabledAtom`, `firefly-surface-registry.tsx`
+
+Evidence map
+- Task evidence exists for T1-T22 under `.sisyphus/evidence/aios-migration/`
+- Registry contains all required surfaces in `apps/desktop/src/renderer/firefly-surface-registry.tsx`
+- Plan marks T1-T22 complete in `.sisyphus/plans/aios-superapp-to-palot-full-migration.md`

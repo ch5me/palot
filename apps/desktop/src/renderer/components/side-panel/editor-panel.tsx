@@ -1,10 +1,12 @@
+import { Button } from "@ch5me/elf-ui/components/button"
 import { Input } from "@ch5me/elf-ui/components/input"
-import { useEffect, useMemo, useState } from "react"
-import { FileIcon, Loader2Icon } from "lucide-react"
-import { detectContentLanguage, detectLanguage, prettyPrintJson } from "../../lib/language"
+import { useEffect, useMemo, useRef, useState } from "react"
+import type * as Monaco from "monaco-editor"
+import { CheckIcon, CircleIcon, ExternalLinkIcon, FileIcon, Loader2Icon } from "lucide-react"
+import { useFileSearch } from "../../hooks/use-file-search"
+import { initMonaco, languageForPath } from "../../lib/monaco"
 import type { Agent } from "../../lib/types"
-import { readFileContents } from "../../services/backend"
-import { getProjectClient } from "../../services/connection-manager"
+import { readTextFile, writeTextFile } from "../../services/backend"
 
 interface EditorPanelProps {
 	agent: Agent
@@ -13,98 +15,141 @@ interface EditorPanelProps {
 
 export function EditorPanel({ agent, className }: EditorPanelProps) {
 	const [query, setQuery] = useState("")
-	const [results, setResults] = useState<string[]>([])
-	const [loadingResults, setLoadingResults] = useState(false)
+	const { files: results, isLoading: loadingResults } = useFileSearch(agent.worktreePath ?? agent.directory, query, true)
 	const [selectedPath, setSelectedPath] = useState<string | null>(null)
-	const [content, setContent] = useState("")
-	const [loadingContent, setLoadingContent] = useState(false)
+	const [dirty, setDirty] = useState(false)
+	const [loading, setLoading] = useState(false)
 	const [error, setError] = useState<string | null>(null)
-
-	useEffect(() => {
-		let cancelled = false
-		const trimmed = query.trim()
-		if (!trimmed) {
-			setResults([])
-			return
-		}
-		const client = getProjectClient(agent.directory)
-		if (!client) {
-			setError("Not connected to OpenCode server")
-			return
-		}
-		setLoadingResults(true)
-		void client.find.files({ query: trimmed })
-			.then((result) => {
-				if (cancelled) return
-				setResults((result.data ?? []) as string[])
-			})
-			.catch((err) => {
-				if (cancelled) return
-				setError(err instanceof Error ? err.message : "Failed to search files")
-			})
-			.finally(() => {
-				if (cancelled) return
-				setLoadingResults(false)
-			})
-		return () => {
-			cancelled = true
-		}
-	}, [agent.directory, query])
+	const [savedAt, setSavedAt] = useState<number | null>(null)
+	const hostRef = useRef<HTMLDivElement | null>(null)
+	const editorRef = useRef<Monaco.editor.IStandaloneCodeEditor | null>(null)
+	const saveRef = useRef<() => void>(() => {})
 
 	useEffect(() => {
 		if (!selectedPath) {
-			setContent("")
+			setDirty(false)
+			setSavedAt(null)
+			setError(null)
+			setLoading(false)
+			editorRef.current?.getModel()?.dispose()
+			editorRef.current?.dispose()
+			editorRef.current = null
 			return
 		}
-		let cancelled = false
-		setLoadingContent(true)
-		setError(null)
-		void readFileContents(selectedPath)
-			.then((result) => {
-				if (cancelled) return
-				const language = detectLanguage(result.path)
-				const contentLanguage = detectContentLanguage(result.content)
-				setContent(
-					language === "json" || contentLanguage === "json"
-						? prettyPrintJson(result.content)
-						: result.content,
-				)
+
+		let disposed = false
+		let editor: Monaco.editor.IStandaloneCodeEditor | null = null
+
+		const setup = async () => {
+			setLoading(true)
+			setError(null)
+			setDirty(false)
+			setSavedAt(null)
+			const monaco = initMonaco()
+			let content: string
+			try {
+				content = await readTextFile(selectedPath)
+			} catch (err) {
+				if (!disposed) {
+					setError(err instanceof Error ? err.message : "Failed to read file")
+					setLoading(false)
+				}
+				return
+			}
+
+			if (disposed || !hostRef.current) {
+				return
+			}
+
+			editorRef.current?.getModel()?.dispose()
+			editorRef.current?.dispose()
+
+			editor = monaco.editor.create(hostRef.current, {
+				value: content,
+				language: languageForPath(selectedPath),
+				theme: "elf-dark",
+				automaticLayout: true,
+				fontSize: 13,
+				fontFamily: "ui-monospace, SFMono-Regular, Menlo, monospace",
+				fontLigatures: true,
+				minimap: { enabled: true },
+				smoothScrolling: true,
+				cursorBlinking: "smooth",
+				scrollBeyondLastLine: false,
+				renderWhitespace: "selection",
+				tabSize: 2,
+				bracketPairColorization: { enabled: true },
+				padding: { top: 10 },
 			})
-			.catch((err) => {
-				if (cancelled) return
-				setError(err instanceof Error ? err.message : "Failed to load file")
-				setContent("")
+			editorRef.current = editor
+			setLoading(false)
+
+			const save = async () => {
+				const current = editorRef.current
+				if (!current) {
+					return
+				}
+				try {
+					await writeTextFile(selectedPath, current.getValue())
+					if (!disposed) {
+						setDirty(false)
+						setSavedAt(Date.now())
+					}
+				} catch (err) {
+					if (!disposed) {
+						setError(err instanceof Error ? err.message : "Failed to save file")
+					}
+				}
+			}
+
+			saveRef.current = save
+			editor.onDidChangeModelContent(() => {
+				if (!disposed) {
+					setDirty(true)
+					setSavedAt(null)
+				}
 			})
-			.finally(() => {
-				if (cancelled) return
-				setLoadingContent(false)
+			editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyS, () => {
+				void saveRef.current()
 			})
+		}
+
+		void setup()
+
 		return () => {
-			cancelled = true
+			disposed = true
+			editor?.getModel()?.dispose()
+			editor?.dispose()
+			if (editorRef.current === editor) {
+				editorRef.current = null
+			}
 		}
 	}, [selectedPath])
 
-	const language = useMemo(
-		() => detectLanguage(selectedPath ?? undefined) ?? detectContentLanguage(content),
-		[selectedPath, content],
-	)
+	useEffect(() => {
+		const onKeyDown = (event: KeyboardEvent) => {
+			if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "s") {
+				event.preventDefault()
+				void saveRef.current()
+			}
+		}
+		window.addEventListener("keydown", onKeyDown)
+		return () => window.removeEventListener("keydown", onKeyDown)
+	}, [])
+
+	const selectedName = useMemo(() => selectedPath?.split("/").pop() ?? null, [selectedPath])
 
 	return (
 		<div className={`flex h-full min-h-0 flex-col bg-background ${className ?? ""}`}>
 			<div className="border-b border-border px-4 py-3">
 				<h3 className="text-sm font-medium text-foreground">Editor</h3>
 				<p className="mt-1 text-xs text-muted-foreground">
-					Read-only code inspection shell that complements Files. Monaco is deferred until true editing is needed.
+					Monaco-backed in-app editor for text files in the active checkout.
 				</p>
 			</div>
 			<div className="flex min-h-0 flex-1 flex-col gap-3 px-4 py-4">
-				<Input
-					value={query}
-					onChange={(event) => setQuery(event.target.value)}
-					placeholder="Search project files"
-					className="h-9"
-				/>
-				<div className="grid min-h-0 flex-1 grid-cols-[minmax(0,220px)_minmax(0,1fr)] overflow-hidden rounded-lg border border-border">
+				<Input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search project files" className="h-9" />
+				<div className="grid min-h-0 flex-1 grid-cols-[minmax(0,240px)_minmax(0,1fr)] overflow-hidden rounded-lg border border-border">
 					<div className="min-h-0 overflow-auto border-r border-border p-2">
 						{loadingResults ? (
 							<div className="flex items-center gap-2 px-2 py-3 text-xs text-muted-foreground">
@@ -127,28 +172,57 @@ export function EditorPanel({ agent, className }: EditorPanelProps) {
 							))
 						)}
 					</div>
-					<div className="min-h-0 overflow-auto p-3">
-						{error ? (
-							<div className="rounded-lg border border-destructive/30 bg-destructive/5 px-4 py-6 text-xs text-destructive">
-								{error}
-							</div>
-						) : loadingContent ? (
-							<div className="flex items-center gap-2 px-2 py-3 text-xs text-muted-foreground">
-								<Loader2Icon className="size-4 animate-spin" aria-hidden="true" />
-								Loading file...
-							</div>
-						) : selectedPath ? (
-							<div className="space-y-3">
-								<div className="text-[11px] text-muted-foreground">{selectedPath}{language ? ` · ${language}` : ""}</div>
-								<pre className="min-h-[320px] overflow-auto rounded-md bg-muted/20 p-3 text-xs leading-5 text-foreground">
-									<code>{content}</code>
-								</pre>
-							</div>
-						) : (
-							<div className="flex h-full items-center justify-center text-center text-xs text-muted-foreground">
-								Search and select a file to inspect it in the editor shell.
-							</div>
-						)}
+					<div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+						<div className="flex h-8 shrink-0 items-center gap-2 border-b border-border px-3">
+							{dirty ? (
+								<CircleIcon className="size-2 shrink-0 fill-amber-500 text-amber-500" aria-hidden="true" />
+							) : savedAt ? (
+								<CheckIcon className="size-3 shrink-0 text-emerald-500" aria-hidden="true" />
+							) : null}
+							<span className="min-w-0 truncate font-mono text-[11px] text-muted-foreground" title={selectedPath ?? undefined}>
+								{selectedName ?? "Select a file"}
+							</span>
+							{dirty && <span className="font-mono text-[10px] text-muted-foreground">Cmd/Ctrl+S to save</span>}
+							<span className="flex-1" />
+							<Button
+								type="button"
+								variant="ghost"
+								size="sm"
+								className="h-6 px-2"
+								disabled={!selectedPath}
+								onClick={() => {
+									if (selectedPath) {
+										void navigator.clipboard.writeText(selectedPath)
+									}
+								}}
+							>
+								<ExternalLinkIcon className="size-3" aria-hidden="true" />
+								Path
+							</Button>
+						</div>
+						<div className="relative min-h-0 flex-1 overflow-hidden">
+							<div ref={hostRef} className="h-full w-full" />
+							{loading && (
+								<div className="absolute inset-0 grid place-items-center bg-background">
+									<Loader2Icon className="size-5 animate-spin text-muted-foreground" aria-hidden="true" />
+								</div>
+							)}
+							{error && (
+								<div className="absolute inset-0 grid place-items-center bg-background px-6 text-center">
+									<div className="flex flex-col items-center gap-2">
+										<span className="font-mono text-[12px] text-destructive">{error}</span>
+										<div className="text-xs text-muted-foreground">
+											Unsupported binary or oversized file. Use the Files surface or open the path externally.
+										</div>
+									</div>
+								</div>
+							)}
+							{!selectedPath && !loading && !error && (
+								<div className="absolute inset-0 flex items-center justify-center text-center text-xs text-muted-foreground">
+									Search and select a file to edit it in Monaco.
+								</div>
+							)}
+						</div>
 					</div>
 				</div>
 			</div>

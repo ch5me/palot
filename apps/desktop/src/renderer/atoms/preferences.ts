@@ -1,7 +1,12 @@
 import { atom } from "jotai"
 import { atomWithStorage } from "jotai/utils"
 import type { WindowChromeTier } from "../../preload/api"
-import { DEFAULT_FIREFLY_PROFILE, DEFAULT_FIREFLY_PROFILE_ID, type FireflyProfile } from "../lib/profile"
+import {
+	DEFAULT_FIREFLY_PROFILE,
+	DEFAULT_FIREFLY_PROFILE_ID,
+	normalizeFireflyProfileLabel,
+	type FireflyProfile,
+} from "../lib/profile"
 import type { ColorScheme } from "../lib/themes"
 
 // ============================================================
@@ -18,7 +23,14 @@ export interface PersistedModelRef {
 }
 
 export interface FireflySurfacePreferences {
-	lastSidePanelTab: "review" | "browser" | "notes" | "pulse" | "memory" | "files" | "terminal" | "editor" | "plugins" | "bridges" | "crm" | "studio" | "voice" | "oracle" | "claude"
+	lastSidePanelTab: "review" | "browser" | "notes" | "pulse" | "memory" | "files" | "terminal" | "editor" | "plugins" | "bridges" | "crm" | "studio" | "voice" | "oracle" | "claude" | "ch5pm"
+}
+
+export interface BrowserPanelState {
+	url: string
+	profileId: string
+	zoom: number
+	deviceMode: boolean
 }
 
 export interface PinnedFact {
@@ -125,6 +137,11 @@ export const fireflySurfacePreferencesAtom = atomWithStorage<FireflySurfacePrefe
 	{ lastSidePanelTab: "review" },
 )
 
+export const browserPanelStateAtom = atomWithStorage<Record<string, BrowserPanelState>>(
+	"elf:browser-panel-state",
+	{},
+)
+
 export const pinnedFactsAtom = atomWithStorage<Record<string, PinnedFact[]>>(
 	"elf:pinnedFacts",
 	{},
@@ -168,6 +185,36 @@ export const upsertFireflyProfileAtom = atom(null, (get, set, profile: FireflyPr
 	set(fireflyProfilePreferencesAtom, {
 		profiles,
 		activeProfileId: preferences.activeProfileId,
+	})
+})
+
+export const createFireflyProfileAtom = atom(null, (get, set, label: string) => {
+	const normalizedLabel = normalizeFireflyProfileLabel(label)
+	if (!normalizedLabel) {
+		return
+	}
+
+	const preferences = get(fireflyProfilePreferencesAtom)
+	const existing = preferences.profiles.find(
+		(profile) => profile.label.toLowerCase() === normalizedLabel.toLowerCase(),
+	)
+	if (existing) {
+		set(fireflyProfilePreferencesAtom, {
+			...preferences,
+			activeProfileId: existing.id,
+		})
+		return
+	}
+
+	const nextProfile: FireflyProfile = {
+		id: crypto.randomUUID(),
+		label: normalizedLabel,
+		description: `Local-only profile for ${normalizedLabel}`,
+	}
+
+	set(fireflyProfilePreferencesAtom, {
+		profiles: [...preferences.profiles, nextProfile],
+		activeProfileId: nextProfile.id,
 	})
 })
 
@@ -248,6 +295,15 @@ export const addPinnedFactAtom = atom(
 		}
 		factsByProject[args.projectKey] = [nextFact, ...(factsByProject[args.projectKey] ?? [])]
 		set(pinnedFactsAtom, factsByProject)
+	},
+)
+
+export const setBrowserPanelStateAtom = atom(
+	null,
+	(get, set, args: { sessionId: string; state: BrowserPanelState }) => {
+		const nextState = { ...get(browserPanelStateAtom) }
+		nextState[args.sessionId] = args.state
+		set(browserPanelStateAtom, nextState)
 	},
 )
 

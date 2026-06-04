@@ -1,0 +1,27 @@
+Task: T10 Files + file viewer surface
+Date: 2026-06-04
+
+What landed
+- `apps/desktop/src/renderer/components/side-panel/files-panel.tsx`
+  - directory tree explorer backed by `readDirectoryTree`
+  - git decorations backed by `fetchFileGitStatus`
+  - inline preview backed by `fetchFilePreview`
+  - explicit directory, binary, pdf/office, and preview-error states
+  - handoff action into the Changes surface via `viewFileInDiffPanelAtom`
+
+Acceptance proof
+- tree renders with git decorations:
+  - component reads git status and propagates file/folder markers into tree rows
+  - seam proof in `apps/desktop/src/main/files.test.ts`
+- open file -> viewer:
+  - selecting a file loads preview state and renders text preview or explicit fallback
+- missing file -> explicit error state:
+  - seam proof in `apps/desktop/src/main/files.test.ts` via ENOENT after delete
+
+Verification
+- `bun test apps/desktop/src/main/files.test.ts`
+- `lsp_diagnostics` on `apps/desktop/src/renderer/components/side-panel/files-panel.tsx`
+
+Notes
+- PDF and Office files intentionally route to the Studio / Office lane for richer preview.
+- Inline image rendering is still deferred, but the state is explicit rather than blank.

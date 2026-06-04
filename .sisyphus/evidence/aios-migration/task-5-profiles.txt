@@ -1,0 +1,18 @@
+Task: T5 Profiles / account context
+Date: 2026-06-04
+
+Files changed
+- apps/desktop/src/renderer/lib/profile.ts
+- apps/desktop/src/renderer/lib/profile.test.ts
+- apps/desktop/src/renderer/atoms/preferences.ts
+- apps/desktop/src/renderer/components/settings/profile-settings.tsx
+
+What landed
+- Reused Palot's persisted profile preference atom instead of introducing a second profile store
+- Added `createFireflyProfileAtom` for normalized local profile creation with dedupe + auto-activation
+- Expanded the settings surface so profiles can be created and switched in the UI
+- Recorded the product decision in UI copy: profiles are local-only and not synced remotely
+
+Verification
+- `cd apps/desktop && bun test "src/renderer/lib/profile.test.ts"`
+- `bun run check-types`

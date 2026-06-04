@@ -1,0 +1,26 @@
+Task: T7 Files backend seam
+Date: 2026-06-04
+
+Files changed
+- apps/desktop/src/main/files.ts
+- apps/desktop/src/main/files.test.ts
+- apps/desktop/src/main/ipc-handlers.ts
+- apps/desktop/src/preload/index.ts
+- apps/desktop/src/preload/api.d.ts
+- apps/desktop/src/renderer/services/backend.ts
+
+What landed
+- Added dedicated files seam in main process for:
+  - directory listing
+  - tree listing with dotfile visibility
+  - git status + git pulse
+  - project detection + project scan
+  - file preview
+  - text read/write
+  - delete file
+  - temp image save
+- Reused existing git patterns where useful, while keeping files seam renderer-safe through preload/backend wrappers
+
+Verification
+- `cd apps/desktop && bun test "src/main/files.test.ts"`
+- `bun run check-types`

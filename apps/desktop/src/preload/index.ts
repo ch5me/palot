@@ -184,12 +184,79 @@ contextBridge.exposeInMainWorld("elf", {
 	/** Opens a native folder picker dialog. Returns the selected path, or null if cancelled. */
 	pickDirectory: () => ipcRenderer.invoke("dialog:open-directory"),
 	listDirectory: (directory: string) => ipcRenderer.invoke("files:list-directory", directory),
+	readDirectoryTree: (directory: string) => ipcRenderer.invoke("files:read-directory-tree", directory),
+	gitStatus: (directory: string) => ipcRenderer.invoke("files:git-status", directory),
+	gitPulse: (directories: string[]) => ipcRenderer.invoke("files:git-pulse", directories),
+	homeDir: () => ipcRenderer.invoke("files:home-dir"),
+	detectProject: (filePath: string) => ipcRenderer.invoke("files:detect-project", filePath),
+	listProjects: (rootDirectory?: string) => ipcRenderer.invoke("files:list-projects", rootDirectory),
 	readFile: (filePath: string) => ipcRenderer.invoke("files:read", filePath),
+	readFilePreview: (filePath: string) => ipcRenderer.invoke("files:read-preview", filePath),
+	readTextFile: (filePath: string) => ipcRenderer.invoke("files:read-text", filePath),
+	writeTextFile: (filePath: string, content: string) =>
+		ipcRenderer.invoke("files:write-text", filePath, content),
+	deletePath: (filePath: string) => ipcRenderer.invoke("files:delete-path", filePath),
+	saveImageTemp: (data: string, extension: string) =>
+		ipcRenderer.invoke("files:save-image-temp", data, extension),
+	convertOfficeToPdf: (filePath: string) => ipcRenderer.invoke("office:convert", filePath),
+	oracles: {
+		list: () => ipcRenderer.invoke("oracles:list"),
+		listTmuxSessions: () => ipcRenderer.invoke("oracles:list-tmux-sessions"),
+		create: (identity: string, command?: string | null) => ipcRenderer.invoke("oracles:create", identity, command),
+		rename: (from: string, to: string) => ipcRenderer.invoke("oracles:rename", from, to),
+		delete: (identity: string, force?: boolean) => ipcRenderer.invoke("oracles:delete", identity, force),
+		killTmuxSession: (socket: string, session: string) => ipcRenderer.invoke("oracles:kill-tmux-session", socket, session),
+		appshot: (identity?: string | null) => ipcRenderer.invoke("oracles:appshot", identity),
+	},
 	bridges: {
 		list: () => ipcRenderer.invoke("bridges:list"),
 		activity: (id: string, limit?: number) => ipcRenderer.invoke("bridges:activity", id, limit),
 	},
-
+	crm: {
+		load: () => ipcRenderer.invoke("crm:load"),
+		saveContact: (contact: unknown) => ipcRenderer.invoke("crm:save-contact", contact),
+		deleteContact: (id: string) => ipcRenderer.invoke("crm:delete-contact", id),
+	},
+	inbox: {
+		listCustomers: () => ipcRenderer.invoke("inbox:list-customers"),
+		customerThread: (handle: string, limit?: number) => ipcRenderer.invoke("inbox:customer-thread", handle, limit),
+		sendMessage: (channel: string, to: string, text: string) => ipcRenderer.invoke("inbox:send-message", channel, to, text),
+	},
+	pty: {
+		spawnShell: (request: { cols: number; rows: number; cwd?: string | null }) =>
+			ipcRenderer.invoke("pty:spawn-shell", request),
+		spawnTerminal: (request: {
+			name: string
+			command?: string | null
+			cols: number
+			rows: number
+			cwd?: string | null
+		}) => ipcRenderer.invoke("pty:spawn-terminal", request),
+		spawnOracle: (request: { identity: string; cols: number; rows: number; cwd?: string | null }) =>
+			ipcRenderer.invoke("pty:spawn-oracle", request),
+		spawnTmux: (request: { socket: string; session: string; cols: number; rows: number; cwd?: string | null }) =>
+			ipcRenderer.invoke("pty:spawn-tmux", request),
+		write: (id: number, data: string) => ipcRenderer.invoke("pty:write", id, data),
+		resize: (id: number, cols: number, rows: number) => ipcRenderer.invoke("pty:resize", id, cols, rows),
+		kill: (id: number) => ipcRenderer.invoke("pty:kill", id),
+		onData: (callback: (event: { id: number; data: string }) => void) => {
+			const listener = (_event: unknown, data: { id: number; data: string }) => callback(data)
+			ipcRenderer.on("pty:data", listener)
+			return () => {
+				ipcRenderer.removeListener("pty:data", listener)
+			}
+		},
+		onExit: (callback: (event: { id: number; exitCode: number; signal?: number }) => void) => {
+			const listener = (
+				_event: unknown,
+				data: { id: number; exitCode: number; signal?: number },
+			) => callback(data)
+			ipcRenderer.on("pty:exit", listener)
+			return () => {
+				ipcRenderer.removeListener("pty:exit", listener)
+			}
+		},
+	},
 	// --- Fetch proxy (bypasses Chromium connection limits) ---
 
 	/**

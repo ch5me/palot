@@ -1,0 +1,20 @@
+Task: T12 Studio / Office preview surface
+Date: 2026-06-04
+
+Files changed
+- apps/desktop/src/renderer/components/side-panel/studio-panel.tsx
+
+What landed
+- Replaced the Studio proof shell with a real office/pdf preview surface
+- Searches project files and narrows to office-like documents and PDFs
+- Office files route through `convertOfficeToPdf`
+- PDF/text previews render inline
+- Errors from corrupt documents or missing LibreOffice surface explicitly in-panel
+
+Verification
+- `bun run check-types`
+
+Manual UI proof target
+- Search for a PDF or office file in Studio
+- Open it and confirm inline preview
+- Try a bad or unsupported document and confirm explicit error state

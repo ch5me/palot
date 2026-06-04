@@ -5,7 +5,7 @@
 This document replaces stale continuation state that pointed at completed-or-misaligned plans.
 
 Two older plan threads existed:
-- `aios-superapp/.sisyphus/plans/elf-supra-remaining-merge-plan.md` tracked Elf work from the wrong repo and is retired.
+- The retired superapp plan `elf-supra-remaining-merge-plan.md` tracked Elf work from the wrong repo and is no longer a continuation source.
 - `elf/.sisyphus/plans/firefly-design-standardization-across-products.md` completed the migration architecture/token work, but its remaining unchecked items are closure/publish tasks, not more product implementation.
 
 Current truth:
@@ -104,8 +104,8 @@ Current truth:
 ## Retired Artifacts <!-- oc:id=sec_ag -->
 
 These should no longer drive continuation:
-- `aios-superapp/.sisyphus/plans/elf-supra-remaining-merge-plan.md`
-- `aios-superapp/.sisyphus/boulder.json2`
+- the retired superapp plan `elf-supra-remaining-merge-plan.md`
+- the retired superapp boulder artifact `boulder.json2`
 - `elf/.sisyphus/boulder.json` pointing at the standardization plan
 - `elf/.sisyphus/plans/firefly-design-standardization-across-products.md` as an implementation continuation source
 

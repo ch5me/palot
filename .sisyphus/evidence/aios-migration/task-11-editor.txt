@@ -1,0 +1,28 @@
+Task: T11 Editor surface
+Date: 2026-06-04
+
+Files changed
+- apps/desktop/src/renderer/components/side-panel/editor-panel.tsx
+- apps/desktop/src/renderer/lib/monaco.ts
+- apps/desktop/src/renderer/monaco-workers.d.ts
+- apps/desktop/package.json
+
+What landed
+- Added `monaco-editor` dependency to the desktop app
+- Added renderer Monaco bootstrap helper with:
+  - worker wiring
+  - language mapping
+  - Dart grammar registration
+  - `elf-dark` theme
+- Replaced the editor proof shell with a real Monaco-based editing surface
+- Save path uses the files seam `writeTextFile`
+- Binary / oversized files show explicit error UI instead of failing silently
+
+Verification
+- `bun run check-types`
+
+Manual UI proof target
+- Search a file in the Editor surface
+- Open it in Monaco
+- Edit contents and save with Cmd/Ctrl+S
+- Try a binary or oversized file and confirm explicit error state

@@ -79,6 +79,6 @@ Minimum commands before claiming the work is ready:
 - `cd apps/desktop && bun run dev` for manual proof
 
 ## Non-goals <!-- oc:id=sec_an -->
-- Do not add new product work to `aios-superapp`
+- Do not add new product work to the retired superapp repo
 - Do not create second first-class chat workflows beside OpenCode
 - Do not let optional surfaces outrank terminal/browser/files/auth/telemetry/billing work

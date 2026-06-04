@@ -55,6 +55,8 @@ export default defineConfig({
 			alias: {
 				"@": path.resolve(__dirname, "src/renderer"),
 				"@ch5me/elf-ui": path.resolve(__dirname, "../../packages/ui/src"),
+				react: path.resolve(__dirname, "node_modules/react"),
+				"react-dom": path.resolve(__dirname, "node_modules/react-dom"),
 			},
 		},
 		worker: {

@@ -96,36 +96,42 @@ export function MemoryPanel({ agent, className }: MemoryPanelProps) {
 	const handlePin = async () => {
 		const text = draft.trim()
 		if (!text) return
+		setLoading(true)
+		setError(null)
 		if (memoryMode === "remote" || memoryMode === "hybrid") {
 			try {
 				await addRemoteMemory(
 					{ mode: memoryMode, apiBaseUrl: apiConfig.apiBaseUrl, projectId: agent.project, userId: apiConfig.userId || "default" },
 					text,
 				)
-			} catch {
+			} catch (err) {
 				// Remote write failed, still save locally
+				setError(err instanceof Error ? err.message : "Failed to write remote memory")
 			}
 		}
 		addPinnedFact({ projectKey: agent.project, text })
 		setDraft("")
-		loadMemories()
+		await loadMemories()
 	}
 
 	const handleRemove = async (item: MemoryItem) => {
+		setLoading(true)
+		setError(null)
 		if (item.source === "remote" && (memoryMode === "remote" || memoryMode === "hybrid")) {
 			try {
 				await removeRemoteMemory(
 					{ mode: memoryMode, apiBaseUrl: apiConfig.apiBaseUrl, projectId: agent.project, userId: apiConfig.userId || "default" },
 					item.id,
 				)
-			} catch {
+			} catch (err) {
 				// Remote delete failed
+				setError(err instanceof Error ? err.message : "Failed to delete remote memory")
 			}
 		}
 		if (item.source === "local") {
 			removePinnedFact({ projectKey: agent.project, factId: item.id })
 		}
-		loadMemories()
+		await loadMemories()
 	}
 
 	return (
@@ -177,16 +183,22 @@ export function MemoryPanel({ agent, className }: MemoryPanelProps) {
 						</button>
 					</div>
 				</div>
+				<div className="relative">
+					<SearchIcon className="absolute left-3 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground" aria-hidden="true" />
+					<input
+						type="text"
+						value={searchQuery}
+						onChange={(event) => setSearchQuery(event.target.value)}
+						placeholder="Search memories..."
+						className="w-full rounded-xl border border-border/70 bg-background py-2 pl-8 pr-3 text-sm text-foreground outline-none transition focus:border-foreground/20"
+					/>
+				</div>
 				{items.length > 0 && (
 					<div className="relative">
-						<SearchIcon className="absolute left-3 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground" aria-hidden="true" />
-						<input
-							type="text"
-							value={searchQuery}
-							onChange={(event) => setSearchQuery(event.target.value)}
-							placeholder="Search memories..."
-							className="w-full rounded-xl border border-border/70 bg-background py-2 pl-8 pr-3 text-sm text-foreground outline-none transition focus:border-foreground/20"
-						/>
+						<div className="rounded-lg border border-border/70 bg-muted/10 px-3 py-2 text-xs text-muted-foreground">
+							Showing {items.length} memory item{items.length === 1 ? "" : "s"}
+							{searchQuery.trim() ? ` for "${searchQuery.trim()}"` : ""}.
+						</div>
 					</div>
 				)}
 				<div className="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto pb-1">
@@ -194,6 +206,10 @@ export function MemoryPanel({ agent, className }: MemoryPanelProps) {
 						<div className="flex flex-1 items-center justify-center">
 							<div className="size-4 animate-spin rounded-full border-2 border-muted-foreground/20 border-t-muted-foreground/60" />
 						</div>
+					) : items.length === 0 && searchQuery.trim() ? (
+						<p className="py-4 text-center text-xs text-muted-foreground">
+							No memories match "{searchQuery.trim()}"
+						</p>
 					) : items.length === 0 ? (
 						<div className="flex flex-1 flex-col items-center justify-center rounded-xl border border-dashed border-border/70 bg-muted/10 px-4 py-8 text-center">
 							<SparklesIcon className="size-4 text-muted-foreground" aria-hidden="true" />
@@ -202,8 +218,6 @@ export function MemoryPanel({ agent, className }: MemoryPanelProps) {
 								Add context for {agent.project} so next session starts smarter.
 							</p>
 						</div>
-					) : items.length === 0 && searchQuery ? (
-						<p className="text-center text-xs text-muted-foreground py-4">No memories match "{searchQuery}"</p>
 					) : (
 						items.map((item) => (
 							<div key={item.id} className="rounded-xl border border-border/70 bg-muted/20 p-3">

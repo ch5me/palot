@@ -67,8 +67,6 @@ function channelIcon(channelId: string) {
 			return <HashIcon className="size-4 text-foreground" aria-hidden="true" />
 		case "telegram":
 			return <SendIcon className="size-4 text-foreground" aria-hidden="true" />
-		case "skills":
-			return <SparklesIcon className="size-4 text-foreground" aria-hidden="true" />
 		case "gmail":
 			return <MailIcon className="size-4 text-foreground" aria-hidden="true" />
 		case "imessage":
@@ -124,7 +122,7 @@ function humanizeDuration(value: string | null) {
 }
 
 function healthSentence(channel: BridgeChannel) {
-	const parts = [channel.alive ? "reachable" : "configured"]
+	const parts = [channel.alive ? "working normally" : "configured"]
 	const uptime = humanizeDuration(channel.uptime)
 	if (uptime && uptime !== "moments") parts.push(`up for ${uptime}`)
 	const last = humanizeDuration(channel.lastActivityAgo)
@@ -138,20 +136,14 @@ function MessageRow({ message }: { message: BridgeMessage }) {
 		<div
 			className={cn(
 				"flex max-w-[92%] flex-col gap-1 rounded-lg border px-2.5 py-2",
-				outbound
-					? "self-end border-sky-500/20 bg-sky-500/8"
-					: "self-start border-border bg-background/80",
+				outbound ? "self-end border-sky-500/20 bg-sky-500/8" : "self-start border-border bg-background/80",
 			)}
 		>
 			<div className="flex items-center gap-1.5 text-[10px] text-muted-foreground">
-				{outbound ? (
-					<ArrowUpRightIcon className="size-3 text-sky-500" aria-hidden="true" />
-				) : (
-					<ArrowDownLeftIcon className="size-3 text-emerald-500" aria-hidden="true" />
-				)}
+				{outbound ? <ArrowUpRightIcon className="size-3 text-sky-500" aria-hidden="true" /> : <ArrowDownLeftIcon className="size-3 text-emerald-500" aria-hidden="true" />}
 				<span className="truncate font-medium text-foreground">{message.peer}</span>
 				<span className="ml-auto shrink-0">{message.ts}</span>
-				{message.tsAgo && <span className="shrink-0">· {message.tsAgo} ago</span>}
+				{message.tsAgo ? <span className="shrink-0">· {message.tsAgo} ago</span> : null}
 			</div>
 			{message.text ? <p className="text-[11px] leading-5 text-foreground">{message.text}</p> : null}
 		</div>
@@ -177,16 +169,12 @@ function BridgeCard({ channel }: { channel: BridgeChannel }) {
 				<div className="min-w-0 flex-1">
 					<div className="flex items-center gap-2">
 						<h4 className="truncate text-sm font-medium text-foreground">{channel.name}</h4>
-						<span className="rounded-full bg-background px-2 py-0.5 text-[10px] uppercase tracking-wide text-muted-foreground">
-							{channel.kind}
-						</span>
+						<span className="rounded-full bg-background px-2 py-0.5 text-[10px] uppercase tracking-wide text-muted-foreground">{channel.kind}</span>
 					</div>
 					<div className="mt-1 flex items-center gap-2 text-[11px]">
 						<span className={cn("size-2 rounded-full", tone.dot)} />
 						<span className={tone.text}>{tone.label}</span>
-						{channel.messagesTotal != null && (
-							<span className="text-muted-foreground">· {channel.messagesTotal.toLocaleString()} events</span>
-						)}
+						{channel.messagesTotal != null ? <span className="text-muted-foreground">· {channel.messagesTotal.toLocaleString()} events</span> : null}
 					</div>
 					<p className="mt-2 text-xs leading-5 text-muted-foreground">{summary}</p>
 				</div>
@@ -209,9 +197,7 @@ function BridgeCard({ channel }: { channel: BridgeChannel }) {
 							{activity.isLoading ? (
 								<div className="text-xs text-muted-foreground">Loading activity...</div>
 							) : activity.data?.messages.length ? (
-								activity.data.messages.map((message, index) => (
-									<MessageRow key={`${message.ts}-${message.peer}-${index}`} message={message} />
-								))
+								activity.data.messages.map((message, index) => <MessageRow key={`${message.ts}-${message.peer}-${index}`} message={message} />)
 							) : (
 								<div className="text-xs text-muted-foreground">No recent bridge activity.</div>
 							)}
@@ -223,7 +209,7 @@ function BridgeCard({ channel }: { channel: BridgeChannel }) {
 					<span>
 						{channel.status === "soon"
 							? "Keep this lane visible while integrations architecture lands."
-							: "Connection details belong in provider config and future connector settings."}
+							: "Connector known, but no live process or launchd/log signal is currently present."}
 					</span>
 					<Button type="button" variant="outline" size="sm" disabled>
 						<Link2Icon className="size-4" aria-hidden="true" />
@@ -250,7 +236,7 @@ export function BridgesPanel({ agent, className }: BridgesPanelProps) {
 							<h3 className="text-sm font-medium text-foreground">Bridges</h3>
 						</div>
 						<p className="mt-1 text-xs text-muted-foreground">
-							Integration hub for {agent.project}: agent runtime, tool rails, and connector backlog.
+							Integration hub for {agent.project}: live connector probes, runtime status, and recent activity.
 						</p>
 					</div>
 					<Button type="button" variant="outline" size="sm" onClick={() => void bridges.refetch()}>
@@ -271,8 +257,8 @@ export function BridgesPanel({ agent, className }: BridgesPanelProps) {
 					</div>
 					<div className="rounded-xl border border-border bg-muted/10 px-3 py-3">
 						<div className="text-[11px] uppercase tracking-wide text-muted-foreground">Current stance</div>
-						<div className="mt-2 text-sm font-medium text-foreground">Info architecture first</div>
-						<p className="mt-1 text-xs text-muted-foreground">Use this surface as the connectors map before per-vendor setup flows exist.</p>
+						<div className="mt-2 text-sm font-medium text-foreground">Truthful live probes</div>
+						<p className="mt-1 text-xs text-muted-foreground">Connected vs disconnected is now derived from actual process, launchd, and log footprints.</p>
 					</div>
 				</div>
 
