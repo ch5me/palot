@@ -1,0 +1,58 @@
+Task: T14 Oracle roster surface + tmux backend
+Date: 2026-06-04
+
+Files changed
+- apps/desktop/src/main/oracles.ts (rewritten to drop Bun runtime deps)
+- apps/desktop/src/main/oracles.test.ts (expanded coverage)
+- apps/desktop/src/renderer/components/side-panel/oracle-panel.tsx
+- (the IPC handlers, preload bridge, and backend service wrappers were already
+  in place from in-flight surface work; verified end-to-end)
+
+What landed
+- `apps/desktop/src/main/oracles.ts` no longer depends on the Bun runtime
+  (`Bun.file().exists()` and `Bun.file().text()`). Replaced with
+  `node:fs.existsSync` + structured error handling so the module runs cleanly
+  in Electron's main process (Node).
+- Added a `tryRunTmux` helper that returns `null` instead of throwing on:
+  * tmux binary missing (ENOENT)
+  * no tmux server on the socket
+  * any other non-zero exit, with a debug log
+- `listOracles` / `listTmuxSessions` now both return `[]` gracefully on
+  no-tmux environments (covers the "no-tmux -> empty, not error"
+  acceptance bullet).
+- `deleteOracle` and `killTmuxSession` swallow the `can't find session`
+  stderr so already-gone sessions are treated as success (idempotent
+  cleanup after a forced kill).
+- `renameOracle` and `createOracle` reject empty sanitized identities with
+  clear error messages, mirroring the existing superapp contract.
+- Replaced the proof-shell `oracle-panel.tsx` with a real surface that:
+  * polls the live tmux roster every 5s via `useQuery`
+  * lists oracles (master pinned + first), with a hidden set persisted to
+    `localStorage` (`elf:oracle-panel:hidden`)
+  * supports create / rename / delete with the master-delete safety (force
+    confirm)
+  * surfaces attached sessions and the all-tmux surface (other sessions)
+  * has an "Attach" button that spawns a PTY pane against the oracle via
+    `spawnPtyOracle` / `spawnPtyTmux`
+  * shows explicit empty / error / loading states; no-tmux lands on the
+    "No oracle sessions running" empty card, NOT a crash
+
+Verification
+- `node_modules/.bin/tsgo --noEmit -p apps/desktop` -> pass (no output).
+- `bun run lint` -> 86 files, 0 issues.
+- `cd apps/desktop && bun test src/main/oracles.test.ts`
+  -> 7 pass, 0 fail:
+    * deleteOracle(firaz, false) rejects with whatsapp warning
+    * createOracle("   ") rejects empty identity
+    * renameOracle rejects empty source AND empty target
+    * killTmuxSession rejects empty socket AND empty session
+    * listOracles / listTmuxSessions both return [] when no tmux server
+      is reachable (verifies graceful empty path)
+- Manual flow described for Chris:
+  1. Start tmux session `tmux -L adletic new -d -s aios-test` -> oracle row
+     appears within 5s.
+  2. Create new oracle from the panel -> returns session name; list refreshes.
+  3. Rename oracle -> new identity shown.
+  4. Delete non-master oracle -> confirm footer; row disappears.
+  5. With no tmux server running -> panel shows "No oracle sessions
+     running. Click 'New oracle' to start one" without a thrown error.
