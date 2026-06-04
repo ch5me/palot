@@ -33,7 +33,7 @@
 		"eb:win": "electron-builder --win --config electron-builder.yml --publish never",
 		"rebuild": "electron-rebuild",
 		"lint": "biome check .",
-		"check-types": "tsgo --noEmit",
+		"check-types": "bunx tsgo --noEmit",
 		"clean": "rm -rf out release dist node_modules .turbo"
 	},
 	"dependencies": {
@@ -87,6 +87,7 @@
 		"@types/react-dom": "^19.0.0",
 		"@types/react-syntax-highlighter": "^15.5.13",
 		"@types/semver": "^7.7.1",
+		"@typescript/native-preview": "^7.0.0-dev.20260207.1",
 		"@vitejs/plugin-react": "^5.1.4",
 		"drizzle-kit": "^1.0.0-beta.15-859cf75",
 		"electron": "40.2.1",

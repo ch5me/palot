@@ -59,6 +59,7 @@ generic knowledge.
 - **Lint/format fix**: `bun run lint:fix` or `bunx biome check --write .` (from root)
 - **Type check all**: `bun run check-types` (from root, via Turborepo)
 - **Type check desktop**: `cd apps/desktop && bun run check-types` (uses `tsgo`)
+- If a declared verify/build/test/typecheck command fails only because a prerequisite like `tsgo`, Bun types, generated `.d.ts`, or another expected tool is missing, fix that prerequisite before handoff. Broken verification plumbing is part of the task.
 - **Run all tests**: `cd packages/configconv && bun test`
 - **Run single test file**: `cd packages/configconv && bun test test/converter/config.test.ts`
 - **Run tests by name**: `cd packages/configconv && bun test --grep "converts model"`

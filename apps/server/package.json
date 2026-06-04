@@ -18,7 +18,7 @@
 		"dev": "bun run --hot src/index.ts",
 		"build": "tsc && bun build src/index.ts --outdir dist --target bun",
 		"build:types": "tsc",
-		"check-types": "tsgo --noEmit"
+		"check-types": "bunx tsgo --noEmit"
 	},
 	"dependencies": {
 		"@opencode-ai/sdk": "^1.2.1",
@@ -26,6 +26,7 @@
 	},
 	"devDependencies": {
 		"@types/bun": "^1.2.14",
+		"@typescript/native-preview": "^7.0.0-dev.20260207.1",
 		"typescript": "^5.8.3"
 	}
 }

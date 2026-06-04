@@ -22,7 +22,7 @@
 		"./utils/*": "./src/utils/*.ts"
 	},
 	"scripts": {
-		"check-types": "tsgo --noEmit",
+		"check-types": "bunx tsgo --noEmit",
 		"test": "bun test",
 		"lint": "biome check .",
 		"clean": "rm -rf node_modules .turbo"
@@ -35,6 +35,7 @@
 	},
 	"devDependencies": {
 		"@types/bun": "latest",
+		"@typescript/native-preview": "^7.0.0-dev.20260207.1",
 		"typescript": "^5.8.3"
 	}
 }

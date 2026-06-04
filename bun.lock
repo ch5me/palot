@@ -26,7 +26,7 @@
     },
     "../ch5-packages/packages/motion/motion": {
       "name": "@ch5me/motion",
-      "version": "0.1.0",
+      "version": "0.2.0",
       "dependencies": {
         "@ch5me/vitest-react-native-mocks": "workspace:*",
         "@react-spring/core": "^10.1.0",
@@ -86,7 +86,7 @@
     },
     "../ch5-packages/packages/workspace/contract": {
       "name": "@ch5me/workspace",
-      "version": "0.1.0",
+      "version": "0.1.1",
       "dependencies": {
         "@ch5me/motion": "workspace:*",
         "@react-spring/web": "^10.1.0",
@@ -153,6 +153,7 @@
         "@types/react-dom": "^19.0.0",
         "@types/react-syntax-highlighter": "^15.5.13",
         "@types/semver": "^7.7.1",
+        "@typescript/native-preview": "^7.0.0-dev.20260207.1",
         "@vitejs/plugin-react": "^5.1.4",
         "drizzle-kit": "^1.0.0-beta.15-859cf75",
         "electron": "40.2.1",
@@ -177,6 +178,7 @@
       },
       "devDependencies": {
         "@types/bun": "^1.2.14",
+        "@typescript/native-preview": "^7.0.0-dev.20260207.1",
         "typescript": "^5.8.3",
       },
     },
@@ -191,6 +193,7 @@
       },
       "devDependencies": {
         "@types/bun": "latest",
+        "@typescript/native-preview": "^7.0.0-dev.20260207.1",
         "typescript": "^5.8.3",
       },
     },
@@ -207,6 +210,7 @@
       },
       "devDependencies": {
         "@types/bun": "latest",
+        "@typescript/native-preview": "^7.0.0-dev.20260207.1",
         "typescript": "^5.8.3",
       },
     },
@@ -259,6 +263,7 @@
         "@tailwindcss/vite": "^4.0.0",
         "@types/react": "^19.0.0",
         "@types/react-dom": "^19.0.0",
+        "@typescript/native-preview": "^7.0.0-dev.20260207.1",
         "tailwindcss": "^4.0.0",
         "typescript": "^5.7.0",
       },
