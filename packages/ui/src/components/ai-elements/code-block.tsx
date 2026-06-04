@@ -139,6 +139,22 @@ const getHighlighter = (
 		langs: [language],
 		themes: ["github-light", "github-dark"],
 	})
+		// oxlint-disable-next-line eslint-plugin-promise(prefer-await-to-then)
+		.catch((error: unknown) => {
+			// Shiki's default fine-grained bundle doesn't ship every language
+			// (e.g. `gitignore`, `dockerignore`, `properties`). Fall back to
+			// a `text` highlighter so the code block still renders, and cache
+			// the fallback under the original language key so the warning
+			// only logs once per unsupported language.
+			console.warn(
+				`[code-block] Language "${language}" not in shiki bundle; falling back to "text"`,
+				error,
+			)
+			return createHighlighter({
+				langs: ["text"],
+				themes: ["github-light", "github-dark"],
+			})
+		})
 
 	highlighterCache.set(language, highlighterPromise)
 	return highlighterPromise
