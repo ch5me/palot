@@ -12,7 +12,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@ch5me/palot-ui/compone
 import { cn } from "@ch5me/palot-ui/lib/utils"
 import { Pane, PaneSeam, ResizablePanes } from "@ch5me/workspace"
 import { useNavigate, useParams } from "@tanstack/react-router"
-import { useAtom, useAtomValue } from "jotai"
+import { useAtom, useAtomValue, useSetAtom } from "jotai"
 import {
 	ArrowLeftIcon,
 	CheckIcon,
@@ -29,10 +29,20 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import type { OpenInTarget } from "../../preload/api"
 import {
 	browserPanelEnabledAtom,
+	bridgesSurfaceEnabledAtom,
+	claudeSurfaceEnabledAtom,
+	crmSurfaceEnabledAtom,
+	editorSurfaceEnabledAtom,
+	filesSurfaceEnabledAtom,
 	memorySurfaceEnabledAtom,
 	notesSurfaceEnabledAtom,
+	oracleSurfaceEnabledAtom,
+	pluginsSurfaceEnabledAtom,
 	pulseSurfaceEnabledAtom,
 	reviewSurfaceEnabledAtom,
+	studioSurfaceEnabledAtom,
+	terminalSurfaceEnabledAtom,
+	voiceSurfaceEnabledAtom,
 } from "../atoms/feature-flags"
 import {
 	getFireflySurfaceTabs,
@@ -41,6 +51,7 @@ import {
 import {
 	reviewPanelSettingsAtom,
 	sessionDiffStatsFamily,
+	setAvailableSidePanelTabsAtom,
 	sidePanelActiveTabAtom,
 	sidePanelOpenAtom,
 } from "../atoms/ui"
@@ -159,6 +170,7 @@ export function AgentDetail({
 
 	const [sidePanelOpen, setSidePanelOpen] = useAtom(sidePanelOpenAtom)
 	const [sidePanelActiveTab] = useAtom(sidePanelActiveTabAtom)
+	const setAvailableSidePanelTabs = useSetAtom(setAvailableSidePanelTabsAtom)
 	const [reviewSettings, setReviewSettings] = useAtom(reviewPanelSettingsAtom)
 
 	useEffect(() => {
@@ -177,7 +189,6 @@ export function AgentDetail({
 		return () => document.removeEventListener("keydown", handleKeyDown)
 	}, [setSidePanelOpen, setReviewSettings])
 
-	// Close review panel when navigating to a session with no diffs
 	const prevSessionIdRef = useRef(agent.sessionId)
 	const diffStats = useAtomValue(sessionDiffStatsFamily(agent.sessionId))
 	useEffect(() => {
@@ -215,7 +226,6 @@ export function AgentDetail({
 		}
 	}, [isEditingTitle])
 
-	// ===== Inject session info into AppBar right section =====
 	useEffect(() => {
 		setAppBarContent(
 			<SessionAppBarContent
@@ -255,6 +265,16 @@ export function AgentDetail({
 	const notesSurfaceEnabled = useAtomValue(notesSurfaceEnabledAtom)
 	const pulseSurfaceEnabled = useAtomValue(pulseSurfaceEnabledAtom)
 	const memorySurfaceEnabled = useAtomValue(memorySurfaceEnabledAtom)
+	const filesSurfaceEnabled = useAtomValue(filesSurfaceEnabledAtom)
+	const terminalSurfaceEnabled = useAtomValue(terminalSurfaceEnabledAtom)
+	const editorSurfaceEnabled = useAtomValue(editorSurfaceEnabledAtom)
+	const pluginsSurfaceEnabled = useAtomValue(pluginsSurfaceEnabledAtom)
+	const bridgesSurfaceEnabled = useAtomValue(bridgesSurfaceEnabledAtom)
+	const crmSurfaceEnabled = useAtomValue(crmSurfaceEnabledAtom)
+	const studioSurfaceEnabled = useAtomValue(studioSurfaceEnabledAtom)
+	const voiceSurfaceEnabled = useAtomValue(voiceSurfaceEnabledAtom)
+	const oracleSurfaceEnabled = useAtomValue(oracleSurfaceEnabledAtom)
+	const claudeSurfaceEnabled = useAtomValue(claudeSurfaceEnabledAtom)
 
 	const sidePanelTabs: SidePanelTabDef[] = useMemo(() => {
 		const ctx: FireflySurfaceContext = {
@@ -266,6 +286,16 @@ export function AgentDetail({
 				notes: notesSurfaceEnabled,
 				pulse: pulseSurfaceEnabled,
 				memory: memorySurfaceEnabled,
+				files: filesSurfaceEnabled,
+				terminal: terminalSurfaceEnabled,
+				editor: editorSurfaceEnabled,
+				plugins: pluginsSurfaceEnabled,
+				bridges: bridgesSurfaceEnabled,
+				crm: crmSurfaceEnabled,
+				studio: studioSurfaceEnabled,
+				voice: voiceSurfaceEnabled,
+				oracle: oracleSurfaceEnabled,
+				claude: claudeSurfaceEnabled,
 			},
 			chatTurnCount: chatTurns.length,
 		}
@@ -278,18 +308,25 @@ export function AgentDetail({
 		notesSurfaceEnabled,
 		pulseSurfaceEnabled,
 		memorySurfaceEnabled,
+		filesSurfaceEnabled,
+		terminalSurfaceEnabled,
+		editorSurfaceEnabled,
+		pluginsSurfaceEnabled,
+		bridgesSurfaceEnabled,
+		crmSurfaceEnabled,
+		studioSurfaceEnabled,
+		voiceSurfaceEnabled,
+		oracleSurfaceEnabled,
+		claudeSurfaceEnabled,
 		chatTurns.length,
 	])
 
 	useEffect(() => {
-		if (sidePanelTabs.length === 0 || !sidePanelTabs.some((tab) => tab.id === sidePanelActiveTab)) {
-			setSidePanelOpen(false)
-		}
-	}, [sidePanelActiveTab, sidePanelTabs, setSidePanelOpen])
+		setAvailableSidePanelTabs(sidePanelTabs.filter((tab) => tab.availability.available).map((tab) => tab.id))
+	}, [setAvailableSidePanelTabs, sidePanelTabs])
 
 	const chatContent = (
 		<>
-			{/* Sub-agent breadcrumb -- navigate back to parent */}
 			{agent.parentId && (
 				<button
 					type="button"
@@ -403,13 +440,10 @@ function SessionAppBarContent({
 
 	return (
 		<div className="flex h-full w-full min-w-0 items-center gap-2.5">
-			{/* App name */}
 			<PalotWordmark className="hidden h-[11px] w-auto shrink-0 text-muted-foreground/70 md:block" />
 
-			{/* Separator */}
 			<div className="hidden h-3 w-px shrink-0 bg-border/60 md:block" />
 
-			{/* Breadcrumb: project / [branch badge] / session name */}
 			<div
 				className="flex min-w-0 flex-1 items-center gap-1.5 overflow-hidden"
 				style={{
@@ -417,23 +451,20 @@ function SessionAppBarContent({
 					WebkitAppRegion: "no-drag",
 				}}
 			>
-				{/* Project name */}
 				<span className="hidden shrink-0 text-xs leading-none text-muted-foreground sm:inline">
 					{agent.project}
 				</span>
 
-				{/* Worktree branch badge */}
 				{agent.worktreeBranch && <WorktreeBranchBadge branch={agent.worktreeBranch} />}
 
 				<span className="hidden shrink-0 text-xs leading-none text-muted-foreground/40 sm:inline">
 					/
 				</span>
 
-				{/* Session name — click to edit */}
 				{isEditingTitle ? (
 					<div className="inline-grid min-w-0 max-w-full flex-1 items-center">
-						{/* Ghost span — sizes the grid column to match the text width */}
-						<span className="invisible col-start-1 row-start-1 truncate text-xs font-semibold leading-none">
+					<span className="invisible col-start-1 row-start-1 truncate text-xs font-semibold leading-none">
+
 							{titleValue}
 						</span>
 						<Input
@@ -465,7 +496,6 @@ function SessionAppBarContent({
 				)}
 			</div>
 
-			{/* Right-aligned items */}
 			<div
 				className="flex min-w-0 shrink-0 items-center gap-2.5 overflow-hidden"
 				style={{
@@ -473,7 +503,6 @@ function SessionAppBarContent({
 					WebkitAppRegion: "no-drag",
 				}}
 			>
-				{/* Worktree actions (Apply to local, Commit & push) */}
 				{agent.worktreePath && <WorktreeActions agent={agent} />}
 
 				{agent.worktreePath && <div className="hidden h-3 w-px shrink-0 bg-border/60 md:block" />}
@@ -510,17 +539,14 @@ function SessionAppBarContent({
 					</TooltipContent>
 				</Tooltip>
 
-				{/* Session metrics bar */}
 				<div className="hidden min-w-0 shrink lg:block">
 					<SessionMetricsBar sessionId={agent.sessionId} />
 				</div>
 
-				{/* Open in external editor */}
 				<div className="hidden md:block">
 					<OpenInButton directory={agent.worktreePath ?? agent.directory} />
 				</div>
 
-				{/* Open in terminal */}
 				<div className="hidden md:block">
 					<AttachCommand
 						sessionId={agent.sessionId}
@@ -528,7 +554,6 @@ function SessionAppBarContent({
 					/>
 				</div>
 
-					{/* Close button */}
 				<button
 					type="button"
 					onClick={() =>
@@ -737,7 +762,7 @@ function AttachCommand({ sessionId, directory }: { sessionId: string; directory:
 	const [copied, setCopied] = useState(false)
 	const [open, setOpen] = useState(false)
 
-	const command = `opencode attach ${url ?? "http://127.0.0.1:4101"} --session ${sessionId} --dir ${directory}`
+	const command = `opencode attach ${url ?? "http://127.0.0.1:4096"} --session ${sessionId} --dir ${directory}`
 
 	const handleOpen = useCallback(
 		async (nextOpen: boolean) => {

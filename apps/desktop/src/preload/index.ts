@@ -160,6 +160,8 @@ contextBridge.exposeInMainWorld("palot", {
 		setPreferred: (targetId: string) => ipcRenderer.invoke("open-in:set-preferred", targetId),
 	},
 
+	openExternal: (url: string) => ipcRenderer.invoke("browser:open-external", url),
+
 	// --- Native theme (syncs macOS glass tint to app color scheme) ---
 
 	/** Set the native theme source to control macOS glass tint color. */
@@ -181,6 +183,12 @@ contextBridge.exposeInMainWorld("palot", {
 
 	/** Opens a native folder picker dialog. Returns the selected path, or null if cancelled. */
 	pickDirectory: () => ipcRenderer.invoke("dialog:open-directory"),
+	listDirectory: (directory: string) => ipcRenderer.invoke("files:list-directory", directory),
+	readFile: (filePath: string) => ipcRenderer.invoke("files:read", filePath),
+	bridges: {
+		list: () => ipcRenderer.invoke("bridges:list"),
+		activity: (id: string, limit?: number) => ipcRenderer.invoke("bridges:activity", id, limit),
+	},
 
 	// --- Fetch proxy (bypasses Chromium connection limits) ---
 

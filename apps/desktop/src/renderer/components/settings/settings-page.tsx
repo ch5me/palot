@@ -15,6 +15,7 @@ import {
 	PlugIcon,
 	ServerIcon,
 	SettingsIcon,
+	UserIcon,
 	WrenchIcon,
 } from "lucide-react"
 import { useEffect } from "react"
@@ -29,6 +30,7 @@ type SettingsTab =
 	| "servers"
 	| "notifications"
 	| "providers"
+	| "profiles"
 	| "worktrees"
 	| "setup"
 	| "about"
@@ -38,6 +40,7 @@ const tabs: { id: SettingsTab; label: string; icon: typeof SettingsIcon }[] = [
 	{ id: "servers", label: "Servers", icon: ServerIcon },
 	{ id: "notifications", label: "Notifications", icon: BellIcon },
 	{ id: "providers", label: "Providers", icon: PlugIcon },
+	{ id: "profiles", label: "Profiles", icon: UserIcon },
 	{ id: "worktrees", label: "Worktrees", icon: GitForkIcon },
 	{ id: "setup", label: "Setup", icon: WrenchIcon },
 	{ id: "about", label: "About", icon: InfoIcon },

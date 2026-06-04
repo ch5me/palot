@@ -3,6 +3,7 @@ import type {
 	PermissionRequest as SdkPermissionRequest,
 	QuestionRequest as SdkQuestionRequest,
 } from "@opencode-ai/sdk/v2/client"
+import type { SidePanelTabId } from "../atoms/ui"
 
 // Re-export all SDK types from v2
 export type {
@@ -115,6 +116,11 @@ export interface Activity {
  * only needed by the SessionMetricsBar and command palette. Those components
  * subscribe to `sessionMetricsFamily` directly.
  */
+export type FireflySurfaceTarget = {
+	kind: "side-panel"
+	tab: SidePanelTabId
+}
+
 export interface Agent {
 	id: string
 	name: string

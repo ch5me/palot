@@ -7,24 +7,21 @@ export const commandPaletteOpenAtom = atom(false)
 
 export const leftPanelOpenAtom = atom(true)
 
-/**
- * The session ID currently being viewed in the main content area.
- * Set by the router/session view when the user navigates to a session.
- * Used by metrics atoms to skip expensive recomputation for background sessions.
- */
 export const viewedSessionIdAtom = atom<string | null>(null)
 
-// ============================================================
-// Side Panel State
-// ============================================================
+export type SidePanelTabId = "review" | "browser" | "notes" | "pulse" | "memory" | "files" | "terminal" | "editor" | "plugins" | "bridges" | "crm" | "studio" | "voice" | "oracle" | "claude"
 
-/** Available tab IDs for the session side panel */
-export type SidePanelTabId = "review" | "browser" | "notes" | "pulse" | "memory"
+export interface SidePanelRoute {
+	tab: SidePanelTabId
+	focusToken: number
+}
 
-/** Whether the session side panel is open (resets to closed on app start) */
+export interface PaneRoutingState {
+	sidePanel: SidePanelRoute | null
+}
+
 export const sidePanelOpenAtom = atomWithStorage<boolean>("palot:side-panel-open", false)
 
-/** Which tab is active in the side panel */
 export const sidePanelActiveTabAtom = atom<SidePanelTabId>((get) => get(fireflySurfacePreferencesAtom).lastSidePanelTab)
 
 export const setSidePanelActiveTabAtom = atom(null, (get, set, tab: SidePanelTabId) => {
@@ -34,36 +31,55 @@ export const setSidePanelActiveTabAtom = atom(null, (get, set, tab: SidePanelTab
 	})
 })
 
-/** @deprecated Use sidePanelOpenAtom + sidePanelActiveTabAtom instead */
+export const sidePanelFocusTokenAtom = atom(0)
+
+export const paneRoutingStateAtom = atom<PaneRoutingState>((get) => ({
+	sidePanel: get(sidePanelOpenAtom)
+		? {
+			tab: get(sidePanelActiveTabAtom),
+			focusToken: get(sidePanelFocusTokenAtom)
+		}
+		: null,
+}))
+
+export const openSidePanelTabAtom = atom(null, (get, set, tab: SidePanelTabId) => {
+	set(sidePanelOpenAtom, true)
+	set(setSidePanelActiveTabAtom, tab)
+	set(sidePanelFocusTokenAtom, get(sidePanelFocusTokenAtom) + 1)
+})
+
+export const closeSidePanelAtom = atom(null, (_get, set) => {
+	set(sidePanelOpenAtom, false)
+})
+
+export const setAvailableSidePanelTabsAtom = atom(null, (get, set, tabs: SidePanelTabId[]) => {
+	if (tabs.length === 0) {
+		set(sidePanelOpenAtom, false)
+		return
+	}
+
+	const activeTab = get(sidePanelActiveTabAtom)
+	if (tabs.includes(activeTab)) {
+		return
+	}
+
+	set(setSidePanelActiveTabAtom, tabs[0])
+	set(sidePanelFocusTokenAtom, get(sidePanelFocusTokenAtom) + 1)
+})
+
 export const reviewPanelOpenAtom = sidePanelOpenAtom
 
-/**
- * File path to highlight in the review panel.
- * Set by external components (e.g. edit tool card "View diff" button).
- * The ReviewPanel subscribes to this and syncs it with its local selectedFile state.
- * Cleared automatically after the panel consumes it.
- */
 export const reviewPanelSelectedFileAtom = atom<string | null>(null)
 
-/**
- * Action atom: opens the review panel and jumps to a specific file.
- * Usage: `const viewDiff = useSetAtom(viewFileInDiffPanelAtom)`
- *        `viewDiff("src/foo.ts")`
- */
 export const viewFileInDiffPanelAtom = atom(null, (_get, set, filePath: string) => {
-	set(sidePanelOpenAtom, true)
-	set(setSidePanelActiveTabAtom, "review")
+	set(openSidePanelTabAtom, "review")
 	set(reviewPanelSelectedFileAtom, filePath)
 })
 
-/** Diff display style preference */
 export type DiffStyle = "unified" | "split"
 
-/** Review panel user preferences (persisted to localStorage) */
 export interface ReviewPanelSettings {
-	/** Diff rendering style: unified (single column) or split (side-by-side) */
 	diffStyle: DiffStyle
-	/** Whether the review panel is expanded to full width */
 	expanded: boolean
 }
 
@@ -72,10 +88,8 @@ export const reviewPanelSettingsAtom = atomWithStorage<ReviewPanelSettings>(
 	{ diffStyle: "unified", expanded: false },
 )
 
-/** Per-session diff data from the OpenCode API */
 export const sessionDiffFamily = atomFamily((_sessionId: string) => atom<FileDiff[]>([]))
 
-/** Write-only atom to update session diff data */
 export const setSessionDiffAtom = atom(
 	null,
 	(_get, set, args: { sessionId: string; diffs: FileDiff[] }) => {
@@ -83,10 +97,8 @@ export const setSessionDiffAtom = atom(
 	},
 )
 
-/** Per-session diff filter: null = all session changes, string = specific messageID */
 export const diffFilterFamily = atomFamily((_sessionId: string) => atom<string | null>(null))
 
-/** Computed total stats for a session's diffs (all files, including generated) */
 export const sessionDiffStatsFamily = atomFamily((sessionId: string) =>
 	atom((get) => {
 		const diffs = get(sessionDiffFamily(sessionId))

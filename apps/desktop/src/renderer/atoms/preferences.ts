@@ -1,6 +1,7 @@
 import { atom } from "jotai"
 import { atomWithStorage } from "jotai/utils"
 import type { WindowChromeTier } from "../../preload/api"
+import { DEFAULT_FIREFLY_PROFILE, DEFAULT_FIREFLY_PROFILE_ID, type FireflyProfile } from "../lib/profile"
 import type { ColorScheme } from "../lib/themes"
 
 // ============================================================
@@ -17,13 +18,18 @@ export interface PersistedModelRef {
 }
 
 export interface FireflySurfacePreferences {
-	lastSidePanelTab: "review" | "browser" | "notes" | "pulse" | "memory"
+	lastSidePanelTab: "review" | "browser" | "notes" | "pulse" | "memory" | "files" | "terminal" | "editor" | "plugins" | "bridges" | "crm" | "studio" | "voice" | "oracle" | "claude"
 }
 
 export interface PinnedFact {
 	id: string
 	text: string
 	createdAt: number
+}
+
+export interface FireflyProfilePreferences {
+	profiles: FireflyProfile[]
+	activeProfileId: string
 }
 
 // ============================================================
@@ -123,6 +129,47 @@ export const pinnedFactsAtom = atomWithStorage<Record<string, PinnedFact[]>>(
 	"palot:pinnedFacts",
 	{},
 )
+
+export const fireflyProfilePreferencesAtom = atomWithStorage<FireflyProfilePreferences>(
+	"palot:fireflyProfilePreferences",
+	{
+		profiles: [DEFAULT_FIREFLY_PROFILE],
+		activeProfileId: DEFAULT_FIREFLY_PROFILE_ID,
+	},
+)
+
+export const activeFireflyProfileAtom = atom((get) => {
+	const preferences = get(fireflyProfilePreferencesAtom)
+	return (
+		preferences.profiles.find((profile) => profile.id === preferences.activeProfileId) ??
+		preferences.profiles[0] ??
+		DEFAULT_FIREFLY_PROFILE
+	)
+})
+
+export const setActiveFireflyProfileAtom = atom(null, (get, set, profileId: string) => {
+	const preferences = get(fireflyProfilePreferencesAtom)
+	if (!preferences.profiles.some((profile) => profile.id === profileId)) {
+		return
+	}
+	set(fireflyProfilePreferencesAtom, {
+		...preferences,
+		activeProfileId: profileId,
+	})
+})
+
+export const upsertFireflyProfileAtom = atom(null, (get, set, profile: FireflyProfile) => {
+	const preferences = get(fireflyProfilePreferencesAtom)
+	const existingIndex = preferences.profiles.findIndex((item) => item.id === profile.id)
+	const profiles =
+		existingIndex >= 0
+			? preferences.profiles.map((item, index) => (index === existingIndex ? profile : item))
+			: [...preferences.profiles, profile]
+	set(fireflyProfilePreferencesAtom, {
+		profiles,
+		activeProfileId: preferences.activeProfileId,
+	})
+})
 
 export type MemoryMode = "local" | "hybrid" | "remote"
 

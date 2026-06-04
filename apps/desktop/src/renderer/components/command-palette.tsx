@@ -20,10 +20,18 @@ import {
 	EyeIcon,
 	EyeOffIcon,
 	FileDiffIcon,
+	FilesIcon,
 	FilmIcon,
 	GitBranchIcon,
 	GitForkIcon,
+	MicIcon,
 	MonitorIcon,
+	MonitorPlayIcon,
+	PlugIcon,
+	RectangleEllipsisIcon,
+	Share2Icon,
+	TerminalSquareIcon,
+	UsersIcon,
 	MoonIcon,
 	PaletteIcon,
 	PlusIcon,
@@ -40,22 +48,39 @@ import { sessionMetricsFamily } from "../atoms/derived/session-metrics"
 import {
 	automationsEnabledAtom,
 	browserPanelEnabledAtom,
+	bridgesSurfaceEnabledAtom,
+	claudeSurfaceEnabledAtom,
+	crmSurfaceEnabledAtom,
+	editorSurfaceEnabledAtom,
+	filesSurfaceEnabledAtom,
 	memorySurfaceEnabledAtom,
 	notesSurfaceEnabledAtom,
+	pluginsSurfaceEnabledAtom,
 	pulseSurfaceEnabledAtom,
 	reviewSurfaceEnabledAtom,
+	studioSurfaceEnabledAtom,
+	terminalSurfaceEnabledAtom,
+	voiceSurfaceEnabledAtom,
 	toggleAutomationsAtom,
+	toggleBridgesSurfaceAtom,
 	toggleBrowserPanelAtom,
+	toggleClaudeSurfaceAtom,
+	toggleCrmSurfaceAtom,
+	toggleFilesSurfaceAtom,
 	toggleMemorySurfaceAtom,
 	toggleNotesSurfaceAtom,
+	togglePluginsSurfaceAtom,
 	togglePulseSurfaceAtom,
 	toggleReviewSurfaceAtom,
+	toggleStudioSurfaceAtom,
+	toggleTerminalSurfaceAtom,
+	toggleVoiceSurfaceAtom,
 } from "../atoms/feature-flags"
 import { getFireflySurfaceTabs, type FireflySurfaceContext } from "../firefly-surface-registry"
 import { isMockModeAtom, toggleMockModeAtom } from "../atoms/mock-mode"
 import { opaqueWindowsAtom } from "../atoms/preferences"
 import { isReactScanAtom, toggleReactScanAtom } from "../atoms/react-scan"
-import { setSidePanelActiveTabAtom, sidePanelOpenAtom } from "../atoms/ui"
+import { openSidePanelTabAtom } from "../atoms/ui"
 import { useSessionRevert } from "../hooks/use-commands"
 import {
 	useAvailableThemes,
@@ -73,7 +98,6 @@ interface CommandPaletteProps {
 	open: boolean
 	onOpenChange: (open: boolean) => void
 	agents: Agent[]
-	/** Fork the currently active session (full fork) */
 	onForkSession?: () => Promise<void>
 }
 
@@ -84,7 +108,6 @@ export function CommandPalette({ open, onOpenChange, agents, onForkSession }: Co
 	const params = useParams({ strict: false })
 	const sessionId = (params as Record<string, string | undefined>).sessionId ?? null
 
-	// Resolve the active session's directory for undo/redo
 	const activeAgent = useMemo(
 		() => (sessionId ? (agents.find((a) => a.id === sessionId) ?? null) : null),
 		[agents, sessionId],
@@ -96,7 +119,6 @@ export function CommandPalette({ open, onOpenChange, agents, onForkSession }: Co
 		activeAgent?.sessionId ?? null,
 	)
 
-	// Theme & color scheme state
 	const currentTheme = useCurrentTheme()
 	const colorScheme = useColorScheme()
 	const availableThemes = useAvailableThemes()
@@ -114,13 +136,29 @@ export function CommandPalette({ open, onOpenChange, agents, onForkSession }: Co
 	const notesSurfaceEnabled = useAtomValue(notesSurfaceEnabledAtom)
 	const pulseSurfaceEnabled = useAtomValue(pulseSurfaceEnabledAtom)
 	const memorySurfaceEnabled = useAtomValue(memorySurfaceEnabledAtom)
+	const filesSurfaceEnabled = useAtomValue(filesSurfaceEnabledAtom)
+	const terminalSurfaceEnabled = useAtomValue(terminalSurfaceEnabledAtom)
+	const editorSurfaceEnabled = useAtomValue(editorSurfaceEnabledAtom)
+	const pluginsSurfaceEnabled = useAtomValue(pluginsSurfaceEnabledAtom)
+	const bridgesSurfaceEnabled = useAtomValue(bridgesSurfaceEnabledAtom)
+	const crmSurfaceEnabled = useAtomValue(crmSurfaceEnabledAtom)
+	const studioSurfaceEnabled = useAtomValue(studioSurfaceEnabledAtom)
+	const voiceSurfaceEnabled = useAtomValue(voiceSurfaceEnabledAtom)
+	const claudeSurfaceEnabled = useAtomValue(claudeSurfaceEnabledAtom)
 	const toggleBrowserPanel = useSetAtom(toggleBrowserPanelAtom)
 	const toggleReviewSurface = useSetAtom(toggleReviewSurfaceAtom)
 	const toggleNotesSurface = useSetAtom(toggleNotesSurfaceAtom)
 	const togglePulseSurface = useSetAtom(togglePulseSurfaceAtom)
 	const toggleMemorySurface = useSetAtom(toggleMemorySurfaceAtom)
-	const setSidePanelOpen = useSetAtom(sidePanelOpenAtom)
-	const setSidePanelTab = useSetAtom(setSidePanelActiveTabAtom)
+	const toggleFilesSurface = useSetAtom(toggleFilesSurfaceAtom)
+	const togglePluginsSurface = useSetAtom(togglePluginsSurfaceAtom)
+	const toggleBridgesSurface = useSetAtom(toggleBridgesSurfaceAtom)
+	const toggleCrmSurface = useSetAtom(toggleCrmSurfaceAtom)
+	const toggleStudioSurface = useSetAtom(toggleStudioSurfaceAtom)
+	const toggleVoiceSurface = useSetAtom(toggleVoiceSurfaceAtom)
+	const toggleClaudeSurface = useSetAtom(toggleClaudeSurfaceAtom)
+	const toggleTerminalSurface = useSetAtom(toggleTerminalSurfaceAtom)
+	const openSidePanelTab = useSetAtom(openSidePanelTabAtom)
 	const [reloading, setReloading] = useState(false)
 
 	const isElectron = typeof window !== "undefined" && "palot" in window
@@ -129,10 +167,8 @@ export function CommandPalette({ open, onOpenChange, agents, onForkSession }: Co
 		const newValue = !opaqueWindows
 		setOpaqueWindows(newValue)
 
-		// Persist to main process so the next window creation uses the correct chrome tier
 		if (isElectron) {
 			await window.palot.setOpaqueWindows(newValue)
-			// BrowserWindow.transparent is a creation-time option — prompt for restart
 			const shouldRestart = window.confirm(
 				"Transparency changes take effect after restarting the app.\n\nRestart now?",
 			)
@@ -186,6 +222,15 @@ export function CommandPalette({ open, onOpenChange, agents, onForkSession }: Co
 				notes: notesSurfaceEnabled,
 				pulse: pulseSurfaceEnabled,
 				memory: memorySurfaceEnabled,
+				files: filesSurfaceEnabled,
+				terminal: terminalSurfaceEnabled,
+				editor: editorSurfaceEnabled,
+				plugins: pluginsSurfaceEnabled,
+				bridges: bridgesSurfaceEnabled,
+				crm: crmSurfaceEnabled,
+				studio: studioSurfaceEnabled,
+				voice: voiceSurfaceEnabled,
+				claude: claudeSurfaceEnabled,
 			},
 			chatTurnCount: 1,
 		}
@@ -196,6 +241,15 @@ export function CommandPalette({ open, onOpenChange, agents, onForkSession }: Co
 		notesSurfaceEnabled,
 		pulseSurfaceEnabled,
 		memorySurfaceEnabled,
+		filesSurfaceEnabled,
+		terminalSurfaceEnabled,
+		editorSurfaceEnabled,
+		pluginsSurfaceEnabled,
+		bridgesSurfaceEnabled,
+		crmSurfaceEnabled,
+		studioSurfaceEnabled,
+		voiceSurfaceEnabled,
+		claudeSurfaceEnabled,
 	])
 
 	const availableSurfaceTabs = useMemo(
@@ -203,7 +257,6 @@ export function CommandPalette({ open, onOpenChange, agents, onForkSession }: Co
 		[surfaceContext],
 	)
 
-	// Whether session-level commands should be shown
 	const hasSession = !!activeAgent
 
 	return (
@@ -250,7 +303,6 @@ export function CommandPalette({ open, onOpenChange, agents, onForkSession }: Co
 				{hasSession && (
 					<CommandItem
 						onSelect={() => {
-							// Compact is handled via slash command — just close and navigate
 							onOpenChange(false)
 						}}
 						disabled
@@ -301,7 +353,6 @@ export function CommandPalette({ open, onOpenChange, agents, onForkSession }: Co
 					<CommandItem
 						onSelect={() => {
 							onOpenChange(false)
-							// Small delay so the palette closes before the confirm dialog appears
 							setTimeout(handleToggleTransparency, 100)
 						}}
 					>
@@ -402,6 +453,94 @@ export function CommandPalette({ open, onOpenChange, agents, onForkSession }: Co
 						<span>{memorySurfaceEnabled ? "Disable Memory Surface" : "Enable Memory Surface"}</span>
 						{memorySurfaceEnabled && <CheckIcon className="ml-auto h-4 w-4" />}
 					</CommandItem>
+					<CommandItem
+						keywords={["files", "surface", "review", "project files"]}
+						onSelect={() => {
+							toggleFilesSurface()
+							onOpenChange(false)
+						}}
+					>
+						<FilesIcon />
+						<span>{filesSurfaceEnabled ? "Disable Files Surface" : "Enable Files Surface"}</span>
+						{filesSurfaceEnabled && <CheckIcon className="ml-auto h-4 w-4" />}
+					</CommandItem>
+					<CommandItem
+						keywords={["terminal", "shell", "pty", "attach"]}
+						onSelect={() => {
+							toggleTerminalSurface()
+							onOpenChange(false)
+						}}
+					>
+						<TerminalSquareIcon />
+						<span>{terminalSurfaceEnabled ? "Disable Terminal Surface" : "Enable Terminal Surface"}</span>
+						{terminalSurfaceEnabled && <CheckIcon className="ml-auto h-4 w-4" />}
+					</CommandItem>
+					<CommandItem
+						keywords={["plugins", "skills", "mcp", "integrations"]}
+						onSelect={() => {
+							togglePluginsSurface()
+							onOpenChange(false)
+						}}
+					>
+						<PlugIcon />
+						<span>{pluginsSurfaceEnabled ? "Disable Plugins Surface" : "Enable Plugins Surface"}</span>
+						{pluginsSurfaceEnabled && <CheckIcon className="ml-auto h-4 w-4" />}
+					</CommandItem>
+					<CommandItem
+						keywords={["bridges", "connectors", "integrations", "hub"]}
+						onSelect={() => {
+							toggleBridgesSurface()
+							onOpenChange(false)
+						}}
+					>
+						<Share2Icon />
+						<span>{bridgesSurfaceEnabled ? "Disable Bridges Surface" : "Enable Bridges Surface"}</span>
+						{bridgesSurfaceEnabled && <CheckIcon className="ml-auto h-4 w-4" />}
+					</CommandItem>
+					<CommandItem
+						keywords={["crm", "contacts", "people", "relationships"]}
+						onSelect={() => {
+							toggleCrmSurface()
+							onOpenChange(false)
+						}}
+					>
+						<UsersIcon />
+						<span>{crmSurfaceEnabled ? "Disable Contacts / CRM Surface" : "Enable Contacts / CRM Surface"}</span>
+						{crmSurfaceEnabled && <CheckIcon className="ml-auto h-4 w-4" />}
+					</CommandItem>
+					<CommandItem
+						keywords={["studio", "office", "documents", "preview"]}
+						onSelect={() => {
+							toggleStudioSurface()
+							onOpenChange(false)
+						}}
+					>
+						<MonitorPlayIcon />
+						<span>{studioSurfaceEnabled ? "Disable Studio / Office Surface" : "Enable Studio / Office Surface"}</span>
+						{studioSurfaceEnabled && <CheckIcon className="ml-auto h-4 w-4" />}
+					</CommandItem>
+					<CommandItem
+						keywords={["voice", "speech", "microphone", "audio"]}
+						onSelect={() => {
+							toggleVoiceSurface()
+							onOpenChange(false)
+						}}
+					>
+						<MicIcon />
+						<span>{voiceSurfaceEnabled ? "Disable Voice Surface" : "Enable Voice Surface"}</span>
+						{voiceSurfaceEnabled && <CheckIcon className="ml-auto h-4 w-4" />}
+					</CommandItem>
+					<CommandItem
+						keywords={["claude", "claude code", "migration", "compatibility"]}
+						onSelect={() => {
+							toggleClaudeSurface()
+							onOpenChange(false)
+						}}
+					>
+						<RectangleEllipsisIcon />
+						<span>{claudeSurfaceEnabled ? "Disable Claude Code Surface" : "Enable Claude Code Surface"}</span>
+						{claudeSurfaceEnabled && <CheckIcon className="ml-auto h-4 w-4" />}
+					</CommandItem>
 				</CommandGroup>
 				{hasSession && availableSurfaceTabs.length > 0 && (
 					<>
@@ -411,8 +550,7 @@ export function CommandPalette({ open, onOpenChange, agents, onForkSession }: Co
 								<CommandItem
 									key={surface.id}
 									onSelect={() => {
-										setSidePanelOpen(true)
-										setSidePanelTab(surface.id)
+										openSidePanelTab(surface.target.tab)
 										onOpenChange(false)
 									}}
 									disabled={!surface.availability.available}

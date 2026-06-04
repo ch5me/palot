@@ -18,6 +18,7 @@ import {
 import { appStore } from "../store"
 import { isStreamingField, isStreamingPartType, streamingVersionFamily } from "../streaming"
 import { todosFamily } from "../todos"
+import { publishPaneBusEventAtom } from "../pane-bus"
 import { setSessionDiffAtom } from "../ui"
 
 const log = createLogger("event-processor")
@@ -51,6 +52,7 @@ function invalidateAllQueries(): void {
  */
 export function processEvent(event: Event): void {
 	const { set } = appStore
+	set(publishPaneBusEventAtom, event)
 
 	switch (event.type) {
 		case "server.connected":

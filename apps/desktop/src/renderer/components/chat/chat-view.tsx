@@ -1290,7 +1290,7 @@ function ChatInputSection({
 
 	return (
 		<>
-			<div className="min-w-0 px-0 pb-0 pt-1 sm:px-4 sm:pb-4 sm:pt-2">
+			<div className="mt-auto min-w-0 px-0 pb-0 pt-1 sm:px-4 sm:pb-4 sm:pt-2">
 				<div className={inputWidthClass}>
 					{/* Session task list — collapsible todo progress */}
 					<SessionTaskList sessionId={agent.sessionId} />

@@ -11,6 +11,41 @@ export interface OpenCodeServerInfo {
 	managed: boolean
 }
 
+export type BridgeStatus = "connected" | "disconnected" | "soon"
+
+export interface BridgeChannel {
+	id: string
+	name: string
+	kind: string
+	status: BridgeStatus
+	alive: boolean
+	pid: number | null
+	uptime: string | null
+	launchd: string | null
+	loaded: boolean
+	messagesTotal: number | null
+	lastActivity: string | null
+	lastActivityAgo: string | null
+	today: number | null
+	logPath: string | null
+}
+
+export interface BridgesResult {
+	bridges: BridgeChannel[]
+}
+
+export interface BridgeMessage {
+	ts: string
+	tsAgo: string | null
+	direction: "out" | "in"
+	peer: string
+	text: string
+}
+
+export interface BridgeActivityResult {
+	messages: BridgeMessage[]
+}
+
 export interface ModelRef {
 	providerID: string
 	modelID: string
@@ -494,6 +529,7 @@ export interface PalotAPI {
 		open: (directory: string, targetId: string, persistPreferred?: boolean) => Promise<void>
 		setPreferred: (targetId: string) => Promise<{ success: boolean }>
 	}
+	openExternal: (url: string) => Promise<void>
 
 	// Native theme (syncs macOS glass tint to app color scheme)
 	/** Set the native theme source ("light" | "dark" | "system") to control macOS glass tint. */
@@ -507,6 +543,12 @@ export interface PalotAPI {
 
 	// Directory picker
 	pickDirectory: () => Promise<string | null>
+	listDirectory: (directory: string) => Promise<Array<{ name: string; path: string; type: "file" | "directory" }>>
+	readFile: (filePath: string) => Promise<{ path: string; content: string }>
+	bridges: {
+		list: () => Promise<BridgesResult>
+		activity: (id: string, limit?: number) => Promise<BridgeActivityResult>
+	}
 
 	// Fetch proxy (bypasses Chromium connection limits)
 	fetch: (req: {

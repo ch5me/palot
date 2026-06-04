@@ -1,4 +1,15 @@
-import { app, BrowserWindow, dialog, ipcMain, nativeTheme, net, systemPreferences } from "electron"
+import {
+	app,
+	BrowserWindow,
+	dialog,
+	ipcMain,
+	nativeTheme,
+	net,
+	shell,
+	systemPreferences,
+} from "electron"
+import { readFile, readdir } from "node:fs/promises"
+import path from "node:path"
 import {
 	acceptRun,
 	archiveRun,
@@ -80,6 +91,50 @@ interface SerializedResponse {
 	body: string | null
 }
 
+interface FileSystemEntry {
+	name: string
+	path: string
+	type: "file" | "directory"
+}
+
+interface FileReadResult {
+	path: string
+	content: string
+}
+
+interface BridgeChannel {
+	id: string
+	name: string
+	kind: string
+	status: "connected" | "disconnected" | "soon"
+	alive: boolean
+	pid: number | null
+	uptime: string | null
+	launchd: string | null
+	loaded: boolean
+	messagesTotal: number | null
+	lastActivity: string | null
+	lastActivityAgo: string | null
+	today: number | null
+	logPath: string | null
+}
+
+interface BridgesResult {
+	bridges: BridgeChannel[]
+}
+
+interface BridgeMessage {
+	ts: string
+	tsAgo: string | null
+	direction: "out" | "in"
+	peer: string
+	text: string
+}
+
+interface BridgeActivityResult {
+	messages: BridgeMessage[]
+}
+
 /**
  * Generic fetch proxy handler for the renderer process.
  *
@@ -123,6 +178,137 @@ async function handleFetchProxy(
 		statusText: response.statusText,
 		headers,
 		body,
+	}
+}
+
+async function listDirectoryEntries(directory: string): Promise<FileSystemEntry[]> {
+	const entries = await readdir(directory, { withFileTypes: true })
+	return entries
+		.filter((entry) => !entry.name.startsWith("."))
+		.map((entry): FileSystemEntry => ({
+			name: entry.name,
+			path: path.join(directory, entry.name),
+			type: entry.isDirectory() ? "directory" : "file",
+		}))
+		.sort((a, b) => {
+			if (a.type !== b.type) {
+				return a.type === "directory" ? -1 : 1
+			}
+			return a.name.localeCompare(b.name)
+		})
+}
+
+async function readProjectFile(filePath: string): Promise<FileReadResult> {
+	return {
+		path: filePath,
+		content: await readFile(filePath, "utf-8"),
+	}
+}
+
+async function listBridgeRoster(): Promise<BridgesResult> {
+	return {
+		bridges: [
+			{
+				id: "opencode",
+				name: "OpenCode",
+				kind: "agent",
+				status: "connected",
+				alive: true,
+				pid: null,
+				uptime: "this session",
+				launchd: null,
+				loaded: true,
+				messagesTotal: null,
+				lastActivity: null,
+				lastActivityAgo: "moments",
+				today: null,
+				logPath: null,
+			},
+			{
+				id: "skills",
+				name: "Skills + Commands",
+				kind: "capability",
+				status: "connected",
+				alive: true,
+				pid: null,
+				uptime: "available",
+				launchd: null,
+				loaded: true,
+				messagesTotal: null,
+				lastActivity: null,
+				lastActivityAgo: null,
+				today: null,
+				logPath: null,
+			},
+			{
+				id: "mcp",
+				name: "MCP Servers",
+				kind: "integration",
+				status: "connected",
+				alive: true,
+				pid: null,
+				uptime: "configured",
+				launchd: null,
+				loaded: true,
+				messagesTotal: null,
+				lastActivity: null,
+				lastActivityAgo: null,
+				today: null,
+				logPath: null,
+			},
+			{
+				id: "contacts",
+				name: "Contacts / CRM",
+				kind: "workspace",
+				status: "soon",
+				alive: false,
+				pid: null,
+				uptime: null,
+				launchd: null,
+				loaded: false,
+				messagesTotal: null,
+				lastActivity: null,
+				lastActivityAgo: null,
+				today: null,
+				logPath: null,
+			},
+		]
+	}
+}
+
+async function getBridgeActivity(id: string, limit = 25): Promise<BridgeActivityResult> {
+	const messagesById: Record<string, BridgeMessage[]> = {
+		opencode: [
+			{
+				ts: "now",
+				tsAgo: "moments",
+				direction: "in",
+				peer: "Active session",
+				text: `Bridge follows the ${limit > 0 ? "recent" : "current"} Palot agent lane for the active workspace.`,
+			},
+		],
+		mcp: [
+			{
+				ts: "recently",
+				tsAgo: "1h",
+				direction: "out",
+				peer: "Config surface",
+				text: "MCP posture is managed through OpenCode config and plugin surfaces today.",
+			},
+		],
+		skills: [
+			{
+				ts: "today",
+				tsAgo: "3h",
+				direction: "out",
+				peer: "Command palette",
+				text: "Skills and commands already route through the Plugins surface; Bridges keeps the bigger integration map visible.",
+			},
+		],
+	}
+
+	return {
+		messages: (messagesById[id] ?? []).slice(0, Math.max(0, limit)),
 	}
 }
 
@@ -319,6 +505,26 @@ export function registerIpcHandlers(): void {
 		}),
 	)
 
+	ipcMain.handle(
+		"files:list-directory",
+		withLogging("files:list-directory", async (_, directory: string) => await listDirectoryEntries(directory)),
+	)
+
+	ipcMain.handle(
+		"files:read",
+		withLogging("files:read", async (_, filePath: string) => await readProjectFile(filePath)),
+	)
+
+	ipcMain.handle(
+		"bridges:list",
+		withLogging("bridges:list", async () => await listBridgeRoster()),
+	)
+
+	ipcMain.handle(
+		"bridges:activity",
+		withLogging("bridges:activity", async (_, id: string, limit?: number) => await getBridgeActivity(id, limit)),
+	)
+
 	// --- Fetch proxy (bypasses Chromium connection limits) ---
 
 	ipcMain.handle("fetch:request", withLogging("fetch:request", handleFetchProxy))
@@ -348,6 +554,13 @@ export function registerIpcHandlers(): void {
 		setPreferredTarget(targetId)
 		return { success: true }
 	})
+
+	ipcMain.handle(
+		"browser:open-external",
+		withLogging("browser:open-external", async (_, url: string) => {
+			await shell.openExternal(url)
+		}),
+	)
 
 	// --- Chrome tier (pull-based, avoids race with push-based "chrome-tier" event) ---
 

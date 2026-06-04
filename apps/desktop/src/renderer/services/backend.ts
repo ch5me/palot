@@ -25,6 +25,53 @@ import type {
 	OpenInTargetsResult,
 	UpdateAutomationInput,
 } from "../../preload/api"
+
+export interface FileSystemEntry {
+	name: string
+	path: string
+	type: "file" | "directory"
+}
+
+export interface FileReadResult {
+	path: string
+	content: string
+}
+
+export type BridgeStatus = "connected" | "disconnected" | "soon"
+
+export interface BridgeChannel {
+	id: string
+	name: string
+	kind: string
+	status: BridgeStatus
+	alive: boolean
+	pid: number | null
+	uptime: string | null
+	launchd: string | null
+	loaded: boolean
+	messagesTotal: number | null
+	lastActivity: string | null
+	lastActivityAgo: string | null
+	today: number | null
+	logPath: string | null
+}
+
+export interface BridgesResult {
+	bridges: BridgeChannel[]
+}
+
+export interface BridgeMessage {
+	ts: string
+	tsAgo: string | null
+	direction: "out" | "in"
+	peer: string
+	text: string
+}
+
+export interface BridgeActivityResult {
+	messages: BridgeMessage[]
+}
+
 import { createLogger } from "../lib/logger"
 
 const log = createLogger("backend")
@@ -165,6 +212,37 @@ export async function pickDirectory(): Promise<string | null> {
 		return window.palot.pickDirectory()
 	}
 	throw new Error("Directory picker is only available in Electron mode")
+}
+
+export async function listDirectory(directory: string): Promise<FileSystemEntry[]> {
+	if (isElectron) {
+		return window.palot.listDirectory(directory) as Promise<FileSystemEntry[]>
+	}
+	throw new Error("Directory listing is only available in Electron mode")
+}
+
+export async function readFileContents(filePath: string): Promise<FileReadResult> {
+	if (isElectron) {
+		return window.palot.readFile(filePath) as Promise<FileReadResult>
+	}
+	throw new Error("File reads are only available in Electron mode")
+}
+
+export async function fetchBridges(): Promise<BridgesResult> {
+	if (isElectron) {
+		return window.palot.bridges.list() as Promise<BridgesResult>
+	}
+	throw new Error("Bridges are only available in Electron mode")
+}
+
+export async function fetchBridgeActivity(
+	id: string,
+	limit = 25,
+): Promise<BridgeActivityResult> {
+	if (isElectron) {
+		return window.palot.bridges.activity(id, limit) as Promise<BridgeActivityResult>
+	}
+	throw new Error("Bridge activity is only available in Electron mode")
 }
 
 // ============================================================

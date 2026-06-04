@@ -1,0 +1,46 @@
+# Learnings <!-- oc:id=sec_aa -->
+
+- Pane routing v1 now lives in `apps/desktop/src/renderer/atoms/ui.ts` as route-like side-panel state, open/focus actions, and disabled-tab fallback reconciliation.
+- Surface command actions now route through surface targets declared in `apps/desktop/src/renderer/firefly-surface-registry.tsx` instead of hard-coded side-panel mutations.
+- `apps/desktop/src/renderer/components/agent-detail.tsx` now reconciles available tabs centrally by feeding available tab ids into `setAvailableSidePanelTabsAtom`.
+- The plan notepad directory did not exist and had to be created before recording progress.
+- Pane bus v1 can piggyback on the existing SSE/event-processor path: `processEvent()` now publishes each OpenCode event into scoped Jotai atoms before normal reducers run.
+- Useful first scopes are `global`, `session:<id>`, and `project:<directory>`; they cover current side-panel surfaces without exposing connection-manager internals.
+- Surface-form policy: side-panel is the default proof lane, `main-pane` is for session-centric workflows that outgrow narrow width, and route-level is only for cross-session/cross-project workspaces with their own navigation identity.
+- Current shell evidence says Palot should avoid generalized multi-pane layout work until a concrete surface proves the current `ResizablePanes` + `SplitPane` seams are insufficient.
+- Profile/account audit found no existing app-level profile model in renderer, main, or docs; only provider-specific `profile` fields exist for credentials. Smallest safe port is a local-only profile preference seam in settings.
+- Because there is no sync contract or account backend yet, profiles should be local-only first and account-menu work stays minimal: a settings-level active-profile switch is enough to preserve the seam.
+- Surface-registry audit found no remaining low-risk `surfaces.ts` substrate gap for Wave 1. The current contract already covers shipped side-panel surfaces; route/main-pane semantics should wait until a concrete Files/Terminal/Editor surface needs them.
+- Account-menu basics do not need more code yet. The new settings-level profile switch is the smallest valid account-context seam until a real synced identity or account backend exists.
+- Layout/drop-zone primitives should stay deferred. Current `SplitPane` and `ResizablePanes` cover the shell until a concrete Files/Terminal/Editor workflow proves generalized docking is necessary.
+- Files should start as a review-adjacent side-panel shell, not a route. Reusing the existing review seam keeps the first port small and lets file selection jump straight into the Changes surface instead of inventing a parallel viewer too early.
+- The next profitable Files step is real file preview via a tiny Electron file-read seam. Directory preview can stay deferred while file preview proves value.
+- Terminal audit found no existing `node-pty` or `@xterm/xterm` substrate. The first profitable terminal move is a proof shell that makes attach/worktree/session context visible before native PTY work lands.
+- Terminal ownership should be worktree-first: use `agent.worktreePath` as cwd when present, otherwise `agent.directory`. `sessionId` remains the attach key, not the cwd owner.
+- PTY/backend design should standardize on `node-pty` in main process, but the next profitable implementation path is backend-first while still reusing the existing ANSI terminal UI before introducing `@xterm/xterm`.
+- Terminal composer proof can land before PTY by routing a lightweight `/bash ...` prompt through the active session. That preserves command-entry affordance without pretending we already have a real shell.
+- Real PTY support is now an explicit dependency-adoption blocker: `node-pty` is absent, and adding it is a meaningful native/runtime change. Better to record the blocker and keep the backlog moving than stall the whole wave here.
+- Editor should complement Files, not replace it. The first profitable slice is a read-only editor shell that reuses file-read + file-search seams and defers Monaco until true editing or heavier interaction proves necessary.
+- Monaco is explicitly deferred. The current editor shell already satisfies the proof goal, and Monaco's dependency + worker setup cost is not justified until true editing or richer editor behavior is required.
+- Plugins should start by reflecting OpenCode-native domains that already exist in Palot: skills, MCPs, and provider/plugin auth posture. No separate plugin runtime or marketplace semantics are needed for the first shell.
+- The plugin shell can reuse existing OpenCode seams directly: skills via `client.app.skills()`, commands via `client.command.list()`, and MCP/provider posture via existing provider/onboarding surfaces. That is enough for a first proof surface.
+- There is no separate plugin-domain backend worth porting right now beyond the OpenCode-native seams Palot already uses. Existing provider auth, skills, commands, and MCP awareness already cover the first useful plugin surface.
+- Bridges should sit above Plugins in the IA: Plugins is the runtime inventory, Bridges is the user-facing integrations hub that later points to connector-specific flows.
+- Bridges can start with no new backend logic. Existing plugin/provider/MCP seams already provide enough posture data for a first integrations hub shell.
+- There is no old `apps.ts` bridge-domain backend worth porting right now beyond the connector posture seams already present. The Bridges shell already captures the first useful layer, so deeper vendor-specific logic stays deferred.
+- Contacts and CRM should stay one surface for now. There is no meaningful existing domain logic or backend seam to justify a split, so the first move is a unified shell and explicit domain-logic defer.
+- CRM can start with zero new backend logic, just like Bridges. A people/relationship shell is enough until a real connector or data source exists.
+- Studio should stay a route-level candidate in theory, but the first profitable proof can still be a side-panel shell until office/document workflows are concrete enough to justify a dedicated route.
+- Studio shell can land now with no office-specific backend. Existing file-preview posture is enough for a first document/office lane while route-level promotion stays deferred.
+- Voice should start as an input-only proof shell. There is no runtime backend yet, so `voice.ts` should stay deferred until a real recording / STT / TTS lane exists.
+- The first Voice move is just the shell affordance. Shared voice-selection UI exists, but no desktop speech backend does, so the runtime/domain layers remain intentionally deferred.
+- Oracle roster can start with zero new backend logic. Existing live agent/session derivations already provide enough data for a denser roster surface than the sidebar.
+- The roster shell can stay side-panel first. The current live agent/session derivations already carry enough structure; a route-level dashboard should wait until broader orchestration needs appear.
+- Oracle roster shell is now wired and proves the session-scoped roster lane without any new backend work.
+- Claude Code should start as a compatibility/import lane, not a live interactive runtime. Palot already has real migration value there, and adding a second coding-agent workflow would fight the OpenCode-first product shape.
+- Claude Code shell can stay side-panel first because its current value is explanatory and migration-oriented, not a standalone runtime workspace.
+- Old dashboard concepts do not need a direct port. `new-chat.tsx`, sidebar Active/Recent/Projects sections, and metrics/status surfaces already absorb the meaningful behavior with a better fit.
+- Old project/app/device/monitor helper responsibilities are already distributed across Palot's real seams: project discovery/sidebar, server indicator, Open-in targets, setup/migration, and session metrics. No separate helper-domain port is needed right now.
+- Remaining old superapp modules can mostly be treated as either (a) already absorbed by current Palot shells/seams, (b) intentionally deferred because no backend/runtime exists yet, or (c) explicit exclusions like Motion/Database.
+- The old superapp can be treated as retired as an implementation base, but not yet as feature-complete retired product scope. Several important lanes are still shell-grade in Palot.
+- PTY is blocked, so Editor becomes the next highest-value surface. The shell can land now using existing file search + file read seams, while Monaco stays deferred until editing fidelity is actually needed.
