@@ -47,13 +47,21 @@ export function SessionSidePanel({ agent: _agent, tabs, className }: SessionSide
 					className="flex h-full min-h-0"
 				>
 					<div className="flex h-full min-h-0">
-						<div className="flex w-10 shrink-0 flex-col items-center gap-1 border-r border-border py-2">
+						<div className="flex-1 overflow-hidden">
+							{availableTabs.map((tab) => (
+								<TabsContent key={tab.id} value={tab.id} className="h-full overflow-hidden">
+									{tab.render()}
+								</TabsContent>
+							))}
+						</div>
+
+						<div className="flex w-10 shrink-0 flex-col items-center gap-1 border-l border-border py-2">
 							<TabsList variant="line" className="h-auto w-full flex-col gap-0.5">
 								{availableTabs.map((tab) => (
 									<TabsTrigger
 										key={tab.id}
 										value={tab.id}
-										className="w-full justify-center px-0"
+										className="w-full px-0 group-data-vertical/tabs:justify-center"
 										title={tab.label}
 									>
 										{tab.icon}
@@ -67,14 +75,6 @@ export function SessionSidePanel({ agent: _agent, tabs, className }: SessionSide
 							>
 								<XIcon className="size-3.5" />
 							</button>
-						</div>
-
-						<div className="flex-1 overflow-hidden">
-							{availableTabs.map((tab) => (
-								<TabsContent key={tab.id} value={tab.id} className="h-full overflow-hidden">
-									{tab.render()}
-								</TabsContent>
-							))}
 						</div>
 					</div>
 				</Tabs>

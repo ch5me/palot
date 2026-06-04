@@ -10,7 +10,7 @@ import { Input } from "@ch5me/elf-ui/components/input"
 import { Popover, PopoverContent, PopoverTrigger } from "@ch5me/elf-ui/components/popover"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@ch5me/elf-ui/components/tooltip"
 import { cn } from "@ch5me/elf-ui/lib/utils"
-import { Pane, PaneSeam, ResizablePanes } from "@ch5me/workspace"
+import { SplitPane } from "@ch5me/workspace"
 import { useNavigate, useParams } from "@tanstack/react-router"
 import { useAtom, useAtomValue, useSetAtom } from "jotai"
 import {
@@ -73,6 +73,12 @@ import { SessionSidePanel } from "./side-panel/session-side-panel"
 import type { SidePanelTabDef } from "./side-panel/side-panel-tabs"
 import { SessionMetricsBar } from "./session-metrics-bar"
 import { WorktreeActions } from "./worktree-actions"
+
+const DEFAULT_SIDE_PANEL_WIDTH = 392
+const EXPANDED_SIDE_PANEL_WIDTH = 760
+const MIN_SIDE_PANEL_WIDTH = 280
+const MAX_SIDE_PANEL_WIDTH = 760
+const MAX_EXPANDED_SIDE_PANEL_WIDTH = 1120
 
 
 interface AgentDetailProps {
@@ -381,24 +387,28 @@ export function AgentDetail({
 		</>
 	)
 
-	if (sidePanelOpen) {
-		return (
-			<ResizablePanes id="elf-workspace-center">
-				<Pane defaultSize="60%" minSize="30%">
-					<div className="min-h-0 min-w-0 h-full overflow-hidden flex flex-col">{chatContent}</div>
-				</Pane>
-				<PaneSeam aria-label="Resize side panel" />
-				<Pane defaultSize={reviewSettings.expanded ? "100%" : "40%"} minSize="20%">
-					<div className="min-h-0 min-w-0 h-full overflow-hidden border-l border-border">
-						<SessionSidePanel agent={agent} tabs={sidePanelTabs} />
-					</div>
-				</Pane>
-			</ResizablePanes>
-		)
-	}
-
 	return (
-		<div className="min-h-0 min-w-0 h-full overflow-hidden flex flex-col">{chatContent}</div>
+		<SplitPane
+			key={reviewSettings.expanded ? "side-panel-expanded" : "side-panel-default"}
+			side="right"
+			open={sidePanelOpen}
+			onOpenChange={setSidePanelOpen}
+			defaultPanelWidth={
+				reviewSettings.expanded ? EXPANDED_SIDE_PANEL_WIDTH : DEFAULT_SIDE_PANEL_WIDTH
+			}
+			minPanelWidth={MIN_SIDE_PANEL_WIDTH}
+			maxPanelWidth={
+				reviewSettings.expanded ? MAX_EXPANDED_SIDE_PANEL_WIDTH : MAX_SIDE_PANEL_WIDTH
+			}
+			handleAriaLabel="Resize side panel"
+			panel={
+				<div className="min-h-0 min-w-0 h-full overflow-hidden">
+					<SessionSidePanel agent={agent} tabs={sidePanelTabs} />
+				</div>
+			}
+		>
+			<div className="min-h-0 min-w-0 h-full overflow-hidden flex flex-col">{chatContent}</div>
+		</SplitPane>
 	)
 }
 
