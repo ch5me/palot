@@ -4,6 +4,7 @@ import {
 	browserPanelEnabledAtom,
 	bridgesSurfaceEnabledAtom,
 	claudeSurfaceEnabledAtom,
+	ch5pmSurfaceEnabledAtom,
 	crmSurfaceEnabledAtom,
 	editorSurfaceEnabledAtom,
 	filesSurfaceEnabledAtom,
@@ -19,6 +20,7 @@ import {
 } from "./atoms/feature-flags"
 
 import type { SidePanelTabId } from "./atoms/ui"
+import { Ch5PmDashboardPanel } from "./ch5pm-dashboard/panel"
 import { ReviewPanel } from "./components/review/review-panel"
 import { BrowserPanel } from "./components/side-panel/browser-panel"
 import { BridgesPanel } from "./components/side-panel/bridges-panel"
@@ -388,6 +390,26 @@ export const FIREFLY_SURFACE_REGISTRY: FireflySurfaceDef[] = [
 		telemetryNamespace: "firefly.surface.claude",
 		target: { kind: "side-panel", tab: "claude" },
 		spawn: (ctx) => <ClaudePanel agent={ctx.agent} />,
+	},
+	{
+		id: "ch5pm",
+		title: "CH5PM Dashboard",
+		icon: MonitorPlayIcon,
+		formFactor: "side-panel-tab",
+		enabledFlag: {
+			key: "ch5pm",
+			atom: ch5pmSurfaceEnabledAtom,
+		},
+		defaultOn: false,
+		availability: (ctx) =>
+			ctx.flags.ch5pm
+				? { available: true }
+				: { available: false, reason: "CH5PM dashboard surface is disabled in feature flags" },
+		commandIds: ["surface.ch5pm.open", "surface.ch5pm.toggle"],
+		persistenceKey: "side-panel.ch5pm",
+		telemetryNamespace: "firefly.surface.ch5pm",
+		target: { kind: "side-panel", tab: "ch5pm" },
+		spawn: () => <Ch5PmDashboardPanel />,
 	},
 ]
 

@@ -49,6 +49,7 @@ import {
 	automationsEnabledAtom,
 	browserPanelEnabledAtom,
 	bridgesSurfaceEnabledAtom,
+	ch5pmSurfaceEnabledAtom,
 	claudeSurfaceEnabledAtom,
 	crmSurfaceEnabledAtom,
 	editorSurfaceEnabledAtom,
@@ -64,6 +65,7 @@ import {
 	toggleAutomationsAtom,
 	toggleBridgesSurfaceAtom,
 	toggleBrowserPanelAtom,
+	toggleCh5PmSurfaceAtom,
 	toggleClaudeSurfaceAtom,
 	toggleCrmSurfaceAtom,
 	toggleFilesSurfaceAtom,
@@ -145,6 +147,7 @@ export function CommandPalette({ open, onOpenChange, agents, onForkSession }: Co
 	const studioSurfaceEnabled = useAtomValue(studioSurfaceEnabledAtom)
 	const voiceSurfaceEnabled = useAtomValue(voiceSurfaceEnabledAtom)
 	const claudeSurfaceEnabled = useAtomValue(claudeSurfaceEnabledAtom)
+	const ch5pmSurfaceEnabled = useAtomValue(ch5pmSurfaceEnabledAtom)
 	const toggleBrowserPanel = useSetAtom(toggleBrowserPanelAtom)
 	const toggleReviewSurface = useSetAtom(toggleReviewSurfaceAtom)
 	const toggleNotesSurface = useSetAtom(toggleNotesSurfaceAtom)
@@ -157,6 +160,7 @@ export function CommandPalette({ open, onOpenChange, agents, onForkSession }: Co
 	const toggleStudioSurface = useSetAtom(toggleStudioSurfaceAtom)
 	const toggleVoiceSurface = useSetAtom(toggleVoiceSurfaceAtom)
 	const toggleClaudeSurface = useSetAtom(toggleClaudeSurfaceAtom)
+	const toggleCh5PmSurface = useSetAtom(toggleCh5PmSurfaceAtom)
 	const toggleTerminalSurface = useSetAtom(toggleTerminalSurfaceAtom)
 	const openSidePanelTab = useSetAtom(openSidePanelTabAtom)
 	const [reloading, setReloading] = useState(false)
@@ -231,6 +235,7 @@ export function CommandPalette({ open, onOpenChange, agents, onForkSession }: Co
 				studio: studioSurfaceEnabled,
 				voice: voiceSurfaceEnabled,
 				claude: claudeSurfaceEnabled,
+				ch5pm: ch5pmSurfaceEnabled,
 			},
 			chatTurnCount: 1,
 		}
@@ -248,9 +253,11 @@ export function CommandPalette({ open, onOpenChange, agents, onForkSession }: Co
 		bridgesSurfaceEnabled,
 		crmSurfaceEnabled,
 		studioSurfaceEnabled,
-		voiceSurfaceEnabled,
-		claudeSurfaceEnabled,
-	])
+			voiceSurfaceEnabled,
+			claudeSurfaceEnabled,
+			ch5pmSurfaceEnabled,
+		])
+
 
 	const availableSurfaceTabs = useMemo(
 		() => (surfaceContext ? getFireflySurfaceTabs(surfaceContext) : []),
@@ -540,6 +547,17 @@ export function CommandPalette({ open, onOpenChange, agents, onForkSession }: Co
 						<RectangleEllipsisIcon />
 						<span>{claudeSurfaceEnabled ? "Disable Claude Code Surface" : "Enable Claude Code Surface"}</span>
 						{claudeSurfaceEnabled && <CheckIcon className="ml-auto h-4 w-4" />}
+					</CommandItem>
+					<CommandItem
+						keywords={["ch5pm", "dashboard", "plane", "operator"]}
+						onSelect={() => {
+							toggleCh5PmSurface()
+							onOpenChange(false)
+						}}
+					>
+						<MonitorPlayIcon />
+						<span>{ch5pmSurfaceEnabled ? "Disable CH5PM Dashboard" : "Enable CH5PM Dashboard"}</span>
+						{ch5pmSurfaceEnabled && <CheckIcon className="ml-auto h-4 w-4" />}
 					</CommandItem>
 				</CommandGroup>
 				{hasSession && availableSurfaceTabs.length > 0 && (
