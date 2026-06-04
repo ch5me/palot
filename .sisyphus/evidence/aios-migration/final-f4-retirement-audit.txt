@@ -1,0 +1,57 @@
+F4 Superapp Retirement Audit
+Date: 2026-06-04
+
+Verdict: APPROVE (safe to delete `~/Workspaces/aios-superapp`)
+
+Source-side checks (grep, 2026-06-04)
+- `aios-superapp` -- 0 matches in `apps/desktop/src/`
+- `Workspaces/aios` -- 0 matches
+- `firefly-superapp` -- 0 matches
+- `from '@tauri-apps/...'` -- 0 matches
+- Tauri-specific Tauri imports (`@tauri-apps/api/core`,
+  `Channel`, `invoke`, `app.*` from Tauri) -- 0 matches
+
+The only `aios-` references that remain in Palot are tmux session
+naming conventions and launchd process probe substrings, which
+are NOT code dependencies. T22's `docs/aios-migration-exclusions.md`
+documents each one and the reason it survived.
+
+Surface coverage (PORT list -> Palot surface)
+| Port-list feature             | Palot surface                              | Backend seam                              |
+|------------------------------|--------------------------------------------|-------------------------------------------|
+| Terminal (PTY)               | terminal-panel.tsx                         | main/pty.ts (node-pty)                    |
+| Files + file viewer          | files-panel.tsx                            | main/files.ts                             |
+| Editor (Monaco)              | editor-panel.tsx                           | files seam + lib/monaco.ts                |
+| Oracle roster                | oracle-panel.tsx                           | main/oracles.ts (tmux)                    |
+| Voice (dictation -> chat)    | voice-panel.tsx + chat/voice-button.tsx    | lib/voice.ts (getUserMedia + whisper)     |
+| Bridges                      | bridges-panel.tsx                           | main/bridges.ts (ps/launchctl/log probes) |
+| Contacts / CRM               | crm-panel.tsx                               | main/crm.ts + main/inbox.ts               |
+| Studio / Office              | studio-panel.tsx                            | files seam + office-preview.ts            |
+| Plugins                      | plugins-panel.tsx                           | opencode client (app.skills/command.list/config.providers) |
+| Claude compatibility         | claude-panel.tsx                            | main/onboarding.ts (detectProviders/restoreBackup) |
+| Browser hardening            | browser-panel.tsx                           | atoms/browser.ts (persistence + helpers)  |
+| Notes hardening               | notes-panel.tsx                             | hooks/use-draft + pane-bus injection      |
+| Pulse hardening               | pulse-panel.tsx                             | session-metrics + automations atoms        |
+| Memory hardening              | memory-panel.tsx                            | services/memory-service.ts                |
+
+Each surface ships its own evidence file under
+`.sisyphus/evidence/aios-migration/task-{N}-*.txt`. Every
+surface has a `*SurfaceEnabledAtom` feature flag, a registry
+entry in `firefly-surface-registry.tsx`, and a command-palette
+toggle. The full registry matrix is in F1's evidence file.
+
+Excluded (documented in T22, no Palot equivalent needed)
+- Motion (`MotionPane.tsx` / `motion.rs`)
+- Database (`DatabasePane.tsx` / `db.rs`)
+- Monitor dashboard tiles
+- Device tiles
+- IdleDashboard
+- Tauri-only assumptions (Window, Manager, ipc::Channel, etc.)
+
+Verdict
+`~/Workspaces/aios-superapp` is safe to delete. The Palot
+migration is complete, every PORT-list feature has a real
+backend seam + surface + flag, and zero Palot code depends on
+the superapp source tree.
+
+APPROVE

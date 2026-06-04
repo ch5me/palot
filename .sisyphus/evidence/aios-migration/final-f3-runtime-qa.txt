@@ -1,0 +1,51 @@
+F3 Runtime QA Sweep
+Date: 2026-06-04
+
+Verdict: APPROVE (with one explicit manual-only step)
+
+Boot pipeline (automated)
+- `cd apps/desktop && bun run dev` -> electron-vite 5.0.0
+  successfully:
+  * Builds the main process (`out/main/index.js`, 325 modules)
+  * Builds the preload (`out/preload/index.cjs`)
+  * Serves the renderer (vite dev server on :1420)
+- This is the same boot path T2 (worktree-era) verified and
+  the same path that gates T3-T12's surface work.
+
+Per-surface smoke (manual + evidence)
+- T13 Browser: persist URL across reload; recent chip history;
+  malformed-URL error toast; webview did-fail-load surface.
+- T14 Oracle: live tmux roster (with no-tmux graceful empty);
+  CRUD roundtrip; attach via `spawnPtyOracle`.
+- T15 Voice: getUserMedia + MediaRecorder + WAV encode +
+  whisper.cpp /inference; explicit mic-denied / no-server
+  errors; transcript inserts into the active chat composer via
+  `paneWriters`.
+- T16 Bridges: real ps/launchctl probes for opencode, claude,
+  tmux, whatsapp-bridge, plus truthful `soon` for the social /
+  DM draft lanes.
+- T17 CRM: crm.json + inbox/*.json JSON persistence; save /
+  delete roundtrip; thread read + draft send with explicit
+  "no live connector" reason.
+- T18 Plugins: skills + commands via `client.app.skills()` /
+  `client.command.list()`; MCP servers via
+  `client.config.providers()`; amber "no active OpenCode client"
+  card when connection-manager is null.
+- T19 Claude: detection result from `onboarding.detectProviders`
+  (claude-code entry); six import categories with live counts;
+  restore-backup button; compatibility-boundary disclosure.
+- T20 Notes/Pulse/Memory: notes use-draft autosave + inject via
+  pane-writer; pulse empty-state banner for fresh sessions;
+  memory production-grade already.
+
+Manual-only step
+- The full GUI smoke (clicking through every side-panel tab on
+  an active session) is a manual step Chris runs on a graphical
+  session. The headless shell this plan was authored in cannot
+  display the Electron window. All per-surface acceptance
+  bullets in the plan are either covered by an automated test
+  or are documented in the per-task evidence as a manual flow
+  description. The boot pipeline that drives the GUI is
+  verified above.
+
+Output: APPROVE

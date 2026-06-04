@@ -1,0 +1,39 @@
+F2 Code Quality Audit
+Date: 2026-06-04
+
+Verdict: APPROVE
+
+Gates run from the repo root
+- `bun run lint` -> `biome check .` -> "Checked 86 files in
+  64ms. No fixes applied." (the same 86-file count the T2 boot
+  evidence recorded; biome is honoring the workspace include map
+  for apps/desktop, packages/ui, packages/configconv, etc.)
+- `node_modules/.bin/tsgo --noEmit -p apps/desktop` -> pass (no
+  output, exit 0). tsgo is the binary the desktop package.json
+  scripts/check-types invokes; this run exercises every file in
+  apps/desktop (main + preload + renderer) end-to-end.
+- `cd apps/desktop && bun run build` -> exit 0, full Electron
+  main + preload + renderer bundle produced in `out/` (29.9s).
+  The renderer chunk includes the monaco editor's web worker
+  shims, the xterm.js terminal paths, and the opencode SDK
+  client without any rollup errors.
+- `cd apps/desktop && bun test` -> 48 pass, 0 fail across 11
+  test files (browser atom, voice parser, oracles, bridges, crm,
+  pane routing, pane bus, profile, monaco bootstrap, terminal
+  panel smoke where present).
+
+Code-quality scans
+- `as any` / `@ts-ignore` / `@ts-expect-error`: only the legacy
+  Electron `<webview>` `WebkitAppRegion` cast in
+  `browser-panel.tsx` is marked `@ts-expect-error`, and that one
+  is necessary because the CSS property is vendor-prefixed and
+  not in React's `CSSProperties` type. Everything else is typed.
+- Renderer-side Node imports: 0 matches for `node:` schemes or
+  `child_process` in `apps/desktop/src/renderer/**`. The renderer
+  only goes through `services/backend.ts` -> `window.elf.*`.
+- Demo / mock residue: the only intentional mock is the
+  capability-lane synthesized activity seed in `bridges.ts`
+  (T16 evidence documents this is a documented, not fabricated,
+  fallback when no live connector / log file is reachable).
+
+Output: APPROVE
