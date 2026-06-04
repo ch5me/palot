@@ -28,6 +28,7 @@ import {
 	MaximizeIcon,
 	MonitorIcon,
 	SparklesIcon,
+	WorkflowIcon,
 } from "lucide-react"
 import { useCallback, useMemo, useState } from "react"
 import { messagesFamily } from "../../atoms/messages"
@@ -439,6 +440,67 @@ export function VariantSelector({
 }
 
 // ============================================================
+// Plan Mode Toggle
+// ============================================================
+
+interface PlanModeToggleProps {
+	enabled: boolean
+	primed: boolean
+	onToggle: (next: boolean) => void
+	disabled?: boolean
+}
+
+/**
+ * Toggle that flips plan mode for the current session. When enabled,
+ * the next user message (only the first one — `primed` is set after
+ * the first send) is auto-paired with a DAG-build system block so the
+ * agent's response can render an interactive graph inline in the
+ * chat.
+ */
+function PlanModeToggle({ enabled, primed, onToggle, disabled }: PlanModeToggleProps) {
+	const label = enabled ? (primed ? "Plan (sent)" : "Plan") : "Plan"
+	const tooltip = enabled
+		? primed
+			? "Plan mode is on; the first message already includes the DAG build instruction"
+			: "Plan mode is on; the next message will be paired with a DAG build instruction"
+		: "Pair the next message with a DAG build instruction so the response renders as a graph"
+	return (
+		<Tooltip>
+			<TooltipTrigger
+				render={
+					<button
+						type="button"
+						disabled={disabled}
+						aria-pressed={enabled}
+						onClick={() => onToggle(!enabled)}
+						className={cn(
+							TOOLBAR_TRIGGER_BASE_CN,
+							enabled
+								? "bg-emerald-500/10 text-emerald-600 hover:bg-emerald-500/15 dark:text-emerald-400"
+								: "hover:bg-muted",
+							"disabled:cursor-not-allowed disabled:opacity-50",
+						)}
+					/>
+				}
+			>
+				<WorkflowIcon className="size-3.5" />
+				<span>{label}</span>
+				{enabled && (
+					<span
+						aria-hidden="true"
+						className={cn(
+							"size-1.5 shrink-0 rounded-full",
+							primed ? "bg-emerald-500/60" : "bg-emerald-500 animate-pulse",
+						)}
+					/>
+				)}
+			</TooltipTrigger>
+			<TooltipContent side="top">{tooltip}</TooltipContent>
+		</Tooltip>
+	)
+}
+
+// ============================================================
 // Combined Prompt Toolbar
 // ============================================================
 
@@ -466,11 +528,17 @@ export interface PromptToolbarProps {
 	selectedVariant: string | undefined
 	onSelectVariant: (variant: string | undefined) => void
 
+	/** Plan mode is on for the current session */
+	planMode?: boolean
+	/** Plan mode has already injected its first-message prefix */
+	planModePrimed?: boolean
+	onTogglePlanMode?: (next: boolean) => void
+
 	disabled?: boolean
 }
 
 /**
- * Combined toolbar with agent, model, and variant selectors.
+ * Combined toolbar with agent, model, variant, and plan-mode selectors.
  * Renders inside the PromptInputFooter > PromptInputTools slot.
  */
 export function PromptToolbar({
@@ -485,6 +553,9 @@ export function PromptToolbar({
 	recentModels,
 	selectedVariant,
 	onSelectVariant,
+	planMode,
+	planModePrimed,
+	onTogglePlanMode,
 	disabled,
 }: PromptToolbarProps) {
 	// Compute variants for the current effective model
@@ -495,6 +566,7 @@ export function PromptToolbar({
 
 	const hasAgents = agents.length > 0
 	const hasVariants = variants.length > 0
+	const showPlanToggle = planMode !== undefined && onTogglePlanMode !== undefined
 
 	return (
 		<div className="flex min-w-0 flex-wrap items-center gap-0.5">
@@ -528,6 +600,18 @@ export function PromptToolbar({
 					onSelectVariant={onSelectVariant}
 					disabled={disabled}
 				/>
+			)}
+
+			{showPlanToggle && (
+				<>
+					<Separator orientation="vertical" className="mx-0.5 my-2 self-stretch" />
+					<PlanModeToggle
+						enabled={!!planMode}
+						primed={!!planModePrimed}
+						onToggle={(next) => onTogglePlanMode?.(next)}
+						disabled={disabled}
+					/>
+				</>
 			)}
 		</div>
 	)

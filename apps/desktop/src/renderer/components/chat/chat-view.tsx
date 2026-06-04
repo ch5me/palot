@@ -39,6 +39,13 @@ import {
 	useState,
 } from "react"
 import { messagesFamily, removeMessageAtom } from "../../atoms/messages"
+import {
+	buildPlanModeText,
+	planModeFamily,
+	planModePrimedFamily,
+	primePlanModeAtom,
+	setPlanModeAtom,
+} from "../../atoms/chat"
 import { projectModelsAtom, setProjectModelAtom } from "../../atoms/preferences"
 import type { SessionSetupPhase } from "../../atoms/sessions"
 import { sessionFamily } from "../../atoms/sessions"
@@ -853,6 +860,10 @@ function ChatInputSection({
 	// Initialize model, variant, and agent from the session's last user message.
 	const sessionMessages = useAtomValue(messagesFamily(agent.sessionId))
 	const projectModels = useAtomValue(projectModelsAtom)
+	const planMode = useAtomValue(planModeFamily(agent.sessionId))
+	const planModePrimed = useAtomValue(planModePrimedFamily(agent.sessionId))
+	const setPlanMode = useSetAtom(setPlanModeAtom)
+	const primePlanMode = useSetAtom(primePlanModeAtom)
 	const initializedForSessionRef = useRef<string | null>(null)
 	const resetForSessionRef = useRef<string | null>(null)
 	useEffect(() => {
@@ -1069,7 +1080,15 @@ function ChatInputSection({
 
 				// Prepend diff comments as structured context if any exist
 				const commentPrefix = serializeCommentsForChat(diffComments)
-				const finalText = commentPrefix ? `${commentPrefix}${text.trim()}` : text.trim()
+				const textWithComments = commentPrefix ? `${commentPrefix}${text.trim()}` : text.trim()
+				// Plan mode: pair the FIRST user message with a DAG-build system
+				// block so the agent's response can render as a graph.
+				const finalText = buildPlanModeText({
+					enabled: planMode,
+					primed: planModePrimed,
+					userText: textWithComments,
+				})
+				const augmentingPlanMode = planMode && !planModePrimed
 
 				await onSendMessage(agent, finalText, {
 					model: effectiveModel ?? undefined,
@@ -1078,6 +1097,11 @@ function ChatInputSection({
 					files,
 				})
 				log.debug("handleSend onSendMessage completed", { sessionId: agent.sessionId })
+				// Mark plan mode as primed once the first-message prefix has
+				// shipped — subsequent sends in this session skip the prefix.
+				if (augmentingPlanMode) {
+					primePlanMode(agent.sessionId)
+				}
 				clearDraft()
 				setMentions([])
 				// Clear diff comments after successful send
@@ -1105,6 +1129,9 @@ function ChatInputSection({
 			scrollRef,
 			diffComments,
 			setDiffComments,
+			planMode,
+			planModePrimed,
+			primePlanMode,
 		],
 	)
 
@@ -1423,6 +1450,9 @@ function ChatInputSection({
 												recentModels={recentModels}
 												selectedVariant={selectedVariant}
 												onSelectVariant={setSelectedVariant}
+												planMode={planMode}
+												planModePrimed={planModePrimed}
+												onTogglePlanMode={(next) => setPlanMode(agent.sessionId, next)}
 												disabled={!isConnected}
 											/>
 										</PromptInputTools>

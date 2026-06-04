@@ -47,6 +47,7 @@ import { viewFileInDiffPanelAtom } from "../../atoms/ui"
 import { detectContentLanguage, detectLanguage, prettyPrintJson } from "../../lib/language"
 import type { FilePart, ToolPart, ToolStateCompleted } from "../../lib/types"
 import { SubAgentCard } from "./sub-agent-card"
+import { DagErrorBlock, DagSparkBlock, type DagSparkEdge, type DagSparkNode } from "./dag-spark-renderer"
 import { getToolCategory, ToolCard } from "./tool-card"
 
 // ============================================================
@@ -751,6 +752,79 @@ function TodoContent({ part }: { part: ToolPart }) {
 	)
 }
 
+/**
+ * Dag tool: renders a `{ nodes, edges }` graph inline. The agent is
+ * expected to pass either:
+ *   - a JSON string under input.dag (preferred)
+ *   - or a string under output (after completion)
+ * Anything else shows the raw input/output via GenericContent.
+ */
+function DagToolContent({ part }: { part: ToolPart }) {
+	const error = part.state.status === "error" ? (part.state as { error: string }).error : undefined
+	if (error) return <ErrorContent error={error} />
+
+	const candidates: unknown[] = []
+	if (part.state.status === "completed") {
+		candidates.push(part.state.input?.dag, part.state.input?.graph, part.state.input?.spec)
+		candidates.push(part.state.output)
+	}
+	if (part.state.status === "pending" || part.state.status === "running") {
+		candidates.push(part.state.input?.dag, part.state.input?.graph, part.state.input?.spec)
+	}
+
+	for (const candidate of candidates) {
+		const parsed = tryParseDagInput(candidate)
+		if (parsed.ok) {
+			return <DagSparkBlock nodes={parsed.nodes} edges={parsed.edges} />
+		}
+	}
+
+	// Fall through to a plain "no graph yet" view while still streaming
+	if (part.state.status === "pending" || part.state.status === "running") {
+		return (
+			<div className="px-3.5 py-2.5 text-xs text-muted-foreground/60">
+				Waiting for dag input…
+			</div>
+		)
+	}
+
+	// Completed but unparseable — show the raw candidate so the user can debug
+	const firstCandidate = candidates.find((c) => typeof c === "string" && c.length > 0)
+	if (typeof firstCandidate === "string") {
+		return <DagErrorBlock error="Could not parse dag input" raw={firstCandidate} />
+	}
+	return <GenericContent part={part} />
+}
+
+function tryParseDagInput(value: unknown): { ok: true; nodes: DagSparkNode[]; edges: DagSparkEdge[] } | { ok: false } {
+	if (typeof value !== "string") return { ok: false }
+	let parsed: unknown
+	try {
+		parsed = JSON.parse(value)
+	} catch {
+		return { ok: false }
+	}
+	if (typeof parsed !== "object" || parsed === null) return { ok: false }
+	const obj = parsed as { nodes?: unknown; edges?: unknown }
+	if (!Array.isArray(obj.nodes) || !Array.isArray(obj.edges)) return { ok: false }
+	const nodes: DagSparkNode[] = []
+	for (const n of obj.nodes) {
+		if (typeof n !== "object" || n === null) return { ok: false }
+		const id = (n as { id?: unknown }).id
+		if (typeof id !== "string" || id.length === 0) return { ok: false }
+		nodes.push(n as DagSparkNode)
+	}
+	const edges: DagSparkEdge[] = []
+	for (const e of obj.edges) {
+		if (typeof e !== "object" || e === null) return { ok: false }
+		const source = (e as { source?: unknown }).source
+		const target = (e as { target?: unknown }).target
+		if (typeof source !== "string" || typeof target !== "string") return { ok: false }
+		edges.push(e as DagSparkEdge)
+	}
+	return { ok: true, nodes, edges }
+}
+
 /** Error content for any tool */
 function ErrorContent({ error }: { error: string }) {
 	return (
@@ -897,6 +971,8 @@ function getToolContent(part: ToolPart): ReactNode {
 			return <WriteContent part={part} />
 		case "apply_patch":
 			return <PatchContent part={part} />
+		case "dag":
+			return <DagToolContent part={part} />
 		case "read":
 			return <ReadContent part={part} />
 		case "glob":

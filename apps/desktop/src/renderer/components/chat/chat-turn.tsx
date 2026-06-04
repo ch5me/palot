@@ -3,7 +3,6 @@ import {
 	MessageAction,
 	MessageActions,
 	MessageContent,
-	MessageResponse,
 } from "@ch5me/elf-ui/components/ai-elements/message"
 import {
 	Reasoning,
@@ -40,6 +39,7 @@ import {
 } from "../../lib/session-metrics"
 import type { FilePart, Part, ReasoningPart, TextPart, ToolPart } from "../../lib/types"
 import { ChatToolCall, getToolInfo, getToolSubtitle } from "./chat-tool-call"
+import { TextWithDag } from "./dag-spark-renderer"
 import { getToolCategory, TOOL_CATEGORY_COLORS, type ToolCategory } from "./tool-card"
 
 // ============================================================
@@ -797,7 +797,7 @@ export const ChatTurnComponent = memo(
 											<div key={item.id} className="py-0.5">
 												<Message from="assistant">
 													<MessageContent>
-														<MessageResponse>{item.text}</MessageResponse>
+														<TextWithDag text={item.text} isStreaming={working} />
 													</MessageContent>
 												</Message>
 											</div>
@@ -960,7 +960,7 @@ export const ChatTurnComponent = memo(
 										<div key={item.id} className="py-0.5">
 											<Message from="assistant">
 												<MessageContent>
-													<MessageResponse>{item.text}</MessageResponse>
+													<TextWithDag text={item.text} isStreaming={working} />
 												</MessageContent>
 											</Message>
 										</div>
@@ -980,23 +980,23 @@ export const ChatTurnComponent = memo(
 
 				{/* Thinking shimmer — only for turns with no tools/reasoning section yet */}
 
-				{/* Assistant response — shown when not working AND not already rendered inline */}
-				{!working && responseText && !textAlreadyInline && (
-					<Message from="assistant">
-						<MessageContent>
-							<MessageResponse>{responseText}</MessageResponse>
-						</MessageContent>
-					</Message>
-				)}
+			{/* Assistant response — shown when not working AND not already rendered inline */}
+			{!working && responseText && !textAlreadyInline && (
+				<Message from="assistant">
+					<MessageContent>
+						<TextWithDag text={responseText} isStreaming={false} />
+					</MessageContent>
+				</Message>
+			)}
 
-				{/* Streaming response — visible while working, when text isn't already inline */}
-				{working && responseText && !textAlreadyInline && (
-					<Message from="assistant">
-						<MessageContent>
-							<MessageResponse animated>{responseText}</MessageResponse>
-						</MessageContent>
-					</Message>
-				)}
+			{/* Streaming response — visible while working, when text isn't already inline */}
+			{working && responseText && !textAlreadyInline && (
+				<Message from="assistant">
+					<MessageContent>
+						<TextWithDag text={responseText} isStreaming={true} />
+					</MessageContent>
+				</Message>
+			)}
 
 				{/* Per-turn metadata — shown on completed turns so badges are visible after long responses */}
 				{!working &&

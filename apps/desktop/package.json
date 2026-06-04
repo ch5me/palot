@@ -43,6 +43,7 @@
 		"@opencode-ai/sdk": "^1.2.1",
 		"@ch5me/elf-configconv": "workspace:*",
 		"@ch5me/elf-ui": "workspace:*",
+		"@ch5me/dag-sparkline": "workspace:*",
 		"@pierre/diffs": "^1.0.10",
 		"@tanstack/react-query": "^5.90.20",
 		"@tanstack/react-router": "^1.158.4",
