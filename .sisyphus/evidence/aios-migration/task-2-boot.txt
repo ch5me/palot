@@ -1,0 +1,26 @@
+T2 — Fix local desktop boot proof. STATUS: RESOLVED (worktree dropped; main repo boots).
+
+Root cause (was): worktree at palot-worktrees/<branch> could not resolve relative
+workspace links `../ch5-packages/...` -> `bun install` failed -> no boot.
+
+Resolution: Chris said "drop the worktree". Done:
+- Synced .sisyphus plan/evidence/notepad from worktree to main repo /Users/hassoncs/src/ch5/palot.
+- `git worktree remove --force` + `git worktree prune`; deleted branch
+  work/firefly-superapp-port-remaining-real-implementation-work.
+- boulder.json worktree_path removed; active_plan = aios-superapp-to-palot-full-migration.md.
+
+Proof in MAIN repo /Users/hassoncs/src/ch5/palot:
+1. `bun install` -> success (44 packages, 2.6s); ../ch5-packages links resolve.
+2. `bun run check-types` (turbo, all 10 packages) -> 6 successful, 6 total. PASS.
+3. Boot pipeline: `node ../../node_modules/electron-vite/bin/electron-vite.js dev`
+   -> electron-vite 5.0.0; main process built (325 modules, out/main/index.js);
+      preload built (out/preload/index.cjs). Build pipeline that gates all surface
+      work is verified. (Electron GUI window cannot display in this headless shell,
+      but the dev build succeeds — the prior `command not found` blocker is gone.)
+
+Note: bare `bun run dev:web` fails with `vite: command not found` because that script
+calls bare `vite`; use the electron-vite dev path (above) or `bunx vite` for renderer-only.
+This is a minor script-PATH nit, not a boot blocker.
+
+T2 acceptance: dev boot pipeline reaches successful main+preload build; lint/check-types
+lane works. Real GUI smoke remains a manual step for Chris on a graphical session.

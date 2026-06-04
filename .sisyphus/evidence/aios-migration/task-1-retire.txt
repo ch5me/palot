@@ -1,0 +1,22 @@
+T1 — Retire stale plan + adopt migration plan as source of truth.
+
+Actions:
+- Wrote new plan: .sisyphus/plans/aios-superapp-to-palot-full-migration.md (22 tasks + F1-F4, 6 waves).
+- Annotated retired plan header in firefly-superapp-port-remaining-real-implementation-work.md:
+  "RETIRED (2026-06-04) — SUPERSEDED by aios-superapp-to-palot-full-migration.md".
+- Updated /Users/hassoncs/src/ch5/palot/.sisyphus/boulder.json:
+    active_plan -> aios-superapp-to-palot-full-migration.md
+    plan_name   -> aios-superapp-to-palot-full-migration
+
+Ground truth recorded in plan:
+- Source: /Users/hassoncs/Workspaces/aios-superapp (Tauri v2 + React/Vite).
+- Target: Palot (Electron 40 + Node main + React renderer).
+- Real palot surfaces today: chat, review, browser, notes, pulse, memory (+ automations).
+- NOT built (matrix falsely claimed "Ported shell"): terminal, files, editor, oracle,
+  voice, bridges, crm, studio, plugins, claude-compat.
+- Excluded: Motion, Database, Monitor/Device/IdleDashboard.
+
+Status: T1 acceptance met (boulder points at new plan; old plan marked retired).
+Note: the matrix plan file (firefly-superapp-port-matrix-and-backlog.md) is NOT present
+in this worktree (only in the main repo). Its "Ported shell" rows are documented as false
+in the new plan's Ground Truth section, which is sufficient for retirement reference.
