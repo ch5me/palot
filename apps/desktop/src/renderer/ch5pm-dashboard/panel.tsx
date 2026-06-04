@@ -1,12 +1,22 @@
 import { Button } from "@ch5me/elf-ui/components/button"
 import { Input } from "@ch5me/elf-ui/components/input"
 import { useQuery } from "@tanstack/react-query"
-import { ActivityIcon, AlertTriangleIcon, BlocksIcon, CircleCheckIcon, Loader2Icon, RadioIcon, RefreshCwIcon, Rows4Icon, TicketIcon, WavesIcon } from "lucide-react"
+import {
+	AlertTriangleIcon,
+	BlocksIcon,
+	CircleCheckIcon,
+	Loader2Icon,
+	RadioIcon,
+	RefreshCwIcon,
+	Rows4Icon,
+	TicketIcon,
+	WavesIcon,
+} from "lucide-react"
 import { useEffect, useMemo, useState } from "react"
 import { queryClient } from "../lib/query-client"
 import { fetchCh5PmDashboard, subscribeToCh5PmEvents } from "./client"
 import { MOCK_CH5PM_DASHBOARD_STATE } from "./fixtures"
-import type { Ch5PmDashboardState } from "./types"
+import type { Ch5PmDashboardState, Ch5PmSignalRow, Ch5PmSnapshotTicketRow } from "./types"
 
 interface Ch5PmDashboardPanelProps {
 	className?: string
@@ -57,6 +67,53 @@ function SectionCard({
 			</div>
 			{children}
 		</section>
+	)
+}
+
+function TicketList({ rows, emptyLabel }: { rows: Ch5PmSnapshotTicketRow[]; emptyLabel: string }) {
+	if (!rows.length) {
+		return <div className="text-xs text-muted-foreground">{emptyLabel}</div>
+	}
+	return (
+		<div className="grid gap-2">
+			{rows.map((ticket) => (
+				<div
+					key={ticket.ticketId ?? ticket.id}
+					className="rounded-lg border border-border/60 bg-background/60 px-3 py-2 text-xs"
+				>
+					<div className="font-medium text-foreground">
+						{ticket.ticketId ?? ticket.id ?? "Unknown ticket"}
+					</div>
+					<div className="mt-1 text-muted-foreground">{ticket.name ?? ticket.title ?? "Untitled"}</div>
+					<div className="mt-1 text-muted-foreground">
+						{[ticket.repo, ticket.boxId, ticket.slotId].filter(Boolean).join(" · ")}
+					</div>
+				</div>
+			))}
+		</div>
+	)
+}
+
+function SignalList({ rows }: { rows: Ch5PmSignalRow[] }) {
+	if (!rows.length) {
+		return <div className="text-muted-foreground">No session signals.</div>
+	}
+	return (
+		<div className="grid gap-2">
+			{rows.map((signal) => (
+				<div
+					key={signal.sessionId}
+					className="rounded-lg border border-border/60 bg-background/60 px-3 py-2 text-xs text-muted-foreground"
+				>
+					<div className="font-medium text-foreground">
+						{signal.title ?? signal.sessionId ?? "Unknown session"}
+					</div>
+					<div className="mt-1">
+						{[signal.repo, signal.state ?? signal.status ?? signal.signal].filter(Boolean).join(" · ")}
+					</div>
+				</div>
+			))}
+		</div>
 	)
 }
 
@@ -156,6 +213,11 @@ export function Ch5PmDashboardPanel({ className }: Ch5PmDashboardPanelProps) {
 	const blockedTickets = snapshot?.blockedTickets ?? []
 	const completedTickets = snapshot?.closedSessionSignals ?? []
 	const sessionSignals = snapshot?.sessionSignals ?? []
+	const repoCounts = Object.entries(pressure?.opencode?.repoCounts ?? {})
+	const idleNudges = snapshot?.idleNudges ?? []
+	const topPressure = pressure?.processes?.topProcesses ?? []
+	const claudeCodeSessions = snapshot?.claudeCodeSessions ?? []
+	const attentionMetrics = snapshot?.attentionMetrics
 	const brief = snapshot?.managerBrief ?? "No manager brief yet"
 	const pressureLevel = pressure?.pressure?.level ?? "unknown"
 	const pressureScore = pressure?.pressure?.score ?? "--"
@@ -266,68 +328,60 @@ export function Ch5PmDashboardPanel({ className }: Ch5PmDashboardPanelProps) {
 					</SectionCard>
 
 					<div className="grid gap-3 xl:grid-cols-2">
-						<SectionCard title="Active Tickets">
+						<SectionCard title="Live Worker Slots">
 							<div className="grid gap-2">
-								{activeTickets.length ? (
-									activeTickets.map((ticket) => (
+								{slotRows.length ? (
+									slotRows.map((slot, index) => (
 										<div
-											key={ticket.ticketId ?? ticket.id}
+											key={`${slot.ticketId ?? "slot"}-${index}`}
 											className="rounded-lg border border-border/60 bg-background/60 px-3 py-2 text-xs"
 										>
 											<div className="font-medium text-foreground">
-												{ticket.ticketId ?? ticket.id ?? "Unknown ticket"}
+												{slot.ticketId ?? "Unassigned slot"}
 											</div>
 											<div className="mt-1 text-muted-foreground">
-												{ticket.name ?? ticket.title ?? "Untitled"}
+												{[slot.slotKey, slot.state].filter(Boolean).join(" · ")}
 											</div>
 											<div className="mt-1 text-muted-foreground">
-												{[ticket.repo, ticket.boxId, ticket.slotId].filter(Boolean).join(" · ")}
+												{[
+													slot.workerLive ? "live" : "not live",
+													slot.surfaceExists ? "visible" : "hidden",
+													slot.tmuxAttached ? "attached" : "not attached",
+												]
+													.filter(Boolean)
+													.join(" / ")}
 											</div>
 										</div>
 									))
 								) : (
-									<div className="text-xs text-muted-foreground">No active tickets.</div>
+									<div className="text-xs text-muted-foreground">No slot data.</div>
 								)}
 							</div>
 						</SectionCard>
 
-						<SectionCard title="Queue / Blocked">
-							<div className="grid gap-3 text-xs">
-								<div>
-									<div className="mb-1 font-medium text-foreground">Queued</div>
-									{queueTickets.length ? (
-										queueTickets.map((ticket) => (
-											<div
-												key={ticket.ticketId ?? ticket.id}
-												className="rounded-lg border border-border/60 bg-background/60 px-3 py-2 text-muted-foreground"
-											>
-												{ticket.ticketId ?? ticket.id} · {ticket.name ?? ticket.title ?? "Untitled"}
-											</div>
-										))
-									) : (
-										<div className="text-muted-foreground">No queued tickets.</div>
-									)}
-								</div>
-								<div>
-									<div className="mb-1 font-medium text-foreground">Blocked</div>
-									{blockedTickets.length ? (
-										blockedTickets.map((ticket) => (
-											<div
-												key={ticket.ticketId ?? ticket.id}
-												className="rounded-lg border border-amber-500/30 bg-amber-500/5 px-3 py-2 text-amber-600 dark:text-amber-400"
-											>
-												{ticket.ticketId ?? ticket.id} · {ticket.name ?? ticket.title ?? "Untitled"}
-											</div>
-										))
-									) : (
-										<div className="text-muted-foreground">No blocked tickets.</div>
-									)}
-								</div>
-							</div>
+						<SectionCard title="Active Tickets">
+							<TicketList rows={activeTickets} emptyLabel="No active tickets." />
 						</SectionCard>
 					</div>
 
 					<div className="grid gap-3 xl:grid-cols-2">
+						<SectionCard title="OpenCode Repos">
+							<div className="flex flex-wrap gap-2 text-xs">
+								{repoCounts.length ? (
+									repoCounts.map(([repo, count]) => (
+										<span
+											key={repo}
+											className="rounded-lg border border-border/60 bg-background/60 px-2 py-1 text-muted-foreground"
+										>
+											{repo} {count}
+										</span>
+									))
+								) : (
+									<span className="text-muted-foreground">No active repo sessions.</span>
+								)}
+							</div>
+						</SectionCard>
+
 						<SectionCard title="Cluster Nodes">
 							<div className="grid gap-2">
 								{runtimeBoxes.length ? (
@@ -352,35 +406,14 @@ export function Ch5PmDashboardPanel({ className }: Ch5PmDashboardPanelProps) {
 								)}
 							</div>
 						</SectionCard>
-
-						<SectionCard title="Worker Slots">
-							<div className="grid gap-2">
-								{slotRows.length ? (
-									slotRows.map((slot, index) => (
-										<div
-											key={`${slot.ticketId ?? "slot"}-${index}`}
-											className="rounded-lg border border-border/60 bg-background/60 px-3 py-2 text-xs"
-										>
-											<div className="font-medium text-foreground">
-												{slot.ticketId ?? "Unassigned slot"}
-											</div>
-											<div className="mt-1 text-muted-foreground">
-												{[slot.slotKey, slot.state].filter(Boolean).join(" · ")}
-											</div>
-											<div className="mt-1 text-muted-foreground">
-												{slot.workerLive ? "Worker live" : "Worker not live"}
-											</div>
-										</div>
-									))
-								) : (
-									<div className="text-xs text-muted-foreground">No slot data.</div>
-								)}
-							</div>
-						</SectionCard>
 					</div>
 
 					<div className="grid gap-3 xl:grid-cols-2">
-						<SectionCard title="Completed / Reviewable">
+						<SectionCard title="Queue">
+							<TicketList rows={queueTickets} emptyLabel="No queued tickets." />
+						</SectionCard>
+
+						<SectionCard title="Completed Tickets">
 							<div className="grid gap-2">
 								{completedTickets.length ? (
 									completedTickets.map((ticket) => (
@@ -388,11 +421,32 @@ export function Ch5PmDashboardPanel({ className }: Ch5PmDashboardPanelProps) {
 											key={ticket.ticketId ?? ticket.sessionId}
 											className="rounded-lg border border-border/60 bg-background/60 px-3 py-2 text-xs"
 										>
-											<div className="font-medium text-foreground">
-												{ticket.ticketId ?? ticket.sessionId ?? "Closed session"}
+											<div className="flex items-center justify-between gap-2">
+												<div className="font-medium text-foreground">
+													{ticket.ticketId ?? ticket.sessionId ?? "Closed session"}
+												</div>
+												{ticket.planeUrl ? (
+													<a
+														href={ticket.planeUrl}
+														target="_blank"
+														rel="noreferrer"
+														className="text-sky-500 underline-offset-2 hover:underline"
+													>
+														View in Plane
+													</a>
+												) : null}
 											</div>
 											<div className="mt-1 text-muted-foreground">
 												{ticket.statusLine ?? ticket.title ?? "No summary"}
+											</div>
+											<div className="mt-1 text-muted-foreground">
+												{[
+													ticket.repo ?? ticket.projectIdentifier,
+													ticket.sourceBoxId,
+													ticket.reopenable ? "reopenable" : undefined,
+												]
+													.filter(Boolean)
+													.join(" · ")}
 											</div>
 										</div>
 									))
@@ -401,37 +455,81 @@ export function Ch5PmDashboardPanel({ className }: Ch5PmDashboardPanelProps) {
 								)}
 							</div>
 						</SectionCard>
+					</div>
 
-						<SectionCard title="Signals / Attention">
+					<div className="grid gap-3 xl:grid-cols-2">
+						<SectionCard title="Attention Dead-Time">
 							<div className="grid gap-3 text-xs">
-								<div>
-									<div className="mb-1 inline-flex items-center gap-2 font-medium text-foreground">
-										<ActivityIcon className="size-3.5" aria-hidden="true" /> Session signals
-									</div>
-									{sessionSignals.length ? (
-										sessionSignals.map((signal) => (
-											<div
-												key={signal.sessionId}
-												className="rounded-lg border border-border/60 bg-background/60 px-3 py-2 text-muted-foreground"
-											>
-												{signal.title ?? signal.sessionId ?? "Unknown session"} · {signal.signal ?? signal.state ?? "state unknown"}
+								<div className="grid gap-2 md:grid-cols-2 xl:grid-cols-3">
+									<StatCard label="Open" value={attentionMetrics?.openRequestCount ?? 0} icon={WavesIcon} tone={(attentionMetrics?.openRequestCount ?? 0) > 0 ? "text-amber-500" : "text-foreground"} />
+									<StatCard label="Dead (s)" value={attentionMetrics?.totalOpenDeadTimeSeconds ?? 0} icon={AlertTriangleIcon} tone="text-amber-500" />
+									<StatCard label="Max (s)" value={attentionMetrics?.maxDeadTimeSeconds ?? 0} icon={AlertTriangleIcon} tone="text-amber-500" />
+									<StatCard label="Resolved" value={attentionMetrics?.resolvedTodayCount ?? 0} icon={CircleCheckIcon} tone="text-emerald-500" />
+									<StatCard label="No Attn" value={attentionMetrics?.blockedWithoutAttentionCount ?? 0} icon={AlertTriangleIcon} tone={(attentionMetrics?.blockedWithoutAttentionCount ?? 0) > 0 ? "text-amber-500" : "text-foreground"} />
+								</div>
+								{attentionMetrics?.openRequests?.length ? (
+									<div className="grid gap-2">
+										{attentionMetrics.openRequests.map((row) => (
+											<div key={row.id ?? row.ticketSeq} className="rounded-lg border border-border/60 bg-background/60 px-3 py-2 text-muted-foreground">
+												{[row.ticketSeq ?? row.id, row.project, row.deadTimeSeconds != null ? `${Math.round(row.deadTimeSeconds)}s` : undefined, row.status].filter(Boolean).join(" · ")}
 											</div>
-										))
-									) : (
-										<div className="text-muted-foreground">No session signals.</div>
-									)}
-								</div>
-								<div>
-									<div className="mb-1 inline-flex items-center gap-2 font-medium text-foreground">
-										<WavesIcon className="size-3.5" aria-hidden="true" /> Attention queue
+										))}
 									</div>
-									<div className="rounded-lg border border-border/60 bg-background/60 px-3 py-2 text-muted-foreground">
-										{snapshot?.attentionMetrics?.openRequestCount ?? 0} open request(s)
-									</div>
+								) : (
+									<div className="text-muted-foreground">No open attention requests.</div>
+								)}
+							</div>
+						</SectionCard>
+
+						{idleNudges.length ? (
+							<SectionCard title="Recent Nudges">
+								<div className="grid gap-2 text-xs">
+									{idleNudges.map((row) => (
+										<div key={row.ticketId} className="rounded-lg border border-border/60 bg-background/60 px-3 py-2 text-muted-foreground">
+											{[row.ticketId, row.status, row.idleMinutes != null ? `${Math.round(Number(row.idleMinutes))}m` : undefined, row.error ?? row.reason].filter(Boolean).join(" · ")}
+										</div>
+									))}
 								</div>
+							</SectionCard>
+						) : null}
+					</div>
+
+					<div className="grid gap-3 xl:grid-cols-2">
+						<SectionCard title="Top Pressure">
+							<div className="grid gap-2 text-xs">
+								{topPressure.length ? (
+									topPressure.map((row) => (
+										<div key={`${row.pid}-${row.command}`} className="rounded-lg border border-border/60 bg-background/60 px-3 py-2 text-muted-foreground">
+											{[row.pid, row.cpuPct != null ? `${row.cpuPct.toFixed(1)}%` : undefined, row.rssMiB != null ? `${Math.round(row.rssMiB)}M` : undefined, row.command].filter(Boolean).join(" · ")}
+										</div>
+									))
+								) : (
+									<div className="text-muted-foreground">No top pressure rows.</div>
+								)}
+							</div>
+						</SectionCard>
+
+						<SectionCard title="Claude Code Sessions">
+							<div className="grid gap-2 text-xs">
+								{claudeCodeSessions.length ? (
+									claudeCodeSessions.map((row) => (
+										<div key={row.sessionId} className="rounded-lg border border-border/60 bg-background/60 px-3 py-2 text-muted-foreground">
+											<div className="font-medium text-foreground">{row.title ?? "Claude Code"}</div>
+											<div className="mt-1">
+												{[row.sourceBoxId, row.role, row.directory].filter(Boolean).join(" · ")}
+											</div>
+										</div>
+									))
+								) : (
+									<div className="text-muted-foreground">No Claude Code sessions observed.</div>
+								)}
 							</div>
 						</SectionCard>
 					</div>
+
+					<SectionCard title="Session Signals">
+						<SignalList rows={sessionSignals} />
+					</SectionCard>
 				</div>
 			</div>
 
@@ -439,10 +537,10 @@ export function Ch5PmDashboardPanel({ className }: Ch5PmDashboardPanelProps) {
 				<div className="flex flex-wrap items-center gap-3">
 					<span className="inline-flex items-center gap-1">
 						<CircleCheckIcon className="size-3.5 text-emerald-500" aria-hidden="true" />
-						Shell scaffold landed
+						Parity panels landed
 					</span>
 					<span>Mock fixture included for offline proof</span>
-					<span>Live daemon transport ready for typed contract follow-up</span>
+					<span>Live daemon transport ready for panel proof once daemon is reachable</span>
 				</div>
 			</div>
 		</div>
