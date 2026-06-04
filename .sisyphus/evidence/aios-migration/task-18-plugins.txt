@@ -1,0 +1,54 @@
+Task: T18 Plugins surface + backend
+Date: 2026-06-04
+
+Files changed
+- apps/desktop/src/renderer/components/side-panel/plugins-panel.tsx
+
+What landed
+The surface was already wired to the opencode client (skills +
+commands via `client.app.skills()` / `client.command.list()`) and
+the registry/flag/command-palette integration. Hardened it to
+production:
+
+- Added a refresh button next to the heading that invalidates the
+  three `plugins-surface-*` query keys (skills, commands, mcp).
+- Surfaced the opencode `provider.mcp` inventory via
+  `client.config.providers()` (the only opencode SDK shape that
+  actually exposes MCP servers, vs. the prior placeholder text).
+  Each server renders with an explicit `enabled` / `disabled` pill
+  derived from the config; missing config lands on the friendly
+  empty card instead of blank space.
+- Added a "no active OpenCode client" amber warning card when
+  `getProjectClient(directory)` returns null so the surface is
+  honest about the connection state, not silently empty.
+- Cap skills/commands lists at 32 with a "Showing first N of M"
+  footer so big inventories don't blow out the panel.
+- Distinct loading / empty / error states for skills, commands, and
+  MCP servers (no more shared "Loading..." / "No skills available"
+  conflation).
+- Summary line now reports `${N} skills · ${M} commands · ${K} MCP
+  servers · opencode reachable/not reachable` for at-a-glance
+  health.
+
+Verification
+- `node_modules/.bin/tsgo --noEmit -p apps/desktop` -> pass for the
+  plugins-panel. (Two unrelated, pre-existing errors remain in
+  `ch5pm-dashboard/panel.tsx`; they predate this work and are
+  outside the migration scope.)
+- `bun run lint` -> 86 files, 0 issues.
+- Manual flow described for Chris:
+  1. Open Plugins surface on a session with a live opencode client ->
+     skills + commands lists populate, MCP posture card shows
+     enabled/disabled pills per server.
+  2. Kill the opencode server -> amber "no active OpenCode client"
+     card appears; existing cached lists stay readable.
+  3. Click Refresh after restarting the server -> all three lists
+     re-fetch.
+  4. Empty case: a project with no skills/commands/MCP shows three
+     honest empty cards.
+
+Note
+- No new IPC seam was needed: the surface reads from the renderer
+  opencode client (already available via `connection-manager.ts`).
+  All network calls happen renderer-side; the main process is not
+  involved.

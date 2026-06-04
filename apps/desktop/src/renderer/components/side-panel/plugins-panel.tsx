@@ -1,4 +1,12 @@
-import { useQuery } from "@tanstack/react-query"
+import { useQuery, useQueryClient } from "@tanstack/react-query"
+import {
+	AlertTriangleIcon,
+	Loader2Icon,
+	PlugIcon,
+	RefreshCwIcon,
+	SparklesIcon,
+	TerminalSquareIcon,
+} from "lucide-react"
 import { useMemo } from "react"
 import type { Agent } from "../../lib/types"
 import { getProjectClient } from "../../services/connection-manager"
@@ -8,14 +16,20 @@ interface PluginsPanelProps {
 	className?: string
 }
 
+interface SkillEntry {
+	name: string
+	description?: string
+}
+
 function useSkills(directory: string) {
 	return useQuery({
 		queryKey: ["plugins-surface-skills", directory],
-		queryFn: async () => {
+		queryFn: async (): Promise<SkillEntry[]> => {
 			const client = getProjectClient(directory)
-			if (!client) return [] as Array<{ name: string; description?: string }>
+			if (!client) return []
 			const result = await client.app.skills()
-			return (result.data ?? []) as Array<{ name: string; description?: string }>
+			const data = (result.data ?? []) as Array<{ name: string; description?: string }>
+			return data
 		},
 	})
 }
@@ -23,84 +37,225 @@ function useSkills(directory: string) {
 function useCommands(directory: string) {
 	return useQuery({
 		queryKey: ["plugins-surface-commands", directory],
-		queryFn: async () => {
+		queryFn: async (): Promise<SkillEntry[]> => {
 			const client = getProjectClient(directory)
-			if (!client) return [] as Array<{ name: string; description?: string }>
+			if (!client) return []
 			const result = await client.command.list()
-			return (result.data ?? []) as Array<{ name: string; description?: string }>
+			const data = (result.data ?? []) as Array<{ name: string; description?: string }>
+			return data
 		},
 	})
 }
 
+function useMcpProviders(directory: string) {
+	return useQuery({
+		queryKey: ["plugins-surface-mcp", directory],
+		queryFn: async () => {
+			const client = getProjectClient(directory)
+			if (!client) return null
+			try {
+				const result = await client.config.providers()
+				return (result.data ?? null) as Record<string, unknown> | null
+			} catch {
+				return null
+			}
+		},
+	})
+}
+
+function extractMcpServers(providers: Record<string, unknown> | null): Array<{ name: string; status: string }> {
+	if (!providers) return []
+	const mcp = (providers.mcp as Record<string, unknown> | undefined) ?? {}
+	return Object.entries(mcp).map(([name, value]) => {
+		const entry = (value ?? {}) as Record<string, unknown>
+		const enabled = entry.enabled !== false
+		return { name, status: enabled ? "enabled" : "disabled" }
+	})
+}
+
 export function PluginsPanel({ agent, className }: PluginsPanelProps) {
+	const queryClient = useQueryClient()
 	const skills = useSkills(agent.directory)
 	const commands = useCommands(agent.directory)
+	const mcpQuery = useMcpProviders(agent.directory)
+	const clientReachable = Boolean(getProjectClient(agent.directory))
+
+	const refresh = () => {
+		void queryClient.invalidateQueries({ queryKey: ["plugins-surface-skills", agent.directory] })
+		void queryClient.invalidateQueries({ queryKey: ["plugins-surface-commands", agent.directory] })
+		void queryClient.invalidateQueries({ queryKey: ["plugins-surface-mcp", agent.directory] })
+	}
+
+	const mcpServers = useMemo(
+		() => extractMcpServers(mcpQuery.data ?? null),
+		[mcpQuery.data],
+	)
 
 	const summary = useMemo(() => {
 		return [
 			`${skills.data?.length ?? 0} skills`,
 			`${commands.data?.length ?? 0} commands`,
-			"MCPs managed through OpenCode config",
+			`${mcpServers.length} MCP servers`,
+			clientReachable ? "opencode reachable" : "opencode not reachable",
 		].join(" · ")
-	}, [skills.data?.length, commands.data?.length])
+	}, [skills.data?.length, commands.data?.length, mcpServers.length, clientReachable])
 
 	return (
 		<div className={`flex h-full min-h-0 flex-col bg-background ${className ?? ""}`}>
 			<div className="border-b border-border px-4 py-3">
-				<h3 className="text-sm font-medium text-foreground">Plugins</h3>
-				<p className="mt-1 text-xs text-muted-foreground">
-					OpenCode-native integrations surface: skills, commands, and MCP posture.
-				</p>
+				<div className="flex items-center justify-between gap-3">
+					<div>
+						<div className="flex items-center gap-2">
+							<PlugIcon className="size-4 text-foreground" aria-hidden="true" />
+							<h3 className="text-sm font-medium text-foreground">Plugins</h3>
+						</div>
+						<p className="mt-1 text-xs text-muted-foreground">
+							OpenCode-native integrations for {agent.project}: skills, commands, MCP servers.
+						</p>
+					</div>
+					<Button onClick={refresh} variant="outline" size="sm" type="button">
+						<RefreshCwIcon className="size-4" aria-hidden="true" />
+						Refresh
+					</Button>
+				</div>
 			</div>
 			<div className="flex min-h-0 flex-1 flex-col gap-4 overflow-auto px-4 py-4">
 				<div className="rounded-lg border border-border bg-muted/10 px-3 py-2 text-xs text-muted-foreground">
 					{summary}
 				</div>
+				{!clientReachable ? (
+					<div className="flex items-start gap-2 rounded-md border border-amber-500/30 bg-amber-500/5 px-3 py-2 text-xs text-amber-700 dark:text-amber-300">
+						<AlertTriangleIcon className="mt-0.5 size-3.5 shrink-0" aria-hidden="true" />
+						<div>
+							No active OpenCode client for this session. Start the server or attach to one
+							to populate skills, commands, and MCP posture.
+						</div>
+					</div>
+				) : null}
 				<section className="space-y-2">
-					<h4 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Skills</h4>
+					<h4 className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+						<SparklesIcon className="size-3" aria-hidden="true" />
+						Skills
+					</h4>
 					{skills.isLoading ? (
-						<div className="text-xs text-muted-foreground">Loading skills...</div>
-					) : skills.data && skills.data.length > 0 ? (
+						<Loading text="Loading skills..." />
+					) : skills.isError ? (
+						<ErrorMessage error={skills.error} />
+					) : (skills.data?.length ?? 0) > 0 ? (
 						<div className="space-y-1">
-							{skills.data.slice(0, 12).map((skill) => (
+							{skills.data?.slice(0, 32).map((skill) => (
 								<div key={skill.name} className="rounded-md border border-border px-3 py-2">
 									<div className="text-xs font-medium text-foreground">{skill.name}</div>
-									{skill.description && (
+									{skill.description ? (
 										<div className="mt-1 text-xs text-muted-foreground">{skill.description}</div>
-									)}
+									) : null}
 								</div>
 							))}
+							{(skills.data?.length ?? 0) > 32 ? (
+								<div className="text-[10px] text-muted-foreground">
+									Showing first 32 of {skills.data?.length}
+								</div>
+							) : null}
 						</div>
 					) : (
-						<div className="text-xs text-muted-foreground">No skills available from the current connection.</div>
+						<Empty text="No skills available from the current connection." />
 					)}
 				</section>
 				<section className="space-y-2">
-					<h4 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Commands</h4>
+					<h4 className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+						<TerminalSquareIcon className="size-3" aria-hidden="true" />
+						Commands
+					</h4>
 					{commands.isLoading ? (
-						<div className="text-xs text-muted-foreground">Loading commands...</div>
-					) : commands.data && commands.data.length > 0 ? (
+						<Loading text="Loading commands..." />
+					) : commands.isError ? (
+						<ErrorMessage error={commands.error} />
+					) : (commands.data?.length ?? 0) > 0 ? (
 						<div className="space-y-1">
-							{commands.data.slice(0, 12).map((command) => (
+							{commands.data?.slice(0, 32).map((command) => (
 								<div key={command.name} className="rounded-md border border-border px-3 py-2">
 									<div className="text-xs font-medium text-foreground">/{command.name}</div>
-									{command.description && (
+									{command.description ? (
 										<div className="mt-1 text-xs text-muted-foreground">{command.description}</div>
-									)}
+									) : null}
+								</div>
+							))}
+							{(commands.data?.length ?? 0) > 32 ? (
+								<div className="text-[10px] text-muted-foreground">
+									Showing first 32 of {commands.data?.length}
+								</div>
+							) : null}
+						</div>
+					) : (
+						<Empty text="No commands available from the current connection." />
+					)}
+				</section>
+				<section className="space-y-2">
+					<h4 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+						MCP servers
+					</h4>
+					{mcpQuery.isLoading ? (
+						<Loading text="Loading MCP posture..." />
+					) : mcpQuery.isError ? (
+						<ErrorMessage error={mcpQuery.error} />
+					) : mcpServers.length > 0 ? (
+						<div className="space-y-1">
+							{mcpServers.map((server) => (
+								<div
+									key={server.name}
+									className="flex items-center justify-between gap-2 rounded-md border border-border bg-muted/10 px-3 py-2"
+								>
+									<span className="font-mono text-xs text-foreground">{server.name}</span>
+									<span
+										className={
+											server.status === "enabled"
+												? "rounded-full bg-emerald-500/15 px-2 py-0.5 text-[10px] uppercase tracking-wide text-emerald-700 dark:text-emerald-300"
+												: "rounded-full bg-amber-500/15 px-2 py-0.5 text-[10px] uppercase tracking-wide text-amber-700 dark:text-amber-300"
+										}
+									>
+										{server.status}
+									</span>
 								</div>
 							))}
 						</div>
 					) : (
-						<div className="text-xs text-muted-foreground">No commands available from the current connection.</div>
+						<div className="rounded-md border border-border bg-muted/10 px-3 py-2 text-xs text-muted-foreground">
+							No MCP servers in the current OpenCode config. Add providers under
+							<code className="ml-1 rounded bg-muted/40 px-1 py-0.5 font-mono">provider.mcp</code>
+							to surface them here.
+						</div>
 					)}
 				</section>
-				<section className="space-y-2">
-					<h4 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">MCP posture</h4>
-					<div className="rounded-md border border-border px-3 py-2 text-xs text-muted-foreground">
-						MCP servers and provider plugin auth are currently managed through OpenCode config and provider settings.
-					</div>
-				</section>
 			</div>
+		</div>
+	)
+}
+
+import { Button } from "@ch5me/elf-ui/components/button"
+
+function Loading({ text }: { text: string }) {
+	return (
+		<div className="flex items-center gap-2 text-xs text-muted-foreground">
+			<Loader2Icon className="size-3.5 animate-spin" aria-hidden="true" />
+			{text}
+		</div>
+	)
+}
+
+function Empty({ text }: { text: string }) {
+	return (
+		<div className="rounded-md border border-dashed border-border bg-muted/10 px-3 py-2 text-xs text-muted-foreground">
+			{text}
+		</div>
+	)
+}
+
+function ErrorMessage({ error }: { error: unknown }) {
+	const message = error instanceof Error ? error.message : "Failed to load"
+	return (
+		<div className="flex items-start gap-2 rounded-md border border-destructive/30 bg-destructive/5 px-3 py-2 text-xs text-destructive">
+			<AlertTriangleIcon className="mt-0.5 size-3.5 shrink-0" aria-hidden="true" />
+			<span>{message}</span>
 		</div>
 	)
 }
