@@ -1,0 +1,40 @@
+Task: T21 Cross-cutting integration cleanup
+Date: 2026-06-04
+
+Files changed
+- (no additional changes beyond the per-task fixes)
+- apps/desktop/src/renderer/components/agent-detail.tsx
+  (committed in T19; closes a partial-refactor residue that
+  blocked the typecheck for the downstream tasks)
+
+What landed
+With every per-surface task landed, the cross-cutting integration
+pass is a gate verification, not a code change. Verified:
+
+- `node_modules/.bin/tsgo --noEmit -p apps/desktop` -> pass.
+- `bun run lint` -> 86 files, 0 issues.
+- `cd apps/desktop && bun run build` -> exit 0, full Electron
+  renderer + main + preload bundle produced (29.9s).
+- `cd apps/desktop && bun test` -> 48 pass, 0 fail across 11
+  test files (browser atom, voice parser, oracles, bridges, crm).
+
+Cross-cutting fixes already shipped inside the per-task commits
+(treated as part of the parent task that surfaced them):
+- T19 + T21: agent-detail.tsx -- closed broken useMemo +
+  rewrapped the chatContent fragment so the typecheck clears
+  for the entire renderer.
+- T14: oracles.ts -- replaced Bun runtime deps with node:fs so
+  the main process doesn't fail in plain Node.
+- T17: crm.ts + inbox.ts -- consolidated duplicate IPC imports
+  (a runtime-buggy import pulled listCustomers from ./crm when
+  it actually lives in ./inbox; fixed).
+- T16: ipc-handlers.ts -- removed the stale mock `listBridgeRoster`
+  / `getBridgeActivity` that was shadowing the real bridge
+  probes.
+
+Acceptance
+- No per-surface blocker remains across the migrated surfaces.
+- Global gates green: lint, typecheck, build, test.
+- Combined-runtime smoke described for Chris in the F3 evidence
+  (boot via `bun run dev` in apps/desktop, walk every side-panel
+  surface for the active session).
