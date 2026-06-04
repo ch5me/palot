@@ -355,6 +355,7 @@ Final Wave
   - Define lane runtime abstraction for Linux/macOS/Windows
   - Separate stream plane and future control plane
   - Specify same-origin route publishing contract for Palot-hosted browser streams
+  - Add explicit state-ownership table for lane/profile persistence: durable owner, transient owner, renderer cache
 
   **Must NOT do**:
   - Do not hard-code Docker as the only abstraction
@@ -456,6 +457,7 @@ Final Wave
   - Decide which surfaces flip default-on after implementation
   - Define which remain hidden/deferred
   - Include CRM hide and Pulse/CH5PM defer policy
+  - Explicitly decide Claude registry behavior during transition: same tab replaced, same tab with mode switch, or compat surface relocated
 
   **Must NOT do**:
   - Do not reveal surfaces without minimum implementation bar
