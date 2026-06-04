@@ -25,7 +25,6 @@ import type {
 	MigrationPreview,
 	MigrationProvider,
 	OfficeConversionResult,
-	OracleInfo,
 	FilePreview,
 	FileSystemEntry as FileSystemEntryApi,
 	GitApplyResult,
@@ -87,8 +86,6 @@ export interface BridgeChannel {
 export interface BridgesResult {
 	bridges: BridgeChannel[]
 }
-
-export type { OracleInfo, TmuxSessionInfo }
 
 export interface BridgeMessage {
 	ts: string
@@ -748,71 +745,6 @@ export async function fetchOpenInTargets(): Promise<OpenInTargetsResult> {
 		return window.elf.openIn.getTargets()
 	}
 	throw new Error("Open-in targets are only available in Electron mode")
-}
-
-export async function fetchOracles(): Promise<OracleInfo[]> {
-	if (isElectron) {
-		return window.elf.oracles.list()
-	}
-	throw new Error("Oracle roster is only available in Electron mode")
-}
-
-export async function createOracle(identity: string, command?: string | null): Promise<string> {
-	if (isElectron) {
-		return window.elf.oracles.create(identity, command)
-	}
-	throw new Error("Oracle controls are only available in Electron mode")
-}
-
-export async function renameOracle(from: string, to: string): Promise<string> {
-	if (isElectron) {
-		return window.elf.oracles.rename(from, to)
-	}
-	throw new Error("Oracle controls are only available in Electron mode")
-}
-
-export async function deleteOracle(identity: string, force?: boolean): Promise<void> {
-	if (isElectron) {
-		return window.elf.oracles.delete(identity, force)
-	}
-	throw new Error("Oracle controls are only available in Electron mode")
-}
-
-export async function fetchTmuxSessions(): Promise<TmuxSessionInfo[]> {
-	if (isElectron) {
-		return window.elf.tmux.listSessions()
-	}
-	throw new Error("Tmux sessions are only available in Electron mode")
-}
-
-export async function killTmuxSession(socket: string, session: string): Promise<void> {
-	if (isElectron) {
-		return window.elf.tmux.killSession(socket, session)
-	}
-	throw new Error("Tmux controls are only available in Electron mode")
-}
-
-export async function spawnPtyOracle(args: {
-	identity: string
-	cols?: number
-	rows?: number
-}): Promise<unknown> {
-	if (isElectron) {
-		return window.elf.pty.spawnOracle(args)
-	}
-	throw new Error("PTY attach is only available in Electron mode")
-}
-
-export async function spawnPtyTmux(args: {
-	socket: string
-	session: string
-	cols?: number
-	rows?: number
-}): Promise<unknown> {
-	if (isElectron) {
-		return window.elf.pty.spawnTmux(args)
-	}
-	throw new Error("PTY attach is only available in Electron mode")
 }
 
 /**

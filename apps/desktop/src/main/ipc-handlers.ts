@@ -602,7 +602,7 @@ export function registerIpcHandlers(): void {
 	ipcMain.handle(
 		"oracles:delete",
 		withLogging("oracles:delete", async (_, identity: string, force?: boolean) =>
-			await deleteOracleSession(identity, force),
+			await deleteOracle(identity, force),
 		),
 	)
 
