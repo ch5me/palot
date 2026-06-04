@@ -1,0 +1,50 @@
+Task: T13 Browser hardening
+Date: 2026-06-04
+
+Files changed
+- apps/desktop/src/renderer/atoms/browser.ts (new)
+- apps/desktop/src/renderer/atoms/browser.test.ts (new)
+- apps/desktop/src/renderer/components/side-panel/browser-panel.tsx
+
+What landed
+- Persisted last successful URL via Jotai `atomWithStorage` (`elf:browser-panel:last-url`),
+  restored on panel mount so the inline browser keeps its destination across
+  relaunches (covers the "state restores across relaunch" acceptance bullet).
+- Persisted rolling history (8 most recent URLs) with de-dupe and a "Recent"
+  chip row in the panel for one-click re-visit.
+- Extracted URL building into `buildNavigableUrl(input): string | null` with
+  helper tests:
+  - Reject empty / whitespace / embedded-space input -> explicit error toast,
+    not a silent "https://" prefix.
+  - Pass through `http(s)://`, `file://`, `about:`, `chrome:`, `devtools:`.
+  - Prefix bare hostnames (`example.com`) with `https://`.
+- Wired `webview` `did-fail-load` and `did-finish-load` to surface real load
+  failures (error code + description + URL) inside the panel instead of
+  silently leaving the webview blank.
+- Added a "Reset" action that clears the URL, history entry, and stored
+  persisted URL back to `about:blank`.
+- Added a "Go" submit button next to the input (form already had implicit
+  submit on Enter; this is the explicit affordance).
+- Browser-mode (no Electron) still falls back to the same "Inline browser
+  needs Electron" empty state.
+
+Verification
+- `node_modules/.bin/tsgo --noEmit -p apps/desktop` -> pass (no output).
+- `bun run lint` (root, all packages) -> pass (86 files, 0 issues).
+- `bun test apps/desktop/src/renderer/atoms/browser.test.ts`
+  -> 9 pass, 0 fail (URL building + history helpers).
+- Manual flow described for Chris:
+  1. Open Browser surface; type `https://example.com`, hit Go -> load,
+     persisted; "Recent" shows the URL.
+  2. Type `not a url with spaces` -> explicit error toast in panel.
+  3. Type `example.com` -> resolves to `https://example.com`, persists.
+  4. Close + relaunch -> last URL restored; recent chips still present.
+  5. Click a recent chip -> navigates; persists + de-dupes.
+  6. Hit Reset -> back to `about:blank`, stored URL cleared.
+  7. Toggle Browser feature flag off -> side panel fallback to another tab.
+
+Notes
+- The Electron `<webview>` still has the existing `about:blank` initial
+  render; webview with `autosize: true` keeps the parent container sized.
+- No new IPC seams needed; load failure / navigation events are pure
+  webview DOM events captured on the renderer side.
