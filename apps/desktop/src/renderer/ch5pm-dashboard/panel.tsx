@@ -14,6 +14,7 @@ import {
 } from "lucide-react"
 import { useEffect, useMemo, useState } from "react"
 import { queryClient } from "../lib/query-client"
+import { reopenClosedSession } from "./actions"
 import { fetchCh5PmDashboard, subscribeToCh5PmEvents } from "./client"
 import { MOCK_CH5PM_DASHBOARD_STATE } from "./fixtures"
 import type { Ch5PmDashboardState, Ch5PmSignalRow, Ch5PmSnapshotTicketRow } from "./types"
@@ -126,6 +127,15 @@ export function Ch5PmDashboardPanel({ className }: Ch5PmDashboardPanelProps) {
 		streamConnected: false,
 		streamError: null,
 		lastEventAt: null,
+	})
+	const [completedAction, setCompletedAction] = useState<{
+		busyKey: string
+		message: string
+		error: string
+	}>({
+		busyKey: "",
+		message: "",
+		error: "",
 	})
 
 	const query = useQuery({
@@ -242,6 +252,25 @@ export function Ch5PmDashboardPanel({ className }: Ch5PmDashboardPanelProps) {
 		],
 		[activeTickets.length, blockedTickets.length, queueTickets.length, slotRows],
 	)
+
+	const handleReopen = async (row: Ch5PmSignalRow) => {
+		const key = row.ticketId ?? row.sessionId ?? ""
+		setCompletedAction({ busyKey: key, message: "", error: "" })
+		try {
+			const result = await reopenClosedSession(baseUrl, row)
+			setCompletedAction({
+				busyKey: "",
+				message: `${row.ticketId ?? row.sessionId ?? "session"} reopened in ${result.openedIn}`,
+				error: "",
+			})
+		} catch (error) {
+			setCompletedAction({
+				busyKey: "",
+				message: "",
+				error: error instanceof Error ? error.message : String(error),
+			})
+		}
+	}
 
 	return (
 		<div className={`flex h-full min-h-0 flex-col bg-background ${className ?? ""}`}>
@@ -415,41 +444,67 @@ export function Ch5PmDashboardPanel({ className }: Ch5PmDashboardPanelProps) {
 
 						<SectionCard title="Completed Tickets">
 							<div className="grid gap-2">
+								{completedAction.message ? (
+									<div className="rounded-lg border border-emerald-500/30 bg-emerald-500/5 px-3 py-2 text-xs text-emerald-600 dark:text-emerald-400">
+										{completedAction.message}
+									</div>
+								) : null}
+								{completedAction.error ? (
+									<div className="rounded-lg border border-amber-500/30 bg-amber-500/5 px-3 py-2 text-xs text-amber-600 dark:text-amber-400">
+										{completedAction.error}
+									</div>
+								) : null}
 								{completedTickets.length ? (
-									completedTickets.map((ticket) => (
-										<div
-											key={ticket.ticketId ?? ticket.sessionId}
-											className="rounded-lg border border-border/60 bg-background/60 px-3 py-2 text-xs"
-										>
-											<div className="flex items-center justify-between gap-2">
-												<div className="font-medium text-foreground">
-													{ticket.ticketId ?? ticket.sessionId ?? "Closed session"}
+									completedTickets.map((ticket) => {
+										const busy = completedAction.busyKey === (ticket.ticketId ?? ticket.sessionId ?? "")
+										return (
+											<div
+												key={ticket.ticketId ?? ticket.sessionId}
+												className="rounded-lg border border-border/60 bg-background/60 px-3 py-2 text-xs"
+											>
+												<div className="flex items-center justify-between gap-2">
+													<div className="font-medium text-foreground">
+														{ticket.ticketId ?? ticket.sessionId ?? "Closed session"}
+													</div>
+													<div className="flex items-center gap-2">
+														{ticket.planeUrl ? (
+															<a
+																href={ticket.planeUrl}
+																target="_blank"
+																rel="noreferrer"
+																className="text-sky-500 underline-offset-2 hover:underline"
+															>
+																View in Plane
+															</a>
+														) : null}
+														{ticket.reopenable ? (
+															<Button
+																type="button"
+																variant="outline"
+																size="sm"
+																onClick={() => void handleReopen(ticket)}
+																disabled={busy}
+															>
+																{busy ? "Opening..." : "Open in CMUX"}
+															</Button>
+														) : null}
+													</div>
 												</div>
-												{ticket.planeUrl ? (
-													<a
-														href={ticket.planeUrl}
-														target="_blank"
-														rel="noreferrer"
-														className="text-sky-500 underline-offset-2 hover:underline"
-													>
-														View in Plane
-													</a>
-												) : null}
+												<div className="mt-1 text-muted-foreground">
+													{ticket.statusLine ?? ticket.title ?? "No summary"}
+												</div>
+												<div className="mt-1 text-muted-foreground">
+													{[
+														ticket.repo ?? ticket.projectIdentifier,
+														ticket.sourceBoxId,
+														ticket.reopenable ? "reopenable" : undefined,
+													]
+														.filter(Boolean)
+														.join(" · ")}
+												</div>
 											</div>
-											<div className="mt-1 text-muted-foreground">
-												{ticket.statusLine ?? ticket.title ?? "No summary"}
-											</div>
-											<div className="mt-1 text-muted-foreground">
-												{[
-													ticket.repo ?? ticket.projectIdentifier,
-													ticket.sourceBoxId,
-													ticket.reopenable ? "reopenable" : undefined,
-												]
-													.filter(Boolean)
-													.join(" · ")}
-											</div>
-										</div>
-									))
+										)
+									})
 								) : (
 									<div className="text-xs text-muted-foreground">No completed sessions.</div>
 								)}
@@ -461,7 +516,12 @@ export function Ch5PmDashboardPanel({ className }: Ch5PmDashboardPanelProps) {
 						<SectionCard title="Attention Dead-Time">
 							<div className="grid gap-3 text-xs">
 								<div className="grid gap-2 md:grid-cols-2 xl:grid-cols-3">
-									<StatCard label="Open" value={attentionMetrics?.openRequestCount ?? 0} icon={WavesIcon} tone={(attentionMetrics?.openRequestCount ?? 0) > 0 ? "text-amber-500" : "text-foreground"} />
+									<StatCard
+										label="Open"
+										value={attentionMetrics?.openRequestCount ?? 0}
+										icon={WavesIcon}
+										tone={(attentionMetrics?.openRequestCount ?? 0) > 0 ? "text-amber-500" : "text-foreground"}
+									/>
 									<StatCard label="Dead (s)" value={attentionMetrics?.totalOpenDeadTimeSeconds ?? 0} icon={AlertTriangleIcon} tone="text-amber-500" />
 									<StatCard label="Max (s)" value={attentionMetrics?.maxDeadTimeSeconds ?? 0} icon={AlertTriangleIcon} tone="text-amber-500" />
 									<StatCard label="Resolved" value={attentionMetrics?.resolvedTodayCount ?? 0} icon={CircleCheckIcon} tone="text-emerald-500" />

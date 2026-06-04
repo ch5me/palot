@@ -14,6 +14,10 @@ const PRESSURE_PATH = "/data/pressure.json"
 const SYSTEM_PATH = "/data/system.json"
 const EVENTS_PATH = "/events"
 
+export const SNAPSHOT_REFRESH_MS = 60_000
+export const PRESSURE_REFRESH_MS = 30_000
+export const SYSTEM_REFRESH_MS = 30_000
+
 const isElectron = typeof window !== "undefined" && "elf" in window
 
 interface SerializedFetchRequest {
@@ -117,29 +121,22 @@ export function subscribeToCh5PmEvents(
 		handlers.onError?.("event stream reconnecting")
 	}
 
-	source.addEventListener("snapshot", (event) => {
-		try {
-			handlers.onSnapshot?.(JSON.parse(event.data) as Ch5PmSnapshotPayload)
-		} catch (error) {
-			handlers.onError?.(error instanceof Error ? error.message : String(error))
-		}
-	})
-
-	source.addEventListener("pressure", (event) => {
-		try {
-			handlers.onPressure?.(JSON.parse(event.data) as Ch5PmPressurePayload)
-		} catch (error) {
-			handlers.onError?.(error instanceof Error ? error.message : String(error))
-		}
-	})
-
-	source.addEventListener("system", (event) => {
-		try {
-			handlers.onSystem?.(JSON.parse(event.data) as Ch5PmSystemPayload)
-		} catch (error) {
-			handlers.onError?.(error instanceof Error ? error.message : String(error))
-		}
-	})
+	for (const eventName of ["snapshot", "pressure", "system"] as const) {
+		source.addEventListener(eventName, (event) => {
+			try {
+				const data = JSON.parse(event.data)
+				if (eventName === "snapshot") {
+					handlers.onSnapshot?.(data as Ch5PmSnapshotPayload)
+				} else if (eventName === "pressure") {
+					handlers.onPressure?.(data as Ch5PmPressurePayload)
+				} else {
+					handlers.onSystem?.(data as Ch5PmSystemPayload)
+				}
+			} catch (error) {
+				handlers.onError?.(error instanceof Error ? error.message : String(error))
+			}
+		})
+	}
 
 	source.addEventListener("heartbeat", () => {
 		handlers.onHeartbeat?.()
