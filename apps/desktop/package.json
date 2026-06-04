@@ -16,7 +16,7 @@
 	"scripts": {
 		"dev": "node ../../node_modules/electron-vite/bin/electron-vite.js dev",
 		"dev:wayland": "node ../../node_modules/electron-vite/bin/electron-vite.js dev -- --ozone-platform=wayland --enable-features=WaylandWindowDecorations --disable-features=WaylandFractionalScaleV1",
-		"dev:web": "vite --config src/renderer/vite.web.config.ts",
+		"dev:web": "node ../../node_modules/vite/bin/vite.js --config src/renderer/vite.web.config.ts",
 		"build": "node ../../node_modules/electron-vite/bin/electron-vite.js build",
 		"preview": "node ../../node_modules/electron-vite/bin/electron-vite.js preview",
 		"package": "bun run build && electron-builder --config electron-builder.yml --publish never",
@@ -50,6 +50,8 @@
 		"@tanstack/react-virtual": "^3.13.0",
 		"bonjour-service": "^1.3.0",
 		"drizzle-orm": "^1.0.0-beta.15-859cf75",
+		"@dnd-kit/core": "^6.3.1",
+		"@dnd-kit/sortable": "^10.0.0",
 		"electron-updater": "^6.7.3",
 		"fuzzysort": "^3.1.0",
 		"hono": "4.11.9",

@@ -96,7 +96,7 @@ export function SessionTaskList({ sessionId }: SessionTaskListProps) {
 	if (todos.length === 0) return null
 
 	return (
-		<div className="mb-2 animate-in fade-in duration-400 rounded-lg border border-border/40 bg-muted/10">
+		<div className="animate-in fade-in duration-400 rounded-lg border border-border/40 bg-muted/10">
 			{/* Header — always visible, toggles expansion */}
 			<button
 				type="button"
