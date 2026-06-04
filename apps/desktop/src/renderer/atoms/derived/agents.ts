@@ -8,7 +8,7 @@ import type {
 	SidebarProject,
 } from "../../lib/types"
 import { discoveryAtom } from "../discovery"
-import { sessionFamily, sessionIdsAtom } from "../sessions"
+import { attachedSessionFamily, sessionFamily, sessionIdsAtom } from "../sessions"
 import { effectivePermissionFamily, effectiveQuestionFamily } from "./session-requests"
 
 // ============================================================
@@ -28,6 +28,7 @@ function agentEqual(prev: Agent | null, next: Agent | null): boolean {
 		prev.id === next.id &&
 		prev.name === next.name &&
 		prev.status === next.status &&
+		prev.isAttached === next.isAttached &&
 		prev.project === next.project &&
 		prev.projectSlug === next.projectSlug &&
 		prev.directory === next.directory &&
@@ -298,6 +299,7 @@ export const agentFamily = atomFamily((sessionId: string) => {
 		// permission or question — not just its own.
 		const hasTreePermission = get(effectivePermissionFamily(session.id)) !== undefined
 		const hasTreeQuestion = get(effectiveQuestionFamily(session.id)) !== undefined
+		const isAttached = get(attachedSessionFamily(session.id))
 		const agentStatus = deriveAgentStatus(status, hasTreePermission, hasTreeQuestion)
 
 		const { permissions, questions } = entry
@@ -320,6 +322,7 @@ export const agentFamily = atomFamily((sessionId: string) => {
 			sessionId: session.id,
 			name: session.title || "Untitled",
 			status: agentStatus,
+			isAttached,
 			environment: "local" as const,
 			project: projectNameFromDir(displayDir),
 			projectSlug: projectInfo?.slug ?? projectNameFromDir(displayDir),
@@ -499,9 +502,10 @@ export const projectListAtom = (() => {
 			const name = projectNameFromDir(dir)
 			const sessionTime = entry.session.time.updated ?? entry.session.time.created ?? 0
 
-			// A session is "active" if it is busy or has pending permissions/questions
+			// A session is "active" when it is currently working or blocked on input.
+			// Mere client attachment should not promote idle sessions into the active tier.
 			const isActive =
-				entry.status.type === "busy" ||
+				entry.status.type !== "idle" ||
 				entry.permissions.length > 0 ||
 				entry.questions.length > 0
 

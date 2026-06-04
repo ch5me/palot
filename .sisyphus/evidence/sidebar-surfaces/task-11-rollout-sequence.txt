@@ -1,0 +1,19 @@
+Task 11 — rollout sequence review
+
+Proposed execution order
+1. Shell/policy correction (CRM hide, Pulse/CH5PM defer cleanup)
+2. Browser backend + UI
+3. Claude backend + UI
+4. Memory backend + UI
+5. Default flips and cleanup
+6. Final audit / release readiness
+
+Dependency fit
+- Browser first because it has the strongest Electron vs browser-mode split.
+- Claude second because it depends on PTY/oracle seam repair but not on Memory.
+- Memory third because it depends on stable shell/editor reuse and its own persistence proof more than on runtime branching.
+
+Usable-state check
+- Each milestone ends in a usable surface outcome, not just architecture work.
+- Browser and Memory remain default off until their proof gates pass.
+- Claude stays default on because the milestone replaces the body in place rather than adding a new discoverability surface.

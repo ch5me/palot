@@ -1,0 +1,18 @@
+Task 6 — seam reuse review
+
+Reusable seams confirmed
+- `apps/desktop/src/main/pty.ts` already provides the core lifecycle primitives: persistent terminal spawn, oracle attach, tmux attach, write, resize, kill.
+- `apps/desktop/src/preload/index.ts`, `apps/desktop/src/preload/api.d.ts`, and `apps/desktop/src/renderer/services/backend.ts` already expose a complete PTY renderer contract.
+- `apps/desktop/src/main/oracles.ts` already provides tmux discovery/kill helpers useful for Claude operational flows.
+
+Unavoidable new seams
+- One explicit Claude preflight endpoint.
+- One Claude create/reattach helper that resolves the stable Claude tmux session identity and delegates to the PTY/tmux stack.
+- Optional explicit stop/status endpoints only if the product surface needs clearer semantics than generic PTY kill.
+
+Bug found
+- `apps/desktop/src/main/ipc-handlers.ts` re-registers `pty:spawn-oracle` and `pty:spawn-tmux` as stub handlers later in the file, shadowing the real PTY handlers. This is a required repair before Claude can safely depend on those seams.
+
+Result
+- Reuse-first plan is viable.
+- Minimum credible backend delta is narrow and focused, not a second Claude runtime stack.

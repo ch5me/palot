@@ -1,0 +1,23 @@
+Task 6 — lifecycle review
+
+Canonical owner
+- Durable owner: tmux session
+- Attachment handle: PTY id
+
+Lifecycle path
+1. Preflight -> verify Electron runtime, Claude CLI, auth, tmux.
+2. Create/attach -> resolve stable Claude session name, create if missing, attach PTY client.
+3. Stream -> consume `onPtyData` / `onPtyExit`.
+4. Send -> `writePty` plain text or raw command bytes.
+5. Resize -> `resizePty`.
+6. Detach -> close the PTY attachment while leaving tmux session alive when UI hides/closes.
+7. Stop -> explicit destructive action against the Claude session owner.
+8. Recovery -> if tmux session exists, reattach; if not, recreate; if crash detected, surface failed state and allow restart.
+
+Semantics made explicit
+- Closing the Claude surface should not equal destroying the session by default.
+- PTY kill and session terminate are different product actions.
+- Reattach uses stable session identity, not a fresh random PTY session.
+
+Result
+- No hidden lifecycle ambiguity remains in the plan.

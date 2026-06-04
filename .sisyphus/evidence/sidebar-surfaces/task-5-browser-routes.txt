@@ -1,0 +1,15 @@
+Task 5 — browser route contract review
+
+Current state
+- Browser-mode server currently mounts only `/api/servers`, `/api/model-state`, `/api/files`, and `/health` from `apps/server/src/index.ts`.
+- No browser-lane publisher route exists yet.
+
+Proposed route contract
+- Embeddable same-origin lane route: `/firefly/browser-lanes/:laneId`
+- Optional metadata discovery route: `/api/browser-lanes/:laneId`
+- Renderer consumes only `publishedUrl` + lane metadata and embeds the route if `status === ready`.
+
+Embed-safety result
+- Browser mode remains same-origin because the iframe source is a Palot-owned route.
+- Electron consumes the same `publishedUrl` contract, even if implementation details differ behind the adapter.
+- If no route can be published, the UX falls back to explicit unavailable/external-open behavior instead of unsafe direct embeds.

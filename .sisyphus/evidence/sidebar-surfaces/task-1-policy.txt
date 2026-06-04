@@ -1,0 +1,32 @@
+Task 1 — policy consistency
+
+Current defaults from apps/desktop/src/renderer/atoms/feature-flags.ts
+- Default on: review, notes, files, terminal, editor, plugins, bridges, crm, studio, voice, oracle, claude
+- Default off: browserPanelEnabled, pulse, memory, ch5pm
+
+Matrix comparison
+- Review: stays default on; availability remains diff-driven.
+- Browser: stays default off until same-origin publisher proof exists in both runtimes.
+- Notes: stays default on.
+- Pulse: remains off and moves from optional feature toggle to fully deferred/hidden policy.
+- Memory: stays default off until save/reopen proof exists.
+- Files: stays default on.
+- Terminal: stays default on.
+- Editor: stays default on.
+- Plugins: stays default on.
+- Bridges: stays default on.
+- CRM: current code defaults on, but product policy now says hidden/off. This requires a later flag/default and command-palette discoverability change.
+- Studio: stays default on.
+- Voice: stays default on.
+- Oracle: stays default on.
+- Claude: stays default on while the body is replaced in place.
+- CH5PM: stays off and moves from optional visible feature toggle to deferred/hidden sidebar policy with optional command-palette breadcrumb only.
+
+Required follow-on policy changes
+- CRM: change from visible/default-on to hidden/off.
+- Pulse: remove normal discoverability so deferral is explicit.
+- CH5PM: keep off and remove normal sidebar discoverability; optional breadcrumb only if intentionally retained.
+
+Consistency result
+- No ambiguity remains in the plan.
+- The only contradictions are known current-code defaults/discoverability for CRM, Pulse, and CH5PM, and those are intentionally called out for later rollout work in tasks 7 and 12.

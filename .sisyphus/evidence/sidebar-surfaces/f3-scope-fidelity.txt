@@ -1,0 +1,11 @@
+F3 — scope fidelity review
+
+Checked non-goals
+- No advanced browser control plane work is pulled into the browser plan; automation/CDP/devtools-style controls stay explicitly deferred.
+- No Pulse implementation or operator-contract design work is pulled into the active wave; Pulse remains deferred.
+- No CH5PM product-definition work is pulled into the active wave; CH5PM remains deferred / optional breadcrumb only.
+- No memory-cockpit / analytics expansion appears; Memory stays a file-tree + markdown editor over one synthetic doc per record.
+- No second Claude runtime model is introduced for MVP; headless/structured lane remains follow-on only.
+
+Result
+- Scope fidelity pass: no accidental expansion beyond the stated wave boundaries.

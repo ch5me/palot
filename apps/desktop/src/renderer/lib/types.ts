@@ -125,6 +125,8 @@ export interface Agent {
 	id: string
 	name: string
 	status: AgentStatus
+	/** True when a live OpenCode client is attached to this session */
+	isAttached: boolean
 	environment: EnvironmentType
 	project: string
 	/** URL slug for the project (for router navigation) */

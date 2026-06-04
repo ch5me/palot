@@ -1,0 +1,19 @@
+F2 — architecture quality review
+
+Browser
+- Explicitly same-origin, Palot-owned browser lane.
+- Explicitly avoids direct provider iframe embedding.
+- Explicitly separates stream plane from later control plane.
+
+Claude
+- Explicitly reuses existing PTY/tmux/oracle seams.
+- Explicitly chooses the Claude Code TUI lane first, with headless/structured lane deferred.
+- Explicitly keeps tmux session as durable owner and PTY as attachment handle.
+
+Memory
+- Explicitly reuses Files-style tree patterns.
+- Explicitly reuses Editor/Monaco patterns.
+- Explicitly avoids a new editor stack and avoids memory-ops cockpit expansion.
+
+Result
+- Architecture quality pass: each priority surface follows the intended pattern source rather than inventing an unrelated stack.

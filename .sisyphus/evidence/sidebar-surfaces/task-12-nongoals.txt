@@ -1,0 +1,19 @@
+Task 12 — non-goal clarity review
+
+Deferred/hidden rationale is now explicit for
+- CRM
+- Pulse
+- CH5PM
+
+Clarity result
+- CRM is hidden for product-priority + workflow-maturity reasons, not forgotten.
+- Pulse is deferred because no operator contract exists yet.
+- CH5PM is deferred because product intent, owner, and real data-source story are unresolved.
+
+Revisit triggers exist
+- CRM: outbound maturity + product priority
+- Pulse: explicit operator/metrics contract
+- CH5PM: explicit product review resolving owner + data source + lane reason
+
+Result
+- Omissions read as intentional, not accidental.

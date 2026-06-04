@@ -1,0 +1,15 @@
+Task 4 — memory reuse discipline
+
+Current code evidence
+- `apps/desktop/src/renderer/components/side-panel/memory-panel.tsx` is a list/pin/search UI over `MemoryItem[]`, not a file-tree/editor lane.
+- `apps/desktop/src/renderer/components/side-panel/files-panel.tsx` already provides the correct left-rail mental model: tree rows, selection, empty/loading/error states, and preview-pane shell.
+- `apps/desktop/src/renderer/components/side-panel/editor-panel.tsx` already provides the correct right-pane mental model: Monaco host, dirty/saved indicators, keyboard save, and loading/error overlays.
+
+Reuse decision
+- Reuse Files-like layout and affordances for the virtual memory tree.
+- Reuse Editor-like layout and affordances for the markdown editor pane.
+- Do not reuse the real filesystem data source or `useFileSearch` directly, because memory docs are synthetic and not disk-backed.
+- Do not add a new editor stack; Monaco is acceptable for v1 because it already exists.
+
+Result
+- Proposal is reuse-heavy and avoids net-new heavy UI.

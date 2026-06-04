@@ -1,0 +1,17 @@
+Task 2 — browser MVP scope integrity
+
+Phase-1 constraints preserved
+- Same-origin-only embed rule is explicit for both Electron and browser mode.
+- Browser-mode happy path is an iframe pointed at a Palot-owned published route, not a third-party site.
+- Electron can temporarily reuse the current `webview` shell as an adapter, but the plan treats it as implementation debt rather than the architecture end state.
+- Control plane and automation plane are explicitly deferred.
+
+Explicit non-goals captured
+- No CDP or agent-control complexity.
+- No arbitrary multi-lane management UI beyond one credible visible lane.
+- No direct provider iframe architecture.
+- No browser-mode dependency on Electron-native primitives.
+- No attempt to solve the long-term browser control plane in the MVP.
+
+Result
+- Phase 1 remains intentionally simple and architecture-bounded.

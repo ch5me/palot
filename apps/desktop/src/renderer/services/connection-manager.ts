@@ -1,11 +1,16 @@
 import type { OpencodeClient } from "@opencode-ai/sdk/v2/client"
 import { processEvent } from "../atoms/actions/event-processor"
 import { authHeaderAtom, serverConnectedAtom, serverUrlAtom } from "../atoms/connection"
+import { discoveryAtom } from "../atoms/discovery"
 import { batchUpsertPartsAtom } from "../atoms/parts"
 import {
 	SESSIONS_PAGE_SIZE,
+	replaceAttachedSessionIdsAtom,
+	sessionFamily,
+	setSessionStatusAtom,
 	setProjectPaginationLoadingAtom,
 	setSessionsAtom,
+	upsertSessionAtom,
 	updateProjectPaginationAtom,
 } from "../atoms/sessions"
 import { appStore } from "../atoms/store"
@@ -19,6 +24,7 @@ import {
 } from "../atoms/streaming"
 import { createLogger } from "../lib/logger"
 import type { Event } from "../lib/types"
+import { fetchActiveOpenCodeSessions } from "./backend"
 import {
 	connectToServer,
 	disposeAllInstances,
@@ -30,6 +36,12 @@ import {
 } from "./opencode"
 
 const log = createLogger("connection-manager")
+
+let activeSessionPresenceSync: Promise<void> | null = null
+let attachedStatusBootstrapped = false
+let pendingActiveSessionPresenceSnapshot:
+	| Awaited<ReturnType<typeof fetchActiveOpenCodeSessions>>
+	| null = null
 
 // ============================================================
 // Health check
@@ -133,6 +145,9 @@ export async function connectToOpenCode(url: string, authHeader?: string | null)
 	const resolvedAuth = authHeader ?? null
 	appStore.set(serverUrlAtom, url)
 	appStore.set(authHeaderAtom, resolvedAuth)
+	appStore.set(replaceAttachedSessionIdsAtom, [])
+	attachedStatusBootstrapped = false
+	pendingActiveSessionPresenceSnapshot = null
 
 	// Base client has no directory — used for SSE events (which cover all projects)
 	const baseClient = connectToServer(url, { authHeader: resolvedAuth ?? undefined })
@@ -176,6 +191,113 @@ export async function loadAllProjects() {
 		log.error("Failed to load projects from API", err)
 		return []
 	}
+}
+
+async function hydrateAttachedSession(sessionId: string, directory: string): Promise<boolean> {
+	const existing = appStore.get(sessionFamily(sessionId))
+	if (existing) return true
+
+	const client = getProjectClient(directory)
+	if (!client) return false
+
+	const session = await getSession(client, sessionId)
+	if (!session) return false
+
+	appStore.set(upsertSessionAtom, { session, directory: session.directory || directory })
+	return true
+}
+
+async function bootstrapAttachedSessionStatuses(
+	directorySessionIds: Map<string, string[]>,
+): Promise<number> {
+	const results = await Promise.allSettled(
+		Array.from(directorySessionIds.entries()).map(async ([directory, sessionIds]) => {
+			const client = getProjectClient(directory)
+			if (!client) return false
+
+			const statuses = await getSessionStatuses(client)
+			for (const sessionId of sessionIds) {
+				const status = statuses[sessionId]
+				if (!status) continue
+				appStore.set(setSessionStatusAtom, { sessionId, status })
+			}
+			return true
+		}),
+	)
+
+	return results.reduce((count, result) => {
+		if (result.status === "fulfilled" && result.value) return count + 1
+		return count
+	}, 0)
+}
+
+async function applyActiveSessionPresenceSnapshot(
+	snapshot: Awaited<ReturnType<typeof fetchActiveOpenCodeSessions>>,
+): Promise<void> {
+	const attachedSessionIds: string[] = []
+	const statusBootstrapTargets = new Map<string, string[]>()
+	const bootstrapAllAttachedStatuses = !attachedStatusBootstrapped
+
+	for (const presence of snapshot.sessions) {
+		const hadEntry = !!appStore.get(sessionFamily(presence.sessionId))
+		const hydrated = await hydrateAttachedSession(presence.sessionId, presence.directory)
+		if (hydrated) attachedSessionIds.push(presence.sessionId)
+		if (!hydrated) continue
+		if (!bootstrapAllAttachedStatuses && hadEntry) continue
+
+		const sessionIds = statusBootstrapTargets.get(presence.directory) ?? []
+		sessionIds.push(presence.sessionId)
+		statusBootstrapTargets.set(presence.directory, sessionIds)
+	}
+
+	if (statusBootstrapTargets.size > 0) {
+		const fulfilledDirectories = await bootstrapAttachedSessionStatuses(statusBootstrapTargets)
+		if (fulfilledDirectories === statusBootstrapTargets.size) {
+			attachedStatusBootstrapped = true
+		} else {
+			log.warn("Attached session status bootstrap incomplete", {
+				targetDirectories: statusBootstrapTargets.size,
+				fulfilledDirectories,
+			})
+		}
+	} else if (bootstrapAllAttachedStatuses) {
+		attachedStatusBootstrapped = true
+	}
+
+	appStore.set(replaceAttachedSessionIdsAtom, attachedSessionIds)
+	log.info("Synced active OpenCode client presence", {
+		clients: snapshot.clientCount,
+		sessions: snapshot.sessionCount,
+		hydrated: attachedSessionIds.length,
+		statusBootstrapDirectories: statusBootstrapTargets.size,
+	})
+}
+
+export async function syncActiveSessionPresence(
+	snapshot?: Awaited<ReturnType<typeof fetchActiveOpenCodeSessions>>,
+): Promise<void> {
+	if (!connection) return
+	if (snapshot) {
+		pendingActiveSessionPresenceSnapshot = snapshot
+	}
+	if (activeSessionPresenceSync) return activeSessionPresenceSync
+
+	activeSessionPresenceSync = (async () => {
+		const nextSnapshot = pendingActiveSessionPresenceSnapshot ?? (await fetchActiveOpenCodeSessions())
+		pendingActiveSessionPresenceSnapshot = null
+		await applyActiveSessionPresenceSnapshot(nextSnapshot)
+	})()
+		.catch((err) => {
+			log.error("Failed to sync active OpenCode client presence", err)
+		})
+		.finally(() => {
+			activeSessionPresenceSync = null
+			if (pendingActiveSessionPresenceSnapshot) {
+				void syncActiveSessionPresence()
+			}
+		})
+
+	return activeSessionPresenceSync
 }
 
 /**
@@ -327,12 +449,11 @@ export function getProjectClient(directory: string): OpencodeClient | null {
 }
 
 /**
- * Fetch a single session by ID using the global (non-directory-scoped) client.
+ * Fetch a single session by ID.
  *
  * Used as a fallback when navigating directly to a session that is not yet in
  * the Jotai store — for example, subagent sessions that arrived while the SSE
- * stream was reconnecting, or sessions on a VPS where the initial batch load
- * only fetches root sessions.
+ * stream was reconnecting, or sessions outside the initial focused preload.
  *
  * Returns `null` if the session is not found, the server is unreachable, or
  * no connection has been established.
@@ -340,7 +461,34 @@ export function getProjectClient(directory: string): OpencodeClient | null {
 export async function fetchSessionById(sessionId: string): Promise<import("../lib/types").Session | null> {
 	const client = getBaseClient()
 	if (!client) return null
-	return getSession(client, sessionId)
+
+	// Fast path: some backends can resolve a session globally without directory scoping.
+	const globalSession = await getSession(client, sessionId)
+	if (globalSession) return globalSession
+
+	// Fallback: probe the focused project clients in parallel. The shared server
+	// scopes many session APIs by directory, so this recovers sessions that exist
+	// but are not visible from the unscoped base client.
+	const worktrees = appStore
+		.get(discoveryAtom)
+		.projects.map((project) => project.worktree)
+		.filter((worktree): worktree is string => !!worktree)
+
+	const results = await Promise.allSettled(
+		worktrees.map(async (worktree) => {
+			const projectClient = getProjectClient(worktree)
+			if (!projectClient) return null
+			return getSession(projectClient, sessionId)
+		}),
+	)
+
+	for (const result of results) {
+		if (result.status === "fulfilled" && result.value) {
+			return result.value
+		}
+	}
+
+	return null
 }
 
 /**
@@ -409,6 +557,7 @@ export function disconnect(): void {
 	setGlobalAbort(null)
 	eventLoopGeneration++
 	appStore.set(serverConnectedAtom, false)
+	appStore.set(replaceAttachedSessionIdsAtom, [])
 }
 
 // ============================================================

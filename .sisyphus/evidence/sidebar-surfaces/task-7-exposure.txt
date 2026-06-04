@@ -1,0 +1,19 @@
+Task 7 — accidental exposure review
+
+Surfaces that must stop appearing as normal peer features
+- CRM
+- Pulse
+- CH5PM
+
+Current accidental-exposure risk
+- `command-palette.tsx` currently exposes toggle items for CRM, Pulse, and CH5PM in the generic "Features" group.
+- `firefly-surface-registry.tsx` availability for those surfaces is still a simple feature-flag check, so they remain normally discoverable if enabled.
+
+Planned protection
+- CRM removed from normal sidebar + generic palette toggles.
+- Pulse removed from normal sidebar + generic palette toggles.
+- CH5PM removed from normal sidebar; optional breadcrumb only if intentionally retained outside the generic toggle list.
+- Claude keeps the same tab identity; no extra transitional Claude surface is introduced.
+
+Result
+- Policy eliminates unintended visible placeholder surfaces once the corresponding registry/palette changes land.

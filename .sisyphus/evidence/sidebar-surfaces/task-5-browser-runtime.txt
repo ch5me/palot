@@ -1,0 +1,15 @@
+Task 5 — browser runtime portability
+
+Runtime-neutral contract
+- Renderer-visible contract is platform-neutral: `ensureLane`, `getLane`, `publishLane`, `reloadLane`, `openExternal`, plus lane metadata.
+- Renderer never depends on OS-specific native browser primitives.
+- Electron main is the platform-specific owner; browser mode is server-owned.
+
+Cross-platform check
+- `apps/desktop/src/renderer/services/backend.ts` already proves Palot can hide runtime differences behind one service layer.
+- `apps/server/src/index.ts` proves browser mode already owns same-origin HTTP routes independent of Electron.
+- Existing profile persistence (`activeFireflyProfileAtom`, `browserPanelStateAtom`) is renderer-safe and not OS-specific.
+
+Result
+- No Linux-only lock-in remains at the app-layer contract.
+- Platform variance is isolated to the Electron main adapter implementation.

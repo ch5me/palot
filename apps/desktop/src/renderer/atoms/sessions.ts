@@ -63,11 +63,14 @@ export interface SessionEntry {
 
 export const sessionIdsAtom = atom<Set<string>>(new Set<string>())
 
+export const attachedSessionIdsAtom = atom<Set<string>>(new Set<string>())
+
 // ============================================================
 // Per-session atom family
 // ============================================================
 
 export const sessionFamily = atomFamily((_sessionId: string) => atom<SessionEntry | null>(null))
+export const attachedSessionFamily = atomFamily((_sessionId: string) => atom(false))
 
 // ============================================================
 // Write-only action atoms
@@ -122,6 +125,7 @@ export const removeSessionAtom = atom(null, (get, set, sessionId: string) => {
 	messagesFamily.remove(sessionId)
 
 	sessionFamily.remove(sessionId)
+	attachedSessionFamily.remove(sessionId)
 
 	const ids = get(sessionIdsAtom)
 	if (ids.has(sessionId)) {
@@ -129,6 +133,32 @@ export const removeSessionAtom = atom(null, (get, set, sessionId: string) => {
 		next.delete(sessionId)
 		set(sessionIdsAtom, next)
 	}
+
+	const attachedIds = get(attachedSessionIdsAtom)
+	if (attachedIds.has(sessionId)) {
+		const next = new Set(attachedIds)
+		next.delete(sessionId)
+		set(attachedSessionIdsAtom, next)
+	}
+})
+
+export const replaceAttachedSessionIdsAtom = atom(null, (get, set, sessionIds: Iterable<string>) => {
+	const prev = get(attachedSessionIdsAtom)
+	const next = new Set(sessionIds)
+
+	for (const sessionId of prev) {
+		if (!next.has(sessionId)) {
+			set(attachedSessionFamily(sessionId), false)
+		}
+	}
+
+	for (const sessionId of next) {
+		if (!prev.has(sessionId)) {
+			set(attachedSessionFamily(sessionId), true)
+		}
+	}
+
+	set(attachedSessionIdsAtom, next)
 })
 
 export const setSessionStatusAtom = atom(

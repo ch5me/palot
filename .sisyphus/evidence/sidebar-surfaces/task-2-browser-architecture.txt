@@ -1,0 +1,22 @@
+Task 2 — browser architecture completeness
+
+Code evidence
+- `apps/desktop/src/renderer/components/side-panel/browser-panel.tsx` currently embeds arbitrary URLs directly into an Electron `webview` and has no browser-mode inline path.
+- `apps/desktop/src/renderer/atoms/browser.ts` already persists profile-like browser state (`lastBrowserUrlAtom`, `browserHistoryAtom`) that can seed a future profile/lane model.
+- `apps/desktop/src/renderer/services/backend.ts` cleanly separates Electron and browser-mode backends, which is the right seam for a runtime adapter.
+- `apps/server/src/index.ts` only exposes `servers`, `model-state`, `files`, and `health` routes today, so same-origin browser publishing is a real missing contract, not an implied existing feature.
+
+Architecture coverage check
+- Stream surface: defined as a Palot-owned visual lane that publishes same-origin `publishedUrl` values.
+- Runtime adapter: explicitly split into Electron main-owned adapter and browser-mode server-owned adapter.
+- Route publishing: explicit same-origin lane route requirement under Palot control.
+- Profile persistence: explicit profile owner and lane owner model, with renderer cache demoted to convenience state.
+- Embedding path: Electron path defined, browser-mode iframe path defined, both behind the same BrowserLane contract.
+
+Direct-provider-iframe audit
+- Proposal forbids direct provider/site iframe embedding.
+- Proposal forbids raw provider URLs as renderer embed sources.
+- Proposal allows external-open fallback only when publishing is unavailable.
+
+Result
+- Complete Hub-style architecture exists in the plan with Palot-specific runtime ownership and route-publishing seams.

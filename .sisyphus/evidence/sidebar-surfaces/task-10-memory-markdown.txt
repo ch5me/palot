@@ -1,0 +1,15 @@
+Task 10 — markdown editing review
+
+Editing model
+- Monaco is the v1 editor.
+- Editable region focuses on human-readable markdown content.
+- Metadata should stay as read-only chrome or a protected/generated section rather than freeform mutable fields.
+
+Save semantics
+- Save writes back through the memory service to the owning backend.
+- Dirty state clears on success.
+- Stale-change detection uses `updatedAt` and forces explicit reload/overwrite choice.
+- Topic slug/path changes remap the selected node as rename-in-place after successful save.
+
+User understanding result
+- Open, edit, save, reopen path is explicit and understandable without extra training.

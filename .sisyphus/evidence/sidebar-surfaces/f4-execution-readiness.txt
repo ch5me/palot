@@ -1,0 +1,19 @@
+F4 — execution-readiness review
+
+Priority-surface owner check
+- Browser: runtime owner, publisher owner, renderer cache role, and route contract are explicit.
+- Claude: tmux session owner, PTY attachment role, preflight/create-attach seam, and lifecycle semantics are explicit.
+- Memory: canonical store owner, synthetic path contract, dirty-state owner, and save/load conflict policy are explicit.
+
+Contracts present
+- BrowserLane contract with lane identity + published URL + status
+- Claude session model with stable tmux owner + PTY attachment handle
+- Memory doc contract with `memory/<scope>/<topic>.md`
+
+Fallback / error policy present
+- Browser: unavailable publisher / route error / external-open fallback
+- Claude: missing CLI / unauthenticated CLI / attach timeout / crashed session / runtime unavailable
+- Memory: no docs / no search matches / stale conflict / save-load error
+
+Result
+- Execution-readiness pass: implementation agents can start without new product questions and without rediscovering key contracts.

@@ -1,0 +1,37 @@
+Task 1 — inventory completeness
+
+Source files inspected
+- apps/desktop/src/renderer/firefly-surface-registry.tsx
+- apps/desktop/src/renderer/atoms/feature-flags.ts
+- apps/desktop/src/renderer/atoms/ui.ts
+- apps/desktop/src/renderer/components/command-palette.tsx
+- apps/desktop/src/renderer/components/agent-detail.tsx
+
+Registry/tab ids found
+1. review
+2. browser
+3. notes
+4. pulse
+5. memory
+6. files
+7. terminal
+8. editor
+9. plugins
+10. bridges
+11. crm
+12. studio
+13. voice
+14. oracle
+15. claude
+16. ch5pm
+
+Disposition matrix coverage check
+- Every `SidePanelTabId` from `apps/desktop/src/renderer/atoms/ui.ts` appears in the plan matrix.
+- Every registry entry from `apps/desktop/src/renderer/firefly-surface-registry.tsx` appears in the plan matrix.
+- Command-palette feature toggles exist for all 16 surfaces, so the matrix also covers current discoverability controls.
+
+One-to-one result
+- SidePanelTabId count: 16
+- Registry entry count: 16
+- Matrix row count: 16
+- Result: one-to-one match

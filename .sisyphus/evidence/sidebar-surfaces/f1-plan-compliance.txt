@@ -1,0 +1,20 @@
+F1 — plan compliance audit
+
+Checked decisions
+- Browser: explicit throughout as highest-priority same-origin product lane, not provider iframe.
+- Claude: explicit throughout as live PTY/tmux Claude Code lane, not compat-only.
+- Memory: explicit throughout as simplified synthetic-doc tree + markdown editor.
+- CRM: explicit hidden/off decision.
+- Pulse: explicit deferred/off decision.
+- CH5PM: explicit deferred/off decision with optional command-palette breadcrumb only.
+
+User-direction alignment
+- Browser prioritized first.
+- Memory simplified rather than expanded.
+- Claude made real/live rather than left vague.
+- CRM hidden.
+- Pulse deferred.
+- CH5PM deferred until product intent is clearer.
+
+Result
+- Compliance pass: all required surface decisions appear explicitly and match the request.

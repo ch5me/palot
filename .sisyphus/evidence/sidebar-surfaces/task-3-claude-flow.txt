@@ -1,0 +1,26 @@
+Task 3 — Claude flow integrity
+
+End-to-end path
+1. User opens Claude tab in `apps/desktop/src/renderer/components/side-panel/claude-panel.tsx`.
+2. Renderer runs preflight for Electron runtime + Claude CLI/auth availability.
+3. Renderer requests a PTY/tmux-backed session through `apps/desktop/src/renderer/services/backend.ts`.
+4. Preload forwards the invoke through `apps/desktop/src/preload/index.ts`.
+5. Main process creates or attaches the PTY session in `apps/desktop/src/main/pty.ts` and, when needed, names/targets tmux sessions through `apps/desktop/src/main/oracles.ts`.
+6. `apps/desktop/src/main/ipc-handlers.ts` broadcasts PTY data/exit events back to renderer windows.
+7. Renderer subscribes with `onPtyData` / `onPtyExit` and paints the live stream in the Claude surface.
+8. Textbox/composer sends plain text or raw command bytes through `writePty`; resize uses `resizePty`; explicit stop/kill uses a later lifecycle action.
+
+Concrete seam names
+- Create/attach shell: `spawnPtyTerminal` or a Claude-specific wrapper on the same PTY stack
+- Send text: `writePty`
+- Resize: `resizePty`
+- Stream read: `onPtyData`
+- Exit signal: `onPtyExit`
+- Session discovery/attach helpers: oracle/tmux seams in `oracles.ts`
+
+Implementation warning discovered
+- `apps/desktop/src/main/ipc-handlers.ts` currently re-registers `pty:spawn-oracle` and `pty:spawn-tmux` later in the file with stub `{ ok, args }` handlers, shadowing the real PTY attach handlers. This is a concrete backend seam bug to account for in task 6.
+
+Result
+- End-to-end flow is explicit and implementable.
+- One concrete blocker/gap was identified for task 6: duplicate stub IPC handlers for oracle/tmux PTY attach must be removed or replaced.

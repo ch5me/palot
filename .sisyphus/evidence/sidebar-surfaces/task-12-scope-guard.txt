@@ -1,0 +1,17 @@
+Task 12 — scope-guard review
+
+Active implementation wave remains focused on
+- Browser
+- Claude
+- Memory
+- reveal/hide/default policy around those surfaces
+
+Explicitly guarded out
+- Pulse implementation
+- CH5PM product-definition / first-class lane work
+- CRM revival as a normal visible surface
+- Browser advanced control plane
+- Memory analytics/ops cockpit expansion
+
+Result
+- Deferred scope is fenced off from the active execution slices.

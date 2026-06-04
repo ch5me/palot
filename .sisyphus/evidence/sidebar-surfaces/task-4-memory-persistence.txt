@@ -1,0 +1,26 @@
+Task 4 — memory persistence clarity
+
+Canonical owner
+- Canonical memory store remains `apps/desktop/src/renderer/services/memory-service.ts`.
+- Local records map to `pinnedFactsAtom`-backed state in `apps/desktop/src/renderer/atoms/preferences.ts`.
+- Remote records map to Cloudflare memory APIs through `cloudflareRemember`, `cloudflareRecall`, `cloudflareList`, and `cloudflareForget`.
+
+Load path
+- `fetchMemories()` returns unified `MemoryItem[]` for local, remote, or hybrid mode.
+- Renderer derives virtual folders/files from those items using the canonical synthetic path scheme `memory/<scope>/<topic>.md`.
+- Opening a doc materializes one `MemoryItem` into markdown text for the editor.
+
+Save path
+- Edited markdown parses back into a memory-doc payload.
+- Save writes back through the record's native owner:
+  - local item -> local pinned fact action
+  - remote item -> remote memory-service API
+  - hybrid -> whichever backend owns the opened record
+- Renderer then refreshes the memory list/tree and keeps or remaps the selected virtual path.
+
+Conflict policy
+- Capture `updatedAt` at open.
+- If source changed before save, show stale-change warning and require explicit resolution; do not silently overwrite.
+
+Result
+- Read/write source of truth is explicit, and persistence is mode-aware without changing the UI contract.

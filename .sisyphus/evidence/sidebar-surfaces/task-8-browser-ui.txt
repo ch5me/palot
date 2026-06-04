@@ -1,0 +1,19 @@
+Task 8 — browser UI runtime parity review
+
+Shared shell defined
+- Header with title, context, and state chip
+- Minimal control row with displayed URL, refresh, open externally, and retry/reconnect where needed
+- Dedicated content frame region
+- Explicit state cards for loading, empty, unavailable, and error cases
+
+Electron-specific behavior
+- Embedded lane surface in ready state
+- Loading/error/empty states defined without exposing raw `about:blank` as the product concept
+
+Browser-mode behavior
+- Same-origin iframe in ready state
+- Explicit unavailable-publisher card replaces the old generic Electron-only placeholder
+- No direct provider iframe fallback allowed
+
+Result
+- Both runtimes now have explicit, honest UI behavior.

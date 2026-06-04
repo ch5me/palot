@@ -5,14 +5,44 @@ import { discoveryAtom } from "../atoms/discovery"
 import { isMockModeAtom } from "../atoms/mock-mode"
 import { appStore } from "../atoms/store"
 import { createLogger } from "../lib/logger"
-import { resolveAuthHeader, resolveServerUrl } from "../services/backend"
+import type { OpenCodeProject } from "../lib/types"
+import {
+	resolveAuthHeader,
+	resolveServerUrl,
+	subscribeToActiveOpenCodeSessionEvents,
+} from "../services/backend"
 import {
 	connectToOpenCode,
 	loadAllProjects,
 	loadProjectSessions,
+	syncActiveSessionPresence,
 } from "../services/connection-manager"
 
 const log = createLogger("discovery")
+const ACTIVE_SESSION_FALLBACK_POLL_MS = 10_000
+
+const FOCUSED_PROJECT_LIMIT = 10
+
+function isDiscoveryNoiseProject(project: OpenCodeProject): boolean {
+	const worktree = project.worktree?.trim()
+	if (!worktree) return true
+	if (worktree === "/") return true
+	if (worktree === "/tmp" || worktree.startsWith("/tmp/")) return true
+	if (worktree === "/private/tmp" || worktree.startsWith("/private/tmp/")) return true
+	if (worktree.includes("/.minimax/agents/")) return true
+
+	const name = project.name ?? worktree.split("/").pop() ?? worktree
+	if (name.startsWith("opencode-test-")) return true
+
+	return false
+}
+
+function getFocusedProjects(projects: OpenCodeProject[]): OpenCodeProject[] {
+	return [...projects]
+		.filter((project) => !isDiscoveryNoiseProject(project))
+		.sort((a, b) => (b.time.updated ?? 0) - (a.time.updated ?? 0))
+		.slice(0, FOCUSED_PROJECT_LIMIT)
+}
 
 // Module-level guard to prevent concurrent discovery runs.
 // The Jotai atom guard (loaded/loading) depends on a React re-render
@@ -48,6 +78,7 @@ export function useDiscovery() {
 	const discovery = useAtomValue(discoveryAtom)
 	const isMockMode = useAtomValue(isMockModeAtom)
 	const activeServer = useAtomValue(activeServerConfigAtom)
+	const serverConnected = useAtomValue(serverConnectedAtom)
 	const { loaded, loading } = discovery
 
 	useEffect(() => {
@@ -104,34 +135,37 @@ export function useDiscovery() {
 					return
 				}
 
+				if (activeServer.type === "local") {
+					await syncActiveSessionPresence()
+				}
+
 				// --- Step 4: Discover projects from the API ---
 				setPhase("loading-projects")
 				log.info("Loading projects from API...")
 				const projects = await loadAllProjects()
-				log.info("Discovered projects via API", { count: projects.length })
+				const focusedProjects = getFocusedProjects(projects)
+				log.info("Discovered projects via API", {
+					totalCount: projects.length,
+					focusedCount: focusedProjects.length,
+				})
 
-				// Store projects and mark discovery as complete.
-				// Remaining sessions are loaded lazily when the user expands a project.
+				// Store only the focused working set.
+				// The full OpenCode project list often contains stale test/scratch roots
+				// that overwhelm the sidebar. Fresh sessions from outside this set still
+				// appear live via SSE because session events seed the store directly.
 				appStore.set(discoveryAtom, {
 					loaded: true,
 					loading: false,
 					error: null,
 					phase: "ready",
-					projects,
+					projects: focusedProjects,
 				})
 
-				// --- Step 5: Pre-fetch sessions for the most recent projects ---
-				// Load sessions from the top N most-recently-active projects so the
-				// "Recent" and "Active Now" sidebar sections are populated at boot.
-				// This replaces the previous approach of loading ALL projects (80+ calls)
-				// with just a few calls for the projects the user likely cares about.
-				const PREFETCH_COUNT = 3
-				const sortedByActivity = [...projects]
-					.filter((p) => p.worktree)
-					.sort((a, b) => (b.time.updated ?? 0) - (a.time.updated ?? 0))
-					.slice(0, PREFETCH_COUNT)
-
-				if (sortedByActivity.length > 0) {
+				// --- Step 5: Pre-fetch sessions for the focused projects ---
+				// We keep the sidebar small by trimming the project universe, then load
+				// root sessions for every focused project so Recent/Active are accurate
+				// across that working set on first paint.
+				if (focusedProjects.length > 0) {
 					// Build sandbox lookup for worktree metadata restoration
 					const projectSandboxMap = new Map<string, Set<string>>()
 					for (const project of projects) {
@@ -142,7 +176,7 @@ export function useDiscovery() {
 					}
 
 					await Promise.allSettled(
-						sortedByActivity.map((project) => {
+						focusedProjects.map((project) => {
 							const sandboxDirs = projectSandboxMap.get(project.worktree!)
 							return loadProjectSessions(
 								project.worktree!,
@@ -156,8 +190,8 @@ export function useDiscovery() {
 				log.info("Discovery complete", {
 					server: activeServer.name,
 					url,
-					projects: projects.length,
-					prefetched: sortedByActivity.length,
+					totalProjects: projects.length,
+					focusedProjects: focusedProjects.length,
 				})
 			} catch (err) {
 				log.error("Discovery failed", err)
@@ -171,4 +205,29 @@ export function useDiscovery() {
 			}
 		})()
 	}, [loaded, loading, isMockMode, activeServer])
+
+	useEffect(() => {
+		if (isMockMode) return
+		if (activeServer.type !== "local") return
+		if (!serverConnected) return
+
+		void syncActiveSessionPresence()
+		const unsubscribe = subscribeToActiveOpenCodeSessionEvents({
+			onError: (message) => {
+				log.warn("Active OpenCode session stream error", { message })
+			},
+			onSnapshot: (snapshot) => {
+				void syncActiveSessionPresence(snapshot)
+			},
+		})
+
+		const intervalId = window.setInterval(() => {
+			void syncActiveSessionPresence()
+		}, ACTIVE_SESSION_FALLBACK_POLL_MS)
+
+		return () => {
+			unsubscribe()
+			window.clearInterval(intervalId)
+		}
+	}, [isMockMode, activeServer.id, activeServer.type, serverConnected])
 }

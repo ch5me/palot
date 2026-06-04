@@ -1,0 +1,42 @@
+Task 11 — verification coverage review
+
+Global gates after each milestone
+- `bun run lint`
+- `bun run check-types`
+
+Browser runtime-sensitive proofs
+- Electron:
+  - open Browser tab
+  - load same-origin lane
+  - refresh lane
+  - open externally
+  - verify explicit runtime error state
+- Browser mode:
+  - open Browser tab in `bun run dev`
+  - render same-origin iframe route when publisher exists
+  - show unavailable-publisher fallback when publisher is unavailable
+
+Claude runtime-sensitive proofs
+- preflight states: missing CLI, unauthenticated CLI, ready
+- create session
+- attach / reconnect
+- send follow-up input
+- observe live output
+- resize stability
+- explicit stop / terminate
+
+Memory runtime-sensitive proofs
+- open doc
+- edit doc
+- save doc
+- reopen doc
+- stale-change conflict handling
+
+Regression coverage
+- Files surface still works
+- Editor surface still works
+- Oracle surface still works
+- command palette / feature-flag defaults match rollout policy
+
+Result
+- No missing runtime verification gaps remain in the plan.

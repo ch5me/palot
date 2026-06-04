@@ -11,6 +11,8 @@ import {
 	removePermissionAtom,
 	removeQuestionAtom,
 	removeSessionAtom,
+	sessionFamily,
+	sessionIdsAtom,
 	setSessionErrorAtom,
 	setSessionStatusAtom,
 	upsertSessionAtom,
@@ -76,11 +78,23 @@ export function processEvent(event: Event): void {
 			if (project.id && project.worktree) {
 				const current = appStore.get(discoveryAtom)
 				const existing = current.projects.findIndex((p) => p.id === project.id)
-				const nextProjects =
-					existing >= 0
-						? current.projects.map((p, i) => (i === existing ? project : p))
-						: [...current.projects, project]
-				set(discoveryAtom, { ...current, projects: nextProjects })
+				if (existing >= 0) {
+					const nextProjects = current.projects.map((p, i) => (i === existing ? project : p))
+					set(discoveryAtom, { ...current, projects: nextProjects })
+					break
+				}
+
+				// Keep the focused project set stable. We only append a new project
+				// if a live session for that directory is already present in the store,
+				// which covers fresh session-created repos without letting background
+				// server metadata churn repopulate the entire backlog.
+				const hasLiveSession = Array.from(appStore.get(sessionIdsAtom)).some((sessionId) => {
+					const entry = appStore.get(sessionFamily(sessionId))
+					return entry?.directory === project.worktree
+				})
+				if (hasLiveSession) {
+					set(discoveryAtom, { ...current, projects: [...current.projects, project] })
+				}
 			}
 			break
 		}

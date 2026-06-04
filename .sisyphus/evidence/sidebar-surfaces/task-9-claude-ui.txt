@@ -1,0 +1,29 @@
+Task 9 — Claude UI completeness review
+
+Defined first-time flow
+- open Claude tab
+- run preflight automatically
+- show `Start Claude session` or `Reconnect / Resume` depending on session availability
+- once attached, live PTY stream becomes the dominant main body and composer activates
+
+Defined steady-state flow
+- live stream remains visible in main region
+- composer handles follow-up input
+- runtime status chip distinguishes `Ready` vs `Busy`
+- reopen prefers reattach rather than duplicate session creation
+
+Explicit state inventory exists
+- checking preflight
+- ready active stream
+- ready idle
+- creating/attaching
+- busy
+- missing CLI
+- unauthenticated CLI
+- attach timeout
+- crashed session
+- runtime unavailable
+- empty/no session yet
+
+Result
+- Claude surface is operationally coherent as a Claude-first product lane.

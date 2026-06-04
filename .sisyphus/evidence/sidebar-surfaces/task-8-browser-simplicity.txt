@@ -1,0 +1,18 @@
+Task 8 — browser MVP simplicity review
+
+Included controls
+- Displayed URL / destination label
+- Refresh / reload
+- Open externally
+- Status chip / state label
+- Optional compact lane selector only if the lane model actually requires it
+
+Explicitly excluded
+- Automation controls
+- Devtools-style controls
+- Advanced multi-tab browser chrome
+- Raw provider URL embedding as the primary workflow
+- Cross-origin fallback architecture
+
+Result
+- Browser phase 1 remains minimal and product-lane-focused.

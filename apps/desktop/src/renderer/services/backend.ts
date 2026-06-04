@@ -51,6 +51,10 @@ import type {
 	TmuxSessionInfo,
 	UpdateAutomationInput,
 } from "../../preload/api"
+import {
+	subscribeToActiveOpenCodeSessionEvents as httpSubscribeActiveOpenCodeSessionEvents,
+	type ActiveOpenCodeSessionStreamHandlers,
+} from "./elf-server"
 
 export interface FileSystemEntry {
 	name: string
@@ -62,6 +66,22 @@ export interface FileSystemEntry {
 export interface FileReadResult {
 	path: string
 	content: string
+}
+
+export interface ActiveOpenCodeSessionPresence {
+	sessionId: string
+	directory: string
+	pid: number
+	source: "attach" | "inferred"
+	command: string
+}
+
+export interface ActiveOpenCodeSessionsSnapshot {
+	serverUrl: string
+	clientCount: number
+	sessionCount: number
+	sessions: ActiveOpenCodeSessionPresence[]
+	refreshedAt: number
 }
 
 export type BridgeStatus = "connected" | "disconnected" | "soon"
@@ -163,6 +183,30 @@ export async function fetchOpenCodeUrl(): Promise<{ url: string }> {
 		log.error("fetchOpenCodeUrl failed", err)
 		throw err
 	}
+}
+
+export async function fetchActiveOpenCodeSessions(): Promise<ActiveOpenCodeSessionsSnapshot> {
+	if (isElectron) {
+		return {
+			serverUrl: "",
+			clientCount: 0,
+			sessionCount: 0,
+			sessions: [],
+			refreshedAt: Date.now(),
+		}
+	}
+	const { fetchActiveOpenCodeSessions: httpFetch } = await import("./elf-server")
+	return httpFetch()
+}
+
+export function subscribeToActiveOpenCodeSessionEvents(
+	handlers: ActiveOpenCodeSessionStreamHandlers,
+): () => void {
+	if (isElectron) {
+		handlers.onError?.("Active session stream unavailable in Electron")
+		return () => {}
+	}
+	return httpSubscribeActiveOpenCodeSessionEvents(handlers)
 }
 
 /**

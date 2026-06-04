@@ -1,0 +1,17 @@
+Task 9 — Claude compatibility boundary review
+
+Current state
+- `claude-panel.tsx` is entirely migration/detection-oriented today.
+
+Retained after live lane ships
+- provider detection summary can survive in a compact migration section
+- restore-backup affordance can survive when runtime allows it
+- Settings → Migration remains the canonical full workflow home
+
+Relocated / demoted
+- compatibility-only framing leaves the top of the tab
+- migration tools move below the live Claude lane or into a collapsible section
+- no second Claude tab or parallel compatibility-only panel is introduced
+
+Result
+- Migration/compat functionality keeps a clear home without blocking the live Claude product surface.

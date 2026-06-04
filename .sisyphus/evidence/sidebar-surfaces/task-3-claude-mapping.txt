@@ -1,0 +1,22 @@
+Task 3 — Claude runtime mapping
+
+AIOS reference split
+- `src/components/TerminalPane.tsx` + `src/components/TerminalComposer.tsx` are the live Claude Code TUI lane.
+- `src/components/ChatPane.tsx` + `src/lib/chat.ts` are a separate headless stream-json chat lane.
+- This removes ambiguity: AIOS itself treats TUI Claude and headless Claude as different products.
+
+Palot counterpart map
+- PTY spawn/write/resize/kill: `apps/desktop/src/main/pty.ts`, `apps/desktop/src/main/ipc-handlers.ts`, `apps/desktop/src/preload/index.ts`, `apps/desktop/src/renderer/services/backend.ts`
+- Tmux/oracle session discovery and lifecycle helpers: `apps/desktop/src/main/oracles.ts`, `apps/desktop/src/renderer/components/side-panel/oracle-panel.tsx`
+- Existing PTY surface shell: `apps/desktop/src/renderer/components/side-panel/terminal-panel.tsx`
+- Current Claude product shell to replace in place: `apps/desktop/src/renderer/components/side-panel/claude-panel.tsx`
+
+Responsibility ownership result
+- Durable session owner: tmux session
+- Visible stream owner: PTY attachment id
+- Renderer product shell owner: Claude tab (`claude` surface id)
+- Migration/import owner: Claude tab secondary section and Settings → Migration full workflow
+
+Gap check
+- No missing owner for phase-1 live streaming, send, resize, attach, or exit handling.
+- Browser-mode live Claude is not supported by current Palot seams; this is an explicit runtime constraint, not an unresolved design gap.

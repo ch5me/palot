@@ -1,0 +1,13 @@
+Task 10 — memory file/editor parity review
+
+Shared shell parity
+- Memory v1 uses the same two-pane shell shape as Files/Editor: left virtual tree, right active document.
+- Tree chrome, selected-state patterns, and loading/empty/error shells are intentionally borrowed from Files.
+- Dirty/saved indicator strip, Monaco host, and keyboard save behavior are intentionally borrowed from Editor.
+
+Intentional differences
+- Memory tree is virtual, so no git decorations, no filesystem preview kinds, and no raw filesystem path assumptions.
+- One doc per canonical memory record, single-doc editing only.
+
+Result
+- Memory feels like a native sibling of Files/Editor while preserving the virtual-memory model.

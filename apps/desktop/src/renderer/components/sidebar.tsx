@@ -74,6 +74,10 @@ const STATUS_COLOR: Record<AgentStatus, string> = {
 	idle: "text-muted-foreground",
 }
 
+function isSidebarActiveAgent(agent: Agent): boolean {
+	return agent.status === "running" || agent.status === "waiting" || agent.status === "failed"
+}
+
 // ============================================================
 // Props
 // ============================================================
@@ -149,11 +153,7 @@ export function AppSidebarContent({
 	const activeSessions = useMemo(
 		() =>
 			agents
-				.filter(
-					(a) =>
-						!a.parentId &&
-						(a.status === "running" || a.status === "waiting" || a.status === "failed"),
-				)
+				.filter((a) => !a.parentId && isSidebarActiveAgent(a))
 				.sort((a, b) => b.createdAt - a.createdAt),
 		[agents],
 	)
@@ -485,8 +485,8 @@ const ProjectFolder = memo(function ProjectFolder({
 		}
 		return agents.sort((a, b) => {
 			// Active sessions float to top
-			const aActive = a.status === "running" || a.status === "waiting" || a.status === "failed"
-			const bActive = b.status === "running" || b.status === "waiting" || b.status === "failed"
+			const aActive = isSidebarActiveAgent(a)
+			const bActive = isSidebarActiveAgent(b)
 			if (aActive !== bActive) return aActive ? -1 : 1
 			// Within same group, sort by lastActiveAt (matches server's time_updated DESC)
 			return b.lastActiveAt - a.lastActiveAt
@@ -626,6 +626,8 @@ const SessionItem = memo(function SessionItem({
 	const statusColor = STATUS_COLOR[agent.status]
 	const isWorktree = !!agent.worktreePath
 	const lastActive = useLiveLastActive(agent)
+	const showSpinner = agent.status === "running"
+	const showAttachedPulse = agent.isAttached && agent.status === "idle"
 
 	const [isEditing, setIsEditing] = useState(false)
 	const [editValue, setEditValue] = useState(agent.name)
@@ -675,13 +677,13 @@ const SessionItem = memo(function SessionItem({
 				size={compact ? "sm" : "default"}
 				onClick={isEditing ? undefined : onSelect}
 			>
-				{isWorktree ? (
-					<GitForkIcon
-						className={`shrink-0 ${statusColor} ${agent.status === "running" ? "animate-pulse" : ""}`}
-					/>
-				) : (
+					{isWorktree ? (
+						<GitForkIcon
+							className={`shrink-0 ${showAttachedPulse ? "text-green-500" : statusColor} ${showSpinner ? "animate-spin" : showAttachedPulse ? "animate-pulse" : ""}`}
+						/>
+					) : (
 					<StatusIcon
-						className={`shrink-0 ${statusColor} ${agent.status === "running" ? "animate-spin" : ""}`}
+						className={`shrink-0 ${showAttachedPulse ? "text-green-500" : statusColor} ${showSpinner ? "animate-spin" : showAttachedPulse ? "animate-pulse" : ""}`}
 					/>
 				)}
 

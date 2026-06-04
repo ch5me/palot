@@ -9,6 +9,30 @@
 import { createClient } from "@ch5me/elf-server/client"
 
 const BASE_URL = "http://127.0.0.1:30206"
+const ACTIVE_SESSION_EVENTS_PATH = "/api/servers/opencode/active-sessions/events"
+
+export interface ActiveOpenCodeSessionPresence {
+	sessionId: string
+	directory: string
+	pid: number
+	source: "attach" | "inferred"
+	command: string
+}
+
+export interface ActiveOpenCodeSessionsSnapshot {
+	serverUrl: string
+	clientCount: number
+	sessionCount: number
+	sessions: ActiveOpenCodeSessionPresence[]
+	refreshedAt: number
+}
+
+export interface ActiveOpenCodeSessionStreamHandlers {
+	onError?: (message: string) => void
+	onHeartbeat?: () => void
+	onOpen?: () => void
+	onSnapshot?: (snapshot: ActiveOpenCodeSessionsSnapshot) => void
+}
 
 /**
  * Pre-typed Hono RPC client.
@@ -38,6 +62,58 @@ export async function fetchOpenCodeUrl(): Promise<{ url: string }> {
 		throw new Error("error" in data ? data.error : "Failed to get OpenCode server URL")
 	}
 	return res.json()
+}
+
+export async function fetchActiveOpenCodeSessions(): Promise<ActiveOpenCodeSessionsSnapshot> {
+	const res = await client.api.servers.opencode["active-sessions"].$get()
+	if (!res.ok) {
+		throw new Error(await readError(res, `Active session presence failed: ${res.status} ${res.statusText}`))
+	}
+	return res.json()
+}
+
+export function subscribeToActiveOpenCodeSessionEvents(
+	handlers: ActiveOpenCodeSessionStreamHandlers,
+): () => void {
+	if (typeof window === "undefined" || !("EventSource" in window)) {
+		handlers.onError?.("EventSource unavailable")
+		return () => {}
+	}
+
+	const source = new EventSource(`${BASE_URL}${ACTIVE_SESSION_EVENTS_PATH}`)
+
+	source.onopen = () => {
+		handlers.onOpen?.()
+	}
+
+	source.onerror = () => {
+		handlers.onError?.("active session stream reconnecting")
+	}
+
+	source.addEventListener("presence", (event) => {
+		try {
+			handlers.onSnapshot?.(JSON.parse(event.data) as ActiveOpenCodeSessionsSnapshot)
+		} catch (error) {
+			handlers.onError?.(error instanceof Error ? error.message : String(error))
+		}
+	})
+
+	source.addEventListener("presence-error", (event) => {
+		try {
+			const data = JSON.parse(event.data) as { message?: string }
+			handlers.onError?.(data.message ?? "active session stream error")
+		} catch (error) {
+			handlers.onError?.(error instanceof Error ? error.message : String(error))
+		}
+	})
+
+	source.addEventListener("heartbeat", () => {
+		handlers.onHeartbeat?.()
+	})
+
+	return () => {
+		source.close()
+	}
 }
 
 /**
