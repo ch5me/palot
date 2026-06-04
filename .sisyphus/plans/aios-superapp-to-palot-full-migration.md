@@ -199,7 +199,7 @@ DO NOT PORT (explicit non-goals):
   - Source: `aios-superapp/src/components/EditorPane.tsx`, `src/lib/monaco.ts`.
   - Target: new `components/side-panel/editor-panel.tsx`; add `monaco-editor` dep; consumes T7 + T4.
   - Acceptance: [x] open a text file, edit, save via files seam; [x] unsupported binary -> explicit message.
-  - DONE 2026-06-04: added Monaco as a real renderer dependency, ported a compact Monaco bootstrap helper with bundled worker wiring and Dart/theme support, and replaced the read-only editor shell with an editable Monaco side panel that searches files, loads text through the new files seam, saves with Cmd/Ctrl+S, and shows explicit oversized/binary failure states.
+  - DONE 2026-06-04: added Monaco as a real renderer dependency, ported a compact Monaco bootstrap helper with bundled worker wiring and Dart/theme support, and replaced the read-only editor shell with an editable Monaco side panel that searches files, loads text through the new files seam, saves with Cmd/Ctrl+S, and shows explicit oversized/binary failure states. Browser mode now uses Bun/Hono `GET/PUT /api/files/text` fallback routes via `services/backend.ts`, with allowed-root rejection surfaced explicitly instead of the old Electron-only stub.
   - Evidence: `.sisyphus/evidence/aios-migration/task-11-editor.txt`
   - Commit: `feat(editor): ship monaco editor surface`
 

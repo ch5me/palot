@@ -16,13 +16,18 @@ What landed
   - `elf-dark` theme
 - Replaced the editor proof shell with a real Monaco-based editing surface
 - Save path uses the files seam `writeTextFile`
+- Browser mode now uses Bun/Hono `GET/PUT /api/files/text` through `services/backend.ts` instead of the Electron preload seam
+- Browser-mode text IO is restricted to allowed roots (`ELF_ALLOWED_FILE_ROOTS` or server `process.cwd()` by default) and rejected paths show an explicit outside-allowed-roots message
 - Binary / oversized files show explicit error UI instead of failing silently
 
 Verification
 - `bun run check-types`
+- Browser-mode manual proof target updated for `bun run dev:web` + backend route flow
 
 Manual UI proof target
+- Start `apps/server` and `apps/desktop` browser mode
 - Search a file in the Editor surface
 - Open it in Monaco
 - Edit contents and save with Cmd/Ctrl+S
+- Try a path outside allowed roots and confirm explicit outside-allowed-roots error state
 - Try a binary or oversized file and confirm explicit error state

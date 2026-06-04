@@ -212,7 +212,9 @@ export function EditorPanel({ agent, className }: EditorPanelProps) {
 									<div className="flex flex-col items-center gap-2">
 										<span className="font-mono text-[12px] text-destructive">{error}</span>
 										<div className="text-xs text-muted-foreground">
-											Unsupported binary or oversized file. Use the Files surface or open the path externally.
+											{error.includes("outside allowed roots")
+												? "Browser mode can only edit files inside allowed project roots."
+												: "Unsupported binary or oversized file. Use the Files surface or open the path externally."}
 										</div>
 									</div>
 								</div>

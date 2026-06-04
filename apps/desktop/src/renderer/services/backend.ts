@@ -333,14 +333,16 @@ export async function readTextFile(filePath: string): Promise<string> {
 	if (isElectron) {
 		return window.elf.readTextFile(filePath)
 	}
-	throw new Error("Text file reads are only available in Electron mode")
+	const { fetchTextFile } = await import("./elf-server")
+	return fetchTextFile(filePath)
 }
 
 export async function writeTextFile(filePath: string, content: string): Promise<void> {
 	if (isElectron) {
 		return window.elf.writeTextFile(filePath, content)
 	}
-	throw new Error("Text file writes are only available in Electron mode")
+	const { saveTextFile } = await import("./elf-server")
+	return saveTextFile(filePath, content)
 }
 
 export async function deletePath(filePath: string): Promise<void> {
