@@ -245,7 +245,8 @@ Final Wave
 
   **What to do**:
   - Deep-map AIOS Claude architecture to Palot equivalents
-  - Decide whether first Palot Claude lane should be PTY/tmux-backed Claude Code TUI, structured stream-json lane, or staged hybrid
+  - Lock phase-1 Claude choice now: PTY/tmux-backed Claude Code TUI lane first
+  - Treat structured stream-json/headless Claude lane as later upgrade, not phase-1 branch
   - Define exact command/data flow from textbox -> running Claude session -> streamed output
 
   **Must NOT do**:
@@ -272,7 +273,8 @@ Final Wave
   - `apps/desktop/src/renderer/components/side-panel/claude-panel.tsx` - current compat-only surface
 
   **Acceptance Criteria**:
-  - [ ] Palot Claude lane runtime model chosen and justified
+  - [ ] Phase-1 Claude runtime model is explicitly PTY/tmux-backed Claude Code TUI and justified
+  - [ ] Later structured/headless Claude lane is explicitly marked as follow-on, not MVP ambiguity
   - [ ] Input/output/streaming path explicit
   - [ ] Auth/runtime assumptions explicit
   - [ ] Staged path from current compat panel to live lane explicit
@@ -300,7 +302,8 @@ Final Wave
   **What to do**:
   - Plan memory as file-tree + markdown editor over existing memory service
   - Reuse existing Files and Editor surface patterns where possible
-  - Define what memory “files” are, where hierarchy comes from, and how edits persist
+  - Lock memory file model now: synthetic hierarchical markdown docs backed by memory-service records, rendered in Files-like tree with virtual paths
+  - Define where hierarchy comes from and how edits persist
 
   **Must NOT do**:
   - Do not expand back into generic memory-cockpit complexity
@@ -323,7 +326,8 @@ Final Wave
   - `apps/desktop/src/renderer/components/side-panel/editor-panel.tsx` - editor UX to reuse
 
   **Acceptance Criteria**:
-  - [ ] Memory hierarchy model defined
+  - [ ] Memory hierarchy model is explicitly synthetic/virtual, not raw filesystem-backed markdown
+  - [ ] Canonical store, virtual path scheme, and dirty-state owner explicit
   - [ ] Reused component strategy explicit
   - [ ] Save/load path explicit
   - [ ] Scope stays simple
