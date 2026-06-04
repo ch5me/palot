@@ -1,0 +1,50 @@
+Task: T15 Voice dictation -> chat input
+Date: 2026-06-04
+
+Files changed
+- apps/desktop/src/renderer/lib/voice.ts (exported `isVoiceSupported` + `parseTranscript`)
+- apps/desktop/src/renderer/lib/voice.test.ts (new)
+- (voice-panel.tsx, chat/voice-button.tsx were already in place from in-flight
+   surface work; verified end-to-end)
+
+What landed
+- Exported `isVoiceSupported()` and `parseTranscript()` from `lib/voice.ts`
+  so the rest of the surface (and the test) can detect runtime support and
+  validate whisper responses without reaching into internals.
+- Added 5 Bun tests covering the new exports:
+  * `isVoiceSupported` returns a stable shape; in a non-browser runtime the
+    reason field is non-null and human-readable.
+  * `parseTranscript` round-trips the whisper JSON shape, trims whitespace,
+    throws on malformed JSON, throws on missing/wrong-typed `text`.
+
+Verification
+- `node_modules/.bin/tsgo --noEmit -p apps/desktop` -> pass.
+- `bun run lint` -> 86 files, 0 issues.
+- `cd apps/desktop && bun test src/renderer/lib/voice.test.ts`
+  -> 5 pass, 0 fail.
+- End-to-end contract (already wired):
+  * `apps/desktop/src/renderer/components/chat/voice-button.tsx` is the mic
+    affordance: click-to-start, click-again-to-stop, hold-to-talk
+    (350ms threshold), Esc cancels, error toast auto-clears after 4s.
+  * `apps/desktop/src/renderer/components/side-panel/voice-panel.tsx`
+    looks up the session-scoped `paneWriters` writer and inserts the
+    transcript into the active chat composer; shows the last transcript with
+    an "Insert again" action.
+  * `lib/voice.ts` getUserMedia + MediaRecorder path:
+    - mic denied -> `Error("microphone permission denied ...")`
+    - no mic -> `Error("no microphone found")`
+    - recorder start failure -> explicit message
+    - empty blob / under MIN_WAV_BYTES -> "no audio captured" (mic likely
+      denied at the OS level)
+    - whisper HTTP failure / no server -> explicit message naming :9000
+    - timeout -> "transcription timed out"
+    - bad JSON / missing text -> explicit parser errors
+  * All errors surface in the inline `error` toast in the voice button;
+    no silent drops.
+
+Notes
+- TTS is intentionally out of scope (matches the plan's "input-first; no
+  TTS" boundary). The bottom of voice-panel.tsx documents the deferral.
+- The whisper server URL is `http://localhost:9000/inference`, matching
+  the superapp's contract and the test that's expected to run alongside a
+  local whisper.cpp install.
