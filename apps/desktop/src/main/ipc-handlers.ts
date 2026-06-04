@@ -44,6 +44,9 @@ import { getResolvedChromeTier } from "./liquid-glass"
 import { createLogger } from "./logger"
 import { getDiscoveredServers } from "./mdns-scanner"
 import { bridgeActivity, listBridges } from "./bridges"
+import { deleteContact, loadCrmStore, saveContact } from "./crm"
+import { customerThread, listCustomers, sendMessage as sendInboxMessage } from "./inbox"
+import type { InboxChannel } from "../preload/api"
 import { createPtyController } from "./pty"
 import {
 	deletePath as deleteProjectPath,
@@ -530,6 +533,43 @@ export function registerIpcHandlers(): void {
 		withLogging(
 			"bridges:activity",
 			async (_, id: string, limit?: number) => await bridgeActivity(id, limit ?? 25),
+		),
+	)
+
+	ipcMain.handle(
+		"crm:load",
+		withLogging("crm:load", async () => await loadCrmStore()),
+	)
+
+	ipcMain.handle(
+		"crm:save-contact",
+		withLogging("crm:save-contact", async (_, contact) => await saveContact(contact)),
+	)
+
+	ipcMain.handle(
+		"crm:delete-contact",
+		withLogging("crm:delete-contact", async (_, id: string) => await deleteContact(id)),
+	)
+
+	ipcMain.handle(
+		"inbox:list-customers",
+		withLogging("inbox:list-customers", async () => await listCustomers()),
+	)
+
+	ipcMain.handle(
+		"inbox:customer-thread",
+		withLogging(
+			"inbox:customer-thread",
+			async (_, handle: string, limit?: number) => await customerThread(handle, limit ?? 200),
+		),
+	)
+
+	ipcMain.handle(
+		"inbox:send-message",
+		withLogging(
+			"inbox:send-message",
+			async (_, channel: InboxChannel, to: string, text: string) =>
+				await sendInboxMessage(channel, to, text),
 		),
 	)
 

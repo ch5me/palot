@@ -1,0 +1,58 @@
+Task: T17 Contacts/CRM surface + backend
+Date: 2026-06-04
+
+Files changed
+- apps/desktop/src/main/crm.ts (rewritten: loadCrmStore, saveContact, deleteContact)
+- apps/desktop/src/main/inbox.ts (new: listCustomers, customerThread, sendMessage)
+- apps/desktop/src/main/crm.test.ts (rewritten with 12 tests)
+- apps/desktop/src/main/ipc-handlers.ts (consolidated imports + crm/inbox IPC)
+- apps/desktop/src/preload/api.d.ts (InboxSendResult type + updated signature)
+- apps/desktop/src/renderer/services/backend.ts (InboxSendResult re-export, wrapper)
+- apps/desktop/src/renderer/components/side-panel/crm-panel.tsx (real surface)
+
+What landed
+- main/crm.ts:
+  * JSON-file persistence under `app.getPath("userData")/crm/`
+    (overridable via `PALOT_DATA_DIR` for tests)
+  * atomic writes via tmp + rename
+  * `loadCrmStore` returns `{ contacts, deals: [] }`
+  * `saveContact` upserts by id, validates name + channel
+  * `deleteContact` removes the contact AND unlinks its inbox thread
+  * `contactHandle` chooses email → phone → synthetic `channel:id`
+  * `readInboxThread` / `appendInboxMessage` are inbox primitives kept on
+    the same data dir
+- main/inbox.ts:
+  * `listCustomers` projects contacts to Customer with last message +
+    msg count, sorted by lastAt desc
+  * `customerThread(handle, limit?)` returns InboxMessage[] newest-last
+  * `sendMessage(channel, to, text)` records the outbound message with
+    `via: "draft"` and returns `{ delivered: false, ts, reason }` -- the
+    explicit "no live connector" reason the plan asks for
+- ipc-handlers.ts: consolidated the duplicate CRM/inbox import block
+  (was importing from "./crm" for things that lived in "./inbox" --
+  broke at runtime), added `crm:load` / `crm:save-contact` /
+  `crm:delete-contact` / `inbox:list-customers` / `inbox:customer-thread`
+  / `inbox:send-message` handlers
+- api.d.ts: added `InboxSendResult` type, updated
+  `inbox.sendMessage` signature to return it
+- services/backend.ts: re-exports `InboxSendResult` and
+  `sendInboxMessage` now returns it
+- crm-panel.tsx: replaced the proof shell with a real surface that:
+  * lists contacts (newest first) with channel-specific icons
+  * supports add / edit / delete with confirmation
+  * renders the selected customer's inbox thread (auto-refreshes every
+    8s while the thread is mounted)
+  * lets the operator draft + send messages; the toast surfaces the
+    explicit "no live connector" reason from the backend
+  * shows a friendly "Electron-only" notice when running in browser
+    mode
+  * explicit empty / loading / error states throughout
+
+Verification
+- `node_modules/.bin/tsgo --noEmit -p apps/desktop` -> pass (no output).
+- `bun run lint` -> 86 files, 0 issues.
+- `cd apps/desktop && bun test src/main/crm.test.ts`
+  -> 12 pass, 0 fail (covers empty store, create/update/delete roundtrip,
+  contactHandle precedence, listCustomers projection, customerThread
+  ordering, sendMessage explicit no-delivery reason + validation
+  rejections, deleteContact unlinks thread, readInboxThread empty path).

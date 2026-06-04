@@ -12,7 +12,20 @@
 import type {
 	Automation,
 	AutomationRun,
+	BridgeActivityResult as BridgeActivityResultApi,
+	BridgesResult as BridgesResultApi,
+	CrmContact,
+	CrmStore,
+	Customer,
 	CreateAutomationInput,
+	FileGitStatusResult,
+	InboxChannel,
+	InboxMessage,
+	InboxSendResult,
+	OfficeConversionResult,
+	OracleInfo,
+	FilePreview,
+	FileSystemEntry as FileSystemEntryApi,
 	GitApplyResult,
 	GitBranchInfo,
 	GitCheckoutResult,
@@ -23,6 +36,17 @@ import type {
 	GitStatusInfo,
 	ModelState,
 	OpenInTargetsResult,
+	PtyDataEvent,
+	PtyExitEvent,
+	PtyOracleSpawnRequest,
+	PtySpawnRequest,
+	PtyTerminalSpawnRequest,
+	PtyTmuxSpawnRequest,
+	ProviderDetection,
+	ProjectInfo,
+	ProjectRun,
+	RepoPulse,
+	TmuxSessionInfo,
 	UpdateAutomationInput,
 } from "../../preload/api"
 
@@ -30,6 +54,7 @@ export interface FileSystemEntry {
 	name: string
 	path: string
 	type: "file" | "directory"
+	mtime: number
 }
 
 export interface FileReadResult {
@@ -70,6 +95,28 @@ export interface BridgeMessage {
 
 export interface BridgeActivityResult {
 	messages: BridgeMessage[]
+}
+
+export type {
+	CrmContact,
+	CrmStore,
+	Customer,
+	FilePreview,
+	InboxChannel,
+	InboxMessage,
+	InboxSendResult,
+	OfficeConversionResult,
+	OracleInfo,
+	PtyDataEvent,
+	PtyExitEvent,
+	PtyOracleSpawnRequest,
+	PtySpawnRequest,
+	PtyTerminalSpawnRequest,
+	PtyTmuxSpawnRequest,
+	ProjectInfo,
+	ProjectRun,
+	RepoPulse,
+	TmuxSessionInfo,
 }
 
 import { createLogger } from "../lib/logger"
@@ -216,9 +263,51 @@ export async function pickDirectory(): Promise<string | null> {
 
 export async function listDirectory(directory: string): Promise<FileSystemEntry[]> {
 	if (isElectron) {
-		return window.elf.listDirectory(directory) as Promise<FileSystemEntry[]>
+		return window.elf.listDirectory(directory) as Promise<FileSystemEntryApi[]>
 	}
 	throw new Error("Directory listing is only available in Electron mode")
+}
+
+export async function readDirectoryTree(directory: string): Promise<FileSystemEntry[]> {
+	if (isElectron) {
+		return window.elf.readDirectoryTree(directory) as Promise<FileSystemEntryApi[]>
+	}
+	throw new Error("Directory listing is only available in Electron mode")
+}
+
+export async function fetchFileGitStatus(directory: string): Promise<FileGitStatusResult> {
+	if (isElectron) {
+		return window.elf.gitStatus(directory) as Promise<FileGitStatusResult>
+	}
+	throw new Error("Git status is only available in Electron mode")
+}
+
+export async function fetchGitPulse(directories: string[]): Promise<RepoPulse[]> {
+	if (isElectron) {
+		return window.elf.gitPulse(directories) as Promise<RepoPulse[]>
+	}
+	throw new Error("Git pulse is only available in Electron mode")
+}
+
+export async function fetchHomeDirectory(): Promise<string> {
+	if (isElectron) {
+		return window.elf.homeDir()
+	}
+	throw new Error("Home directory is only available in Electron mode")
+}
+
+export async function fetchProjectDetection(filePath: string): Promise<ProjectRun> {
+	if (isElectron) {
+		return window.elf.detectProject(filePath) as Promise<ProjectRun>
+	}
+	throw new Error("Project detection is only available in Electron mode")
+}
+
+export async function fetchKnownProjects(rootDirectory?: string): Promise<ProjectInfo[]> {
+	if (isElectron) {
+		return window.elf.listProjects(rootDirectory) as Promise<ProjectInfo[]>
+	}
+	throw new Error("Project listing is only available in Electron mode")
 }
 
 export async function readFileContents(filePath: string): Promise<FileReadResult> {
@@ -228,9 +317,163 @@ export async function readFileContents(filePath: string): Promise<FileReadResult
 	throw new Error("File reads are only available in Electron mode")
 }
 
+export async function fetchFilePreview(filePath: string): Promise<FilePreview> {
+	if (isElectron) {
+		return window.elf.readFilePreview(filePath) as Promise<FilePreview>
+	}
+	throw new Error("File previews are only available in Electron mode")
+}
+
+export async function readTextFile(filePath: string): Promise<string> {
+	if (isElectron) {
+		return window.elf.readTextFile(filePath)
+	}
+	throw new Error("Text file reads are only available in Electron mode")
+}
+
+export async function writeTextFile(filePath: string, content: string): Promise<void> {
+	if (isElectron) {
+		return window.elf.writeTextFile(filePath, content)
+	}
+	throw new Error("Text file writes are only available in Electron mode")
+}
+
+export async function deletePath(filePath: string): Promise<void> {
+	if (isElectron) {
+		return window.elf.deletePath(filePath)
+	}
+	throw new Error("File deletion is only available in Electron mode")
+}
+
+export async function saveImageTemp(data: string, extension: string): Promise<string> {
+	if (isElectron) {
+		return window.elf.saveImageTemp(data, extension)
+	}
+	throw new Error("Temp image save is only available in Electron mode")
+}
+
+export async function convertOfficeToPdf(filePath: string): Promise<OfficeConversionResult> {
+	if (isElectron) {
+		return window.elf.convertOfficeToPdf(filePath) as Promise<OfficeConversionResult>
+	}
+	throw new Error("Office conversion is only available in Electron mode")
+}
+
+export async function fetchOracles(): Promise<OracleInfo[]> {
+	if (isElectron) {
+		return window.elf.oracles.list() as Promise<OracleInfo[]>
+	}
+	throw new Error("Oracle roster is only available in Electron mode")
+}
+
+export async function fetchTmuxSessions(): Promise<TmuxSessionInfo[]> {
+	if (isElectron) {
+		return window.elf.oracles.listTmuxSessions() as Promise<TmuxSessionInfo[]>
+	}
+	throw new Error("Tmux sessions are only available in Electron mode")
+}
+
+export async function createOracle(identity: string, command?: string | null): Promise<string> {
+	if (isElectron) {
+		return window.elf.oracles.create(identity, command)
+	}
+	throw new Error("Oracle roster is only available in Electron mode")
+}
+
+export async function renameOracle(from: string, to: string): Promise<string> {
+	if (isElectron) {
+		return window.elf.oracles.rename(from, to)
+	}
+	throw new Error("Oracle roster is only available in Electron mode")
+}
+
+export async function deleteOracle(identity: string, force = false): Promise<void> {
+	if (isElectron) {
+		return window.elf.oracles.delete(identity, force)
+	}
+	throw new Error("Oracle roster is only available in Electron mode")
+}
+
+export async function killTmuxSession(socket: string, session: string): Promise<void> {
+	if (isElectron) {
+		return window.elf.oracles.killTmuxSession(socket, session)
+	}
+	throw new Error("Tmux sessions are only available in Electron mode")
+}
+
+export async function appshot(identity?: string | null): Promise<string> {
+	if (isElectron) {
+		return window.elf.oracles.appshot(identity)
+	}
+	throw new Error("Oracle appshot is only available in Electron mode")
+}
+
+export async function spawnPtyShell(request: PtySpawnRequest): Promise<number> {
+	if (isElectron) {
+		return window.elf.pty.spawnShell(request)
+	}
+	throw new Error("PTY sessions are only available in Electron mode")
+}
+
+export async function spawnPtyTerminal(request: PtyTerminalSpawnRequest): Promise<number> {
+	if (isElectron) {
+		return window.elf.pty.spawnTerminal(request)
+	}
+	throw new Error("PTY sessions are only available in Electron mode")
+}
+
+export async function spawnPtyOracle(request: PtyOracleSpawnRequest): Promise<number> {
+	if (isElectron) {
+		return window.elf.pty.spawnOracle(request)
+	}
+	throw new Error("PTY sessions are only available in Electron mode")
+}
+
+export async function spawnPtyTmux(request: PtyTmuxSpawnRequest): Promise<number> {
+	if (isElectron) {
+		return window.elf.pty.spawnTmux(request)
+	}
+	throw new Error("PTY sessions are only available in Electron mode")
+}
+
+export async function writePty(id: number, data: string): Promise<void> {
+	if (isElectron) {
+		return window.elf.pty.write(id, data)
+	}
+	throw new Error("PTY sessions are only available in Electron mode")
+}
+
+export async function resizePty(id: number, cols: number, rows: number): Promise<void> {
+	if (isElectron) {
+		return window.elf.pty.resize(id, cols, rows)
+	}
+	throw new Error("PTY sessions are only available in Electron mode")
+}
+
+export async function killPty(id: number): Promise<void> {
+	if (isElectron) {
+		return window.elf.pty.kill(id)
+	}
+	throw new Error("PTY sessions are only available in Electron mode")
+}
+
+export function onPtyData(callback: (event: PtyDataEvent) => void): () => void {
+	if (isElectron) {
+		return window.elf.pty.onData(callback)
+	}
+	throw new Error("PTY sessions are only available in Electron mode")
+}
+
+export function onPtyExit(callback: (event: PtyExitEvent) => void): () => void {
+	if (isElectron) {
+		return window.elf.pty.onExit(callback)
+	}
+	throw new Error("PTY sessions are only available in Electron mode")
+}
+
 export async function fetchBridges(): Promise<BridgesResult> {
 	if (isElectron) {
-		return window.elf.bridges.list() as Promise<BridgesResult>
+		return window.elf.bridges.list() as Promise<BridgesResultApi>
 	}
 	throw new Error("Bridges are only available in Electron mode")
 }
@@ -240,9 +483,62 @@ export async function fetchBridgeActivity(
 	limit = 25,
 ): Promise<BridgeActivityResult> {
 	if (isElectron) {
-		return window.elf.bridges.activity(id, limit) as Promise<BridgeActivityResult>
+		return window.elf.bridges.activity(id, limit) as Promise<BridgeActivityResultApi>
 	}
 	throw new Error("Bridge activity is only available in Electron mode")
+}
+
+export async function fetchProviderDetections(): Promise<ProviderDetection[]> {
+	if (isElectron) {
+		return window.elf.onboarding.detectProviders()
+	}
+	return []
+}
+
+export async function fetchCrmStore(): Promise<CrmStore> {
+	if (isElectron) {
+		return window.elf.crm.load()
+	}
+	throw new Error("CRM is only available in Electron mode")
+}
+
+export async function saveCrmContact(contact: Partial<CrmContact>): Promise<string> {
+	if (isElectron) {
+		return window.elf.crm.saveContact(contact)
+	}
+	throw new Error("CRM is only available in Electron mode")
+}
+
+export async function deleteCrmContact(id: string): Promise<void> {
+	if (isElectron) {
+		return window.elf.crm.deleteContact(id)
+	}
+	throw new Error("CRM is only available in Electron mode")
+}
+
+export async function listInboxCustomers(): Promise<Customer[]> {
+	if (isElectron) {
+		return window.elf.inbox.listCustomers()
+	}
+	throw new Error("Inbox is only available in Electron mode")
+}
+
+export async function fetchInboxThread(handle: string, limit = 200): Promise<InboxMessage[]> {
+	if (isElectron) {
+		return window.elf.inbox.customerThread(handle, limit)
+	}
+	throw new Error("Inbox is only available in Electron mode")
+}
+
+export async function sendInboxMessage(
+	channel: InboxChannel,
+	to: string,
+	text: string,
+): Promise<InboxSendResult> {
+	if (isElectron) {
+		return window.elf.inbox.sendMessage(channel, to, text)
+	}
+	throw new Error("Inbox is only available in Electron mode")
 }
 
 // ============================================================

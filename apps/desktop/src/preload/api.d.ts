@@ -46,6 +46,160 @@ export interface BridgeActivityResult {
 	messages: BridgeMessage[]
 }
 
+export interface OracleInfo {
+	identity: string
+	session: string
+	socket: string
+	displayName: string
+	attached: boolean
+	isMaster: boolean
+	running: boolean
+}
+
+export interface TmuxSessionInfo {
+	socket: string
+	name: string
+	attached: boolean
+	windows: number
+	isOracle: boolean
+}
+
+export interface CrmContact {
+	id: string
+	name: string
+	company?: string
+	email?: string
+	phone?: string
+	channel?: "whatsapp" | "instagram" | "telegram" | "email" | "phone" | "referral" | "other"
+	tags?: string[]
+	notes?: string
+	createdAt: number
+}
+
+export interface CrmStore {
+	contacts: CrmContact[]
+	deals: unknown[]
+}
+
+export type InboxChannel = "whatsapp" | "whatsapp-personal" | "instagram" | "telegram" | "email" | "phone" | "other"
+
+export interface Customer {
+	id: string
+	name: string
+	channel: InboxChannel
+	handle: string
+	lastAt: string | null
+	lastAgo: string | null
+	lastText: string
+	msgCount: number
+}
+
+export interface InboxMessage {
+	ts: string
+	tsAgo: string | null
+	direction: "out" | "in"
+	text: string
+}
+
+export interface InboxSendResult {
+	delivered: false
+	ts: number
+	reason: string
+}
+
+export interface PtySpawnRequest {
+	cols: number
+	rows: number
+	cwd?: string | null
+}
+
+export interface PtyTerminalSpawnRequest extends PtySpawnRequest {
+	name: string
+	command?: string | null
+}
+
+export interface PtyOracleSpawnRequest extends PtySpawnRequest {
+	identity: string
+}
+
+export interface PtyTmuxSpawnRequest extends PtySpawnRequest {
+	socket: string
+	session: string
+}
+
+export interface PtyDataEvent {
+	id: number
+	data: string
+}
+
+export interface PtyExitEvent {
+	id: number
+	exitCode: number
+	signal?: number
+}
+
+export interface FileSystemEntry {
+	name: string
+	path: string
+	type: "file" | "directory"
+	mtime: number
+}
+
+export type GitCode = "M" | "A" | "D" | "R" | "U"
+
+export interface FileGitEntry {
+	path: string
+	status: GitCode
+}
+
+export interface FileGitStatusResult {
+	root: string | null
+	entries: FileGitEntry[]
+}
+
+export interface RepoPulse {
+	root: string
+	name: string
+	branch: string
+	dirty: number
+	ahead: number
+	behind: number
+}
+
+export interface RunCommand {
+	label: string
+	cmd: string
+}
+
+export interface ProjectRun {
+	kind: string
+	root: string | null
+	commands: RunCommand[]
+}
+
+export interface ProjectInfo {
+	name: string
+	root: string
+	kind: string
+	commands: RunCommand[]
+	mtime: number
+}
+
+export type FilePreviewKind = "text" | "image" | "pdf" | "office" | "binary"
+
+export interface FilePreview {
+	kind: FilePreviewKind
+	text: string | null
+	size: number
+	name: string
+	truncated: boolean
+}
+
+export interface OfficeConversionResult {
+	pdfPath: string
+	cacheHit: boolean
+}
+
 export interface ModelRef {
 	providerID: string
 	modelID: string
@@ -543,13 +697,54 @@ export interface ElfAPI {
 
 	// Directory picker
 	pickDirectory: () => Promise<string | null>
-	listDirectory: (directory: string) => Promise<Array<{ name: string; path: string; type: "file" | "directory" }>>
+	listDirectory: (directory: string) => Promise<FileSystemEntry[]>
+	readDirectoryTree: (directory: string) => Promise<FileSystemEntry[]>
+	gitStatus: (directory: string) => Promise<FileGitStatusResult>
+	gitPulse: (directories: string[]) => Promise<RepoPulse[]>
+	homeDir: () => Promise<string>
+	detectProject: (filePath: string) => Promise<ProjectRun>
+	listProjects: (rootDirectory?: string) => Promise<ProjectInfo[]>
 	readFile: (filePath: string) => Promise<{ path: string; content: string }>
+	readFilePreview: (filePath: string) => Promise<FilePreview>
+	readTextFile: (filePath: string) => Promise<string>
+	writeTextFile: (filePath: string, content: string) => Promise<void>
+	deletePath: (filePath: string) => Promise<void>
+	saveImageTemp: (data: string, extension: string) => Promise<string>
+	convertOfficeToPdf: (filePath: string) => Promise<OfficeConversionResult>
+	oracles: {
+		list: () => Promise<OracleInfo[]>
+		listTmuxSessions: () => Promise<TmuxSessionInfo[]>
+		create: (identity: string, command?: string | null) => Promise<string>
+		rename: (from: string, to: string) => Promise<string>
+		delete: (identity: string, force?: boolean) => Promise<void>
+		killTmuxSession: (socket: string, session: string) => Promise<void>
+		appshot: (identity?: string | null) => Promise<string>
+	}
 	bridges: {
 		list: () => Promise<BridgesResult>
 		activity: (id: string, limit?: number) => Promise<BridgeActivityResult>
 	}
-
+	crm: {
+		load: () => Promise<CrmStore>
+		saveContact: (contact: Partial<CrmContact>) => Promise<string>
+		deleteContact: (id: string) => Promise<void>
+	}
+	inbox: {
+		listCustomers: () => Promise<Customer[]>
+		customerThread: (handle: string, limit?: number) => Promise<InboxMessage[]>
+		sendMessage: (channel: InboxChannel, to: string, text: string) => Promise<InboxSendResult>
+	}
+	pty: {
+		spawnShell: (request: PtySpawnRequest) => Promise<number>
+		spawnTerminal: (request: PtyTerminalSpawnRequest) => Promise<number>
+		spawnOracle: (request: PtyOracleSpawnRequest) => Promise<number>
+		spawnTmux: (request: PtyTmuxSpawnRequest) => Promise<number>
+		write: (id: number, data: string) => Promise<void>
+		resize: (id: number, cols: number, rows: number) => Promise<void>
+		kill: (id: number) => Promise<void>
+		onData: (callback: (event: PtyDataEvent) => void) => () => void
+		onExit: (callback: (event: PtyExitEvent) => void) => () => void
+	}
 	// Fetch proxy (bypasses Chromium connection limits)
 	fetch: (req: {
 		url: string
