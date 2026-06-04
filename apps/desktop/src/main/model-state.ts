@@ -29,8 +29,9 @@ const MAX_RECENT = 10
  * Queries the running server first, falls back to default XDG path.
  */
 async function resolveStatePath(): Promise<string> {
+	const port = Number(process.env.OPENCODE_PORT) || 4096
 	try {
-		const pathRes = await fetch("http://127.0.0.1:4101/path", {
+		const pathRes = await fetch(`http://127.0.0.1:${port}/path`, {
 			signal: AbortSignal.timeout(2000),
 		})
 		if (pathRes.ok) {

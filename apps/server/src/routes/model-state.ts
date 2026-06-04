@@ -17,7 +17,8 @@ const MAX_RECENT = 10
  * Resolves the OpenCode state directory path from the running server.
  */
 async function resolveStatePath(): Promise<string> {
-	const pathRes = await fetch("http://127.0.0.1:4101/path")
+	const port = Number(process.env.OPENCODE_PORT) || 4096
+	const pathRes = await fetch(`http://127.0.0.1:${port}/path`)
 	if (!pathRes.ok) {
 		throw new Error("Failed to get OpenCode state path")
 	}

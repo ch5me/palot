@@ -187,7 +187,7 @@ The `model.json` file lives at `{OpenCode state dir}/model.json` and has this sh
 }
 ```
 
-The state directory is resolved by querying the running OpenCode server at `http://127.0.0.1:4101/path`, falling back to `~/.local/state/opencode/`.
+The state directory is resolved by querying the running OpenCode server at `http://127.0.0.1:4096/path`, falling back to `~/.local/state/opencode/`.
 
 ### 2. On message send: projectModelsAtom (per-project localStorage)
 

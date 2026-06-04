@@ -392,10 +392,10 @@ function LocalServerSettings() {
 					/>
 				</SettingsRow>
 
-				<SettingsRow label="Port" description="Port number for the server (default: 4101).">
+				<SettingsRow label="Port" description="Port number for the server (default: 4096).">
 					<Input
 						className="w-[200px]"
-						placeholder="4101"
+						placeholder="4096"
 						type="number"
 						min={1}
 						max={65535}
