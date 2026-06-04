@@ -27,6 +27,12 @@ export function PulsePanel({ agent, className }: PulsePanelProps) {
 	const primaryModel = metrics.modelDistributionDisplay[0]
 	const activeAutomations = automations.filter((a) => a.status === "active")
 	const runningAutomations = automations.filter((a) => a.nextRunAt === null && a.status === "active")
+	const hasAnyActivity =
+		metrics.assistantMessageCount > 0 ||
+		metrics.userMessageCount > 0 ||
+		metrics.toolCallCount > 0 ||
+		metrics.tokensRaw > 0 ||
+		activeAutomations.length > 0
 	const pulseCards = [
 		{
 			label: "Work Time",
@@ -104,6 +110,16 @@ export function PulsePanel({ agent, className }: PulsePanelProps) {
 					</div>
 				</div>
 			</div>
+			{!hasAnyActivity ? (
+				<div className="border-b border-border bg-muted/5 px-4 py-3 text-xs text-muted-foreground">
+					<div className="font-medium text-foreground">No session activity yet</div>
+					<p className="mt-1 leading-relaxed">
+						Pulse starts populating as soon as the session sends its first message or
+						automations are scheduled. Cards will go from "0" / "None" to live numbers
+						once traffic is flowing.
+					</p>
+				</div>
+			) : null}
 			<div className="grid gap-3 px-4 py-4 md:grid-cols-2">
 				{pulseCards.map(({ label, icon: Icon, value, detail }) => (
 					<div key={label} className="rounded-xl border border-border/70 bg-muted/20 p-3">

@@ -1,0 +1,55 @@
+Task: T20 Notes / Pulse / Memory hardening
+Date: 2026-06-04
+
+Files changed
+- apps/desktop/src/renderer/components/side-panel/notes-panel.tsx
+- apps/desktop/src/renderer/components/side-panel/pulse-panel.tsx
+- (memory-panel.tsx already had explicit empty + error states; left as
+   the production shape the plan was reaching for, with the
+   improvements below)
+
+What landed
+- Notes panel:
+  * Preserved the existing `useDraft` autosave/restore path
+    (`notes:${agent.sessionId}`).
+  * Added a real "Send to chat" button that resolves the session
+    writer from `paneWriters` and inserts the notes into the
+    active chat composer. If no composer is mounted, the toast
+    surfaces an explicit "no active chat composer" message plus
+    a friendly notice in the panel.
+  * Hard cap on the textarea at 20,000 chars (both the React
+    state and the persisted draft) so an accidental paste
+    explosion can't blow up the localStorage draft.
+  * Character counter + summary now reflect the actual note count
+    (line splits, trimmed) rather than the raw note length.
+  * Clear button now toasts confirmation and resets the draft.
+- Pulse panel:
+  * Added an explicit "no session activity yet" empty banner that
+    shows when the session has zero assistant messages, zero user
+    messages, zero tool calls, and zero scheduled automations --
+    so a brand-new session lands on a friendly card, not 9 zeros.
+  * The "Session Active / Session Idle" pill already had truthful
+    state; the active/idle state is now derived from the metrics
+    atom (`activeStartMs`) which the underlying store updates
+    on every agent turn.
+- Memory panel: production-grade already (search + add/remove +
+  explicit error + empty + no-match states). Verified in place
+  rather than refactored.
+
+Verification
+- `node_modules/.bin/tsgo --noEmit -p apps/desktop` -> pass.
+- `bun run lint` -> 86 files, 0 issues.
+- Manual flow described for Chris:
+  1. Open Notes on a session, type text, close the panel, reopen
+     -> draft restored from `useDraft`.
+  2. Click "Send to chat" with the chat composer open for the
+     session -> notes land in the composer; success toast.
+  3. Click "Send to chat" with the chat composer closed -> toast
+     says "no active chat composer" with description; no crash.
+  4. Click Clear -> notes and draft reset; toast confirms.
+  5. Open Pulse on a brand-new session with no traffic -> the
+     "No session activity yet" empty banner shows alongside the
+     grid (cards render their explicit "0" / "None" detail).
+  6. Memory: search returns "No memories match ..." honestly; the
+     error toast surfaces the failed-fetch message; the empty
+     state guides the operator to add their first fact.
