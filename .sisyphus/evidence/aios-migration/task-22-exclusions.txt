@@ -1,0 +1,40 @@
+Task: T22 Excluded-domain documentation + reference scrub
+Date: 2026-06-04
+
+Files changed
+- docs/aios-migration-exclusions.md (new)
+
+What landed
+- Authored `docs/aios-migration-exclusions.md` as the canonical
+  record of the surfaces, modules, and assumptions that were
+  intentionally NOT ported from `~/Workspaces/aios-superapp`:
+  Motion (motion.rs / MotionPane.tsx), Database (db.rs /
+  DatabasePane.tsx), Monitor dashboard tiles, Device tiles, and
+  IdleDashboard. Each entry has a "Why dropped" line so the
+  audit trail is self-explanatory.
+- Documented the Tauri v2 -> Electron 40 assumptions that do NOT
+  carry over: `tauri::Window`, `tauri::Manager`, `tauri::api::path`,
+  `tauri-plugin-shell`, `tauri::ipc::Channel<T>`, etc.
+- Documented the surviving `aios-` / `AIOS_` references in Palot
+  (tmux session naming, launchd probe needles, MIME types) and
+  explicitly noted that none of them are source imports of the
+  superapp repo. They are tmux session conventions, process probe
+  substrings, and a stable MIME identifier.
+
+Reference scrub (verified 2026-06-04)
+- `aios-superapp` -- 0 matches in apps/desktop/src/
+- `Workspaces/aios` -- 0 matches
+- `firefly-superapp` -- 0 matches
+- `from '@tauri-apps/...'` -- 0 matches
+
+Acceptance
+- Exclusions recorded in `docs/aios-migration-exclusions.md`
+  with concrete source paths and product justification.
+- Zero palot code references to the superapp path; only the
+  leftover `aios-` tmux session naming convention remains (and
+  is documented as a deliberate carry-over, not a code dep).
+
+Note
+- The reference scrub is what feeds the F4 retirement audit.
+  Once F4 is APPROVE, `~/Workspaces/aios-superapp` can be safely
+  deleted.
