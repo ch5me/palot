@@ -1,5 +1,6 @@
 import { Hono } from "hono"
 import { cors } from "hono/cors"
+import files from "./routes/files"
 import health from "./routes/health"
 import modelState from "./routes/model-state"
 import servers from "./routes/servers"
@@ -15,7 +16,7 @@ const app = new Hono()
 app.use(
 	"*",
 	cors({
-		origin: ["http://localhost:20882", "http://127.0.0.1:20882"],
+		origin: ["http://localhost:20883", "http://127.0.0.1:20883"],
 	}),
 )
 
@@ -23,6 +24,7 @@ app.use(
 const routes = app
 	.route("/api/servers", servers)
 	.route("/api/model-state", modelState)
+	.route("/api/files", files)
 	.route("/health", health)
 
 export type AppType = typeof routes

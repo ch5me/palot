@@ -26,7 +26,8 @@ export default defineConfig({
 	},
 	clearScreen: false,
 	server: {
-		port: 20882,
+		port: Number(process.env.PORT) || 20883,
 		strictPort: true,
+		host: "127.0.0.1",
 	},
 })

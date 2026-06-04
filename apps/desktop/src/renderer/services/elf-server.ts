@@ -8,7 +8,7 @@
 
 import { createClient } from "@ch5me/elf-server/client"
 
-const BASE_URL = "http://localhost:30206"
+const BASE_URL = "http://127.0.0.1:30206"
 
 /**
  * Pre-typed Hono RPC client.
@@ -77,6 +77,35 @@ export async function updateModelRecent(model: { providerID: string; modelID: st
 /**
  * Checks if the Elf server is running.
  */
+async function readError(res: Response, fallback: string): Promise<string> {
+	try {
+		const data = await res.json()
+		if (typeof data === "object" && data !== null && "error" in data && typeof data.error === "string") {
+			return data.error
+		}
+	} catch {}
+	return fallback
+}
+
+export async function fetchTextFile(filePath: string): Promise<string> {
+	const res = await client.api.files.text.$get({
+		query: { path: filePath },
+	})
+	if (!res.ok) {
+		throw new Error(await readError(res, `Text file fetch failed: ${res.status} ${res.statusText}`))
+	}
+	return res.text()
+}
+
+export async function saveTextFile(filePath: string, content: string): Promise<void> {
+	const res = await client.api.files.text.$put({
+		json: { path: filePath, content },
+	})
+	if (!res.ok) {
+		throw new Error(await readError(res, `Text file save failed: ${res.status} ${res.statusText}`))
+	}
+}
+
 export async function checkServerHealth() {
 	try {
 		const res = await client.health.$get()

@@ -176,11 +176,8 @@ cd apps/desktop && bun run dev
 For frontend development without Electron:
 
 ```bash
-# Terminal 1: Start the backend
-cd apps/server && bun run dev     # port 3100
-
-# Terminal 2: Start the renderer
-cd apps/desktop && bun run dev:web  # port 1420
+bun run dev          # starts backend on 30206 and web on 20883 via devmux
+bun run svc:status   # verify both services are healthy
 ```
 
 <br>
@@ -230,8 +227,12 @@ The desktop app has three runtime contexts:
 
 ```bash
 # Development
-bun run dev              # Electron dev mode (from apps/desktop)
-bun run dev:web          # Browser-only dev mode (from apps/desktop, needs apps/server)
+bun run dev              # Start browser-mode stack via devmux (backend + web)
+bun run dev:web          # Alias for devmux web service
+bun run dev:server       # Ensure backend service only
+bun run svc:status       # Show devmux service status
+bun run svc:attach -- web
+bun run svc:stop -- web
 
 # Build and package
 bun run build            # Production build

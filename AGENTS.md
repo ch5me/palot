@@ -48,9 +48,13 @@ generic knowledge.
 
 ## Commands
 
-- **Electron dev**: `cd apps/desktop && bun run dev` (electron-vite, renderer on port 1420)
-- **Browser-only dev**: `cd apps/desktop && bun run dev:web` (Vite only, needs `apps/server` running)
-- **Backend server** (browser mode only): `cd apps/server && bun run dev` (port 3100)
+- **Start project**: `bun run dev` (starts browser-mode stack via devmux: backend on `30206`, web on `20883`)
+- **Service status**: `bun run svc:status`
+- **Attach logs**: `bun run svc:attach -- <service>`
+- **Stop services**: `bun run svc:stop -- <service>`
+- **Electron dev**: `cd apps/desktop && bun run dev:electron-local` (electron-vite, renderer on port `1420`)
+- **Browser-only dev**: `cd apps/desktop && bun run dev:web` (Vite on `20883`, managed by devmux)
+- **Backend server** (browser mode only): `cd apps/server && bun run dev` (Bun server on `30206`, managed by devmux)
 - **Lint check**: `bun run lint` (from root)
 - **Lint/format fix**: `bun run lint:fix` or `bunx biome check --write .` (from root)
 - **Type check all**: `bun run check-types` (from root, via Turborepo)

@@ -15,10 +15,14 @@
 
 	"scripts": {
 		"build": "bunx turbo build",
-		"dev": "bunx turbo dev",
-		"dev:desktop": "bunx turbo dev --filter=@ch5me/elf-desktop",
-		"dev:desktop:wayland": "bunx turbo dev:wayland --filter=@ch5me/elf-desktop",
-		"dev:web": "bunx turbo dev:web --filter=@ch5me/elf-desktop",
+		"dev": "bunx devmux ensure web",
+		"dev:desktop": "bunx devmux ensure desktop",
+		"dev:desktop:wayland": "bunx devmux ensure desktop-wayland",
+		"dev:web": "bunx devmux ensure web",
+		"dev:server": "bunx devmux ensure server",
+		"svc:status": "bunx devmux status",
+		"svc:attach": "bunx devmux attach",
+		"svc:stop": "bunx devmux stop",
 		"lint": "biome check .",
 		"lint:fix": "biome check --write .",
 		"format": "biome format --write .",
