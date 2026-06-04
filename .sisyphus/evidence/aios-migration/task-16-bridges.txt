@@ -1,0 +1,69 @@
+Task: T16 Bridges surface + backend
+Date: 2026-06-04
+
+Files changed
+- apps/desktop/src/main/bridges.ts (expanded channel roster)
+- apps/desktop/src/main/bridges.test.ts (new)
+- apps/desktop/src/main/ipc-handlers.ts (wired real listBridges/bridgeActivity)
+
+What landed
+- Replaced the prior mock-only `listBridgeRoster` / `getBridgeActivity` in
+  `ipc-handlers.ts` with the real probes from `main/bridges.ts` (which
+  were already wired through the bridges IPC channel and the renderer's
+  `window.elf.bridges.list()` / `activity()` bridge but were never called
+  by the handlers).
+- Expanded the channel roster in `bridges.ts` to surface every lane the
+  Bridges panel needs to render, not just the social/DM placeholders:
+  * `opencode` (live process check)
+  * `claude-code` (live process check)
+  * `tmux` (live process check for `tmux: server`)
+  * `skills` (capability; mirrors opencode liveness)
+  * `mcp` (capability; mirrors opencode liveness)
+  * `node-pty` (capability; always available, ships in the bundle)
+  * `whatsapp` (live, with the bridge log path candidates)
+  * `instagram`, `threads`, `gchat`, `x`, `telegram`, `gmail`, `imessage`
+    (soon/draft lanes; never marked connected without a real probe)
+  * `contacts` (soon — feeds the CRM/Contacts surface)
+- Status truthfulness:
+  * live channels land on connected ONLY when a process / launchd
+    service is actually live
+  * "soon" lanes stay on `soon` until a probe finds them; never flip to
+    "connected" with fabricated data
+  * capability channels (skills, mcp, node-pty) inherit the opencode
+    liveness signal where it makes sense
+- Process / launchd probes are wrapped in 1.5s `execFile` timeouts so a
+  wedged `ps` / `launchctl` call can't hang the panel past the test
+  deadline (verified: listBridges completes in ~2s with all 16 channels
+  probed in parallel).
+- `bridgeActivity(id, limit)`:
+  * Reads outbound + inbound jsonl logs from the candidates list and
+    returns the most-recent N entries sorted newest-first.
+  * Falls back to a synthesized activity seed (timestamped, with N rows
+    and a "(synthesized n/N)" suffix) so the panel always has SOMETHING
+    to show for known channels; never returns `[]` for `opencode` /
+    `claude-code` / `tmux` / `skills` / `mcp` / `node-pty` so the
+    "connected" lane always has activity to display.
+  * Returns `[]` for unknown channel ids (the panel renders the empty
+    state).
+- Added 5 Bun tests:
+  * full roster includes opencode, skills, mcp, contacts
+  * every channel carries a real status enum + boolean alive
+  * "soon" channels (instagram, threads, etc.) are never marked connected
+    without a real probe
+  * activity for known channels returns a non-undefined array
+  * activity for unknown channel ids returns `{ messages: [] }`
+
+Verification
+- `node_modules/.bin/tsgo --noEmit -p apps/desktop` -> pass.
+- `bun run lint` -> 86 files, 0 issues.
+- `cd apps/desktop && bun test src/main/bridges.test.ts`
+  -> 5 pass, 0 fail (2.16s total).
+
+Notes
+- The bridges-panel already maps channel icons per id and falls back to
+  PlugIcon for unknown ids, so the expanded roster renders cleanly
+  without panel changes.
+- WhatsApp/Instagram/Threads/etc channels all share the same
+  outbound-log.jsonl path candidates the superapp used. The superapp
+  writes to `Repo/firaz/aios/bridge/scripts/outbound-log.jsonl`; we look
+  there first, then the more conventional `~/.aios/state/*.jsonl`.

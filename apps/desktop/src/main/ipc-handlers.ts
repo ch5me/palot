@@ -8,8 +8,7 @@ import {
 	shell,
 	systemPreferences,
 } from "electron"
-import { readFile, readdir } from "node:fs/promises"
-import path from "node:path"
+import { readFile } from "node:fs/promises"
 import {
 	acceptRun,
 	archiveRun,
@@ -44,6 +43,32 @@ import {
 import { getResolvedChromeTier } from "./liquid-glass"
 import { createLogger } from "./logger"
 import { getDiscoveredServers } from "./mdns-scanner"
+import { bridgeActivity, listBridges } from "./bridges"
+import { createPtyController } from "./pty"
+import {
+	deletePath as deleteProjectPath,
+	detectProject,
+	convertOfficeToPdf,
+	getGitPulse,
+	getGitStatus,
+	getHomeDirectory,
+	listDirectory as listProjectDirectory,
+	listProjects as listKnownProjects,
+	readDirectoryTree,
+	readFilePreview,
+	readTextFile,
+	saveImageTemp,
+	writeTextFile,
+} from "./files"
+import {
+	appshot as oracleAppshot,
+	createOracle,
+	deleteOracle,
+	killTmuxSession,
+	listOracles,
+	listTmuxSessions,
+	renameOracle,
+} from "./oracles"
 
 import { readModelState, updateModelRecent } from "./model-state"
 import { dismissNotification, updateBadgeCount } from "./notifications"
@@ -69,6 +94,18 @@ import {
 } from "./updater"
 
 const log = createLogger("ipc")
+const ptyController = createPtyController({
+	onData: (event) => {
+		for (const win of BrowserWindow.getAllWindows()) {
+			win.webContents.send("pty:data", event)
+		}
+	},
+	onExit: (event) => {
+		for (const win of BrowserWindow.getAllWindows()) {
+			win.webContents.send("pty:exit", event)
+		}
+	},
+})
 
 /** Read the opaque windows preference for use at window creation time. */
 export { getOpaqueWindows as getOpaqueWindowsPref } from "./settings-store"
@@ -91,48 +128,9 @@ interface SerializedResponse {
 	body: string | null
 }
 
-interface FileSystemEntry {
-	name: string
-	path: string
-	type: "file" | "directory"
-}
-
 interface FileReadResult {
 	path: string
 	content: string
-}
-
-interface BridgeChannel {
-	id: string
-	name: string
-	kind: string
-	status: "connected" | "disconnected" | "soon"
-	alive: boolean
-	pid: number | null
-	uptime: string | null
-	launchd: string | null
-	loaded: boolean
-	messagesTotal: number | null
-	lastActivity: string | null
-	lastActivityAgo: string | null
-	today: number | null
-	logPath: string | null
-}
-
-interface BridgesResult {
-	bridges: BridgeChannel[]
-}
-
-interface BridgeMessage {
-	ts: string
-	tsAgo: string | null
-	direction: "out" | "in"
-	peer: string
-	text: string
-}
-
-interface BridgeActivityResult {
-	messages: BridgeMessage[]
 }
 
 /**
@@ -181,23 +179,6 @@ async function handleFetchProxy(
 	}
 }
 
-async function listDirectoryEntries(directory: string): Promise<FileSystemEntry[]> {
-	const entries = await readdir(directory, { withFileTypes: true })
-	return entries
-		.filter((entry) => !entry.name.startsWith("."))
-		.map((entry): FileSystemEntry => ({
-			name: entry.name,
-			path: path.join(directory, entry.name),
-			type: entry.isDirectory() ? "directory" : "file",
-		}))
-		.sort((a, b) => {
-			if (a.type !== b.type) {
-				return a.type === "directory" ? -1 : 1
-			}
-			return a.name.localeCompare(b.name)
-		})
-}
-
 async function readProjectFile(filePath: string): Promise<FileReadResult> {
 	return {
 		path: filePath,
@@ -205,112 +186,6 @@ async function readProjectFile(filePath: string): Promise<FileReadResult> {
 	}
 }
 
-async function listBridgeRoster(): Promise<BridgesResult> {
-	return {
-		bridges: [
-			{
-				id: "opencode",
-				name: "OpenCode",
-				kind: "agent",
-				status: "connected",
-				alive: true,
-				pid: null,
-				uptime: "this session",
-				launchd: null,
-				loaded: true,
-				messagesTotal: null,
-				lastActivity: null,
-				lastActivityAgo: "moments",
-				today: null,
-				logPath: null,
-			},
-			{
-				id: "skills",
-				name: "Skills + Commands",
-				kind: "capability",
-				status: "connected",
-				alive: true,
-				pid: null,
-				uptime: "available",
-				launchd: null,
-				loaded: true,
-				messagesTotal: null,
-				lastActivity: null,
-				lastActivityAgo: null,
-				today: null,
-				logPath: null,
-			},
-			{
-				id: "mcp",
-				name: "MCP Servers",
-				kind: "integration",
-				status: "connected",
-				alive: true,
-				pid: null,
-				uptime: "configured",
-				launchd: null,
-				loaded: true,
-				messagesTotal: null,
-				lastActivity: null,
-				lastActivityAgo: null,
-				today: null,
-				logPath: null,
-			},
-			{
-				id: "contacts",
-				name: "Contacts / CRM",
-				kind: "workspace",
-				status: "soon",
-				alive: false,
-				pid: null,
-				uptime: null,
-				launchd: null,
-				loaded: false,
-				messagesTotal: null,
-				lastActivity: null,
-				lastActivityAgo: null,
-				today: null,
-				logPath: null,
-			},
-		]
-	}
-}
-
-async function getBridgeActivity(id: string, limit = 25): Promise<BridgeActivityResult> {
-	const messagesById: Record<string, BridgeMessage[]> = {
-		opencode: [
-			{
-				ts: "now",
-				tsAgo: "moments",
-				direction: "in",
-				peer: "Active session",
-				text: `Bridge follows the ${limit > 0 ? "recent" : "current"} Elf agent lane for the active workspace.`,
-			},
-		],
-		mcp: [
-			{
-				ts: "recently",
-				tsAgo: "1h",
-				direction: "out",
-				peer: "Config surface",
-				text: "MCP posture is managed through OpenCode config and plugin surfaces today.",
-			},
-		],
-		skills: [
-			{
-				ts: "today",
-				tsAgo: "3h",
-				direction: "out",
-				peer: "Command palette",
-				text: "Skills and commands already route through the Plugins surface; Bridges keeps the bigger integration map visible.",
-			},
-		],
-	}
-
-	return {
-		messages: (messagesById[id] ?? []).slice(0, Math.max(0, limit)),
-	}
-}
 
 /**
  * Wraps an IPC handler to log errors before they propagate to the renderer.
@@ -507,7 +382,100 @@ export function registerIpcHandlers(): void {
 
 	ipcMain.handle(
 		"files:list-directory",
-		withLogging("files:list-directory", async (_, directory: string) => await listDirectoryEntries(directory)),
+		withLogging("files:list-directory", async (_, directory: string) => listProjectDirectory(directory)),
+	)
+
+	ipcMain.handle(
+		"files:read-directory-tree",
+		withLogging("files:read-directory-tree", async (_, directory: string) => readDirectoryTree(directory)),
+	)
+
+	ipcMain.handle(
+		"files:git-status",
+		withLogging("files:git-status", async (_, directory: string) => await getGitStatus(directory)),
+	)
+
+	ipcMain.handle(
+		"files:git-pulse",
+		withLogging("files:git-pulse", async (_, directories: string[]) => await getGitPulse(directories)),
+	)
+
+	ipcMain.handle("files:home-dir", withLogging("files:home-dir", async () => getHomeDirectory()))
+
+	ipcMain.handle(
+		"files:detect-project",
+		withLogging("files:detect-project", async (_, filePath: string) => detectProject(filePath)),
+	)
+
+	ipcMain.handle(
+		"files:list-projects",
+		withLogging("files:list-projects", async (_, rootDirectory?: string) => listKnownProjects(rootDirectory)),
+	)
+
+	ipcMain.handle(
+		"files:read-preview",
+		withLogging("files:read-preview", async (_, filePath: string) => readFilePreview(filePath)),
+	)
+
+	ipcMain.handle(
+		"files:read-text",
+		withLogging("files:read-text", async (_, filePath: string) => readTextFile(filePath)),
+	)
+
+	ipcMain.handle(
+		"files:write-text",
+		withLogging("files:write-text", async (_, filePath: string, content: string) =>
+			writeTextFile(filePath, content),
+		),
+	)
+
+	ipcMain.handle(
+		"files:delete-path",
+		withLogging("files:delete-path", async (_, filePath: string) => deleteProjectPath(filePath)),
+	)
+
+	ipcMain.handle(
+		"files:save-image-temp",
+		withLogging("files:save-image-temp", async (_, data: string, extension: string) =>
+			saveImageTemp(data, extension),
+		),
+	)
+
+	ipcMain.handle(
+		"office:convert",
+		withLogging("office:convert", async (_, filePath: string) => convertOfficeToPdf(filePath)),
+	)
+
+	ipcMain.handle("oracles:list", withLogging("oracles:list", async () => listOracles()))
+	ipcMain.handle(
+		"oracles:list-tmux-sessions",
+		withLogging("oracles:list-tmux-sessions", async () => listTmuxSessions()),
+	)
+	ipcMain.handle(
+		"oracles:create",
+		withLogging("oracles:create", async (_, identity: string, command?: string | null) =>
+			createOracle(identity, command),
+		),
+	)
+	ipcMain.handle(
+		"oracles:rename",
+		withLogging("oracles:rename", async (_, from: string, to: string) => renameOracle(from, to)),
+	)
+	ipcMain.handle(
+		"oracles:delete",
+		withLogging("oracles:delete", async (_, identity: string, force?: boolean) =>
+			deleteOracle(identity, force),
+		),
+	)
+	ipcMain.handle(
+		"oracles:kill-tmux-session",
+		withLogging("oracles:kill-tmux-session", async (_, socket: string, session: string) =>
+			killTmuxSession(socket, session),
+		),
+	)
+	ipcMain.handle(
+		"oracles:appshot",
+		withLogging("oracles:appshot", async (_, identity?: string | null) => oracleAppshot(identity)),
 	)
 
 	ipcMain.handle(
@@ -516,13 +484,53 @@ export function registerIpcHandlers(): void {
 	)
 
 	ipcMain.handle(
+		"pty:spawn-shell",
+		withLogging("pty:spawn-shell", async (_, request) => ptyController.spawnShell(request)),
+	)
+
+	ipcMain.handle(
+		"pty:spawn-terminal",
+		withLogging("pty:spawn-terminal", async (_, request) => ptyController.spawnTerminal(request)),
+	)
+
+	ipcMain.handle(
+		"pty:spawn-oracle",
+		withLogging("pty:spawn-oracle", async (_, request) => ptyController.spawnOracle(request)),
+	)
+
+	ipcMain.handle(
+		"pty:spawn-tmux",
+		withLogging("pty:spawn-tmux", async (_, request) => ptyController.spawnTmux(request)),
+	)
+
+	ipcMain.handle(
+		"pty:write",
+		withLogging("pty:write", async (_, id: number, data: string) => ptyController.write(id, data)),
+	)
+
+	ipcMain.handle(
+		"pty:resize",
+		withLogging("pty:resize", async (_, id: number, cols: number, rows: number) =>
+			ptyController.resize(id, cols, rows),
+		),
+	)
+
+	ipcMain.handle(
+		"pty:kill",
+		withLogging("pty:kill", async (_, id: number) => ptyController.kill(id)),
+	)
+
+	ipcMain.handle(
 		"bridges:list",
-		withLogging("bridges:list", async () => await listBridgeRoster()),
+		withLogging("bridges:list", async () => await listBridges()),
 	)
 
 	ipcMain.handle(
 		"bridges:activity",
-		withLogging("bridges:activity", async (_, id: string, limit?: number) => await getBridgeActivity(id, limit)),
+		withLogging(
+			"bridges:activity",
+			async (_, id: string, limit?: number) => await bridgeActivity(id, limit ?? 25),
+		),
 	)
 
 	// --- Fetch proxy (bypasses Chromium connection limits) ---
