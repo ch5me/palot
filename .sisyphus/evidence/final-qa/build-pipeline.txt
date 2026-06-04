@@ -11,10 +11,10 @@ $ tsc --noEmit
 (exit 0)
 ```
 
-## 2. Palot Typecheck (all packages)
+## 2. Elf Typecheck (all packages)
 
 ```
-cd /Users/hassoncs/src/ch5/palot && ./node_modules/.bin/turbo check-types
+cd /Users/hassoncs/src/ch5/elf && ./node_modules/.bin/turbo check-types
 Tasks: 6 successful, 6 total
 Time: 15.752s
 (exit 0)
@@ -23,15 +23,15 @@ Time: 15.752s
 ## 3. Desktop Production Build
 
 ```
-cd /Users/hassoncs/src/ch5/palot/apps/desktop && ../../node_modules/.bin/electron-vite build
+cd /Users/hassoncs/src/ch5/elf/apps/desktop && ../../node_modules/.bin/electron-vite build
 ✓ built in 1m 41s
 (exit 0)
 ```
 
-## 4. Palot Test Baseline
+## 4. Elf Test Baseline
 
 ```
-cd /Users/hassoncs/src/ch5/palot/packages/configconv && bun test
+cd /Users/hassoncs/src/ch5/elf/packages/configconv && bun test
 226 pass, 0 fail, 964 expect() calls
 (exit 0)
 ```

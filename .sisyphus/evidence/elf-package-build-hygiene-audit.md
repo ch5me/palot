@@ -1,4 +1,4 @@
-# Palot package/build hygiene audit <!-- oc:id=sec_aa -->
+# Elf package/build hygiene audit <!-- oc:id=sec_aa -->
 
 ## Verified commands <!-- oc:id=sec_ab -->
 - `bun run lint` passes from repo root.
@@ -18,7 +18,7 @@
 - This is a real Task 5 blocker for local dev boot proof until desktop dependencies or the script environment are repaired.
 
 ## Footguns <!-- oc:id=sec_ae -->
-- `apps/desktop` still depends on workspace-linked packages like `@ch5me/firefly-design`, `@ch5me/workspace`, and `@ch5me/palot-ui`; cross-repo provider dist staleness is a known risk per `AGENTS.md`.
+- `apps/desktop` still depends on workspace-linked packages like `@ch5me/firefly-design`, `@ch5me/workspace`, and `@ch5me/elf-ui`; cross-repo provider dist staleness is a known risk per `AGENTS.md`.
 - Browser-mode route changes require `cd apps/server && bun run build:types` or frontend route typings drift.
 - Local mac packaging without a cert requires the documented env override in `AGENTS.md`.
 

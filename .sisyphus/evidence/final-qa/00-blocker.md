@@ -17,8 +17,8 @@
 ```
 ✗ Build failed in 101ms
 error during build:
-[@tailwindcss/vite:generate:build] Can't resolve './workspace.css' in '/Users/hassoncs/src/ch5/palot/apps/desktop/src/renderer'
-file: /Users/hassoncs/src/ch5/palot/apps/desktop/src/renderer/index.css
+[@tailwindcss/vite:generate:build] Can't resolve './workspace.css' in '/Users/hassoncs/src/ch5/elf/apps/desktop/src/renderer'
+file: /Users/hassoncs/src/ch5/elf/apps/desktop/src/renderer/index.css
 ```
 
 The `@import "./workspace.css"` is a relative import from `index.css`'s directory (`apps/desktop/src/renderer/`). The file lives at `styles/workspace.css`, not at `./workspace.css`.

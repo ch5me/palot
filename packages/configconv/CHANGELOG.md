@@ -1,24 +1,24 @@
-# @ch5me/palot-configconv
+# @ch5me/elf-configconv
 
 ## 0.5.2
 
 ### Patch Changes
 
-- [`098847c`](https://github.com/ItsWendell/palot/commit/098847c404f51c0954ffaba1c872910b93dd69d9) Thanks [@ItsWendell](https://github.com/ItsWendell)! - Fix prototype-polluting assignment vulnerability in Cursor permission converter
+- [`098847c`](https://github.com/ItsWendell/elf/commit/098847c404f51c0954ffaba1c872910b93dd69d9) Thanks [@ItsWendell](https://github.com/ItsWendell)! - Fix prototype-polluting assignment vulnerability in Cursor permission converter
 
 ## 0.5.0
 
 ### Minor Changes
 
-- [`755242d`](https://github.com/ItsWendell/palot/commit/755242d87f361457d00f3d56b91002f5ee1a7a6e) Thanks [@ItsWendell](https://github.com/ItsWendell)! - Migrate history writer to SQLite for OpenCode v1.2.0+. Sessions, messages, and parts are now written directly to the SQLite database at `~/.local/share/opencode/opencode.db`. Falls back to legacy flat-file JSON storage when no database exists.
+- [`755242d`](https://github.com/ItsWendell/elf/commit/755242d87f361457d00f3d56b91002f5ee1a7a6e) Thanks [@ItsWendell](https://github.com/ItsWendell)! - Migrate history writer to SQLite for OpenCode v1.2.0+. Sessions, messages, and parts are now written directly to the SQLite database at `~/.local/share/opencode/opencode.db`. Falls back to legacy flat-file JSON storage when no database exists.
 
 ## 0.4.0
 
 ### Patch Changes
 
-- [`2a9d3de`](https://github.com/ItsWendell/palot/commit/2a9d3de3b529a6aa73b8ae574fb2a6f2084d73f9) Thanks [@ItsWendell](https://github.com/ItsWendell)! - ### Breaking: Require OpenCode >= 1.2.0
+- [`2a9d3de`](https://github.com/ItsWendell/elf/commit/2a9d3de3b529a6aa73b8ae574fb2a6f2084d73f9) Thanks [@ItsWendell](https://github.com/ItsWendell)! - ### Breaking: Require OpenCode >= 1.2.0
 
-  Palot now requires OpenCode 1.2.0 or higher. Older versions will be blocked during the environment check.
+  Elf now requires OpenCode 1.2.0 or higher. Older versions will be blocked during the environment check.
 
   ### New Features
 

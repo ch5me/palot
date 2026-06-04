@@ -1,12 +1,12 @@
-# @ch5me/palot-server
+# @ch5me/elf-server
 
 ## 0.4.0
 
 ### Patch Changes
 
-- [`2a9d3de`](https://github.com/ItsWendell/palot/commit/2a9d3de3b529a6aa73b8ae574fb2a6f2084d73f9) Thanks [@ItsWendell](https://github.com/ItsWendell)! - ### Breaking: Require OpenCode >= 1.2.0
+- [`2a9d3de`](https://github.com/ItsWendell/elf/commit/2a9d3de3b529a6aa73b8ae574fb2a6f2084d73f9) Thanks [@ItsWendell](https://github.com/ItsWendell)! - ### Breaking: Require OpenCode >= 1.2.0
 
-  Palot now requires OpenCode 1.2.0 or higher. Older versions will be blocked during the environment check.
+  Elf now requires OpenCode 1.2.0 or higher. Older versions will be blocked during the environment check.
 
   ### New Features
 
@@ -31,7 +31,7 @@
 
 ### Patch Changes
 
-- [`d2d6f2b`](https://github.com/ItsWendell/palot/commit/d2d6f2b3013ad0fa3bb9ac08ad9b8ff91517ffc5) Thanks [@ItsWendell](https://github.com/ItsWendell)! - ### New Features
+- [`d2d6f2b`](https://github.com/ItsWendell/elf/commit/d2d6f2b3013ad0fa3bb9ac08ad9b8ff91517ffc5) Thanks [@ItsWendell](https://github.com/ItsWendell)! - ### New Features
 
   - Add provider management with icons, catalog, and onboarding integration
   - Add git worktree backend with lifecycle management and UI

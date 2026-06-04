@@ -1,22 +1,22 @@
-# @ch5me/palot-ui
+# @ch5me/elf-ui
 
 ## 0.6.0
 
 ### Patch Changes
 
-- [`f7c84b5`](https://github.com/ItsWendell/palot/commit/f7c84b5b4162824de5b4d31e860a6658f875e65e) Thanks [@ItsWendell](https://github.com/ItsWendell)! - Apply thin scrollbar styles globally to prevent ugly native scrollbars across all scrollable areas
+- [`f7c84b5`](https://github.com/ItsWendell/elf/commit/f7c84b5b4162824de5b4d31e860a6658f875e65e) Thanks [@ItsWendell](https://github.com/ItsWendell)! - Apply thin scrollbar styles globally to prevent ugly native scrollbars across all scrollable areas
 
 ## 0.5.3
 
 ### Patch Changes
 
-- [`8171dee`](https://github.com/ItsWendell/palot/commit/8171deee90b638ea92604a20ab323da3f739b627) Thanks [@ItsWendell](https://github.com/ItsWendell)! - Fix horizontal overflow and clipping in the desktop app at narrow window widths. Add `min-w-0` and `overflow-hidden` throughout the flex layout chain (SidebarInset, content area, conversation container, chat view, prompt toolbar) and make the session app bar collapse responsively with Tailwind breakpoints.
+- [`8171dee`](https://github.com/ItsWendell/elf/commit/8171deee90b638ea92604a20ab323da3f739b627) Thanks [@ItsWendell](https://github.com/ItsWendell)! - Fix horizontal overflow and clipping in the desktop app at narrow window widths. Add `min-w-0` and `overflow-hidden` throughout the flex layout chain (SidebarInset, content area, conversation container, chat view, prompt toolbar) and make the session app bar collapse responsively with Tailwind breakpoints.
 
 ## 0.3.0
 
 ### Minor Changes
 
-- [`594e4b7`](https://github.com/ItsWendell/palot/commit/594e4b7e299dee6ba507f990001f505f6afd22c5) Thanks [@ItsWendell](https://github.com/ItsWendell)! - ### New Features
+- [`594e4b7`](https://github.com/ItsWendell/elf/commit/594e4b7e299dee6ba507f990001f505f6afd22c5) Thanks [@ItsWendell](https://github.com/ItsWendell)! - ### New Features
 
   - **Session metrics**: comprehensive per-session work time, cost, tokens, model distribution, cache efficiency, and tool breakdown
   - **Per-turn metadata**: display model, duration, and cost after each response
@@ -48,7 +48,7 @@
 
 ### Patch Changes
 
-- [`d2d6f2b`](https://github.com/ItsWendell/palot/commit/d2d6f2b3013ad0fa3bb9ac08ad9b8ff91517ffc5) Thanks [@ItsWendell](https://github.com/ItsWendell)! - ### New Features
+- [`d2d6f2b`](https://github.com/ItsWendell/elf/commit/d2d6f2b3013ad0fa3bb9ac08ad9b8ff91517ffc5) Thanks [@ItsWendell](https://github.com/ItsWendell)! - ### New Features
 
   - Add provider management with icons, catalog, and onboarding integration
   - Add git worktree backend with lifecycle management and UI

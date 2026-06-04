@@ -258,7 +258,7 @@ export function SidebarLayout() {
 					}
 					>
 						<main
-							className="relative flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden"
+							className="relative flex h-full min-h-0 min-w-0 flex-1 flex-col overflow-hidden"
 							style={{ background: "hsl(var(--background))" }}
 						>
 							<div data-slot="content-area" className="relative min-h-0 min-w-0 flex-1 overflow-hidden">
