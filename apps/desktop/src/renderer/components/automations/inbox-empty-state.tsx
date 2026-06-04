@@ -4,7 +4,7 @@
  * Shows unread count if there are unread runs, or a create CTA if no automations exist.
  */
 
-import { Button } from "@ch5me/palot-ui/components/button"
+import { Button } from "@ch5me/elf-ui/components/button"
 import { PlusIcon, SmileIcon, ZapIcon } from "lucide-react"
 import { useAutomations, useUnreadRunCount } from "../../hooks/use-automations"
 

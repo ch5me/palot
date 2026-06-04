@@ -14,7 +14,7 @@
 		"components": "@/components",
 		"hooks": "@/hooks",
 		"lib": "@/lib",
-		"utils": "@ch5me/palot-ui/lib/utils",
-		"ui": "@ch5me/palot-ui/components"
+		"utils": "@ch5me/elf-ui/lib/utils",
+		"ui": "@ch5me/elf-ui/components"
 	}
 }

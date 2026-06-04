@@ -1,7 +1,7 @@
 "use client"
 
-import { useControllableState } from "@ch5me/palot-ui/hooks/use-controllable-state"
-import { cn } from "@ch5me/palot-ui/lib/utils"
+import { useControllableState } from "@ch5me/elf-ui/hooks/use-controllable-state"
+import { cn } from "@ch5me/elf-ui/lib/utils"
 import type { Experimental_TranscriptionResult as TranscriptionResult } from "ai"
 import type { ComponentProps, ReactNode } from "react"
 import { createContext, useCallback, useContext, useMemo } from "react"

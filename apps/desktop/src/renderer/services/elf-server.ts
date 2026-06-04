@@ -1,12 +1,12 @@
 /**
- * Type-safe RPC client for the Palot local backend server (Bun + Hono).
+ * Type-safe RPC client for the Elf local backend server (Bun + Hono).
  *
  * Uses Hono's RPC client (`hc`) with the server's AppType for end-to-end
  * type safety. The type is resolved from compiled declarations (.d.ts)
  * so the desktop app doesn't need Bun types.
  */
 
-import { createClient } from "@ch5me/palot-server/client"
+import { createClient } from "@ch5me/elf-server/client"
 
 const BASE_URL = "http://localhost:30206"
 
@@ -29,7 +29,7 @@ export async function fetchServers() {
 
 /**
  * Ensures the single OpenCode server is running and returns its URL.
- * Calls `GET /api/servers/opencode` on the Palot backend.
+ * Calls `GET /api/servers/opencode` on the Elf backend.
  */
 export async function fetchOpenCodeUrl(): Promise<{ url: string }> {
 	const res = await client.api.servers.opencode.$get()
@@ -75,7 +75,7 @@ export async function updateModelRecent(model: { providerID: string; modelID: st
 }
 
 /**
- * Checks if the Palot server is running.
+ * Checks if the Elf server is running.
  */
 export async function checkServerHealth() {
 	try {

@@ -20,7 +20,7 @@ export interface PaneRoutingState {
 	sidePanel: SidePanelRoute | null
 }
 
-export const sidePanelOpenAtom = atomWithStorage<boolean>("palot:side-panel-open", false)
+export const sidePanelOpenAtom = atomWithStorage<boolean>("elf:side-panel-open", false)
 
 export const sidePanelActiveTabAtom = atom<SidePanelTabId>((get) => get(fireflySurfacePreferencesAtom).lastSidePanelTab)
 
@@ -84,7 +84,7 @@ export interface ReviewPanelSettings {
 }
 
 export const reviewPanelSettingsAtom = atomWithStorage<ReviewPanelSettings>(
-	"palot:review-panel-settings",
+	"elf:review-panel-settings",
 	{ diffStyle: "unified", expanded: false },
 )
 

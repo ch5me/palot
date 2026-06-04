@@ -5,11 +5,11 @@
 This document replaces stale continuation state that pointed at completed-or-misaligned plans.
 
 Two older plan threads existed:
-- `aios-superapp/.sisyphus/plans/palot-supra-remaining-merge-plan.md` tracked Palot work from the wrong repo and is retired.
-- `palot/.sisyphus/plans/firefly-design-standardization-across-products.md` completed the migration architecture/token work, but its remaining unchecked items are closure/publish tasks, not more product implementation.
+- `aios-superapp/.sisyphus/plans/elf-supra-remaining-merge-plan.md` tracked Elf work from the wrong repo and is retired.
+- `elf/.sisyphus/plans/firefly-design-standardization-across-products.md` completed the migration architecture/token work, but its remaining unchecked items are closure/publish tasks, not more product implementation.
 
 Current truth:
-- Palot is the only execution repo for Firefly desktop merge work.
+- Elf is the only execution repo for Firefly desktop merge work.
 - Firefly shell infrastructure is in place.
 - Browser, notes, pulse, and memory are registered surfaces, but browser is placeholder-only and the other three are still proof shells.
 - Firefly design standardization is implementation-done but closure-incomplete.
@@ -39,11 +39,11 @@ Current truth:
   - [ ] Publish `@ch5me/firefly-design` and `@ch5me/firefly-ui-web` through the real semver flow.
   - [ ] Re-verify one consumer path against published versions instead of workspace/local-link-only proof.
 - [ ] Repo-state reconciliation
-  - [ ] Classify dirty state across `ch5-packages`, `firefly-cloud`, `palot`, `folio-db`, and `open-pencil`.
+  - [ ] Classify dirty state across `ch5-packages`, `firefly-cloud`, `elf`, `folio-db`, and `open-pencil`.
   - [ ] Separate unrelated concurrent changes from standardization closure work.
   - [ ] Only claim closure once clean/pushed state is either real or explicitly waived.
 
-### B. Product lane — finish Palot Firefly merge <!-- oc:id=sec_ae -->
+### B. Product lane — finish Elf Firefly merge <!-- oc:id=sec_ae -->
 
 - [ ] Shell correctness and command behavior
   - [ ] Wire surface `commandIds` to actual open/focus behavior.
@@ -99,15 +99,15 @@ Current truth:
 - Surface authoring rules: `docs/firefly-surface-playbook.md`
 - Standardization closure mismatch: `.sisyphus/notepads/firefly-design-standardization-across-products/problems.md`
 - Notes/pulse/memory/browser audits: `.sisyphus/evidence/firefly-scope-classification-matrix.md`
-- Desktop boot blocker: `.sisyphus/evidence/palot-package-build-hygiene-audit.md`
+- Desktop boot blocker: `.sisyphus/evidence/elf-package-build-hygiene-audit.md`
 
 ## Retired Artifacts <!-- oc:id=sec_ag -->
 
 These should no longer drive continuation:
-- `aios-superapp/.sisyphus/plans/palot-supra-remaining-merge-plan.md`
+- `aios-superapp/.sisyphus/plans/elf-supra-remaining-merge-plan.md`
 - `aios-superapp/.sisyphus/boulder.json2`
-- `palot/.sisyphus/boulder.json` pointing at the standardization plan
-- `palot/.sisyphus/plans/firefly-design-standardization-across-products.md` as an implementation continuation source
+- `elf/.sisyphus/boulder.json` pointing at the standardization plan
+- `elf/.sisyphus/plans/firefly-design-standardization-across-products.md` as an implementation continuation source
 
 ## Immediate Next Actions <!-- oc:id=sec_ah -->
 

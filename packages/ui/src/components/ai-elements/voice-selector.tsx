@@ -1,6 +1,6 @@
 "use client"
 
-import { Button } from "@ch5me/palot-ui/components/button"
+import { Button } from "@ch5me/elf-ui/components/button"
 import {
 	Command,
 	CommandDialog,
@@ -11,11 +11,11 @@ import {
 	CommandList,
 	CommandSeparator,
 	CommandShortcut,
-} from "@ch5me/palot-ui/components/command"
-import { Dialog, DialogContent, DialogTitle, DialogTrigger } from "@ch5me/palot-ui/components/dialog"
-import { Spinner } from "@ch5me/palot-ui/components/spinner"
-import { useControllableState } from "@ch5me/palot-ui/hooks/use-controllable-state"
-import { cn } from "@ch5me/palot-ui/lib/utils"
+} from "@ch5me/elf-ui/components/command"
+import { Dialog, DialogContent, DialogTitle, DialogTrigger } from "@ch5me/elf-ui/components/dialog"
+import { Spinner } from "@ch5me/elf-ui/components/spinner"
+import { useControllableState } from "@ch5me/elf-ui/hooks/use-controllable-state"
+import { cn } from "@ch5me/elf-ui/lib/utils"
 import {
 	CircleSmallIcon,
 	MarsIcon,

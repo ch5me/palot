@@ -2,7 +2,7 @@
 - None yet; awaiting repo/theme/package discovery and cross-repo availability assessment
 
 ## 2026-05-31T07:12:00Z Potential blockers discovered <!-- oc:id=sec_ab -->
-- If Palot consumes shared UI web package via workspace/symlink mode, duplicate React or Vite cache issues may appear; verify dependency mode before any primitive adoption
+- If Elf consumes shared UI web package via workspace/symlink mode, duplicate React or Vite cache issues may appear; verify dependency mode before any primitive adoption
 - Firefly Cloud UI changes must honor `apps/web/AGENTS.md` design requirements when Phase 2 work starts
 ## 2026-05-31T07:40:00Z Phase 0 open problems
 - No single dependency mode yet spans all products: shared package source repo uses monorepo workspace links, Firefly Cloud uses mixed local linkage, and external adopters are still local-token only
@@ -11,7 +11,7 @@
 
 ## 2026-05-31T08:10:00Z Baseline open problems
 - `firefly-cloud` uses `workspace:*` manifests and untracked local package directories at same time, so publish-time reality vs local-consumer reality still needs explicit guardrail proof in later phases
-- `palot`, `firefly-cloud`, and `open-pencil` are dirty before migration starts; later phases must isolate standardization edits from concurrent work without treating current dirtiness as migration fallout
+- `elf`, `firefly-cloud`, and `open-pencil` are dirty before migration starts; later phases must isolate standardization edits from concurrent work without treating current dirtiness as migration fallout
 - `open-pencil` design lane is cleanly local, but repo-level mixed dependency story (`file:` auth client plus workspace packages) means future package-consumption claims must stay scoped to Firefly design only, not repo as whole
 
 ## 2026-06-01T00:40:00Z Phase 2 open problems
@@ -25,7 +25,7 @@
 - Firefly Cloud and other consumers still rely on local workspace/symlink package resolution for the new shared packages during development, so the local-vs-published consumption story is not fully standardized yet
 ## 2026-06-01T08:50:00Z End-state blockers preventing full closure
 - Shared package semver publishing was never executed, so any plan items that require published-version parity remain incomplete
-- Clean working tree / fully pushed state cannot be claimed across repos because unrelated concurrent dirt remained in `ch5-packages`, `firefly-cloud`, `palot`, `folio-db`, and `open-pencil`
+- Clean working tree / fully pushed state cannot be claimed across repos because unrelated concurrent dirt remained in `ch5-packages`, `firefly-cloud`, `elf`, `folio-db`, and `open-pencil`
 - Firefly Cloud docs are still partially stale about `@ch5me/firefly-ui` package naming, so doc-cleanup tasks remain incomplete by design
 - Local workspace/symlink consumption still differs from fully published package consumption in active dev flows, so that parity risk remains open
 ## 2026-06-01T08:55:00Z Closure mismatch

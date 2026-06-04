@@ -2,7 +2,7 @@
  * Type definitions for the Electron preload bridge.
  *
  * These types are shared between the preload script and the renderer.
- * The renderer accesses these via `window.palot`.
+ * The renderer accesses these via `window.elf`.
  */
 
 export interface OpenCodeServerInfo {
@@ -149,7 +149,7 @@ export interface OpenInTargetsResult {
 // Server config types (shared between main process and renderer)
 // ============================================================
 
-/** Built-in local server, auto-managed by Palot via OpenCodeManager. */
+/** Built-in local server, auto-managed by Elf via OpenCodeManager. */
 export interface LocalServerConfig {
 	id: "local"
 	name: string
@@ -440,7 +440,7 @@ export interface UpdateAutomationInput {
 	execution?: Partial<ExecutionConfig>
 }
 
-export interface PalotAPI {
+export interface ElfAPI {
 	/** The host platform: "darwin", "win32", or "linux". */
 	platform: NodeJS.Platform
 	getAppInfo: () => Promise<AppInfo>
@@ -633,6 +633,6 @@ export interface PalotAPI {
 
 declare global {
 	interface Window {
-		palot: PalotAPI
+		elf: ElfAPI
 	}
 }

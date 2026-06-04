@@ -6,8 +6,8 @@
  * Reuses ConnectProviderDialog for the actual auth flows.
  */
 
-import { Button } from "@ch5me/palot-ui/components/button"
-import { Spinner } from "@ch5me/palot-ui/components/spinner"
+import { Button } from "@ch5me/elf-ui/components/button"
+import { Spinner } from "@ch5me/elf-ui/components/spinner"
 import { useQueryClient } from "@tanstack/react-query"
 import { CheckIcon, ExternalLinkIcon, LinkIcon, SparklesIcon, ZapIcon } from "lucide-react"
 import { motion } from "motion/react"
@@ -94,7 +94,7 @@ export function ProviderSetupStep({ onComplete, onSkip }: ProviderSetupStepProps
 					<Spinner className="size-8 text-muted-foreground" />
 					<h2 className="text-xl font-semibold">Waiting for OpenCode server...</h2>
 					<p className="max-w-md text-sm text-muted-foreground">
-						Palot is connecting to the OpenCode background process. This should only take a moment.
+						Elf is connecting to the OpenCode background process. This should only take a moment.
 					</p>
 				</div>
 				<div className="flex gap-3">

@@ -1,4 +1,4 @@
-import { cn } from "@ch5me/palot-ui/lib/utils"
+import { cn } from "@ch5me/elf-ui/lib/utils"
 import type * as React from "react"
 
 function Table({ className, ...props }: React.ComponentProps<"table">) {

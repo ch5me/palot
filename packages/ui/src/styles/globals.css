@@ -82,10 +82,10 @@
   --duration-normal: 0.2s;
   --duration-relaxed: 0.3s;
 
-  /* Semantic bridge: Palot semantic vars reference canonical Firefly vars.
+  /* Semantic bridge: Elf semantic vars reference canonical Firefly vars.
    * Firefly defines --ff-bg, --ff-text, --ff-card, --ff-surface, --ff-surface-strong,
    * --ff-subtle, --ff-border, --ff-primary, --ff-danger in its own :root block.
-   * Warm fallbacks preserve Palot's baseline when Firefly theme classes are absent. */
+   * Warm fallbacks preserve Elf's baseline when Firefly theme classes are absent. */
   --background: var(--ff-bg, #fefcf8);
   --foreground: var(--ff-text, #1a1a1a);
   --card: var(--ff-card, #fefcf8);
@@ -98,7 +98,7 @@
   --secondary-foreground: var(--ff-text, #1a1a1a);
   --muted: var(--ff-surface-strong, #f5f0e8);
   --muted-foreground: var(--ff-subtle, #6b5c4a);
-  /* --ff-accent-primary / --ff-accent-secondary: Palot-local warm vars — Firefly
+  /* --ff-accent-primary / --ff-accent-secondary: Elf-local warm vars — Firefly
    * does not define accent-lane warm aliases; warm fallbacks preserve baseline. */
   --ff-accent-primary: #fde68a;
   --ff-accent-secondary: #f59e0b;
@@ -699,7 +699,7 @@
  * ============================================================ */
 @layer components {
   [data-slot="app-bar"] {
-    background-color: var(--palot-titlebar-tint, transparent);
+    background-color: var(--elf-titlebar-tint, transparent);
   }
 }
 

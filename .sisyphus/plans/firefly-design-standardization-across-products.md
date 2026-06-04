@@ -1,7 +1,7 @@
 # Firefly Design Standardization Across Products <!-- oc:id=sec_aa -->
 
 ## Goal <!-- oc:id=sec_ab -->
-Standardize CH5 product UI on shared Firefly design packages across Firefly Cloud, Palot, FolioDB, and OpenPencil.
+Standardize CH5 product UI on shared Firefly design packages across Firefly Cloud, Elf, FolioDB, and OpenPencil.
 
 Canonical shared layers:
 - `@ch5me/firefly-design` — tokens, CSS variables, semantic alias bridge, typography/radius/spacing contract
@@ -28,8 +28,8 @@ Canonical shared layers:
 
 ### Key Evidence <!-- oc:id=sec_af -->
 - Firefly Cloud token authority was local and is now extracted.
-- Palot has its own theme registry plus shadcn-style root vars and is the first external adopter candidate.
-- FolioDB already has a clear token bridge in `apps/web/src/styles/theme.css` and should prove the shared contract generalizes beyond Firefly Cloud + Palot.
+- Elf has its own theme registry plus shadcn-style root vars and is the first external adopter candidate.
+- FolioDB already has a clear token bridge in `apps/web/src/styles/theme.css` and should prove the shared contract generalizes beyond Firefly Cloud + Elf
 - OpenPencil has a compact token/theme lane in `src/app.css` + `src/app/shell/theme.ts`; this strongly suggests token bridge only, not shared React primitive adoption.
 
 ## Target Architecture <!-- oc:id=sec_ag -->
@@ -49,8 +49,8 @@ Canonical shared layers:
 
 ### Product repos <!-- oc:id=sec_ai -->
 - Firefly Cloud remains proof/reference consumer
-- Palot adopts token layer first, then selected web primitives where they map cleanly
-- FolioDB adopts token bridge first, then selective primitives if Palot proves package fit
+- Elf adopts token layer first, then selected web primitives where they map cleanly
+- FolioDB adopts token bridge first, then selective primitives if Elf proves package fit
 - OpenPencil adopts token bridge only
 
 ## Global Rules <!-- oc:id=sec_aj -->
@@ -65,7 +65,7 @@ Canonical shared layers:
 ## Execution Strategy <!-- oc:id=sec_ak -->
 Run in this order:
 1. Firefly Cloud guardrail hardening <!-- oc:id=item_ac -->
-1. Palot adoption <!-- oc:id=item_ad -->
+1. Elf adoption <!-- oc:id=item_ad -->
 1. FolioDB adoption <!-- oc:id=item_ae -->
 1. OpenPencil token bridge <!-- oc:id=item_af -->
 1. Shared package cleanup and release hardening <!-- oc:id=item_ag -->
@@ -75,11 +75,11 @@ Run in this order:
 - [x] Record current package SHAs and pushed state:
 - [x] Subtask: capture `ch5-packages` latest pushed commit containing `@ch5me/firefly-design` and `@ch5me/firefly-ui-web` from `git log --oneline` and `git status -sb`.
 - [x] Subtask: capture `firefly-cloud` latest pushed commit consuming shared packages from `git log --oneline` and `git status -sb`.
-- [x] Subtask: record whether Palot currently points at local-only theme lanes or shared package imports by reading `packages/ui/src/styles/globals.css`, `apps/desktop/src/renderer/lib/themes.ts`, and package manifests.
+- [x] Subtask: record whether Elf currently points at local-only theme lanes or shared package imports by reading `packages/ui/src/styles/globals.css`, `apps/desktop/src/renderer/lib/themes.ts`, and package manifests.
 - [x] Subtask: record whether FolioDB currently points at `apps/web/src/styles/theme.css` and `components.json` only, or any shared CH5 package imports.
 - [x] Subtask: record whether OpenPencil points only at local `src/app.css` and `src/app/shell/theme.ts`, with no shared CH5 package dependency.
 - [x] Subtask: capture current dirty-state exceptions in each repo via `git status --short` and classify what must be preserved vs ignored.
-- [x] Subtask: capture proof commands that currently succeed in `ch5-packages` and `firefly-cloud`, plus expected proof commands for Palot, FolioDB, and OpenPencil.
+- [x] Subtask: capture proof commands that currently succeed in `ch5-packages` and `firefly-cloud`, plus expected proof commands for Elf, FolioDB, and OpenPencil.
   - `ch5-packages` commit containing `@ch5me/firefly-design`
   - `ch5-packages` commit containing `@ch5me/firefly-ui-web`
   - `firefly-cloud` commit consuming shared packages
@@ -167,61 +167,61 @@ Firefly Cloud is already migrated. Use it as regression proof before external ad
   - published package
   - symlink strategy if still used
 
-## Phase 3 — Palot Adoption (First External Adopter) <!-- oc:id=sec_au -->
+## Phase 3 — Elf Adoption (First External Adopter) <!-- oc:id=sec_au -->
 ### Discovery and mapping <!-- oc:id=sec_av -->
-- [x] Inventory Palot theme sources:
+- [x] Inventory Elf theme sources:
   - `packages/ui/src/styles/globals.css`
   - `apps/desktop/src/renderer/lib/themes.ts`
   - `apps/desktop/src/renderer/hooks/use-theme.ts`
   - `apps/desktop/src/renderer/atoms/preferences.ts`
-- [x] Classify Palot surfaces into:
+- [x] Classify Elf surfaces into:
   - semantic shadcn root vars
   - named theme registry overrides
   - glass/vibrancy-specific vars
   - motion/density/radius vars
   - sidebar/review/diff-specific locals
 - [x] Identify all current hardcoded palette values that should map to Firefly semantics.
-- [x] Identify all current local tokens that should remain Palot-only.
+- [x] Identify all current local tokens that should remain Elf-only.
 
 ### Token bridge migration <!-- oc:id=sec_aw -->
-- [x] Introduce `@ch5me/firefly-design/tailwind.css` into Palot CSS entry path.
-- [x] Subtask: add shared Firefly design CSS import to `packages/ui/src/styles/globals.css` in Palot without breaking existing Tailwind/shadcn bridge.
-- [x] Subtask: map Palot root semantic vars in `packages/ui/src/styles/globals.css` onto Firefly semantic lanes where safe.
+- [x] Introduce `@ch5me/firefly-design/tailwind.css` into Elf CSS entry path.
+- [x] Subtask: add shared Firefly design CSS import to `packages/ui/src/styles/globals.css` in Elf without breaking existing Tailwind/shadcn bridge.
+- [x] Subtask: map Elf root semantic vars in `packages/ui/src/styles/globals.css` onto Firefly semantic lanes where safe.
 - [x] Subtask: inspect and update `apps/desktop/src/renderer/lib/themes.ts` so theme registry overrides sit on top of canonical Firefly token lanes instead of a separate base palette where practical.
 - [x] Subtask: inspect and update `apps/desktop/src/renderer/hooks/use-theme.ts` so dynamic CSS var injection still works with shared Firefly semantics.
-- [x] Subtask: preserve local-only glass, vibrancy, density, and platform accent behavior in Palot after introducing shared tokens.
-- [x] Subtask: grep Palot for raw palette hotspots and convert only the ones that should become semantic token usages.
-- [x] Map Palot root semantic vars onto Firefly semantic lanes where the product can keep its identity while sharing the contract.
-- [x] Preserve Palot-only controls for:
+- [x] Subtask: preserve local-only glass, vibrancy, density, and platform accent behavior in Elf after introducing shared tokens.
+- [x] Subtask: grep Elf for raw palette hotspots and convert only the ones that should become semantic token usages.
+- [x] Map Elf root semantic vars onto Firefly semantic lanes where the product can keep its identity while sharing the contract.
+- [x] Preserve Elf-only controls for:
   - glass opacity tuning
   - platform-specific native accent behavior
   - density and text scale
   - diff colors if they do not fit Firefly canon
 - [x] Convert local hex/hsl palette hotspots to semantic vars where possible.
-- [x] Keep Palot theme registry, but make registry values override canonical Firefly tokens instead of maintaining a separate base palette where practical.
+- [x] Keep Elf theme registry, but make registry values override canonical Firefly tokens instead of maintaining a separate base palette where practical.
 
 ### Primitive adoption <!-- oc:id=sec_ax -->
-- [x] Inventory Palot UI primitives overlapping `@ch5me/firefly-ui-web`.
+- [x] Inventory Elf UI primitives overlapping `@ch5me/firefly-ui-web`.
 - [ ] Adopt shared web primitives only where there is a direct fit:
   - wordmark/orb/aurora/glass/status/frame primitives
-- [x] Do not replace mature Palot product-specific UI just for consistency if there is no net simplification.
+- [x] Do not replace mature Elf product-specific UI just for consistency if there is no net simplification.
 - [x] Confirm no duplicate React or monorepo cross-link issue appears in Electron/browser bundling.
 
 ### Verification <!-- oc:id=sec_ay -->
-- [x] Typecheck Palot touched packages.
-- [x] Subtask: run Palot narrow proof commands for changed surfaces (typecheck/lint/build as supported by touched packages).
-- [x] Subtask: manually read every changed Palot file after migration and verify theme logic matches intent.
+- [x] Typecheck Elf touched packages.
+- [x] Subtask: run Elf narrow proof commands for changed surfaces (typecheck/lint/build as supported by touched packages).
+- [x] Subtask: manually read every changed Elf file after migration and verify theme logic matches intent.
 - [ ] Subtask: verify desktop/browser-mode theme rendering and named theme switching still work.
-- [x] Subtask: verify no duplicate React or unresolved shared-package import regression appears in Palot dev/build flows.
+- [x] Subtask: verify no duplicate React or unresolved shared-package import regression appears in Elf dev/build flows.
 - [x] Run lint on touched surfaces.
 - [ ] Run desktop/browser proof relevant to changed surfaces.
 - [ ] Verify named themes still switch correctly.
 - [ ] Verify macOS transparency/vibrancy/liquid-glass behavior is not regressed.
 - [x] Verify no duplicate React instance or unresolved import issue.
 
-### Palot completion criteria <!-- oc:id=sec_az -->
-- [ ] Palot root tokens consume shared Firefly semantic lanes.
-- [ ] Palot keeps its platform/theme behavior.
+### Elf completion criteria <!-- oc:id=sec_az -->
+- [ ] Elf root tokens consume shared Firefly semantic lanes.
+- [ ] Elf keeps its platform/theme behavior.
 - [ ] No React duplication or Vite/Electron resolution regressions.
 - [ ] Shared package usage is cleaner than local duplication.
 
@@ -242,7 +242,7 @@ Firefly Cloud is already migrated. Use it as regression proof before external ad
 - [x] Subtask: inspect `folio-db/apps/web/src/styles/theme.css` and identify exact insertion point for shared Firefly design semantic layer.
 - [x] Subtask: keep Folio editorial/Notion-like palette vars local while mapping compatible spacing/radius/semantic lanes.
 - [x] Subtask: update any Folio component/theme metadata (`components.json`, CSS entrypoints, package manifests) needed to consume shared token contract.
-- [ ] Subtask: adopt shared web primitives only if Palot proves they fit and Folio has a direct generic use.
+- [ ] Subtask: adopt shared web primitives only if Elf proves they fit and Folio has a direct generic use.
 - [x] Keep Folio editorial palette local if needed.
 - [ ] Map only shared semantics:
   - typography rhythm where compatible
@@ -253,7 +253,7 @@ Firefly Cloud is already migrated. Use it as regression proof before external ad
 - [ ] Replace duplicate implementation only when bridge remains understandable.
 
 ### Primitive adoption <!-- oc:id=sec_bd -->
-- [x] Re-evaluate `@ch5me/firefly-ui-web` after Palot proof.
+- [x] Re-evaluate `@ch5me/firefly-ui-web` after Elf proof.
 - [x] Adopt only primitives that are truly generic in FolioDB's context.
 - [x] Leave local product-specific cards, tables, editorial chrome, and workspace shells untouched if shared primitives do not clearly help.
 
@@ -324,7 +324,7 @@ Firefly Cloud is already migrated. Use it as regression proof before external ad
 
 ## Phase 7 — Cross-Product Verification Pass <!-- oc:id=sec_bm -->
 - [x] Re-run proof in Firefly Cloud after external adopter changes.
-- [x] Re-run proof in Palot.
+- [x] Re-run proof in Elf
 - [x] Re-run proof in FolioDB.
 - [x] Re-run proof in OpenPencil.
 - [x] Confirm no repo still depends on obsolete local Firefly token authority where it should use the shared package.
@@ -337,7 +337,7 @@ Firefly Cloud is already migrated. Use it as regression proof before external ad
 - [x] Keep docs accurate for split package reality.
 - [x] Confirm push gate stays green after shared package changes.
 
-### Palot <!-- oc:id=sec_bp -->
+### Elf <!-- oc:id=sec_bp -->
 - [x] Add shared Firefly design CSS import path.
 - [x] Bridge local root vars to shared semantics.
 - [x] Preserve glass/native platform lanes.
@@ -347,7 +347,7 @@ Firefly Cloud is already migrated. Use it as regression proof before external ad
 ### FolioDB <!-- oc:id=sec_bq -->
 - [x] Map Folio bridge to shared semantic lanes where compatible.
 - [x] Keep editorial palette local.
-- [x] Optionally adopt shared primitives only if Palot proves them generic.
+- [x] Optionally adopt shared primitives only if Elf proves them generic.
 - [x] Verify `data-folio-theme` and app build.
 
 ### OpenPencil <!-- oc:id=sec_br -->
@@ -357,7 +357,7 @@ Firefly Cloud is already migrated. Use it as regression proof before external ad
 - [x] Verify Vue app theme switching, ruler/canvas theme behavior, and build.
 
 ## Key Risks <!-- oc:id=sec_bs -->
-- [x] Duplicate React or bad package resolution in Palot/Electron.
+- [x] Duplicate React or bad package resolution in Elf/Electron.
 - [x] Shared package API too tightly coupled to Firefly Cloud.
 - [x] Token bridge appears complete while local CSS still shadows canonical vars.
 - [x] Scope expands into unnecessary component migration.
@@ -367,7 +367,7 @@ Firefly Cloud is already migrated. Use it as regression proof before external ad
 ## Stop Conditions <!-- oc:id=sec_bt -->
 Stop the unattended run if any of these happen:
 - [x] Shared package needs product-specific branching to proceed.
-- [x] React duplication or bundler instability appears in Palot.
+- [x] React duplication or bundler instability appears in Elf
 - [x] FolioDB requires abandoning its editorial system to fit the contract.
 - [x] OpenPencil would need shared React primitives rather than token bridge only.
 - [x] Package consumption differs materially between local symlink mode and published mode.
@@ -375,7 +375,7 @@ Stop the unattended run if any of these happen:
 ## Deliverables <!-- oc:id=sec_bu -->
 - [x] `ch5-packages` remains canonical for Firefly design packages.
 - [x] Firefly Cloud remains migrated and green.
-- [x] Palot adopts shared Firefly token lane.
+- [x] Elf adopts shared Firefly token lane.
 - [x] FolioDB adopts shared token bridge where appropriate.
 - [x] OpenPencil adopts token bridge only.
 - [x] Cross-repo docs clearly say what is shared and what remains local.
@@ -383,8 +383,8 @@ Stop the unattended run if any of these happen:
 
 ## Suggested Overnight Execution Order <!-- oc:id=sec_bv -->
 - [x] Re-run shared package proof.
-- [x] Migrate Palot token bridge.
-- [x] Verify Palot.
+- [x] Migrate Elf token bridge.
+- [x] Verify Elf
 - [x] Migrate FolioDB token bridge.
 - [x] Verify FolioDB.
 - [x] Migrate OpenPencil token bridge.
@@ -397,5 +397,5 @@ Stop the unattended run if any of these happen:
 - [x] One canonical Firefly token/design lane exists and is actually consumed across products.
 - [x] Shared primitives are used only where proven generic.
 - [x] Product-specific identity remains intact.
-- [x] Firefly Cloud, Palot, FolioDB, and OpenPencil all have documented migration outcomes.
+- [x] Firefly Cloud, Elf, FolioDB, and OpenPencil all have documented migration outcomes.
 - [x] No repo depends on a hidden local-only package hack for the standardized lane.

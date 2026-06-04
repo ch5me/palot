@@ -1,14 +1,14 @@
 "use client"
 
-import { Button } from "@ch5me/palot-ui/components/button"
-import { ButtonGroup, ButtonGroupText } from "@ch5me/palot-ui/components/button-group"
+import { Button } from "@ch5me/elf-ui/components/button"
+import { ButtonGroup, ButtonGroupText } from "@ch5me/elf-ui/components/button-group"
 import {
 	Tooltip,
 	TooltipContent,
 	TooltipProvider,
 	TooltipTrigger,
-} from "@ch5me/palot-ui/components/tooltip"
-import { cn } from "@ch5me/palot-ui/lib/utils"
+} from "@ch5me/elf-ui/components/tooltip"
+import { cn } from "@ch5me/elf-ui/lib/utils"
 import { cjk } from "@streamdown/cjk"
 import { code } from "@streamdown/code"
 import { math } from "@streamdown/math"

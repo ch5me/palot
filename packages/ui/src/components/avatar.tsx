@@ -1,7 +1,7 @@
 "use client"
 
 import { Avatar as AvatarPrimitive } from "@base-ui/react/avatar"
-import { cn } from "@ch5me/palot-ui/lib/utils"
+import { cn } from "@ch5me/elf-ui/lib/utils"
 import type * as React from "react"
 
 function Avatar({

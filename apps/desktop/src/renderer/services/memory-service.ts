@@ -250,5 +250,5 @@ export async function removeRemoteMemory(
 	config: MemoryServiceConfig,
 	memoryId: string,
 ): Promise<void> {
-	await cloudflareForget(config, memoryId, "user deleted from palot memory panel")
+	await cloudflareForget(config, memoryId, "user deleted from elf memory panel")
 }

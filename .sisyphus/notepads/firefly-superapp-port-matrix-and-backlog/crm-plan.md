@@ -13,7 +13,7 @@ Contacts and CRM should stay one surface for now.
 ## Why <!-- oc:id=sec_ad -->
 
 - There is no existing domain logic to justify splitting them yet.
-- A single shell can prove whether this belongs in Palot without inventing separate contact vs pipeline products.
+- A single shell can prove whether this belongs in Elf without inventing separate contact vs pipeline products.
 - If future vendor integrations (email, messaging, CRM APIs) arrive, the split can happen later from a known shell.
 
 ## First shell shape <!-- oc:id=sec_ae -->
@@ -28,6 +28,6 @@ Contacts and CRM should stay one surface for now.
 Do not port `src/lib/crm.ts` yet.
 
 Reason:
-- There is no corresponding backend or data source in Palot now.
+- There is no corresponding backend or data source in Elf now.
 - Domain-first porting would be speculative.
 - The shell should land first and create the seam where real CRM/contact integrations can attach later.

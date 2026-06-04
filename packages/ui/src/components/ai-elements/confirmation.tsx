@@ -1,8 +1,8 @@
 "use client"
 
-import { Alert, AlertDescription } from "@ch5me/palot-ui/components/alert"
-import { Button } from "@ch5me/palot-ui/components/button"
-import { cn } from "@ch5me/palot-ui/lib/utils"
+import { Alert, AlertDescription } from "@ch5me/elf-ui/components/alert"
+import { Button } from "@ch5me/elf-ui/components/button"
+import { cn } from "@ch5me/elf-ui/lib/utils"
 import type { ToolUIPart } from "ai"
 import type { ComponentProps, ReactNode } from "react"
 import { createContext, useContext } from "react"

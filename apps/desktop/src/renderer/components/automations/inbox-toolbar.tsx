@@ -5,8 +5,8 @@
  * and "+ New" button.
  */
 
-import { Button } from "@ch5me/palot-ui/components/button"
-import { Tooltip, TooltipContent, TooltipTrigger } from "@ch5me/palot-ui/components/tooltip"
+import { Button } from "@ch5me/elf-ui/components/button"
+import { Tooltip, TooltipContent, TooltipTrigger } from "@ch5me/elf-ui/components/tooltip"
 import { FilterIcon, PlusIcon } from "lucide-react"
 
 interface InboxToolbarProps {

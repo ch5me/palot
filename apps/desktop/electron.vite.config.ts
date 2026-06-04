@@ -27,7 +27,7 @@ function copyDrizzleMigrations(): Plugin {
 export default defineConfig({
 	main: {
 		plugins: [
-			externalizeDepsPlugin({ exclude: ["@ch5me/palot-configconv", "drizzle-orm"] }),
+			externalizeDepsPlugin({ exclude: ["@ch5me/elf-configconv", "drizzle-orm"] }),
 			copyDrizzleMigrations(),
 		],
 		build: {
@@ -54,7 +54,7 @@ export default defineConfig({
 		resolve: {
 			alias: {
 				"@": path.resolve(__dirname, "src/renderer"),
-				"@ch5me/palot-ui": path.resolve(__dirname, "../../packages/ui/src"),
+				"@ch5me/elf-ui": path.resolve(__dirname, "../../packages/ui/src"),
 			},
 		},
 		worker: {

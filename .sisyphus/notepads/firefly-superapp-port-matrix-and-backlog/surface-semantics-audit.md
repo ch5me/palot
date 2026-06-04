@@ -43,5 +43,5 @@ Reason:
 
 ## Implication <!-- oc:id=sec_ae -->
 
-Treat `Port any shared surfaces.ts semantics that Palot registry still lacks` as complete for the current infrastructure wave.
+Treat `Port any shared surfaces.ts semantics that Elf registry still lacks` as complete for the current infrastructure wave.
 Future semantics work should be reopened only when a new surface cannot be expressed by the current registry contract.

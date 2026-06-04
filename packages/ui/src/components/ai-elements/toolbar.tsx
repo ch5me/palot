@@ -1,4 +1,4 @@
-import { cn } from "@ch5me/palot-ui/lib/utils"
+import { cn } from "@ch5me/elf-ui/lib/utils"
 import { NodeToolbar, Position } from "@xyflow/react"
 import type { ComponentProps } from "react"
 

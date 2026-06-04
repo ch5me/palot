@@ -54,15 +54,15 @@ function applyAccentColor(hex: string): void {
 
 export function useSystemAccentColor(): void {
 	useEffect(() => {
-		if (!("palot" in window)) return
+		if (!("elf" in window)) return
 
 		// Read initial value
-		window.palot.getAccentColor().then((color) => {
+		window.elf.getAccentColor().then((color) => {
 			if (color) applyAccentColor(color)
 		})
 
 		// Subscribe to live changes
-		const unsubscribe = window.palot.onAccentColorChanged((color) => {
+		const unsubscribe = window.elf.onAccentColorChanged((color) => {
 			applyAccentColor(color)
 		})
 

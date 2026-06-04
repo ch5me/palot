@@ -1,9 +1,9 @@
 "use client"
 
-import { Button } from "@ch5me/palot-ui/components/button"
-import { HoverCard, HoverCardContent, HoverCardTrigger } from "@ch5me/palot-ui/components/hover-card"
-import { Progress } from "@ch5me/palot-ui/components/progress"
-import { cn } from "@ch5me/palot-ui/lib/utils"
+import { Button } from "@ch5me/elf-ui/components/button"
+import { HoverCard, HoverCardContent, HoverCardTrigger } from "@ch5me/elf-ui/components/hover-card"
+import { Progress } from "@ch5me/elf-ui/components/progress"
+import { cn } from "@ch5me/elf-ui/lib/utils"
 import type { LanguageModelUsage } from "ai"
 import type { ComponentProps } from "react"
 import { createContext, useContext, useMemo } from "react"

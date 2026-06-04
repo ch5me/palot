@@ -1,4 +1,4 @@
-import { Button } from "@ch5me/palot-ui/components/button"
+import { Button } from "@ch5me/elf-ui/components/button"
 import {
 	Dialog,
 	DialogContent,
@@ -6,7 +6,7 @@ import {
 	DialogFooter,
 	DialogHeader,
 	DialogTitle,
-} from "@ch5me/palot-ui/components/dialog"
+} from "@ch5me/elf-ui/components/dialog"
 import {
 	SearchableListPopover,
 	SearchableListPopoverContent,
@@ -17,7 +17,7 @@ import {
 	SearchableListPopoverSearch,
 	SearchableListPopoverTrigger,
 	useSearchableListPopoverSearch,
-} from "@ch5me/palot-ui/components/searchable-list-popover"
+} from "@ch5me/elf-ui/components/searchable-list-popover"
 import {
 	AlertTriangleIcon,
 	CheckIcon,

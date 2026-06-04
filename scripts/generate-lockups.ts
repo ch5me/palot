@@ -1,6 +1,6 @@
 /**
- * Generate lockup PNGs (icon + "palot." wordmark) for README and brand assets.
- * Uses the Palot radar icon + outlined wordmark paths (no font dependency).
+ * Generate lockup PNGs (icon + "elf" wordmark) for README and brand assets.
+ * Uses the Elf radar icon + outlined wordmark paths (no font dependency).
  *
  * Output: apps/desktop/resources/brand/lockup-light.png, lockup-dark.png
  */

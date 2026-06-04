@@ -284,7 +284,7 @@ async function getBridgeActivity(id: string, limit = 25): Promise<BridgeActivity
 				tsAgo: "moments",
 				direction: "in",
 				peer: "Active session",
-				text: `Bridge follows the ${limit > 0 ? "recent" : "current"} Palot agent lane for the active workspace.`,
+				text: `Bridge follows the ${limit > 0 ? "recent" : "current"} Elf agent lane for the active workspace.`,
 			},
 		],
 		mcp: [

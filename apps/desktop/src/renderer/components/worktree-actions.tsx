@@ -7,7 +7,7 @@
  * "Commit & Push" commits all changes and pushes the branch to origin.
  */
 
-import { Button } from "@ch5me/palot-ui/components/button"
+import { Button } from "@ch5me/elf-ui/components/button"
 import {
 	Dialog,
 	DialogContent,
@@ -15,10 +15,10 @@ import {
 	DialogFooter,
 	DialogHeader,
 	DialogTitle,
-} from "@ch5me/palot-ui/components/dialog"
-import { Input } from "@ch5me/palot-ui/components/input"
-import { Textarea } from "@ch5me/palot-ui/components/textarea"
-import { Tooltip, TooltipContent, TooltipTrigger } from "@ch5me/palot-ui/components/tooltip"
+} from "@ch5me/elf-ui/components/dialog"
+import { Input } from "@ch5me/elf-ui/components/input"
+import { Textarea } from "@ch5me/elf-ui/components/textarea"
+import { Tooltip, TooltipContent, TooltipTrigger } from "@ch5me/elf-ui/components/tooltip"
 import {
 	ArrowDownToLineIcon,
 	ArrowUpFromLineIcon,
@@ -328,7 +328,7 @@ function CommitDialog({
 							<Input
 								value={branchName}
 								onChange={(e) => setBranchName(e.target.value)}
-								placeholder="palot/feature-name"
+								placeholder="elf/feature-name"
 								className="text-sm"
 							/>
 						)}

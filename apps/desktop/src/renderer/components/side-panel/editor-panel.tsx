@@ -1,4 +1,4 @@
-import { Input } from "@ch5me/palot-ui/components/input"
+import { Input } from "@ch5me/elf-ui/components/input"
 import { useEffect, useMemo, useState } from "react"
 import { FileIcon, Loader2Icon } from "lucide-react"
 import { detectContentLanguage, detectLanguage, prettyPrintJson } from "../../lib/language"

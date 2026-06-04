@@ -1,4 +1,4 @@
-import { cn } from "@ch5me/palot-ui/lib/utils"
+import { cn } from "@ch5me/elf-ui/lib/utils"
 
 function Skeleton({ className, ...props }: React.ComponentProps<"div">) {
 	return (

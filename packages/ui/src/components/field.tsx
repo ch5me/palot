@@ -1,9 +1,9 @@
 "use client"
 
-import { Label } from "@ch5me/palot-ui/components/label"
-import { Separator } from "@ch5me/palot-ui/components/separator"
+import { Label } from "@ch5me/elf-ui/components/label"
+import { Separator } from "@ch5me/elf-ui/components/separator"
 
-import { cn } from "@ch5me/palot-ui/lib/utils"
+import { cn } from "@ch5me/elf-ui/lib/utils"
 import { cva, type VariantProps } from "class-variance-authority"
 import { useMemo } from "react"
 

@@ -1,6 +1,6 @@
 # Sidebar / Metrics Reconciliation <!-- oc:id=sec_aa -->
 
-## Current Palot equivalents <!-- oc:id=sec_ab -->
+## Current Elf equivalents <!-- oc:id=sec_ab -->
 
 - Sidebar already splits work into Active Now, Recent, and Projects.
 - `session-metrics-bar.tsx` already carries compact time/cost/token/tool-call visibility for the active session.
@@ -20,4 +20,4 @@ Do not port old sidebar-usage/dashboard metrics concepts directly.
 
 - Keep navigation in the sidebar.
 - Keep session metrics near the active session.
-- Revisit only if Palot later needs a cross-project portfolio metrics surface.
+- Revisit only if Elf later needs a cross-project portfolio metrics surface.

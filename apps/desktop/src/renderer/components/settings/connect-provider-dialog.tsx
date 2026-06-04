@@ -7,7 +7,7 @@
  * env-var instructions with copy buttons and docs links.
  */
 
-import { Button } from "@ch5me/palot-ui/components/button"
+import { Button } from "@ch5me/elf-ui/components/button"
 import {
 	Dialog,
 	DialogContent,
@@ -15,10 +15,10 @@ import {
 	DialogFooter,
 	DialogHeader,
 	DialogTitle,
-} from "@ch5me/palot-ui/components/dialog"
-import { Input } from "@ch5me/palot-ui/components/input"
-import { Label } from "@ch5me/palot-ui/components/label"
-import { Spinner } from "@ch5me/palot-ui/components/spinner"
+} from "@ch5me/elf-ui/components/dialog"
+import { Input } from "@ch5me/elf-ui/components/input"
+import { Label } from "@ch5me/elf-ui/components/label"
+import { Spinner } from "@ch5me/elf-ui/components/spinner"
 import {
 	AlertCircleIcon,
 	CheckCircle2Icon,

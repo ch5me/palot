@@ -5,7 +5,7 @@
 - `ProviderSettings` already exposes plugin-style provider auth methods via `useProviderAuthMethods()` and `ConnectProviderDialog`.
 - Chat already has a dedicated skills picker via `/skills`, backed by `client.app.skills()`.
 - Slash command UI already distinguishes server commands, MCP entries, and skills.
-- Onboarding scans MCP server counts and skill counts, proving Palot already knows those plugin-adjacent domains exist.
+- Onboarding scans MCP server counts and skill counts, proving Elf already knows those plugin-adjacent domains exist.
 
 ## Decision <!-- oc:id=sec_ac -->
 

@@ -1,7 +1,7 @@
 "use client"
 
-import { Button } from "@ch5me/palot-ui/components/button"
-import { cn } from "@ch5me/palot-ui/lib/utils"
+import { Button } from "@ch5me/elf-ui/components/button"
+import { cn } from "@ch5me/elf-ui/lib/utils"
 import { MultiFileDiff, PatchDiff } from "@pierre/diffs/react"
 import { CheckIcon, CopyIcon, MinusIcon, PlusIcon } from "lucide-react"
 import {

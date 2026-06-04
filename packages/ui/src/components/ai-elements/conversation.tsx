@@ -1,7 +1,7 @@
 "use client"
 
-import { Button } from "@ch5me/palot-ui/components/button"
-import { cn } from "@ch5me/palot-ui/lib/utils"
+import { Button } from "@ch5me/elf-ui/components/button"
+import { cn } from "@ch5me/elf-ui/lib/utils"
 import { ArrowDownIcon, DownloadIcon } from "lucide-react"
 import type { ComponentProps } from "react"
 import { useCallback } from "react"

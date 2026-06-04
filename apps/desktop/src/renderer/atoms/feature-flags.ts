@@ -16,7 +16,7 @@ import { atomWithStorage } from "jotai/utils"
  * Whether the Automations feature is enabled.
  * Enabled by default -- users can disable it via the command palette.
  */
-export const automationsEnabledAtom = atomWithStorage<boolean>("palot:automationsEnabled", true)
+export const automationsEnabledAtom = atomWithStorage<boolean>("elf:automationsEnabled", true)
 
 /** Write-only toggle for the command palette. */
 export const toggleAutomationsAtom = atom(null, (get, set) => {
@@ -43,21 +43,21 @@ export const fireflySurfaceDefaults = {
 
 export type FireflySurfaceFlagKey = keyof typeof fireflySurfaceDefaults
 
-export const reviewSurfaceEnabledAtom = atomWithStorage<boolean>("palot:reviewSurfaceEnabled", true)
-export const browserPanelEnabledAtom = atomWithStorage<boolean>("palot:browserPanelEnabled", false)
-export const notesSurfaceEnabledAtom = atomWithStorage<boolean>("palot:notesSurfaceEnabled", true)
-export const pulseSurfaceEnabledAtom = atomWithStorage<boolean>("palot:pulseSurfaceEnabled", false)
-export const memorySurfaceEnabledAtom = atomWithStorage<boolean>("palot:memorySurfaceEnabled", false)
-export const filesSurfaceEnabledAtom = atomWithStorage<boolean>("palot:filesSurfaceEnabled", true)
-export const terminalSurfaceEnabledAtom = atomWithStorage<boolean>("palot:terminalSurfaceEnabled", true)
-export const editorSurfaceEnabledAtom = atomWithStorage<boolean>("palot:editorSurfaceEnabled", true)
-export const pluginsSurfaceEnabledAtom = atomWithStorage<boolean>("palot:pluginsSurfaceEnabled", true)
-export const bridgesSurfaceEnabledAtom = atomWithStorage<boolean>("palot:bridgesSurfaceEnabled", true)
-export const crmSurfaceEnabledAtom = atomWithStorage<boolean>("palot:crmSurfaceEnabled", true)
-export const studioSurfaceEnabledAtom = atomWithStorage<boolean>("palot:studioSurfaceEnabled", true)
-export const voiceSurfaceEnabledAtom = atomWithStorage<boolean>("palot:voiceSurfaceEnabled", true)
-export const oracleSurfaceEnabledAtom = atomWithStorage<boolean>("palot:oracleSurfaceEnabled", true)
-export const claudeSurfaceEnabledAtom = atomWithStorage<boolean>("palot:claudeSurfaceEnabled", true)
+export const reviewSurfaceEnabledAtom = atomWithStorage<boolean>("elf:reviewSurfaceEnabled", true)
+export const browserPanelEnabledAtom = atomWithStorage<boolean>("elf:browserPanelEnabled", false)
+export const notesSurfaceEnabledAtom = atomWithStorage<boolean>("elf:notesSurfaceEnabled", true)
+export const pulseSurfaceEnabledAtom = atomWithStorage<boolean>("elf:pulseSurfaceEnabled", false)
+export const memorySurfaceEnabledAtom = atomWithStorage<boolean>("elf:memorySurfaceEnabled", false)
+export const filesSurfaceEnabledAtom = atomWithStorage<boolean>("elf:filesSurfaceEnabled", true)
+export const terminalSurfaceEnabledAtom = atomWithStorage<boolean>("elf:terminalSurfaceEnabled", true)
+export const editorSurfaceEnabledAtom = atomWithStorage<boolean>("elf:editorSurfaceEnabled", true)
+export const pluginsSurfaceEnabledAtom = atomWithStorage<boolean>("elf:pluginsSurfaceEnabled", true)
+export const bridgesSurfaceEnabledAtom = atomWithStorage<boolean>("elf:bridgesSurfaceEnabled", true)
+export const crmSurfaceEnabledAtom = atomWithStorage<boolean>("elf:crmSurfaceEnabled", true)
+export const studioSurfaceEnabledAtom = atomWithStorage<boolean>("elf:studioSurfaceEnabled", true)
+export const voiceSurfaceEnabledAtom = atomWithStorage<boolean>("elf:voiceSurfaceEnabled", true)
+export const oracleSurfaceEnabledAtom = atomWithStorage<boolean>("elf:oracleSurfaceEnabled", true)
+export const claudeSurfaceEnabledAtom = atomWithStorage<boolean>("elf:claudeSurfaceEnabled", true)
 
 export const fireflySurfaceFlagAtoms: Record<FireflySurfaceFlagKey, typeof reviewSurfaceEnabledAtom> = {
 	review: reviewSurfaceEnabledAtom,

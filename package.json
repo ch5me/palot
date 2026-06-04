@@ -1,5 +1,5 @@
 {
-	"name": "palot",
+	"name": "elf",
 	"private": true,
 	"license": "MIT",
 	"packageManager": "bun@1.3.8",
@@ -15,9 +15,9 @@
 	"scripts": {
 		"build": "bunx turbo build",
 		"dev": "bunx turbo dev",
-		"dev:desktop": "bunx turbo dev --filter=@ch5me/palot-desktop",
-		"dev:desktop:wayland": "bunx turbo dev:wayland --filter=@ch5me/palot-desktop",
-		"dev:web": "bunx turbo dev:web --filter=@ch5me/palot-desktop",
+		"dev:desktop": "bunx turbo dev --filter=@ch5me/elf-desktop",
+		"dev:desktop:wayland": "bunx turbo dev:wayland --filter=@ch5me/elf-desktop",
+		"dev:web": "bunx turbo dev:web --filter=@ch5me/elf-desktop",
 		"lint": "biome check .",
 		"lint:fix": "biome check --write .",
 		"format": "biome format --write .",

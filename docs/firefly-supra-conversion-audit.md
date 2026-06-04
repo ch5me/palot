@@ -2,26 +2,26 @@
 
 ## Executive summary <!-- oc:id=sec_ab -->
 
-Palot has **not** been fully converted into a Firefly/Supra desktop product.
+Elf has **not** been fully converted into a Firefly/Supra desktop product.
 
 What is done:
 - the **side-panel surface system** is now generalized and documented
 - Firefly-style proof surfaces for **review**, **browser**, **notes**, **pulse**, and **memory** exist in the shell
 - feature flags, persistence hooks, and command-palette discoverability were added for those surfaces
-- the repo now has a documented path for how future Firefly surfaces should land in Palot
+- the repo now has a documented path for how future Firefly surfaces should land in Elf
 
 What is not done:
 - most new surfaces are still **proof shells**, not production Firefly/Supra features
 - browser is still a placeholder
 - notes, pulse, and memory are mostly local scaffold / mock UI, not wired to real backend contracts
 - broader “super app” conversion work outside the side-panel shell has **not** been migrated in a substantive way
-- the product is still fundamentally **Palot as an OpenCode desktop app**, not a completed Supra desktop merger
+- the product is still fundamentally **Elf as an OpenCode desktop app**, not a completed Supra desktop merger
 
 ---
 
 ## Audit scope
 
-This audit is based on the current Palot repo implementation and docs, especially:
+This audit is based on the current Elf repo implementation and docs, especially:
 - `README.md`
 - `docs/firefly-surface-playbook.md`
 - `apps/desktop/src/renderer/firefly-surface-registry.tsx`
@@ -42,7 +42,7 @@ This audit is based on the current Palot repo implementation and docs, especiall
 ### 1. Shared side-panel surface architecture exists <!-- oc:id=sec_ad -->
 
 Done:
-- Palot now has a registry-based surface model in `apps/desktop/src/renderer/firefly-surface-registry.tsx`.
+- Elf now has a registry-based surface model in `apps/desktop/src/renderer/firefly-surface-registry.tsx`.
 - Surfaces are modeled with:
   - id
   - title
@@ -153,7 +153,7 @@ Assessment:
 ### 6. Surface playbook / operator docs were added <!-- oc:id=sec_ai -->
 
 Done:
-- Repo now contains a specific playbook for how Firefly surfaces should be added to Palot.
+- Repo now contains a specific playbook for how Firefly surfaces should be added to Elf
 - README links to that playbook.
 - The playbook clearly states that side-panel proof surfaces come first and optional/unstable surfaces stay flag-gated.
 
@@ -174,7 +174,7 @@ Assessment:
 
 Current state:
 - The review panel is real and functional.
-- It is the strongest migrated surface because it already existed as substantive product behavior inside Palot.
+- It is the strongest migrated surface because it already existed as substantive product behavior inside Elf
 - In the new registry model it is now treated as a Firefly surface.
 
 Evidence:
@@ -183,7 +183,7 @@ Evidence:
 - `README.md:67`
 
 Assessment:
-- **Partial-to-done**, but mostly because Palot already had it.
+- **Partial-to-done**, but mostly because Elf already had it.
 - This is more “reclassified into the new shell” than “moved over from Supra.”
 
 ### 2. Browser surface
@@ -328,9 +328,9 @@ Assessment:
 ### 5. Broader “super app” conversion <!-- oc:id=sec_ao -->
 
 Not done:
-- There is no evidence in the current implementation that Palot has become a full Supra super app beyond these shell seams.
-- The main product still reads as Palot/OpenCode desktop: chat, review, automations, migration, OpenCode management.
-- No major new top-level product domains were converted into complete Palot-native features.
+- There is no evidence in the current implementation that Elf has become a full Supra super app beyond these shell seams.
+- The main product still reads as Elf/OpenCode desktop: chat, review, automations, migration, OpenCode management.
+- No major new top-level product domains were converted into complete Elf-native features.
 
 Evidence:
 - `README.md:23`
@@ -369,7 +369,7 @@ Assessment:
 
 | Surface | Shell present | Functional | Notes |
 |---|---:|---:|---|
-| Review | Yes | Mostly yes | Existing Palot feature, now routed through registry |
+| Review | Yes | Mostly yes | Existing Elf feature, now routed through registry |
 | Browser | Yes | No | Placeholder only |
 | Notes | Yes | No | Local textarea proof, not durable feature |
 | Pulse | Yes | No | Static cards, not wired to live telemetry |
@@ -381,7 +381,7 @@ Assessment:
 
 The honest answer:
 
-What moved over is mostly the **shell architecture** for absorbing Firefly/Supra capabilities into Palot.
+What moved over is mostly the **shell architecture** for absorbing Firefly/Supra capabilities into Elf
 
 That includes:
 - registry
@@ -396,7 +396,7 @@ What did **not** move over in a complete sense is the underlying product behavio
 
 So if the question is:
 
-### “Did we convert Palot into the Firefly/Supra desktop app?” <!-- oc:id=sec_ar -->
+### “Did we convert Elf into the Firefly/Supra desktop app?” <!-- oc:id=sec_ar -->
 No. Not yet.
 
 ### “Did we build the migration seam and land first proof surfaces?” <!-- oc:id=sec_as -->
@@ -407,7 +407,7 @@ Yes.
 ## Best current framing
 
 ### Done now
-- Palot is the implementation base.
+- Elf is the implementation base.
 - AIOS/Supra-style side-panel surface architecture is in place.
 - Review, browser, notes, pulse, and memory are registered in one system.
 - Flags and persistence are in place.

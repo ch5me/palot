@@ -7,7 +7,7 @@ import {
 	CommandList,
 	CommandSeparator,
 	CommandShortcut,
-} from "@ch5me/palot-ui/components/command"
+} from "@ch5me/elf-ui/components/command"
 import { useNavigate, useParams } from "@tanstack/react-router"
 import { useAtom, useAtomValue, useSetAtom } from "jotai"
 import {
@@ -161,19 +161,19 @@ export function CommandPalette({ open, onOpenChange, agents, onForkSession }: Co
 	const openSidePanelTab = useSetAtom(openSidePanelTabAtom)
 	const [reloading, setReloading] = useState(false)
 
-	const isElectron = typeof window !== "undefined" && "palot" in window
+	const isElectron = typeof window !== "undefined" && "elf" in window
 
 	const handleToggleTransparency = useCallback(async () => {
 		const newValue = !opaqueWindows
 		setOpaqueWindows(newValue)
 
 		if (isElectron) {
-			await window.palot.setOpaqueWindows(newValue)
+			await window.elf.setOpaqueWindows(newValue)
 			const shouldRestart = window.confirm(
 				"Transparency changes take effect after restarting the app.\n\nRestart now?",
 			)
 			if (shouldRestart) {
-				window.palot.relaunch()
+				window.elf.relaunch()
 			}
 		}
 	}, [opaqueWindows, setOpaqueWindows, isElectron])

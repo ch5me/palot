@@ -1,6 +1,6 @@
 {
 	"version": 1,
-	"project": "palot",
+	"project": "elf",
 	"services": {
 		"server": {
 			"cwd": "apps/server",

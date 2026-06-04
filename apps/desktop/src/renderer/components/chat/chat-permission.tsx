@@ -1,10 +1,10 @@
-import { Button } from "@ch5me/palot-ui/components/button"
+import { Button } from "@ch5me/elf-ui/components/button"
 import {
 	DropdownMenu,
 	DropdownMenuContent,
 	DropdownMenuItem,
 	DropdownMenuTrigger,
-} from "@ch5me/palot-ui/components/dropdown-menu"
+} from "@ch5me/elf-ui/components/dropdown-menu"
 import { ChevronDownIcon, Loader2Icon, ShieldCheckIcon, ZapIcon } from "lucide-react"
 import { memo, useState } from "react"
 import type { Agent, PermissionRequest } from "../../lib/types"

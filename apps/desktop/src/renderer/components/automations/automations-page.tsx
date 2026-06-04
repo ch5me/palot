@@ -5,12 +5,12 @@
  * for the split layout and drives the data pipeline via useAutomationData().
  */
 
-import { Alert, AlertAction, AlertDescription } from "@ch5me/palot-ui/components/alert"
+import { Alert, AlertAction, AlertDescription } from "@ch5me/elf-ui/components/alert"
 import {
 	ResizableHandle,
 	ResizablePanel,
 	ResizablePanelGroup,
-} from "@ch5me/palot-ui/components/resizable"
+} from "@ch5me/elf-ui/components/resizable"
 import { Outlet } from "@tanstack/react-router"
 import { useAtom } from "jotai"
 import { XIcon } from "lucide-react"

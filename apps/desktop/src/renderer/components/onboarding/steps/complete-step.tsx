@@ -7,9 +7,9 @@
  * already been migrated.
  */
 
-import { Badge } from "@ch5me/palot-ui/components/badge"
-import { Button } from "@ch5me/palot-ui/components/button"
-import { Spinner } from "@ch5me/palot-ui/components/spinner"
+import { Badge } from "@ch5me/elf-ui/components/badge"
+import { Button } from "@ch5me/elf-ui/components/button"
+import { Spinner } from "@ch5me/elf-ui/components/spinner"
 import { ArrowRightIcon, CheckCircle2Icon, CommandIcon, FlaskConicalIcon } from "lucide-react"
 import { motion } from "motion/react"
 import { useEffect, useRef, useState } from "react"
@@ -31,8 +31,8 @@ interface CompleteStepProps {
 // Component
 // ============================================================
 
-const isElectron = typeof window !== "undefined" && "palot" in window
-const isMac = isElectron && window.palot.platform === "darwin"
+const isElectron = typeof window !== "undefined" && "elf" in window
+const isMac = isElectron && window.elf.platform === "darwin"
 
 export function CompleteStep({
 	opencodeVersion,
@@ -53,7 +53,7 @@ export function CompleteStep({
 		hasDetected.current = true
 		setDetecting(true)
 
-		window.palot.onboarding
+		window.elf.onboarding
 			.detectProviders()
 			.then((detections) => {
 				// Only show providers that were found and aren't OpenCode itself
@@ -100,8 +100,8 @@ export function CompleteStep({
 					<h2 className="text-2xl font-semibold text-foreground">You're all set.</h2>
 					<p className="text-sm text-muted-foreground">
 						{opencodeVersion
-							? `Palot is connected to OpenCode ${formatVersion(opencodeVersion)}`
-							: "Palot is ready to go"}
+							? `Elf is connected to OpenCode ${formatVersion(opencodeVersion)}`
+							: "Elf is ready to go"}
 						{hasMigrated ? " and your configuration has been migrated." : "."}
 					</p>
 				</motion.div>

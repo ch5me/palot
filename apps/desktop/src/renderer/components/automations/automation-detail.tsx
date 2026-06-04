@@ -8,9 +8,9 @@
  * Rendered at /automations/:automationId
  */
 
-import { Badge } from "@ch5me/palot-ui/components/badge"
-import { Button } from "@ch5me/palot-ui/components/button"
-import { Separator } from "@ch5me/palot-ui/components/separator"
+import { Badge } from "@ch5me/elf-ui/components/badge"
+import { Button } from "@ch5me/elf-ui/components/button"
+import { Separator } from "@ch5me/elf-ui/components/separator"
 import { useNavigate, useParams } from "@tanstack/react-router"
 import {
 	CalendarIcon,

@@ -7,7 +7,7 @@
 
 ## Task 7 audit
 - Notes currently use local `useState` only, so draft persistence, autosave restore, and cross-session durability are still missing.
-- Palot already has reusable draft infrastructure in `apps/desktop/src/renderer/hooks/use-draft.ts`, backed by `draftsAtom` in `apps/desktop/src/renderer/atoms/preferences.ts`.
+- Elf already has reusable draft infrastructure in `apps/desktop/src/renderer/hooks/use-draft.ts`, backed by `draftsAtom` in `apps/desktop/src/renderer/atoms/preferences.ts`.
 - Chat already proves the intended send-to-AI seam via `onSendMessage(agent, message, options)` in `apps/desktop/src/renderer/components/agent-detail.tsx` and `apps/desktop/src/renderer/components/chat/chat-input.tsx`.
 - No backend/preload seam for notes storage exists yet; current surface is renderer-only scaffolding.
 
@@ -25,9 +25,9 @@
 - Existing OpenCode project/session listing services may provide a first low-risk fallback list surface before any graph work.
 
 ## Track 6 / 7 audit
-- Palot README and router confirm strong existing coverage for review and automations, but do not expose first-class terminal/files/plugins/voice surfaces yet.
+- Elf README and router confirm strong existing coverage for review and automations, but do not expose first-class terminal/files/plugins/voice surfaces yet.
 - Current route-level product map in renderer is still narrow: worktrees and automations are routed, while missing Supra domains like terminal/files/plugins/voice are absent as dedicated surfaces.
-- Track 7 risk is still real: Palot local dev currently relies on `workspace:*` links for multiple internal packages, while AGENTS and handoff docs say published-semver consumption is the release-safe direction for cross-repo consumers.
+- Track 7 risk is still real: Elf local dev currently relies on `workspace:*` links for multiple internal packages, while AGENTS and handoff docs say published-semver consumption is the release-safe direction for cross-repo consumers.
 - Firefly-cloud seam status is mixed: handoff says split-package guardrails are verified, but published-semver consumption is still deferred for release paths.
 
 ## Ship flagged <!-- oc:id=sec_ac -->
@@ -52,6 +52,6 @@
 - Broad AIOS parity outside approved Firefly surfaces
 
 ## Rationale <!-- oc:id=sec_af -->
-- Current Palot implementation already covers Tasks 1-4 and the playbook/deferred policy foundations.
+- Current Elf implementation already covers Tasks 1-4 and the playbook/deferred policy foundations.
 - Proof surfaces still differ in maturity: Notes is real enough to iterate, Browser is still placeholder, Pulse is static, Memory is staged copy.
 - Core native-daily-driver priorities remain terminal, browser, files/review, auth, telemetry, billing, and shared seam work.

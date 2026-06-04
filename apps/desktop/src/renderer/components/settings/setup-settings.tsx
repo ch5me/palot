@@ -2,8 +2,8 @@
  * Settings tab for environment setup, migration management, and re-running onboarding.
  */
 
-import { Button } from "@ch5me/palot-ui/components/button"
-import { Spinner } from "@ch5me/palot-ui/components/spinner"
+import { Button } from "@ch5me/elf-ui/components/button"
+import { Spinner } from "@ch5me/elf-ui/components/spinner"
 import { useAtomValue, useSetAtom } from "jotai"
 import {
 	AlertCircleIcon,
@@ -18,7 +18,7 @@ import { onboardingStateAtom } from "../../atoms/onboarding"
 import { SettingsRow } from "./settings-row"
 import { SettingsSection } from "./settings-section"
 
-const isElectron = typeof window !== "undefined" && "palot" in window
+const isElectron = typeof window !== "undefined" && "elf" in window
 
 // ============================================================
 // Provider display metadata
@@ -56,7 +56,7 @@ function OpenCodeStatusSection() {
 		if (!isElectron) return
 		setChecking(true)
 		try {
-			const r = await window.palot.onboarding.checkOpenCode()
+			const r = await window.elf.onboarding.checkOpenCode()
 			setResult(r)
 		} catch {
 			// ignore
@@ -125,7 +125,7 @@ function MigrationSection() {
 		setRestoring(true)
 		setRestoreResult(null)
 		try {
-			const result = await window.palot.onboarding.restoreBackup()
+			const result = await window.elf.onboarding.restoreBackup()
 			if (result.success) {
 				setRestoreResult(`Restored ${result.restored.length} file(s)`)
 			} else {
@@ -214,7 +214,7 @@ function OnboardingSection() {
 		})
 		// Relaunch the app to show onboarding fresh
 		if (isElectron) {
-			window.palot.relaunch()
+			window.elf.relaunch()
 		}
 	}, [setOnboardingState])
 

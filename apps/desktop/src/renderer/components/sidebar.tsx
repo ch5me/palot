@@ -1,12 +1,12 @@
-import { Collapsible, CollapsibleContent } from "@ch5me/palot-ui/components/collapsible"
+import { Collapsible, CollapsibleContent } from "@ch5me/elf-ui/components/collapsible"
 import {
 	ContextMenu,
 	ContextMenuContent,
 	ContextMenuItem,
 	ContextMenuSeparator,
 	ContextMenuTrigger,
-} from "@ch5me/palot-ui/components/context-menu"
-import { Input } from "@ch5me/palot-ui/components/input"
+} from "@ch5me/elf-ui/components/context-menu"
+import { Input } from "@ch5me/elf-ui/components/input"
 import {
 	SidebarContent,
 	SidebarFooter,
@@ -17,8 +17,8 @@ import {
 	SidebarMenuButton,
 	SidebarMenuItem,
 	SidebarSeparator,
-} from "@ch5me/palot-ui/components/sidebar"
-import { Tooltip, TooltipContent, TooltipTrigger } from "@ch5me/palot-ui/components/tooltip"
+} from "@ch5me/elf-ui/components/sidebar"
+import { Tooltip, TooltipContent, TooltipTrigger } from "@ch5me/elf-ui/components/tooltip"
 import { useNavigate, useParams } from "@tanstack/react-router"
 import { useAtomValue } from "jotai"
 import {

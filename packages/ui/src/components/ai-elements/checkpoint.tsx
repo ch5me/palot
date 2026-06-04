@@ -1,9 +1,9 @@
 "use client"
 
-import { Button } from "@ch5me/palot-ui/components/button"
-import { Separator } from "@ch5me/palot-ui/components/separator"
-import { Tooltip, TooltipContent, TooltipTrigger } from "@ch5me/palot-ui/components/tooltip"
-import { cn } from "@ch5me/palot-ui/lib/utils"
+import { Button } from "@ch5me/elf-ui/components/button"
+import { Separator } from "@ch5me/elf-ui/components/separator"
+import { Tooltip, TooltipContent, TooltipTrigger } from "@ch5me/elf-ui/components/tooltip"
+import { cn } from "@ch5me/elf-ui/lib/utils"
 import type { LucideProps } from "lucide-react"
 import { BookmarkIcon } from "lucide-react"
 import type { ComponentProps, HTMLAttributes } from "react"

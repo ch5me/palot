@@ -4,8 +4,8 @@
  * Runs a scan + convert and checks for issues in the conversion output.
  */
 
-import type { AgentFormat } from "@ch5me/palot-configconv"
-import { formatName, scanFormat, universalConvert } from "@ch5me/palot-configconv"
+import type { AgentFormat } from "@ch5me/elf-configconv"
+import { formatName, scanFormat, universalConvert } from "@ch5me/elf-configconv"
 import { defineCommand } from "citty"
 import consola from "consola"
 

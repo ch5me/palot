@@ -3,10 +3,10 @@
  *
  * Detects whether we're running inside Electron (preload bridge available)
  * or in a plain browser (Bun + Hono server on port 3100). All hooks import
- * from here instead of `palot-server.ts` directly.
+ * from here instead of `elf-server.ts` directly.
  *
  * In Electron mode, calls go through IPC to the main process.
- * In browser mode, calls go through HTTP to the Palot server.
+ * In browser mode, calls go through HTTP to the Elf server.
  */
 
 import type {
@@ -82,9 +82,9 @@ const log = createLogger("backend")
 
 /**
  * Returns true when running inside Electron (preload bridge is available).
- * The `palot` object is exposed via `contextBridge.exposeInMainWorld`.
+ * The `elf` object is exposed via `contextBridge.exposeInMainWorld`.
  */
-export const isElectron = typeof window !== "undefined" && "palot" in window
+export const isElectron = typeof window !== "undefined" && "elf" in window
 
 // ============================================================
 // Backend API — same signatures regardless of runtime
@@ -99,11 +99,11 @@ export async function fetchOpenCodeUrl(): Promise<{ url: string }> {
 	log.debug("fetchOpenCodeUrl", { via: isElectron ? "ipc" : "http" })
 	try {
 		if (isElectron) {
-			const info = await window.palot.ensureOpenCode()
+			const info = await window.elf.ensureOpenCode()
 			log.info("OpenCode server URL resolved", { url: info.url })
 			return { url: info.url }
 		}
-		const { fetchOpenCodeUrl: httpFetch } = await import("./palot-server")
+		const { fetchOpenCodeUrl: httpFetch } = await import("./elf-server")
 		const result = await httpFetch()
 		log.info("OpenCode server URL resolved", { url: result.url })
 		return result
@@ -149,7 +149,7 @@ export async function resolveAuthHeader(
 		if (!server.hasPassword) return null
 		if (!isElectron) return null
 
-		const password = await window.palot.credential.get(server.id)
+		const password = await window.elf.credential.get(server.id)
 		if (!password) return null
 
 		const username = server.username || "opencode"
@@ -164,9 +164,9 @@ export async function resolveAuthHeader(
  */
 export async function fetchModelState(): Promise<ModelState> {
 	if (isElectron) {
-		return window.palot.getModelState()
+		return window.elf.getModelState()
 	}
-	const { fetchModelState: httpFetch } = await import("./palot-server")
+	const { fetchModelState: httpFetch } = await import("./elf-server")
 	return httpFetch() as unknown as Promise<ModelState>
 }
 
@@ -180,22 +180,22 @@ export async function updateModelRecent(model: {
 	modelID: string
 }): Promise<ModelState> {
 	if (isElectron) {
-		return window.palot.updateModelRecent(model)
+		return window.elf.updateModelRecent(model)
 	}
-	const { updateModelRecent: httpUpdate } = await import("./palot-server")
+	const { updateModelRecent: httpUpdate } = await import("./elf-server")
 	return httpUpdate(model) as unknown as Promise<ModelState>
 }
 
 /**
  * Checks if the backend is available.
  * In Electron, always returns true (main process is always there).
- * In browser, pings the Palot HTTP server.
+ * In browser, pings the Elf HTTP server.
  */
 export async function checkBackendHealth(): Promise<boolean> {
 	if (isElectron) {
 		return true
 	}
-	const { checkServerHealth } = await import("./palot-server")
+	const { checkServerHealth } = await import("./elf-server")
 	return checkServerHealth()
 }
 
@@ -209,28 +209,28 @@ export async function checkBackendHealth(): Promise<boolean> {
  */
 export async function pickDirectory(): Promise<string | null> {
 	if (isElectron) {
-		return window.palot.pickDirectory()
+		return window.elf.pickDirectory()
 	}
 	throw new Error("Directory picker is only available in Electron mode")
 }
 
 export async function listDirectory(directory: string): Promise<FileSystemEntry[]> {
 	if (isElectron) {
-		return window.palot.listDirectory(directory) as Promise<FileSystemEntry[]>
+		return window.elf.listDirectory(directory) as Promise<FileSystemEntry[]>
 	}
 	throw new Error("Directory listing is only available in Electron mode")
 }
 
 export async function readFileContents(filePath: string): Promise<FileReadResult> {
 	if (isElectron) {
-		return window.palot.readFile(filePath) as Promise<FileReadResult>
+		return window.elf.readFile(filePath) as Promise<FileReadResult>
 	}
 	throw new Error("File reads are only available in Electron mode")
 }
 
 export async function fetchBridges(): Promise<BridgesResult> {
 	if (isElectron) {
-		return window.palot.bridges.list() as Promise<BridgesResult>
+		return window.elf.bridges.list() as Promise<BridgesResult>
 	}
 	throw new Error("Bridges are only available in Electron mode")
 }
@@ -240,7 +240,7 @@ export async function fetchBridgeActivity(
 	limit = 25,
 ): Promise<BridgeActivityResult> {
 	if (isElectron) {
-		return window.palot.bridges.activity(id, limit) as Promise<BridgeActivityResult>
+		return window.elf.bridges.activity(id, limit) as Promise<BridgeActivityResult>
 	}
 	throw new Error("Bridge activity is only available in Electron mode")
 }
@@ -256,7 +256,7 @@ export async function fetchBridgeActivity(
  */
 export async function fetchGitBranches(directory: string): Promise<GitBranchInfo> {
 	if (isElectron) {
-		return window.palot.git.listBranches(directory)
+		return window.elf.git.listBranches(directory)
 	}
 	throw new Error("Git operations are only available in Electron mode")
 }
@@ -266,7 +266,7 @@ export async function fetchGitBranches(directory: string): Promise<GitBranchInfo
  */
 export async function fetchGitStatus(directory: string): Promise<GitStatusInfo> {
 	if (isElectron) {
-		return window.palot.git.getStatus(directory)
+		return window.elf.git.getStatus(directory)
 	}
 	throw new Error("Git operations are only available in Electron mode")
 }
@@ -277,7 +277,7 @@ export async function fetchGitStatus(directory: string): Promise<GitStatusInfo> 
  */
 export async function gitCheckout(directory: string, branch: string): Promise<GitCheckoutResult> {
 	if (isElectron) {
-		return window.palot.git.checkout(directory, branch)
+		return window.elf.git.checkout(directory, branch)
 	}
 	throw new Error("Git operations are only available in Electron mode")
 }
@@ -290,7 +290,7 @@ export async function gitStashAndCheckout(
 	branch: string,
 ): Promise<GitStashResult> {
 	if (isElectron) {
-		return window.palot.git.stashAndCheckout(directory, branch)
+		return window.elf.git.stashAndCheckout(directory, branch)
 	}
 	throw new Error("Git operations are only available in Electron mode")
 }
@@ -300,7 +300,7 @@ export async function gitStashAndCheckout(
  */
 export async function gitStashPop(directory: string): Promise<GitStashResult> {
 	if (isElectron) {
-		return window.palot.git.stashPop(directory)
+		return window.elf.git.stashPop(directory)
 	}
 	throw new Error("Git operations are only available in Electron mode")
 }
@@ -322,7 +322,7 @@ export {
  */
 export async function getGitRoot(directory: string): Promise<string | null> {
 	if (isElectron) {
-		return window.palot.git.getRoot(directory)
+		return window.elf.git.getRoot(directory)
 	}
 	throw new Error("Git operations are only available in Electron mode")
 }
@@ -332,7 +332,7 @@ export async function getGitRoot(directory: string): Promise<string | null> {
  */
 export async function fetchDiffStat(directory: string): Promise<GitDiffStat> {
 	if (isElectron) {
-		return window.palot.git.diffStat(directory)
+		return window.elf.git.diffStat(directory)
 	}
 	throw new Error("Git operations are only available in Electron mode")
 }
@@ -342,7 +342,7 @@ export async function fetchDiffStat(directory: string): Promise<GitDiffStat> {
  */
 export async function gitCommitAll(directory: string, message: string): Promise<GitCommitResult> {
 	if (isElectron) {
-		return window.palot.git.commitAll(directory, message)
+		return window.elf.git.commitAll(directory, message)
 	}
 	throw new Error("Git operations are only available in Electron mode")
 }
@@ -352,7 +352,7 @@ export async function gitCommitAll(directory: string, message: string): Promise<
  */
 export async function gitPush(directory: string, remote?: string): Promise<GitPushResult> {
 	if (isElectron) {
-		return window.palot.git.push(directory, remote)
+		return window.elf.git.push(directory, remote)
 	}
 	throw new Error("Git operations are only available in Electron mode")
 }
@@ -365,7 +365,7 @@ export async function gitCreateBranch(
 	branchName: string,
 ): Promise<GitCheckoutResult> {
 	if (isElectron) {
-		return window.palot.git.createBranch(directory, branchName)
+		return window.elf.git.createBranch(directory, branchName)
 	}
 	throw new Error("Git operations are only available in Electron mode")
 }
@@ -375,7 +375,7 @@ export async function gitCreateBranch(
  */
 export async function getGitRemoteUrl(directory: string, remote?: string): Promise<string | null> {
 	if (isElectron) {
-		return window.palot.git.getRemoteUrl(directory, remote)
+		return window.elf.git.getRemoteUrl(directory, remote)
 	}
 	throw new Error("Git operations are only available in Electron mode")
 }
@@ -388,7 +388,7 @@ export async function gitApplyToLocal(
 	localDir: string,
 ): Promise<GitApplyResult> {
 	if (isElectron) {
-		return window.palot.git.applyToLocal(worktreeDir, localDir)
+		return window.elf.git.applyToLocal(worktreeDir, localDir)
 	}
 	throw new Error("Git operations are only available in Electron mode")
 }
@@ -403,7 +403,7 @@ export async function gitApplyDiffText(
 	diffText: string,
 ): Promise<GitApplyResult> {
 	if (isElectron) {
-		return window.palot.git.applyDiffText(localDir, diffText)
+		return window.elf.git.applyDiffText(localDir, diffText)
 	}
 	throw new Error("Git operations are only available in Electron mode")
 }
@@ -418,7 +418,7 @@ export async function gitApplyDiffText(
  */
 export async function fetchOpenInTargets(): Promise<OpenInTargetsResult> {
 	if (isElectron) {
-		return window.palot.openIn.getTargets()
+		return window.elf.openIn.getTargets()
 	}
 	throw new Error("Open-in targets are only available in Electron mode")
 }
@@ -433,7 +433,7 @@ export async function openInTarget(
 	persistPreferred?: boolean,
 ): Promise<void> {
 	if (isElectron) {
-		return window.palot.openIn.open(directory, targetId, persistPreferred)
+		return window.elf.openIn.open(directory, targetId, persistPreferred)
 	}
 	throw new Error("Open-in targets are only available in Electron mode")
 }
@@ -443,7 +443,7 @@ export async function openInTarget(
  */
 export async function setOpenInPreferred(targetId: string): Promise<{ success: boolean }> {
 	if (isElectron) {
-		return window.palot.openIn.setPreferred(targetId)
+		return window.elf.openIn.setPreferred(targetId)
 	}
 	throw new Error("Open-in targets are only available in Electron mode")
 }
@@ -454,70 +454,70 @@ export async function setOpenInPreferred(targetId: string): Promise<{ success: b
 
 export async function fetchAutomations(): Promise<Automation[]> {
 	if (isElectron) {
-		return window.palot.automation.list()
+		return window.elf.automation.list()
 	}
 	throw new Error("Automations are only available in Electron mode")
 }
 
 export async function fetchAutomation(id: string): Promise<Automation | null> {
 	if (isElectron) {
-		return window.palot.automation.get(id)
+		return window.elf.automation.get(id)
 	}
 	throw new Error("Automations are only available in Electron mode")
 }
 
 export async function createAutomation(input: CreateAutomationInput): Promise<Automation> {
 	if (isElectron) {
-		return window.palot.automation.create(input)
+		return window.elf.automation.create(input)
 	}
 	throw new Error("Automations are only available in Electron mode")
 }
 
 export async function updateAutomation(input: UpdateAutomationInput): Promise<Automation | null> {
 	if (isElectron) {
-		return window.palot.automation.update(input)
+		return window.elf.automation.update(input)
 	}
 	throw new Error("Automations are only available in Electron mode")
 }
 
 export async function deleteAutomation(id: string): Promise<boolean> {
 	if (isElectron) {
-		return window.palot.automation.delete(id)
+		return window.elf.automation.delete(id)
 	}
 	throw new Error("Automations are only available in Electron mode")
 }
 
 export async function runAutomationNow(id: string): Promise<boolean> {
 	if (isElectron) {
-		return window.palot.automation.runNow(id)
+		return window.elf.automation.runNow(id)
 	}
 	throw new Error("Automations are only available in Electron mode")
 }
 
 export async function fetchAutomationRuns(automationId?: string): Promise<AutomationRun[]> {
 	if (isElectron) {
-		return window.palot.automation.listRuns(automationId)
+		return window.elf.automation.listRuns(automationId)
 	}
 	throw new Error("Automations are only available in Electron mode")
 }
 
 export async function archiveAutomationRun(runId: string): Promise<boolean> {
 	if (isElectron) {
-		return window.palot.automation.archiveRun(runId)
+		return window.elf.automation.archiveRun(runId)
 	}
 	throw new Error("Automations are only available in Electron mode")
 }
 
 export async function acceptAutomationRun(runId: string): Promise<boolean> {
 	if (isElectron) {
-		return window.palot.automation.acceptRun(runId)
+		return window.elf.automation.acceptRun(runId)
 	}
 	throw new Error("Automations are only available in Electron mode")
 }
 
 export async function markAutomationRunRead(runId: string): Promise<boolean> {
 	if (isElectron) {
-		return window.palot.automation.markRunRead(runId)
+		return window.elf.automation.markRunRead(runId)
 	}
 	throw new Error("Automations are only available in Electron mode")
 }
@@ -527,7 +527,7 @@ export async function previewAutomationSchedule(
 	timezone: string,
 ): Promise<string[]> {
 	if (isElectron) {
-		return window.palot.automation.previewSchedule(rrule, timezone)
+		return window.elf.automation.previewSchedule(rrule, timezone)
 	}
 	throw new Error("Automations are only available in Electron mode")
 }

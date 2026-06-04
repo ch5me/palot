@@ -1,5 +1,5 @@
 {
-	"name": "@ch5me/palot-configconv-cli",
+	"name": "@ch5me/elf-configconv-cli",
 	"version": "0.5.2",
 	"private": false,
 	"license": "MIT",
@@ -13,7 +13,7 @@
 		"clean": "rm -rf node_modules .turbo"
 	},
 	"dependencies": {
-		"@ch5me/palot-configconv": "workspace:*",
+		"@ch5me/elf-configconv": "workspace:*",
 		"citty": "^0.2.1",
 		"consola": "^3.4.2"
 	},

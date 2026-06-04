@@ -1,20 +1,20 @@
 #!/usr/bin/env bash
-# screenshot-palot.sh — Capture a screenshot of the Palot desktop app window.
+# screenshot-elfsh — Capture a screenshot of the Elf desktop app window.
 #
 # By default, captures the screen region where the window sits, which includes
 # the composited liquid glass / vibrancy transparency blended with the desktop.
 #
 # Usage:
-#   ./scripts/screenshot-palot.sh                    # composited (shows transparency)
-#   ./scripts/screenshot-palot.sh my-screenshot.png  # custom output path
-#   ./scripts/screenshot-palot.sh --no-shadow        # without window shadow
-#   ./scripts/screenshot-palot.sh --layer             # window layer only (no background)
+#   ./scripts/screenshot-elfsh                    # composited (shows transparency)
+#   ./scripts/screenshot-elfsh my-screenshot.png  # custom output path
+#   ./scripts/screenshot-elfsh --no-shadow        # without window shadow
+#   ./scripts/screenshot-elfsh --layer             # window layer only (no background)
 #
 # Requires: macOS, Xcode Command Line Tools (for cc)
 
 set -euo pipefail
 
-OUTPUT="/tmp/palot-screenshot.png"
+OUTPUT="/tmp/elf-screenshot.png"
 NO_SHADOW=""
 LAYER_MODE=""
 
@@ -29,15 +29,15 @@ for arg in "$@"; do
 done
 
 # Compile the window finder (cached). Returns: windowID x y width height
-FINDER="/tmp/palot-window-finder"
-FINDER_SRC="/tmp/palot-window-finder.m"
+FINDER="/tmp/elf-window-finder"
+FINDER_SRC="/tmp/elf-window-finder.m"
 
 cat > "$FINDER_SRC" << 'OBJC'
 #import <CoreGraphics/CoreGraphics.h>
 #import <Foundation/Foundation.h>
 
 int main(int argc, char *argv[]) {
-    NSString *target = @"Palot";
+    NSString *target = @"Elf";
     if (argc > 1) {
         target = [NSString stringWithUTF8String:argv[1]];
     }
@@ -96,14 +96,14 @@ if [ ! -f "$FINDER" ] || [ "$FINDER_SRC" -nt "$FINDER" ]; then
   cc -framework CoreGraphics -framework Foundation "$FINDER_SRC" -o "$FINDER" 2>/dev/null
 fi
 
-# Try "Palot" first, fall back to "Palot Dev", then "Electron"
+# Try "Elf" first, fall back to "Elf Dev", then "Electron"
 RESULT=""
-for name in "Palot" "Palot Dev" "Electron"; do
+for name in "Elf" "Elf Dev" "Electron"; do
   RESULT=$("$FINDER" "$name" 2>/dev/null) && break || true
 done
 
 if [ -z "$RESULT" ]; then
-  echo "Error: Could not find Palot window. Is the app running?" >&2
+  echo "Error: Could not find Elf window. Is the app running?" >&2
   exit 1
 fi
 

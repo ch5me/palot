@@ -4,7 +4,7 @@ import { agentFamily } from "../atoms/derived/agents"
 import { pendingCountAtom } from "../atoms/derived/waiting"
 import { appStore } from "../atoms/store"
 
-const isElectron = typeof window !== "undefined" && "palot" in window
+const isElectron = typeof window !== "undefined" && "elf" in window
 
 /**
  * Handles native OS notification integration:
@@ -21,7 +21,7 @@ export function useNotifications(
 
 	useEffect(() => {
 		if (!isElectron) return
-		window.palot.updateBadgeCount(pendingCount)
+		window.elf.updateBadgeCount(pendingCount)
 	}, [pendingCount])
 
 	// --- Notification click -> navigate to session ---
@@ -44,12 +44,12 @@ export function useNotifications(
 
 	useEffect(() => {
 		if (!isElectron) return
-		return window.palot.onNotificationNavigate(handleNavigate)
+		return window.elf.onNotificationNavigate(handleNavigate)
 	}, [handleNavigate])
 
 	// --- Auto-dismiss when viewing a session ---
 	useEffect(() => {
 		if (!isElectron || !currentSessionId) return
-		window.palot.dismissNotification(currentSessionId)
+		window.elf.dismissNotification(currentSessionId)
 	}, [currentSessionId])
 }

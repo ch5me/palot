@@ -6,10 +6,10 @@
  * servers on the network as an alternative connection path.
  */
 
-import { Button } from "@ch5me/palot-ui/components/button"
-import { Input } from "@ch5me/palot-ui/components/input"
-import { Label } from "@ch5me/palot-ui/components/label"
-import { Spinner } from "@ch5me/palot-ui/components/spinner"
+import { Button } from "@ch5me/elf-ui/components/button"
+import { Input } from "@ch5me/elf-ui/components/input"
+import { Label } from "@ch5me/elf-ui/components/label"
+import { Spinner } from "@ch5me/elf-ui/components/spinner"
 import { useAtomValue } from "jotai"
 import {
 	AlertCircleIcon,
@@ -63,7 +63,7 @@ export function EnvironmentCheckStep({ onComplete, onSkip }: EnvironmentCheckSte
 	const hasRun = useRef(false)
 	const terminalRef = useRef<HTMLDivElement>(null)
 
-	const isElectron = typeof window !== "undefined" && "palot" in window
+	const isElectron = typeof window !== "undefined" && "elf" in window
 
 	// mDNS discovered servers (scanner starts before onboarding renders)
 	const discoveredServers = useAtomValue(discoveredMdnsServersAtom)
@@ -97,7 +97,7 @@ export function EnvironmentCheckStep({ onComplete, onSkip }: EnvironmentCheckSte
 
 		try {
 			// Step 1: Check OpenCode installation
-			const result = await window.palot.onboarding.checkOpenCode()
+			const result = await window.elf.onboarding.checkOpenCode()
 			setOpenCodeResult(result)
 
 			if (!result.installed) {
@@ -170,12 +170,12 @@ export function EnvironmentCheckStep({ onComplete, onSkip }: EnvironmentCheckSte
 		setInstalling(true)
 		setInstallOutput([])
 
-		const cleanup = window.palot.onboarding.onInstallOutput((text) => {
+		const cleanup = window.elf.onboarding.onInstallOutput((text) => {
 			setInstallOutput((prev) => [...prev, text])
 		})
 
 		try {
-			const result = await window.palot.onboarding.installOpenCode()
+			const result = await window.elf.onboarding.installOpenCode()
 			cleanup()
 
 			if (result.success) {
@@ -270,7 +270,7 @@ export function EnvironmentCheckStep({ onComplete, onSkip }: EnvironmentCheckSte
 
 				// The newly saved server gets an auto-generated ID. Find it in settings
 				// and switch to it.
-				const settings = await window.palot.getSettings()
+				const settings = await window.elf.getSettings()
 				const saved = settings.servers?.servers.find(
 					(s) =>
 						s.type === "remote" &&
@@ -304,7 +304,7 @@ export function EnvironmentCheckStep({ onComplete, onSkip }: EnvironmentCheckSte
 				<div className="text-center">
 					<h2 className="text-xl font-semibold text-foreground">Environment Check</h2>
 					<p className="mt-1 text-sm text-muted-foreground">
-						Verifying your setup is ready for Palot.
+						Verifying your setup is ready for Elf
 					</p>
 				</div>
 
@@ -338,7 +338,7 @@ export function EnvironmentCheckStep({ onComplete, onSkip }: EnvironmentCheckSte
 						<p className="text-sm text-muted-foreground">
 							{needsUpdate
 								? "Your OpenCode version is too old. Update to continue."
-								: "Palot needs the OpenCode CLI to function. Install it to continue."}
+								: "Elf needs the OpenCode CLI to function. Install it to continue."}
 						</p>
 						<div className="flex gap-2">
 							<Button size="sm" onClick={handleInstall} className="gap-2">

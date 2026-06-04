@@ -1,12 +1,12 @@
-import { Button } from "@ch5me/palot-ui/components/button"
-import { Input } from "@ch5me/palot-ui/components/input"
+import { Button } from "@ch5me/elf-ui/components/button"
+import { Input } from "@ch5me/elf-ui/components/input"
 import {
 	Terminal,
 	TerminalContent,
 	TerminalCopyButton,
 	TerminalHeader,
 	TerminalTitle,
-} from "@ch5me/palot-ui/components/ai-elements/terminal"
+} from "@ch5me/elf-ui/components/ai-elements/terminal"
 import { useState } from "react"
 import type { Agent } from "../../lib/types"
 import { useAgentActions, useServerConnection } from "../../hooks/use-server"

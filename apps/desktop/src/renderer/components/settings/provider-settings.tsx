@@ -19,24 +19,24 @@
  * - "Browse all providers" button opens a dialog with search + full catalog
  */
 
-import { Badge } from "@ch5me/palot-ui/components/badge"
-import { Button } from "@ch5me/palot-ui/components/button"
+import { Badge } from "@ch5me/elf-ui/components/badge"
+import { Button } from "@ch5me/elf-ui/components/button"
 import {
 	Dialog,
 	DialogContent,
 	DialogDescription,
 	DialogHeader,
 	DialogTitle,
-} from "@ch5me/palot-ui/components/dialog"
-import { Input } from "@ch5me/palot-ui/components/input"
-import { ScrollArea } from "@ch5me/palot-ui/components/scroll-area"
-import { Skeleton } from "@ch5me/palot-ui/components/skeleton"
+} from "@ch5me/elf-ui/components/dialog"
+import { Input } from "@ch5me/elf-ui/components/input"
+import { ScrollArea } from "@ch5me/elf-ui/components/scroll-area"
+import { Skeleton } from "@ch5me/elf-ui/components/skeleton"
 import {
 	Tooltip,
 	TooltipContent,
 	TooltipProvider,
 	TooltipTrigger,
-} from "@ch5me/palot-ui/components/tooltip"
+} from "@ch5me/elf-ui/components/tooltip"
 import { useQueryClient } from "@tanstack/react-query"
 import {
 	AlertCircleIcon,

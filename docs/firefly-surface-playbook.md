@@ -1,10 +1,10 @@
 # Firefly Surface Playbook <!-- oc:id=sec_aa -->
 
 ## Purpose <!-- oc:id=sec_ab -->
-Use this when adding a Firefly surface to Palot.
+Use this when adding a Firefly surface to Elf
 
 Firefly surface work must:
-- preserve Palot as the execution base
+- preserve Elf as the execution base
 - keep OpenCode as the flagship workflow
 - use one registry/flag/persistence path instead of one-off wiring
 - avoid renderer-side Node/Electron coupling
@@ -29,7 +29,7 @@ When adding a side-panel Firefly surface:
 1. Add discoverability/toggle entry in `apps/desktop/src/renderer/components/command-palette.tsx` <!-- oc:id=item_ae -->
 
 ## Flag policy <!-- oc:id=sec_ae -->
-- Use `atomWithStorage<boolean>("palot:<feature>Enabled", <default>)`
+- Use `atomWithStorage<boolean>("elf:<feature>Enabled", <default>)`
 - Add a write-only toggle atom next to the storage atom
 - Default ON only for low-risk proof surfaces
 - Default OFF for expensive, native-heavy, or uncertain surfaces
@@ -52,17 +52,17 @@ When adding a side-panel Firefly surface:
 - Best first proof surface
 - Start as a side-panel tab
 - Preserve autosave, search, simple CRUD, and send-to-AI behavior
-- Current Palot proof: flag-gated tab, default ON
+- Current Elf proof: flag-gated tab, default ON
 
 ### Pulse / usage <!-- oc:id=sec_aj -->
 - Reuse `session-metrics-bar.tsx` and `lib/session-metrics.ts`
 - Start with empty and populated states before broad dashboard ambitions
-- Current Palot proof: flag-gated tab, default OFF
+- Current Elf proof: flag-gated tab, default OFF
 
 ### Memory <!-- oc:id=sec_ak -->
 - Start default OFF
 - Prefer a simple fallback/list view before a graph-heavy implementation
-- Current Palot proof: flag-gated tab, default OFF
+- Current Elf proof: flag-gated tab, default OFF
 
 ## QA minimums <!-- oc:id=sec_al -->
 Every new Firefly surface should be verified for:

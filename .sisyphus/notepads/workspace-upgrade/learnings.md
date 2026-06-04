@@ -4,7 +4,7 @@
 - `PaneSeam` currently wraps `Separator` and hardcodes `cursor: "col-resize"`; `CollapsibleSidebar` currently does plain conditional render without animation.
 - `WorkspaceShell` is a fixed CSS-grid shell today; `ResizablePanes` wraps `Group`, `Pane` wraps `Panel`, and `PaneToggleToolbar` / `usePaneVisibility` are already in place.
 - Official `react-resizable-panels` docs confirm `PanelResizeHandle` has no `onDrag` callback, `PanelGroup` uses `onLayoutChange` / `onLayoutChanged`, and `Panel` collapse APIs are via `collapsible`, `collapsedSize`, and imperative refs.
-- Palot integration map: `apps/desktop/src/renderer/components/sidebar-layout.tsx` owns the current shell, `agent-detail.tsx` owns `Cmd+Shift+D` and AppBar injection, and `apps/desktop/src/renderer/atoms/ui.ts` owns `reviewPanelOpenAtom`.
+- Elf integration map: `apps/desktop/src/renderer/components/sidebar-layout.tsx` owns the current shell, `agent-detail.tsx` owns `Cmd+Shift+D` and AppBar injection, and `apps/desktop/src/renderer/atoms/ui.ts` owns `reviewPanelOpenAtom`.
 - Task 1 done (2026-05-30): moved `react-resizable-panels` from `dependencies` to `peerDependencies` with `>=4.6.0` in `@ch5me/workspace` contract package; added `^4.11.1` to `devDependencies` for local dev; `bun install` + `typecheck` both pass.
 - Task 1 re-verified (2026-05-30 23:xx UTC): `peerDependencies` already has `react-resizable-panels: ">=4.6.0"`, `devDependencies` has `^4.11.1`. `bun install` (root) and `bun run typecheck` (contract package) both pass clean.
 - Task 3 done (2026-05-30): enhanced `PaneSeam`. Key findings:

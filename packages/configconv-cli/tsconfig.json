@@ -12,8 +12,8 @@
 		"resolveJsonModule": true,
 		"types": ["bun"],
 		"paths": {
-			"@ch5me/palot-configconv": ["../configconv/src/index.ts"],
-			"@ch5me/palot-configconv/*": ["../configconv/src/*"]
+			"@ch5me/elf-configconv": ["../configconv/src/index.ts"],
+			"@ch5me/elf-configconv/*": ["../configconv/src/*"]
 		}
 	},
 	"include": ["src/**/*.ts"]

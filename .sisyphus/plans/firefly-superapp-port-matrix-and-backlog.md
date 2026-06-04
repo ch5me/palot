@@ -1,12 +1,12 @@
-# Firefly Superapp -> Palot Port Matrix And Backlog <!-- oc:id=sec_aa -->
+# Firefly Superapp -> Elf Port Matrix And Backlog <!-- oc:id=sec_aa -->
 
 ## Purpose <!-- oc:id=sec_ab -->
 
-This is the durable source of truth for what existed in `~/Workspaces/aios-superapp`, what now exists in `~/src/ch5/palot`, what has already been ported, and what still needs to move so the old superapp can be retired without feature loss.
+This is the durable source of truth for what existed in `~/Workspaces/aios-superapp`, what now exists in `~/src/ch5/elf`, what has already been ported, and what still needs to move so the old superapp can be retired without feature loss.
 
 ## Product Decision <!-- oc:id=sec_ac -->
 
-Port almost everything from the old superapp into Palot.
+Port almost everything from the old superapp into Elf
 
 Do port:
 - Files
@@ -30,7 +30,7 @@ Do not port now:
 
 ## What "Bridges" Means <!-- oc:id=sec_ad -->
 
-In the old superapp, `BridgesPane.tsx` represented the surface for integrations and cross-system connectors: the place where external tools/services can be linked into the app experience. Think of it as the integration hub rather than a single feature. It likely belongs in Palot as a first-class integrations/connectors surface, not as a hidden settings subsection.
+In the old superapp, `BridgesPane.tsx` represented the surface for integrations and cross-system connectors: the place where external tools/services can be linked into the app experience. Think of it as the integration hub rather than a single feature. It likely belongs in Elf as a first-class integrations/connectors surface, not as a hidden settings subsection.
 
 ---
 
@@ -38,7 +38,7 @@ In the old superapp, `BridgesPane.tsx` represented the surface for integrations 
 
 ### Surfaces
 
-| Feature | aios-superapp | palot | Status |
+| Feature | aios-superapp | elf | Status |
 |---|---|---|---|
 | Chat | `ChatPane` | `chat-view.tsx` | Ported |
 | Notes | `NotesPane` | `notes-panel.tsx` | Ported |
@@ -46,7 +46,7 @@ In the old superapp, `BridgesPane.tsx` represented the surface for integrations 
 | Memory | `MemoryPane` | `memory-panel.tsx` | Ported |
 | Browser | `BrowserPane` | `browser-panel.tsx` | Ported |
 | Automations | `AutomationsPane` | `automations-page.tsx` | Ported |
-| Review / Diff | none | `review-panel.tsx` | Palot-only |
+| Review / Diff | none | `review-panel.tsx` | Elf-only |
 | Files | `FilesPane`, `FileViewerPane` | `files-panel.tsx` | Ported shell |
 | Terminal | `TerminalPane`, `TerminalComposer` | `terminal-panel.tsx` | Ported shell |
 | Plugins | `PluginsPane` | `plugins-panel.tsx` | Ported shell |
@@ -62,7 +62,7 @@ In the old superapp, `BridgesPane.tsx` represented the surface for integrations 
 
 ### Infrastructure / Supporting Systems
 
-| System | aios-superapp | palot | Status |
+| System | aios-superapp | elf | Status |
 |---|---|---|---|
 | Surface registry | `src/lib/surfaces.ts` | `firefly-surface-registry.tsx` | Ported subset |
 | Command palette | `CommandPalette.tsx` | `command-palette.tsx` | Ported |
@@ -79,7 +79,7 @@ In the old superapp, `BridgesPane.tsx` represented the surface for integrations 
 
 ### Service / Domain Modules
 
-| Domain | aios-superapp | palot | Status |
+| Domain | aios-superapp | elf | Status |
 |---|---|---|---|
 | Chat | `chat.ts`, `chatPaneState.ts` | chat atoms/hooks | Ported |
 | Notes | `notes.ts` | `use-draft.ts` | Ported differently |
@@ -112,15 +112,15 @@ In the old superapp, `BridgesPane.tsx` represented the surface for integrations 
 
 ### Wave 1 — Missing infrastructure that multiple surfaces depend on <!-- oc:id=sec_af -->
 
-- [x] Port pane routing model from `aios-superapp/src/lib/paneRouting.ts` into Palot.
-- [x] Port pane bus/event bus from `aios-superapp/src/lib/paneBus.ts` into Palot.
-- [x] Decide how Palot should represent multi-pane vs side-panel vs route-level surfaces.
-- [x] Port profiles model from `aios-superapp/src/lib/profiles.ts` into Palot.
-- [x] Add durable profile state in Palot settings/atoms.
+- [x] Port pane routing model from `aios-superapp/src/lib/paneRouting.ts` into Elf
+- [x] Port pane bus/event bus from `aios-superapp/src/lib/paneBus.ts` into Elf
+- [x] Decide how Elf should represent multi-pane vs side-panel vs route-level surfaces.
+- [x] Port profiles model from `aios-superapp/src/lib/profiles.ts` into Elf
+- [x] Add durable profile state in Elf settings/atoms.
 - [x] Decide whether profiles are local-only first or synced later.
 - [x] Port account menu / account context basics if profiles need visible switching.
-- [x] Port any shared `surfaces.ts` semantics that Palot registry still lacks.
-- [x] Audit whether Palot needs resizable-grid semantics or whether the side-panel layout is enough.
+- [x] Port any shared `surfaces.ts` semantics that Elf registry still lacks.
+- [x] Audit whether Elf needs resizable-grid semantics or whether the side-panel layout is enough.
 - [x] If needed, port the minimum layout/drop-zone primitives from `ResizableGrid.tsx` and `PaneDropZone.tsx`.
 
 ### Wave 2 — High-value daily-driver surfaces <!-- oc:id=sec_ag -->
@@ -128,7 +128,7 @@ In the old superapp, `BridgesPane.tsx` represented the surface for integrations 
 - [x] Port Files surface shell from `FilesPane.tsx`.
 - [x] Port file viewer behavior from `FileViewerPane.tsx`.
 - [x] Decide whether Files lives as a side-panel surface, route, or review-adjacent workflow.
-- [x] Reuse existing Palot diff/review systems where possible rather than cloning old file UX.
+- [x] Reuse existing Elf diff/review systems where possible rather than cloning old file UX.
 - [x] Port Terminal surface shell from `TerminalPane.tsx`.
 - [x] Port terminal composer / command input affordances from `TerminalComposer.tsx`.
 - [x] Wire terminal backend/PTY support in Electron main process.
@@ -144,14 +144,14 @@ In the old superapp, `BridgesPane.tsx` represented the surface for integrations 
 - [x] Decide whether plugins should reflect OpenCode skills, MCPs, or external plugins.
 - [x] Port Bridges surface from `BridgesPane.tsx`.
 - [x] Port bridge/integration logic from `src/lib/apps.ts` or related modules if applicable.
-- [x] Define the connectors/integrations information architecture in Palot.
+- [x] Define the connectors/integrations information architecture in Elf
 
 Bridge/Plugins IA decision:
 - Plugins = OpenCode-native runtime inventory: skills, slash commands, MCP posture, provider-adjacent capability listings.
 - Bridges = higher-level integration map: connector lanes across OpenCode runtime, external services, CRM/contact workflows, and future office/studio tools.
 - CRM should not be folded into Plugins. It is a people/workflow surface that can consume Bridges connectors later.
 - Studio should not be folded into Bridges. It is a route-level workspace candidate once file/office preview and creation flows are real.
-- `src/lib/apps.ts` in the old app does not contain unique bridge business logic beyond surface-registry re-exports and launch-dock filtering. In Palot, the equivalent remaining work is IA + connector-specific backends, not a direct domain-port.
+- `src/lib/apps.ts` in the old app does not contain unique bridge business logic beyond surface-registry re-exports and launch-dock filtering. In Elf, the equivalent remaining work is IA + connector-specific backends, not a direct domain-port.
 - Next implementation targets after the Bridges shell: (1) CRM surface + domain, with Bridges as its connector inventory input; (2) Studio/Office preview surface, likely promoted to route-level once its data model is proven; (3) real per-connector auth/status/actions under Bridges only when a concrete vendor lane exists.
 
 - [x] Port Contacts / CRM surface from `CrmPane.tsx`.
@@ -161,12 +161,12 @@ Bridge/Plugins IA decision:
 - [x] Decide whether Studio is a route-level workspace instead of a side panel.
 
 CRM/Studio decision update:
-- CRM shell now exists in Palot as `crm-panel.tsx` and is already wired into the shared surface registry/flags/command-palette path, so the surface-level port is complete.
-- CRM domain logic from `src/lib/crm.ts` does not need a direct port yet because it was only a thin Tauri contact-store wrapper. The meaningful remaining port is a real Electron/Palot data seam for contacts + thread/send workflows, likely paired with old `lib/inbox.ts` semantics rather than `crm.ts` alone.
+- CRM shell now exists in Elf as `crm-panel.tsx` and is already wired into the shared surface registry/flags/command-palette path, so the surface-level port is complete.
+- CRM domain logic from `src/lib/crm.ts` does not need a direct port yet because it was only a thin Tauri contact-store wrapper. The meaningful remaining port is a real Electron/Elf data seam for contacts + thread/send workflows, likely paired with old `lib/inbox.ts` semantics rather than `crm.ts` alone.
 - Contacts and CRM should stay one surface for now. The old pane was effectively a messaging inbox with lightweight contact management, not a separate pipeline product.
-- Studio shell now exists in Palot as `studio-panel.tsx` and is wired into the same shared surface system, so the first surface-level port is complete.
+- Studio shell now exists in Elf as `studio-panel.tsx` and is wired into the same shared surface system, so the first surface-level port is complete.
 - Studio should remain a side-panel proof shell until office preview/creation workflows become real. Once multi-document creation, richer preview fidelity, or workflow switching exists, promote Studio to a route-level workspace instead of expanding the tab further.
-- Immediate next targets for these lanes: CRM should port list/thread/send workflows from old `CrmPane.tsx` + `lib/inbox.ts`; Studio should port concrete file preview capabilities from `OfficePreview.tsx` only after deciding which document formats Palot must support locally.
+- Immediate next targets for these lanes: CRM should port list/thread/send workflows from old `CrmPane.tsx` + `lib/inbox.ts`; Studio should port concrete file preview capabilities from `OfficePreview.tsx` only after deciding which document formats Elf must support locally.
 
 ### Wave 4 — Communication / people surfaces <!-- oc:id=sec_ai -->
 
@@ -179,33 +179,33 @@ CRM/Studio decision update:
 - [x] Decide whether Claude Code becomes a compatibility lane, import lane, or real interactive surface.
 
 Voice/Oracle/Claude decision update:
-- Voice shell now exists in Palot as `voice-panel.tsx` and is wired through the same shared surface registry, flag, and command-palette path as other Firefly side-panel surfaces.
-- The old `src/lib/voice.ts` is real browser-side dictation plus whisper transport, but Palot has not ported that runtime yet. The honest interpretation is that the voice surface-level affordance and the product decision are ported, while recording/STT/TTS backend work remains future product work.
-- Voice should stay input-first for now. If Palot later grows capture/transcription, it should land as text insertion and lightweight controls before any broader speech workflow or TTS lane.
-- Oracle shell now exists in Palot as `oracle-panel.tsx` and is wired into the shared surface system. The old `OracleRoster.tsx` managed oracle-specific tmux lifecycle, hide/show state, and attach affordances; Palot currently treats Oracle as a session/agent roster view, not a tmux control plane.
+- Voice shell now exists in Elf as `voice-panel.tsx` and is wired through the same shared surface registry, flag, and command-palette path as other Firefly side-panel surfaces.
+- The old `src/lib/voice.ts` is real browser-side dictation plus whisper transport, but Elf has not ported that runtime yet. The honest interpretation is that the voice surface-level affordance and the product decision are ported, while recording/STT/TTS backend work remains future product work.
+- Voice should stay input-first for now. If Elf later grows capture/transcription, it should land as text insertion and lightweight controls before any broader speech workflow or TTS lane.
+- Oracle shell now exists in Elf as `oracle-panel.tsx` and is wired into the shared surface system. The old `OracleRoster.tsx` managed oracle-specific tmux lifecycle, hide/show state, and attach affordances; Elf currently treats Oracle as a session/agent roster view, not a tmux control plane.
 - Oracle should remain a sidebar/side-panel dashboard, not a route, until it needs deeper orchestration flows than simple active/recent agent visibility.
-- Claude Code shell now exists in Palot as `claude-panel.tsx` and is wired into the same shared surface system. The old superapp surface registry treated Claude Code as a real shell pane (`claude --dangerously-skip-permissions`), but Palot intentionally keeps OpenCode as the only interactive coding lane.
+- Claude Code shell now exists in Elf as `claude-panel.tsx` and is wired into the same shared surface system. The old superapp surface registry treated Claude Code as a real shell pane (`claude --dangerously-skip-permissions`), but Elf intentionally keeps OpenCode as the only interactive coding lane.
 - Claude Code should remain a compatibility/import lane, not a live embedded runtime, unless product direction changes enough to justify a second interactive coding workflow.
-- Immediate next targets for these lanes: (1) if desired, port old voice dictation runtime into Palot chat input or prompt toolbar rather than only the side panel; (2) expand Oracle only if Palot needs agent fleet controls beyond the existing session roster; (3) keep Claude Code focused on migration/compatibility documentation and onboarding hooks, not runtime embedding.
+- Immediate next targets for these lanes: (1) if desired, port old voice dictation runtime into Elf chat input or prompt toolbar rather than only the side panel; (2) expand Oracle only if Elf needs agent fleet controls beyond the existing session roster; (3) keep Claude Code focused on migration/compatibility documentation and onboarding hooks, not runtime embedding.
 
 
 ### Wave 5 — Cross-cutting polish / reconciliation <!-- oc:id=sec_aj -->
 
-- [x] Reconcile old dashboard concepts (`IdleDashboard.tsx`, `dashboard.ts`) with Palot's current landing/new-chat experience.
-- [x] Reconcile sidebar usage concepts with Palot's metrics bar and project sidebar.
-- [x] Reconcile project/app/device/monitor helpers from the old app into Palot where still useful.
+- [x] Reconcile old dashboard concepts (`IdleDashboard.tsx`, `dashboard.ts`) with Elf's current landing/new-chat experience.
+- [x] Reconcile sidebar usage concepts with Elf's metrics bar and project sidebar.
+- [x] Reconcile project/app/device/monitor helpers from the old app into Elf where still useful.
 - [x] Audit all remaining old superapp modules after each port to confirm whether they are still needed.
 - [x] Keep this matrix updated after each wave lands.
 - [x] Once all desired ports land, do a final "superapp retirement audit" to ensure nothing important is left behind.
 
 Wave 5 reconciliation notes:
-- Idle dashboard: old `IdleDashboard.tsx` was a full homescreen/status board with fleet, recent projects, usage rings, device stats, pinned spaces, and launch tiles. Palot's `new-chat.tsx` already replaces the landing experience with a project/session-first OpenCode launcher, so a direct dashboard port is not desirable. The only parts worth reusing are targeted glance widgets if the landing page later needs more live status.
-- `src/lib/dashboard.ts` and `SidebarUsage.tsx` were mainly Tauri-facing adapters around usage stats, Codex usage, focus, device, and git pulse. Palot already has its own session/project metrics system (`session-metrics-bar`, `lib/session-metrics.ts`, derived agent/project atoms), so the old dashboard data layer should not be ported wholesale.
-- Sidebar usage: Palot's current metrics bar and project/session sidebar already carry the modern equivalent. If more quota visibility is needed later, add a focused provider-usage widget to Palot rather than reviving the old sidebar block structure.
-- Project/app helpers: old launch-dock semantics from `lib/apps.ts` were largely replaced by the Firefly surface registry plus Palot router/sidebar patterns. No separate launch-dock helper port is needed.
-- Device/monitor helpers: old device and monitor tiles were dashboard dressing, not core OpenCode workflow. Keep them out unless Palot gains a dedicated system-observability product need.
+- Idle dashboard: old `IdleDashboard.tsx` was a full homescreen/status board with fleet, recent projects, usage rings, device stats, pinned spaces, and launch tiles. Elf's `new-chat.tsx` already replaces the landing experience with a project/session-first OpenCode launcher, so a direct dashboard port is not desirable. The only parts worth reusing are targeted glance widgets if the landing page later needs more live status.
+- `src/lib/dashboard.ts` and `SidebarUsage.tsx` were mainly Tauri-facing adapters around usage stats, Codex usage, focus, device, and git pulse. Elf already has its own session/project metrics system (`session-metrics-bar`, `lib/session-metrics.ts`, derived agent/project atoms), so the old dashboard data layer should not be ported wholesale.
+- Sidebar usage: Elf's current metrics bar and project/session sidebar already carry the modern equivalent. If more quota visibility is needed later, add a focused provider-usage widget to Elf rather than reviving the old sidebar block structure.
+- Project/app helpers: old launch-dock semantics from `lib/apps.ts` were largely replaced by the Firefly surface registry plus Elf router/sidebar patterns. No separate launch-dock helper port is needed.
+- Device/monitor helpers: old device and monitor tiles were dashboard dressing, not core OpenCode workflow. Keep them out unless Elf gains a dedicated system-observability product need.
 - Remaining old superapp modules worth real future product work are now narrow: CRM inbox/threading, voice runtime, richer file/office preview, and any concrete connector backends. Dashboard/device/monitor layers are retirement candidates, not backlog drivers.
-- Final retirement view at this stage: the old superapp no longer contains an unclassified major surface. What remains is either already represented in Palot as a proof shell/decision, or is intentionally deferred behind a narrower next seam.
+- Final retirement view at this stage: the old superapp no longer contains an unclassified major surface. What remains is either already represented in Elf as a proof shell/decision, or is intentionally deferred behind a narrower next seam.
 
 ---
 

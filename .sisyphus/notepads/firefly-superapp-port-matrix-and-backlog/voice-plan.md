@@ -27,6 +27,6 @@ Voice should start as an input-only proof shell.
 Do not port `src/lib/voice.ts` yet.
 
 Reason:
-- No corresponding backend or runtime exists in Palot.
+- No corresponding backend or runtime exists in Elf
 - Porting domain logic now would be speculative.
 - Real voice work should start only when a concrete recording / STT / TTS lane is chosen.

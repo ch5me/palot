@@ -37,20 +37,20 @@ export interface FireflyProfilePreferences {
 // ============================================================
 
 function migrateFromZustandPersist(): void {
-	const oldKey = "palot-preferences"
+	const oldKey = "elf-preferences"
 	const raw = localStorage.getItem(oldKey)
 	if (!raw) return
 
 	try {
 		const { state } = JSON.parse(raw) // Zustand persist wraps in { state, version }
 		if (state.displayMode)
-			localStorage.setItem("palot:displayMode", JSON.stringify(state.displayMode))
-		if (state.theme) localStorage.setItem("palot:theme", JSON.stringify(state.theme))
+			localStorage.setItem("elf:displayMode", JSON.stringify(state.displayMode))
+		if (state.theme) localStorage.setItem("elf:theme", JSON.stringify(state.theme))
 		if (state.colorScheme)
-			localStorage.setItem("palot:colorScheme", JSON.stringify(state.colorScheme))
-		if (state.drafts) localStorage.setItem("palot:drafts", JSON.stringify(state.drafts))
+			localStorage.setItem("elf:colorScheme", JSON.stringify(state.colorScheme))
+		if (state.drafts) localStorage.setItem("elf:drafts", JSON.stringify(state.drafts))
 		if (state.projectModels)
-			localStorage.setItem("palot:projectModels", JSON.stringify(state.projectModels))
+			localStorage.setItem("elf:projectModels", JSON.stringify(state.projectModels))
 
 		// Remove old key after successful migration
 		localStorage.removeItem(oldKey)
@@ -64,9 +64,9 @@ migrateFromZustandPersist()
 
 // Migrate removed "compact" display mode to "default"
 function migrateDisplayMode(): void {
-	const raw = localStorage.getItem("palot:displayMode")
+	const raw = localStorage.getItem("elf:displayMode")
 	if (raw === '"compact"') {
-		localStorage.setItem("palot:displayMode", '"default"')
+		localStorage.setItem("elf:displayMode", '"default"')
 	}
 }
 migrateDisplayMode()
@@ -75,17 +75,17 @@ migrateDisplayMode()
 // Persisted atoms — each is independent with its own localStorage key
 // ============================================================
 
-export const displayModeAtom = atomWithStorage<DisplayMode>("palot:displayMode", "default")
+export const displayModeAtom = atomWithStorage<DisplayMode>("elf:displayMode", "default")
 
-export const themeAtom = atomWithStorage<string>("palot:theme", "default")
+export const themeAtom = atomWithStorage<string>("elf:theme", "default")
 
-export const colorSchemeAtom = atomWithStorage<ColorScheme>("palot:colorScheme", "dark")
+export const colorSchemeAtom = atomWithStorage<ColorScheme>("elf:colorScheme", "dark")
 
 /**
  * Whether the user prefers opaque (non-transparent) windows.
  * When true, the renderer uses solid backgrounds instead of semi-transparent.
  */
-export const opaqueWindowsAtom = atomWithStorage<boolean>("palot:opaqueWindows", false)
+export const opaqueWindowsAtom = atomWithStorage<boolean>("elf:opaqueWindows", false)
 
 /**
  * The active window chrome tier, set by the main process on load.
@@ -104,10 +104,10 @@ export const isTransparentAtom = atom((get) => {
 	return !opaque && (tier === "liquid-glass" || tier === "vibrancy")
 })
 
-export const draftsAtom = atomWithStorage<Record<string, string>>("palot:drafts", {})
+export const draftsAtom = atomWithStorage<Record<string, string>>("elf:drafts", {})
 
 export const projectModelsAtom = atomWithStorage<Record<string, PersistedModelRef>>(
-	"palot:projectModels",
+	"elf:projectModels",
 	{},
 )
 
@@ -116,22 +116,22 @@ export const projectModelsAtom = atomWithStorage<Record<string, PersistedModelRe
  * Once dismissed, the banner never reappears.
  */
 export const automationsBannerDismissedAtom = atomWithStorage<boolean>(
-	"palot:automationsBannerDismissed",
+	"elf:automationsBannerDismissed",
 	false,
 )
 
 export const fireflySurfacePreferencesAtom = atomWithStorage<FireflySurfacePreferences>(
-	"palot:firefly-surface-preferences",
+	"elf:firefly-surface-preferences",
 	{ lastSidePanelTab: "review" },
 )
 
 export const pinnedFactsAtom = atomWithStorage<Record<string, PinnedFact[]>>(
-	"palot:pinnedFacts",
+	"elf:pinnedFacts",
 	{},
 )
 
 export const fireflyProfilePreferencesAtom = atomWithStorage<FireflyProfilePreferences>(
-	"palot:fireflyProfilePreferences",
+	"elf:fireflyProfilePreferences",
 	{
 		profiles: [DEFAULT_FIREFLY_PROFILE],
 		activeProfileId: DEFAULT_FIREFLY_PROFILE_ID,
@@ -173,7 +173,7 @@ export const upsertFireflyProfileAtom = atom(null, (get, set, profile: FireflyPr
 
 export type MemoryMode = "local" | "hybrid" | "remote"
 
-export const memoryModeAtom = atomWithStorage<MemoryMode>("palot:memoryMode", "local")
+export const memoryModeAtom = atomWithStorage<MemoryMode>("elf:memoryMode", "local")
 
 export interface MemoryApiConfig {
 	apiBaseUrl: string
@@ -181,7 +181,7 @@ export interface MemoryApiConfig {
 	userId: string
 }
 
-export const memoryApiConfigAtom = atomWithStorage<MemoryApiConfig>("palot:memoryApiConfig", {
+export const memoryApiConfigAtom = atomWithStorage<MemoryApiConfig>("elf:memoryApiConfig", {
 	apiBaseUrl: "",
 	projectId: "",
 	userId: "",

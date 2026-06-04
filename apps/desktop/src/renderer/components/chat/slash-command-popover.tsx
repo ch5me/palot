@@ -8,8 +8,8 @@
  * - Keyboard navigation (Arrow keys, Enter/Tab, Escape)
  */
 
-import { ScrollArea } from "@ch5me/palot-ui/components/scroll-area"
-import { cn } from "@ch5me/palot-ui/lib/utils"
+import { ScrollArea } from "@ch5me/elf-ui/components/scroll-area"
+import { cn } from "@ch5me/elf-ui/lib/utils"
 import fuzzysort from "fuzzysort"
 import {
 	BookOpenIcon,

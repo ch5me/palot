@@ -6,7 +6,7 @@ Do not port `ResizableGrid.tsx` or `PaneDropZone.tsx` yet.
 
 ## Why <!-- oc:id=sec_ac -->
 
-Current Palot shell already has enough layout power for the next surfaces:
+Current Elf shell already has enough layout power for the next surfaces:
 - `SplitPane` in `sidebar-layout.tsx` handles app-level sidebar vs main workspace
 - `ResizablePanes` in `agent-detail.tsx` handles session chat vs side-panel work
 - the surface-form policy now constrains new surfaces to side-panel, main-pane, or route-level before generalized docking exists

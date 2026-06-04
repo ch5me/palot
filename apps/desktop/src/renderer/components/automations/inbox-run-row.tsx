@@ -11,7 +11,7 @@ import {
 	ContextMenuItem,
 	ContextMenuSeparator,
 	ContextMenuTrigger,
-} from "@ch5me/palot-ui/components/context-menu"
+} from "@ch5me/elf-ui/components/context-menu"
 import {
 	ArchiveIcon,
 	CheckCircle2Icon,

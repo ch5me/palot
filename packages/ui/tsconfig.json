@@ -14,7 +14,7 @@
 		"noUnusedLocals": true,
 		"noUnusedParameters": true,
 		"paths": {
-			"@ch5me/palot-ui/*": ["./src/*"]
+			"@ch5me/elf-ui/*": ["./src/*"]
 		}
 	},
 	"include": ["src/**/*.ts", "src/**/*.tsx"],

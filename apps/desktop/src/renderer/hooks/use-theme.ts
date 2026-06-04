@@ -7,7 +7,7 @@ import { type ColorScheme, getAvailableThemes, getTheme, type ThemeDefinition } 
 // useThemeEffect — synchronises persisted store to <html> element
 // ============================================================
 
-const STYLE_ID = "palot-theme-vars"
+const STYLE_ID = "elf-theme-vars"
 
 function getOrCreateStyleElement(): HTMLStyleElement {
 	let el = document.getElementById(STYLE_ID) as HTMLStyleElement | null
@@ -101,8 +101,8 @@ export function useThemeEffect() {
 		// Sync native theme with macOS so the glass tint matches the CSS color scheme.
 		// Without this, macOS applies its system appearance (dark/light) to the native
 		// glass layer regardless of what the app's CSS says — causing mismatched tinting.
-		if ("palot" in window) {
-			window.palot.setNativeTheme(colorScheme === "system" ? "system" : cls)
+		if ("elf" in window) {
+			window.elf.setNativeTheme(colorScheme === "system" ? "system" : cls)
 		}
 
 		if (theme.fonts?.sans) {
@@ -143,7 +143,7 @@ export function useColorScheme(): ColorScheme {
 
 export function useAvailableThemes(): ThemeDefinition[] {
 	const platform =
-		typeof window !== "undefined" && "palot" in window ? window.palot.platform : undefined
+		typeof window !== "undefined" && "elf" in window ? window.elf.platform : undefined
 	return useMemo(() => getAvailableThemes(platform), [platform])
 }
 

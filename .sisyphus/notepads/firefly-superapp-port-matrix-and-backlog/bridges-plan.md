@@ -4,7 +4,7 @@
 
 In the old superapp, Bridges was the integration hub: the place where external tools and systems could be linked into the app experience.
 
-## Current Palot seams to reuse <!-- oc:id=sec_ac -->
+## Current Elf seams to reuse <!-- oc:id=sec_ac -->
 
 - Plugins surface already inventories OpenCode-native seams: skills, commands, MCP posture.
 - Provider settings already model external auth / connection posture.

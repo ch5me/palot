@@ -1,6 +1,6 @@
-import { Button } from "@ch5me/palot-ui/components/button"
-import { SidebarProvider } from "@ch5me/palot-ui/components/sidebar"
-import { Tooltip, TooltipContent, TooltipTrigger } from "@ch5me/palot-ui/components/tooltip"
+import { Button } from "@ch5me/elf-ui/components/button"
+import { SidebarProvider } from "@ch5me/elf-ui/components/sidebar"
+import { Tooltip, TooltipContent, TooltipTrigger } from "@ch5me/elf-ui/components/tooltip"
 import { SplitPane } from "@ch5me/workspace"
 import { Outlet, useNavigate } from "@tanstack/react-router"
 import { useAtom, useAtomValue } from "jotai"
@@ -20,8 +20,8 @@ import { useSidebarSlot } from "./sidebar-slot-context"
 import { UpdateBanner } from "./update-banner"
 
 const isMac =
-	typeof window !== "undefined" && "palot" in window && window.palot.platform === "darwin"
-const isElectronEnv = typeof window !== "undefined" && "palot" in window
+	typeof window !== "undefined" && "elf" in window && window.elf.platform === "darwin"
+const isElectronEnv = typeof window !== "undefined" && "elf" in window
 
 const WINDOW_CONTROLS_LEFT = isMac && isElectronEnv ? 93 : 8
 const WINDOW_CONTROLS_INSET = isMac && isElectronEnv ? 160 : 72

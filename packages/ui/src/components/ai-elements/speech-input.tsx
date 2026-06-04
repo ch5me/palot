@@ -1,8 +1,8 @@
 "use client"
 
-import { Button } from "@ch5me/palot-ui/components/button"
-import { Spinner } from "@ch5me/palot-ui/components/spinner"
-import { cn } from "@ch5me/palot-ui/lib/utils"
+import { Button } from "@ch5me/elf-ui/components/button"
+import { Spinner } from "@ch5me/elf-ui/components/spinner"
+import { cn } from "@ch5me/elf-ui/lib/utils"
 import { MicIcon, SquareIcon } from "lucide-react"
 import type { ComponentProps } from "react"
 import { useCallback, useEffect, useRef, useState } from "react"

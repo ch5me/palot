@@ -5,15 +5,15 @@ import {
 	PromptInputTextarea,
 	PromptInputTools,
 	usePromptInputController,
-} from "@ch5me/palot-ui/components/ai-elements/prompt-input"
+} from "@ch5me/elf-ui/components/ai-elements/prompt-input"
 import { type MentionOption, MentionPopover, type MentionPopoverHandle } from "./chat/mention-popover"
 import {
 	createAgentMention,
 	createFileMention,
 	insertMentionIntoText,
 } from "./chat/prompt-mentions"
-import { Popover, PopoverContent, PopoverTrigger } from "@ch5me/palot-ui/components/popover"
-import { Tooltip, TooltipContent, TooltipTrigger } from "@ch5me/palot-ui/components/tooltip"
+import { Popover, PopoverContent, PopoverTrigger } from "@ch5me/elf-ui/components/popover"
+import { Tooltip, TooltipContent, TooltipTrigger } from "@ch5me/elf-ui/components/tooltip"
 import { useNavigate, useParams } from "@tanstack/react-router"
 import { useAtomValue } from "jotai"
 import {
@@ -54,7 +54,7 @@ import { useSetAppBarContent } from "./app-bar-context"
 import { BranchPicker } from "./branch-picker"
 import { PromptAttachmentPreview } from "./chat/prompt-attachments"
 import { PromptToolbar, StatusBar } from "./chat/prompt-toolbar"
-import { PalotWordmark } from "./palot-wordmark"
+import { ElfWordmark } from "./elf-wordmark"
 
 // ============================================================
 // Worktree mode toggle
@@ -213,7 +213,7 @@ export function NewChat() {
 	const setAppBarContent = useSetAppBarContent()
 	useLayoutEffect(() => {
 		setAppBarContent(
-			<PalotWordmark className="h-[11px] w-auto shrink-0 text-muted-foreground/70" />,
+			<ElfWordmark className="h-[11px] w-auto shrink-0 text-muted-foreground/70" />,
 		)
 		return () => setAppBarContent(null)
 	}, [setAppBarContent])
@@ -603,7 +603,7 @@ export function NewChat() {
 				<div className="w-full max-w-4xl space-y-8">
 					{/* Wordmark */}
 					<div className="flex justify-center">
-						<PalotWordmark className="h-4 w-auto text-foreground" />
+						<ElfWordmark className="h-4 w-auto text-foreground" />
 					</div>
 
 					{/* "Build what's next" + project name */}

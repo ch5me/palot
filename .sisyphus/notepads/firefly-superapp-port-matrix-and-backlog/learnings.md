@@ -7,7 +7,7 @@
 - Pane bus v1 can piggyback on the existing SSE/event-processor path: `processEvent()` now publishes each OpenCode event into scoped Jotai atoms before normal reducers run.
 - Useful first scopes are `global`, `session:<id>`, and `project:<directory>`; they cover current side-panel surfaces without exposing connection-manager internals.
 - Surface-form policy: side-panel is the default proof lane, `main-pane` is for session-centric workflows that outgrow narrow width, and route-level is only for cross-session/cross-project workspaces with their own navigation identity.
-- Current shell evidence says Palot should avoid generalized multi-pane layout work until a concrete surface proves the current `ResizablePanes` + `SplitPane` seams are insufficient.
+- Current shell evidence says Elf should avoid generalized multi-pane layout work until a concrete surface proves the current `ResizablePanes` + `SplitPane` seams are insufficient.
 - Profile/account audit found no existing app-level profile model in renderer, main, or docs; only provider-specific `profile` fields exist for credentials. Smallest safe port is a local-only profile preference seam in settings.
 - Because there is no sync contract or account backend yet, profiles should be local-only first and account-menu work stays minimal: a settings-level active-profile switch is enough to preserve the seam.
 - Surface-registry audit found no remaining low-risk `surfaces.ts` substrate gap for Wave 1. The current contract already covers shipped side-panel surfaces; route/main-pane semantics should wait until a concrete Files/Terminal/Editor surface needs them.
@@ -22,9 +22,9 @@
 - Real PTY support is now an explicit dependency-adoption blocker: `node-pty` is absent, and adding it is a meaningful native/runtime change. Better to record the blocker and keep the backlog moving than stall the whole wave here.
 - Editor should complement Files, not replace it. The first profitable slice is a read-only editor shell that reuses file-read + file-search seams and defers Monaco until true editing or heavier interaction proves necessary.
 - Monaco is explicitly deferred. The current editor shell already satisfies the proof goal, and Monaco's dependency + worker setup cost is not justified until true editing or richer editor behavior is required.
-- Plugins should start by reflecting OpenCode-native domains that already exist in Palot: skills, MCPs, and provider/plugin auth posture. No separate plugin runtime or marketplace semantics are needed for the first shell.
+- Plugins should start by reflecting OpenCode-native domains that already exist in Elf: skills, MCPs, and provider/plugin auth posture. No separate plugin runtime or marketplace semantics are needed for the first shell.
 - The plugin shell can reuse existing OpenCode seams directly: skills via `client.app.skills()`, commands via `client.command.list()`, and MCP/provider posture via existing provider/onboarding surfaces. That is enough for a first proof surface.
-- There is no separate plugin-domain backend worth porting right now beyond the OpenCode-native seams Palot already uses. Existing provider auth, skills, commands, and MCP awareness already cover the first useful plugin surface.
+- There is no separate plugin-domain backend worth porting right now beyond the OpenCode-native seams Elf already uses. Existing provider auth, skills, commands, and MCP awareness already cover the first useful plugin surface.
 - Bridges should sit above Plugins in the IA: Plugins is the runtime inventory, Bridges is the user-facing integrations hub that later points to connector-specific flows.
 - Bridges can start with no new backend logic. Existing plugin/provider/MCP seams already provide enough posture data for a first integrations hub shell.
 - There is no old `apps.ts` bridge-domain backend worth porting right now beyond the connector posture seams already present. The Bridges shell already captures the first useful layer, so deeper vendor-specific logic stays deferred.
@@ -37,10 +37,10 @@
 - Oracle roster can start with zero new backend logic. Existing live agent/session derivations already provide enough data for a denser roster surface than the sidebar.
 - The roster shell can stay side-panel first. The current live agent/session derivations already carry enough structure; a route-level dashboard should wait until broader orchestration needs appear.
 - Oracle roster shell is now wired and proves the session-scoped roster lane without any new backend work.
-- Claude Code should start as a compatibility/import lane, not a live interactive runtime. Palot already has real migration value there, and adding a second coding-agent workflow would fight the OpenCode-first product shape.
+- Claude Code should start as a compatibility/import lane, not a live interactive runtime. Elf already has real migration value there, and adding a second coding-agent workflow would fight the OpenCode-first product shape.
 - Claude Code shell can stay side-panel first because its current value is explanatory and migration-oriented, not a standalone runtime workspace.
 - Old dashboard concepts do not need a direct port. `new-chat.tsx`, sidebar Active/Recent/Projects sections, and metrics/status surfaces already absorb the meaningful behavior with a better fit.
-- Old project/app/device/monitor helper responsibilities are already distributed across Palot's real seams: project discovery/sidebar, server indicator, Open-in targets, setup/migration, and session metrics. No separate helper-domain port is needed right now.
-- Remaining old superapp modules can mostly be treated as either (a) already absorbed by current Palot shells/seams, (b) intentionally deferred because no backend/runtime exists yet, or (c) explicit exclusions like Motion/Database.
-- The old superapp can be treated as retired as an implementation base, but not yet as feature-complete retired product scope. Several important lanes are still shell-grade in Palot.
+- Old project/app/device/monitor helper responsibilities are already distributed across Elf's real seams: project discovery/sidebar, server indicator, Open-in targets, setup/migration, and session metrics. No separate helper-domain port is needed right now.
+- Remaining old superapp modules can mostly be treated as either (a) already absorbed by current Elf shells/seams, (b) intentionally deferred because no backend/runtime exists yet, or (c) explicit exclusions like Motion/Database.
+- The old superapp can be treated as retired as an implementation base, but not yet as feature-complete retired product scope. Several important lanes are still shell-grade in Elf
 - PTY is blocked, so Editor becomes the next highest-value surface. The shell can land now using existing file search + file read seams, while Monaco stays deferred until editing fidelity is actually needed.

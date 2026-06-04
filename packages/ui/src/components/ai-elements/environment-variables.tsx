@@ -1,9 +1,9 @@
 "use client"
 
-import { Badge } from "@ch5me/palot-ui/components/badge"
-import { Button } from "@ch5me/palot-ui/components/button"
-import { Switch } from "@ch5me/palot-ui/components/switch"
-import { cn } from "@ch5me/palot-ui/lib/utils"
+import { Badge } from "@ch5me/elf-ui/components/badge"
+import { Button } from "@ch5me/elf-ui/components/button"
+import { Switch } from "@ch5me/elf-ui/components/switch"
+import { cn } from "@ch5me/elf-ui/lib/utils"
 import { CheckIcon, CopyIcon, EyeIcon, EyeOffIcon } from "lucide-react"
 import type { ComponentProps, HTMLAttributes } from "react"
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react"

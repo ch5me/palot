@@ -5,8 +5,8 @@
  * pre-fills fields from the automation, and shows Delete/Test/Pause actions.
  */
 
-import { Badge } from "@ch5me/palot-ui/components/badge"
-import { Button } from "@ch5me/palot-ui/components/button"
+import { Badge } from "@ch5me/elf-ui/components/badge"
+import { Button } from "@ch5me/elf-ui/components/button"
 import {
 	Combobox,
 	ComboboxContent,
@@ -14,18 +14,18 @@ import {
 	ComboboxInput,
 	ComboboxItem,
 	ComboboxList,
-} from "@ch5me/palot-ui/components/combobox"
+} from "@ch5me/elf-ui/components/combobox"
 import {
 	Dialog,
 	DialogContent,
 	DialogFooter,
 	DialogHeader,
 	DialogTitle,
-} from "@ch5me/palot-ui/components/dialog"
-import { Input } from "@ch5me/palot-ui/components/input"
-import { Label } from "@ch5me/palot-ui/components/label"
-import { Separator } from "@ch5me/palot-ui/components/separator"
-import { Textarea } from "@ch5me/palot-ui/components/textarea"
+} from "@ch5me/elf-ui/components/dialog"
+import { Input } from "@ch5me/elf-ui/components/input"
+import { Label } from "@ch5me/elf-ui/components/label"
+import { Separator } from "@ch5me/elf-ui/components/separator"
+import { Textarea } from "@ch5me/elf-ui/components/textarea"
 import { useAtomValue } from "jotai"
 import {
 	FolderIcon,

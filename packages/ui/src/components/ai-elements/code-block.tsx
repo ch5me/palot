@@ -1,14 +1,14 @@
 "use client"
 
-import { Button } from "@ch5me/palot-ui/components/button"
+import { Button } from "@ch5me/elf-ui/components/button"
 import {
 	Select,
 	SelectContent,
 	SelectItem,
 	SelectTrigger,
 	SelectValue,
-} from "@ch5me/palot-ui/components/select"
-import { cn } from "@ch5me/palot-ui/lib/utils"
+} from "@ch5me/elf-ui/components/select"
+import { cn } from "@ch5me/elf-ui/lib/utils"
 import { CheckIcon, CopyIcon } from "lucide-react"
 import type { ComponentProps, CSSProperties, HTMLAttributes } from "react"
 import {

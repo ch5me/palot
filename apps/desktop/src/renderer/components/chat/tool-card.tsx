@@ -2,9 +2,9 @@ import {
 	Collapsible,
 	CollapsibleContent,
 	CollapsibleTrigger,
-} from "@ch5me/palot-ui/components/collapsible"
-import { Tooltip, TooltipContent, TooltipTrigger } from "@ch5me/palot-ui/components/tooltip"
-import { cn } from "@ch5me/palot-ui/lib/utils"
+} from "@ch5me/elf-ui/components/collapsible"
+import { Tooltip, TooltipContent, TooltipTrigger } from "@ch5me/elf-ui/components/tooltip"
+import { cn } from "@ch5me/elf-ui/lib/utils"
 import { ChevronRightIcon } from "lucide-react"
 import type { ReactNode } from "react"
 import { memo, useState } from "react"

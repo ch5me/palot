@@ -6,8 +6,8 @@ import {
 	InputGroupButton,
 	InputGroupInput,
 	InputGroupText,
-} from "@ch5me/palot-ui/components/input-group"
-import { cn } from "@ch5me/palot-ui/lib/utils"
+} from "@ch5me/elf-ui/components/input-group"
+import { cn } from "@ch5me/elf-ui/lib/utils"
 import { CheckIcon, CopyIcon } from "lucide-react"
 import type { ComponentProps } from "react"
 import { createContext, useCallback, useContext, useEffect, useRef, useState } from "react"

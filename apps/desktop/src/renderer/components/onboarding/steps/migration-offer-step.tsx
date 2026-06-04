@@ -6,9 +6,9 @@
  * (from the complete step), so scanning happens on mount.
  */
 
-import { Button } from "@ch5me/palot-ui/components/button"
-import { Checkbox } from "@ch5me/palot-ui/components/checkbox"
-import { Spinner } from "@ch5me/palot-ui/components/spinner"
+import { Button } from "@ch5me/elf-ui/components/button"
+import { Checkbox } from "@ch5me/elf-ui/components/checkbox"
+import { Spinner } from "@ch5me/elf-ui/components/spinner"
 import {
 	ArrowRightIcon,
 	BotIcon,
@@ -69,7 +69,7 @@ export function MigrationOfferStep({ provider, onPreview, onSkip }: MigrationOff
 	const hasScanned = useRef(false)
 	const scanResultRef = useRef<unknown>(null)
 
-	const isElectron = typeof window !== "undefined" && "palot" in window
+	const isElectron = typeof window !== "undefined" && "elf" in window
 	const label = PROVIDER_LABELS[provider]
 
 	// Run full scan on mount (user explicitly opted in)
@@ -78,7 +78,7 @@ export function MigrationOfferStep({ provider, onPreview, onSkip }: MigrationOff
 		hasScanned.current = true
 		setScanning(true)
 
-		window.palot.onboarding
+		window.elf.onboarding
 			.scanProvider(provider)
 			.then(({ detection, scanResult }) => {
 				scanResultRef.current = scanResult
@@ -103,7 +103,7 @@ export function MigrationOfferStep({ provider, onPreview, onSkip }: MigrationOff
 		const selectedIds = categories.filter((c) => c.enabled).map((c) => c.id)
 
 		try {
-			const preview = await window.palot.onboarding.previewMigration(
+			const preview = await window.elf.onboarding.previewMigration(
 				provider,
 				scanResultRef.current,
 				selectedIds,
@@ -124,7 +124,7 @@ export function MigrationOfferStep({ provider, onPreview, onSkip }: MigrationOff
 				<div className="text-center">
 					<h2 className="text-xl font-semibold text-foreground">Migrate from {label}</h2>
 					<p className="mt-1 text-sm text-muted-foreground">
-						We detected an existing {label} setup. Palot can migrate your configuration to OpenCode
+						We detected an existing {label} setup. Elf can migrate your configuration to OpenCode
 						format.
 					</p>
 				</div>

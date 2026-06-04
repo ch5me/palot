@@ -1,5 +1,5 @@
-import { Button } from "@ch5me/palot-ui/components/button"
-import { Input } from "@ch5me/palot-ui/components/input"
+import { Button } from "@ch5me/elf-ui/components/button"
+import { Input } from "@ch5me/elf-ui/components/input"
 import {
 	ArrowLeftIcon,
 	ArrowRightIcon,
@@ -41,7 +41,7 @@ interface WebviewNavigationEvent extends Event {
 const FALLBACK_URL = "about:blank"
 
 function isElectron(): boolean {
-	return typeof window !== "undefined" && "palot" in window
+	return typeof window !== "undefined" && "elf" in window
 }
 
 function normalizeUrl(input: string): string {
@@ -129,7 +129,7 @@ export function BrowserPanel({ agent, className }: BrowserPanelProps) {
 
 	const handleOpenExternal = async () => {
 		if (!isElectron()) return
-		await window.palot.openExternal(currentUrl)
+		await window.elf.openExternal(currentUrl)
 	}
 
 	const handleGoBack = () => {
@@ -155,7 +155,7 @@ export function BrowserPanel({ agent, className }: BrowserPanelProps) {
 			<div className="border-b border-border px-4 py-3">
 				<h3 className="text-sm font-medium text-foreground">Inline Browser</h3>
 				<p className="mt-1 text-xs text-muted-foreground">
-					Browse {agent.project} docs, tools, and local references without leaving Palot.
+					Browse {agent.project} docs, tools, and local references without leaving Elf
 				</p>
 			</div>
 			<div className="flex min-h-0 flex-1 flex-col gap-3 px-4 py-4">

@@ -1,7 +1,7 @@
 # Firefly Superapp Port — Remaining Real Implementation Work <!-- oc:id=sec_aa -->
 
 ## TL;DR <!-- oc:id=sec_ab -->
-> **Summary**: This plan replaces the optimistic port matrix as the execution source of truth for the remaining real Firefly-in-Palot implementation work. Shared shell substrate is already landed; remaining work is runtime/product completion for Browser, Bridges, Studio/Office, Voice, plus explicit Oracle and Claude boundary handling.
+> **Summary**: This plan replaces the optimistic port matrix as the execution source of truth for the remaining real Firefly-in-Elf implementation work. Shared shell substrate is already landed; remaining work is runtime/product completion for Browser, Bridges, Studio/Office, Voice, plus explicit Oracle and Claude boundary handling.
 > **Deliverables**: real browser runtime, real Bridges connector backends (OpenCode + Claude Code if available), first Studio preview runtime, real voice capture/transcription runtime, explicit Oracle boundary implementation, final integration proof.
 > **Effort**: XL
 > **Parallel**: YES — 6 waves
@@ -10,7 +10,7 @@
 ---
 
 ## Purpose
-This is the durable source of truth for the **remaining implementation work only** behind the Firefly superapp port in `palot`.
+This is the durable source of truth for the **remaining implementation work only** behind the Firefly superapp port in `elf`.
 
 This plan intentionally excludes:
 - already-landed side-panel/registry/flags/command-palette substrate
@@ -23,7 +23,7 @@ This plan should drive `/start-work` execution. Older matrix/backlog artifacts b
 ---
 
 ## Original Request <!-- oc:id=sec_ac -->
-Create an honest, implementation-oriented remaining-work plan for the Firefly superapp port in Palot. The old matrix became too optimistic because many surfaces are proof shells. New plan must focus on remaining runtime/product work only, support ultrawork execution, use TDD-oriented planning, define atomic commits, and be practical for `/start-work`.
+Create an honest, implementation-oriented remaining-work plan for the Firefly superapp port in Elf The old matrix became too optimistic because many surfaces are proof shells. New plan must focus on remaining runtime/product work only, support ultrawork execution, use TDD-oriented planning, define atomic commits, and be practical for `/start-work`.
 
 ---
 

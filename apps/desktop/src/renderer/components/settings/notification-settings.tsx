@@ -4,8 +4,8 @@ import {
 	SelectItem,
 	SelectTrigger,
 	SelectValue,
-} from "@ch5me/palot-ui/components/select"
-import { Switch } from "@ch5me/palot-ui/components/switch"
+} from "@ch5me/elf-ui/components/select"
+import { Switch } from "@ch5me/elf-ui/components/switch"
 import { useCallback } from "react"
 import { useSettings } from "../../hooks/use-settings"
 import { SettingsRow } from "./settings-row"
@@ -23,7 +23,7 @@ export function NotificationSettings() {
 	)
 
 	const isMac =
-		typeof window !== "undefined" && "palot" in window && window.palot.platform === "darwin"
+		typeof window !== "undefined" && "elf" in window && window.elf.platform === "darwin"
 
 	return (
 		<div className="space-y-8">
@@ -34,7 +34,7 @@ export function NotificationSettings() {
 			<SettingsSection>
 				<SettingsRow
 					label="Completion notifications"
-					description="Set when Palot alerts you that an agent is finished"
+					description="Set when Elf alerts you that an agent is finished"
 				>
 					<Select
 						value={notif.completionMode}

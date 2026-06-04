@@ -1,24 +1,24 @@
-# Upgrade @ch5me/workspace + Integrate into Palot <!-- oc:id=sec_aa -->
+# Upgrade @ch5me/workspace + Integrate into Elf <!-- oc:id=sec_aa -->
 
 ## TL;DR <!-- oc:id=sec_ab -->
 
-> **Quick Summary**: Upgrade the shared `@ch5me/workspace` package to support resizable animated three-column layouts with drag seams, collapsible side panels, and Tailwind-compatible theming. Then integrate it into Palot to replace the fixed-width sidebar layout with a Codex-style workspace.
+> **Quick Summary**: Upgrade the shared `@ch5me/workspace` package to support resizable animated three-column layouts with drag seams, collapsible side panels, and Tailwind-compatible theming. Then integrate it into Elf to replace the fixed-width sidebar layout with a Codex-style workspace.
 > 
 > **Deliverables**:
 > - Upgraded `@ch5me/workspace` package with resizable shell, animated collapse, enhanced seams, snap sizes, CSS variable theming
 > - Updated Storybook stories demonstrating all new behaviors
-> - Palot integration: three-column workspace replacing `SidebarLayout`
+> - Elf integration: three-column workspace replacing `SidebarLayout`
 > 
 > **Estimated Effort**: Medium-Large
 > **Parallel Execution**: YES - 3 waves
-> **Critical Path**: Package API design → Shell refactor → Palot integration → Final verification
+> **Critical Path**: Package API design → Shell refactor → Elf integration → Final verification
 
 ---
 
 ## Context
 
 ### Original Request
-Replace Palot's fixed-width sidebar layout with a Codex-style three-column resizable workspace. Upgrade the shared `@ch5me/workspace` package (in `ch5-packages/`) to support: resizable left/center/right columns with drag seams, animated collapse/expand for side panels, generic pane toggle toolbar, configurable default/snap sizes, and Tailwind-compatible CSS variable theming. Then integrate into Palot, keeping all inner content untouched.
+Replace Elf's fixed-width sidebar layout with a Codex-style three-column resizable workspace. Upgrade the shared `@ch5me/workspace` package (in `ch5-packages/`) to support: resizable left/center/right columns with drag seams, animated collapse/expand for side panels, generic pane toggle toolbar, configurable default/snap sizes, and Tailwind-compatible CSS variable theming. Then integrate into Elf, keeping all inner content untouched.
 
 ### Interview Summary
 **Key Discussions**:
@@ -32,20 +32,20 @@ Replace Palot's fixed-width sidebar layout with a Codex-style three-column resiz
 
 **Research Findings**:
 - `@ch5me/workspace` already has `ResizablePanes`, `Pane`, `PaneSeam`, `PaneToggleToolbar`, `usePaneVisibility`, `WorkspaceShell`, `CollapsibleSidebar`
-- All built on `react-resizable-panels` (v4.11.1 in workspace, v4.6.2 in Palot)
+- All built on `react-resizable-panels` (v4.11.1 in workspace, v4.6.2 in Elf)
 - `WorkspaceShell` uses fixed-width CSS Grid columns — not resizable
 - `CollapsibleSidebar` has no animation on collapse
 - `PaneSeam` is basic (6px, col-resize cursor, no hover states)
 - All workspace styling is inline via `WS_TOKENS` CSS variables
-- Palot already has `react-resizable-panels` with shadcn wrappers
+- Elf already has `react-resizable-panels` with shadcn wrappers
 
 ### Metis Review
 **Identified Gaps** (addressed):
 - Controlled vs uncontrolled API → Default: workspace components are controlled (consumer owns state via props)
-- State ownership → Palot Jotai atoms drive visibility; workspace is pure presentation
+- State ownership → Elf Jotai atoms drive visibility; workspace is pure presentation
 - Collapse semantics → Left/right collapse to 0 width (hidden); left can optionally show rail (48px)
 - Snap sizes → Configurable via prop array; sensible defaults (240/320/400px for left, 320/400/500px for right)
-- CSS variable bridge → Explicit mapping file from `--ws-*` to Palot `--background`/`--border`/etc.
+- CSS variable bridge → Explicit mapping file from `--ws-*` to Elf `--background`/`--border`/etc.
 - Version alignment → Move `react-resizable-panels` to peerDependencies in workspace package
 - Edge cases → Both panels collapsed, near-min width, rapid toggle during resize
 
@@ -54,7 +54,7 @@ Replace Palot's fixed-width sidebar layout with a Codex-style three-column resiz
 ## Work Objectives <!-- oc:id=sec_ac -->
 
 ### Core Objective <!-- oc:id=sec_ad -->
-Produce a production-ready `@ch5me/workspace` package with resizable animated three-column layout, then swap it into Palot's layout shell without touching inner content components.
+Produce a production-ready `@ch5me/workspace` package with resizable animated three-column layout, then swap it into Elf's layout shell without touching inner content components.
 
 ### Concrete Deliverables <!-- oc:id=sec_ae -->
 - `ch5-packages/packages/workspace/contract/src/shell/WorkspaceShell.tsx` — Resizable left/right columns
@@ -63,15 +63,15 @@ Produce a production-ready `@ch5me/workspace` package with resizable animated th
 - `ch5-packages/packages/workspace/contract/src/panes/ResizablePanes.tsx` — Snap size support
 - `ch5-packages/packages/workspace/contract/src/theme/tokens.css` — CSS variable bridge file
 - `ch5-packages/packages/workspace/contract/src/Workspace.stories.tsx` — Updated stories
-- `palot/apps/desktop/src/renderer/components/sidebar-layout.tsx` — Integrated workspace layout
-- `palot/apps/desktop/src/renderer/styles/workspace.css` — Palot theme bridge
+- `elf/apps/desktop/src/renderer/components/sidebar-layout.tsx` — Integrated workspace layout
+- `elf/apps/desktop/src/renderer/styles/workspace.css` — Elf theme bridge
 
 ### Definition of Done <!-- oc:id=sec_af -->
 - [ ] `cd ch5-packages/packages/workspace/contract && bun run typecheck` passes
-- [ ] `cd palot && bun run check-types` passes
-- [ ] `cd palot && bun run lint` passes
+- [ ] `cd elf && bun run check-types` passes
+- [ ] `cd elf && bun run lint` passes
 - [ ] Storybook renders all 5+ workspace stories correctly
-- [ ] Palot renders with resizable three-column layout
+- [ ] Elf renders with resizable three-column layout
 
 ### Must Have <!-- oc:id=sec_ag -->
 - Resizable left and right columns via drag seams
@@ -91,7 +91,7 @@ Produce a production-ready `@ch5me/workspace` package with resizable animated th
 - NO new animation libraries (CSS transitions only)
 - NO changes to routing or data flow
 - NO rewrite of shadcn sidebar provider/state
-- NO Palot-specific code in the `@ch5me/workspace` package
+- NO Elf-specific code in the `@ch5me/workspace` package
 
 ---
 
@@ -109,7 +109,7 @@ Every task MUST include agent-executed QA scenarios.
 Evidence saved to `.sisyphus/evidence/task-{N}-{scenario-slug}.{ext}`.
 
 - **Package changes**: Typecheck + Storybook build + visual check via screenshots
-- **Palot integration**: Typecheck + lint + desktop dev server + Playwright screenshots
+- **Elf integration**: Typecheck + lint + desktop dev server + Playwright screenshots
 
 ---
 
@@ -130,8 +130,8 @@ Wave 2 (After Wave 1 — workspace shell + stories):
 ├── Task 7: Refine PaneToggleToolbar for theme bridge (depends: 2) [quick]
 └── Task 8: Update Storybook stories (depends: 3, 4, 5, 6, 7) [unspecified-high]
 
-Wave 3 (After Wave 2 — Palot integration):
-├── Task 9: Add @ch5me/workspace dep to Palot + theme bridge CSS (depends: 2) [quick]
+Wave 3 (After Wave 2 — Elf integration):
+├── Task 9: Add @ch5me/workspace dep to Elf + theme bridge CSS (depends: 2) [quick]
 ├── Task 10: Replace SidebarLayout with workspace components (depends: 5, 9) [deep]
 ├── Task 11: Wire panel toggle atoms + keyboard shortcuts (depends: 10) [quick]
 └── Task 12: Final build verification + visual QA (depends: 10, 11) [unspecified-high]
@@ -177,7 +177,7 @@ Wave FINAL (After ALL tasks — 4 parallel reviews):
   **What to do**:
   - Read `ch5-packages/packages/workspace/contract/package.json`
   - Move `react-resizable-panels` from `dependencies` to `peerDependencies`
-  - Set peer range to `">=4.6.0"` (compatible with Palot's v4.6.2)
+  - Set peer range to `">=4.6.0"` (compatible with Elf's v4.6.2)
   - Add `react-resizable-panels` to `devDependencies` for local development
   - Run `bun install` from `ch5-packages/` root to update lockfile
   - Verify typecheck passes in workspace package
@@ -262,7 +262,7 @@ Wave FINAL (After ALL tasks — 4 parallel reviews):
   - `ch5-packages/packages/workspace/contract/src/theme/tokens.ts` — All CSS variable names and their fallback values
 
   **External References**:
-  - shadcn/ui CSS variable naming: `--background`, `--foreground`, `--card`, `--border`, `--muted`, `--primary` — the target variables Palot uses
+  - shadcn/ui CSS variable naming: `--background`, `--foreground`, `--card`, `--border`, `--muted`, `--primary` — the target variables Elf uses
 
   **Acceptance Criteria**:
   - [ ] `tokens.css` file exists with all `--ws-*` variables defined in `:root`
@@ -389,7 +389,7 @@ Wave FINAL (After ALL tasks — 4 parallel reviews):
   **References**:
   **Pattern References**:
   - `ch5-packages/packages/workspace/contract/src/sidebar/CollapsibleSidebar.tsx` — Current implementation (56 lines)
-  - Palot's review panel animation: `palot/apps/desktop/src/renderer/components/agent-detail.tsx:302` — `transition-[width] duration-250 ease-in-out` pattern
+  - Elf's review panel animation: `elf/apps/desktop/src/renderer/components/agent-detail.tsx:302` — `transition-[width] duration-250 ease-in-out` pattern
 
   **Acceptance Criteria**:
   - [ ] Sidebar body animates width on collapse/expand (200ms ease-in-out)
@@ -648,7 +648,7 @@ Wave FINAL (After ALL tasks — 4 parallel reviews):
   - Verify all stories render without errors in Storybook
 
   **Must NOT do**:
-  - Do not create Palot-specific stories (keep it generic)
+  - Do not create Elf-specific stories (keep it generic)
   - Do not add new dependencies
 
   **Recommended Agent Profile**:
@@ -698,28 +698,28 @@ Wave FINAL (After ALL tasks — 4 parallel reviews):
   - Message: `docs(workspace): update stories for resizable shell + animated collapse`
   - Files: `src/Workspace.stories.tsx`
 
-- [x] 9. Add @ch5me/workspace dependency to Palot + create theme bridge CSS
+- [x] 9. Add @ch5me/workspace dependency to Elf + create theme bridge CSS
 
   **What to do**:
-  - Add `"@ch5me/workspace": "workspace:*"` to `palot/apps/desktop/package.json` dependencies
-  - Run `bun install` from palot root
-  - Create `palot/apps/desktop/src/renderer/styles/workspace.css` mapping `--ws-*` vars to Palot theme vars:
+  - Add `"@ch5me/workspace": "workspace:*"` to `elf/apps/desktop/package.json` dependencies
+  - Run `bun install` from elf root
+  - Create `elf/apps/desktop/src/renderer/styles/workspace.css` mapping `--ws-*` vars to Elf theme vars:
     ```css
     .workspace-shell { --ws-bg: hsl(var(--background)); --ws-panel: hsl(var(--card)); --ws-border: hsl(var(--border)); --ws-text-primary: hsl(var(--foreground)); --ws-text-secondary: hsl(var(--muted-foreground)); --ws-accent: hsl(var(--primary)); }
     ```
-  - Import in `palot/apps/desktop/src/renderer/styles/globals.css`
+  - Import in `elf/apps/desktop/src/renderer/styles/globals.css`
   - Verify typecheck passes
 
   **Must NOT do**: No component file changes. No hardcoded colors in workspace package.
   **Recommended Agent Profile**: `quick` + `caveman`
   **Parallelization**: Wave 3 start. Blocks: T10. Blocked By: T2.
-  **References**: `palot/apps/desktop/package.json`, `palot/packages/ui/src/styles/globals.css`, `ch5-packages/.../theme/tokens.ts`
-  **Acceptance Criteria**: workspace.css exists, Palot typecheck passes, CSS imported.
+  **References**: `elf/apps/desktop/package.json`, `elf/packages/ui/src/styles/globals.css`, `ch5-packages/.../theme/tokens.ts`
+  **Acceptance Criteria**: workspace.css exists, Elf typecheck passes, CSS imported.
   **QA Scenarios**:
   ```
   Scenario: CSS bridge valid + typecheck
     Tool: Bash
-    Steps: 1. cat palot/apps/desktop/src/renderer/styles/workspace.css 2. cd palot && bun run check-types
+    Steps: 1. cat elf/apps/desktop/src/renderer/styles/workspace.css 2. cd elf && bun run check-types
     Expected: File with --ws-* vars, exit 0
     Evidence: .sisyphus/evidence/task-9-css-bridge.txt
   ```
@@ -752,7 +752,7 @@ Wave FINAL (After ALL tasks — 4 parallel reviews):
   ```
   Scenario: Typecheck + lint after integration
     Tool: Bash
-    Steps: 1. cd palot && bun run check-types 2. cd palot && bun run lint
+    Steps: 1. cd elf && bun run check-types 2. cd elf && bun run lint
     Expected: Both exit 0
     Evidence: .sisyphus/evidence/task-10-build.txt
 
@@ -781,7 +781,7 @@ Wave FINAL (After ALL tasks — 4 parallel reviews):
   ```
   Scenario: Shortcuts + typecheck
     Tool: Bash
-    Steps: 1. grep "keydown" sidebar-layout.tsx 2. cd palot && bun run check-types
+    Steps: 1. grep "keydown" sidebar-layout.tsx 2. cd elf && bun run check-types
     Expected: Keydown present, exit 0
     Evidence: .sisyphus/evidence/task-11-shortcuts.txt
   ```
@@ -790,8 +790,8 @@ Wave FINAL (After ALL tasks — 4 parallel reviews):
 - [x] 12. Final build verification + visual QA
 
   **What to do**:
-  - Full build pipeline: workspace typecheck → Palot typecheck → Palot lint
-  - Start Palot dev server, take Playwright screenshots: all panels, left collapsed, right collapsed, both collapsed
+  - Full build pipeline: workspace typecheck → Elf typecheck → Elf lint
+  - Start Elf dev server, take Playwright screenshots: all panels, left collapsed, right collapsed, both collapsed
   - Kill dev server after verification
 
   **Must NOT do**: No source code changes.
@@ -803,7 +803,7 @@ Wave FINAL (After ALL tasks — 4 parallel reviews):
   ```
   Scenario: Full build pipeline
     Tool: Bash
-    Steps: workspace typecheck → palot typecheck → palot lint
+    Steps: workspace typecheck → elf typecheck → elf lint
     Expected: All exit 0
     Evidence: .sisyphus/evidence/final-qa/build-pipeline.txt
 
@@ -830,7 +830,7 @@ Wave FINAL (After ALL tasks — 4 parallel reviews):
   Output: `Build [PASS/FAIL] | Lint [PASS/FAIL] | Files [N clean/N issues] | VERDICT`
 
 - [ ] F3. **Real Manual QA** — `unspecified-high`
-  Start Palot desktop dev server. Execute EVERY QA scenario from EVERY task — follow exact steps, capture evidence. Test cross-task integration. Test edge cases: both panels collapsed, near-min width, rapid toggle. Save to `.sisyphus/evidence/final-qa/`.
+  Start Elf desktop dev server. Execute EVERY QA scenario from EVERY task — follow exact steps, capture evidence. Test cross-task integration. Test edge cases: both panels collapsed, near-min width, rapid toggle. Save to `.sisyphus/evidence/final-qa/`.
   Output: `Scenarios [N/N pass] | Integration [N/N] | Edge Cases [N tested] | VERDICT`
 
 - [ ] F4. **Scope Fidelity Check** — `deep`
@@ -843,7 +843,7 @@ Wave FINAL (After ALL tasks — 4 parallel reviews):
 
 - **Wave 1**: `feat(workspace): add CSS variable theming + enhanced seams + animated collapse` — workspace package changes
 - **Wave 2**: `feat(workspace): resizable shell + snap sizes + updated stories` — workspace shell + stories
-- **Wave 3**: `feat(desktop): integrate workspace layout` — Palot integration
+- **Wave 3**: `feat(desktop): integrate workspace layout` — Elf integration
 
 ---
 
@@ -855,11 +855,11 @@ Wave FINAL (After ALL tasks — 4 parallel reviews):
 cd /Users/hassoncs/src/ch5/ch5-packages/packages/workspace/contract && bun run typecheck
 # Expected: exit 0, no errors
 
-# Palot
-cd /Users/hassoncs/src/ch5/palot && bun run check-types
+# Elf
+cd /Users/hassoncs/src/ch5/elf && bun run check-types
 # Expected: exit 0, no errors
 
-cd /Users/hassoncs/src/ch5/palot && bun run lint
+cd /Users/hassoncs/src/ch5/elf && bun run lint
 # Expected: exit 0, no errors
 ```
 
@@ -867,10 +867,10 @@ cd /Users/hassoncs/src/ch5/palot && bun run lint
 - [ ] All "Must Have" present
 - [ ] All "Must NOT Have" absent
 - [ ] Workspace package typecheck passes
-- [ ] Palot typecheck passes
-- [ ] Palot lint passes
+- [ ] Elf typecheck passes
+- [ ] Elf lint passes
 - [ ] Storybook stories render correctly
-- [ ] Palot renders three-column resizable layout
+- [ ] Elf renders three-column resizable layout
 - [ ] Side panels animate on collapse/expand
 - [ ] Drag seams have hover/active visual states
 - [ ] Theme CSS variables bridge correctly

@@ -4,10 +4,10 @@ import type { WindowChromeTier } from "../../preload/api"
 import { chromeTierAtom, isTransparentAtom, opaqueWindowsAtom } from "../atoms/preferences"
 
 /**
- * Detect whether we're running inside Electron (preload injects `window.palot`).
+ * Detect whether we're running inside Electron (preload injects `window.elf`).
  */
 function isElectron(): boolean {
-	return typeof window !== "undefined" && "palot" in window
+	return typeof window !== "undefined" && "elf" in window
 }
 
 /** All glass-related CSS classes that we toggle on <html>. */
@@ -40,7 +40,7 @@ export function useChromeTier() {
 	useEffect(() => {
 		if (!isElectron()) return
 
-		window.palot.getChromeTier().then((tier) => {
+		window.elf.getChromeTier().then((tier) => {
 			setChromeTier(tier)
 		})
 	}, [setChromeTier])
@@ -49,7 +49,7 @@ export function useChromeTier() {
 	useEffect(() => {
 		if (!isElectron()) return
 
-		const unsubscribe = window.palot.onChromeTier((tier: string) => {
+		const unsubscribe = window.elf.onChromeTier((tier: string) => {
 			setChromeTier(tier as WindowChromeTier)
 		})
 
@@ -83,7 +83,7 @@ export function useChromeTier() {
 	// (e.g. disabling hover states on macOS to match native sidebar behavior)
 	useEffect(() => {
 		if (!isElectron()) return
-		document.documentElement.dataset.platform = window.palot.platform
+		document.documentElement.dataset.platform = window.elf.platform
 	}, [])
 
 	return { isTransparent, isOpaque, chromeTier }

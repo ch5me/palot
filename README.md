@@ -1,30 +1,30 @@
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="apps/desktop/resources/brand/lockup-dark.png">
   <source media="(prefers-color-scheme: light)" srcset="apps/desktop/resources/brand/lockup-light.png">
-  <img alt="palot." src="apps/desktop/resources/brand/lockup-dark.png" width="420">
+  <img alt="elf" src="apps/desktop/resources/brand/lockup-dark.png" width="420">
 </picture>
 
 ### A desktop GUI for [OpenCode](https://opencode.ai)
 
-[![CI](https://github.com/ItsWendell/palot/actions/workflows/ci.yml/badge.svg)](https://github.com/ItsWendell/palot/actions/workflows/ci.yml)
-[![Release](https://github.com/ItsWendell/palot/actions/workflows/release.yml/badge.svg)](https://github.com/ItsWendell/palot/actions/workflows/release.yml)
-[![GitHub release](https://img.shields.io/github/v/release/ItsWendell/palot?include_prereleases&label=version)](https://github.com/ItsWendell/palot/releases)
-[![GitHub Downloads](https://img.shields.io/github/downloads/ItsWendell/palot/total?label=downloads)](https://github.com/ItsWendell/palot/releases)
+[![CI](https://github.com/ItsWendell/elf/actions/workflows/ci.yml/badge.svg)](https://github.com/ItsWendell/elf/actions/workflows/ci.yml)
+[![Release](https://github.com/ItsWendell/elf/actions/workflows/release.yml/badge.svg)](https://github.com/ItsWendell/elf/actions/workflows/release.yml)
+[![GitHub release](https://img.shields.io/github/v/release/ItsWendell/elf?include_prereleases&label=version)](https://github.com/ItsWendell/elf/releases)
+[![GitHub Downloads](https://img.shields.io/github/downloads/ItsWendell/elf/total?label=downloads)](https://github.com/ItsWendell/elf/releases)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
-> **Alpha Software** -- Palot is under active development. Expect breaking changes, missing features, and rough edges. Feedback and contributions are welcome!
+> **Alpha Software** -- Elf is under active development. Expect breaking changes, missing features, and rough edges. Feedback and contributions are welcome!
 
 <p align="center">
-  <img src="apps/desktop/resources/brand/screenshot.jpg" alt="Palot desktop app" width="900" style="border-radius: 12px;">
+  <img src="apps/desktop/resources/brand/screenshot.jpg" alt="Elf desktop app" width="900" style="border-radius: 12px;">
 </p>
 
 ---
 
-## What is Palot?
+## What is Elf?
 
-Palot is an open-source Electron app that gives [OpenCode](https://opencode.ai) a full desktop interface. OpenCode is a powerful terminal-based AI coding agent, but it runs one project at a time and lives in the terminal. Palot wraps it with a visual UI so you can manage multiple projects and sessions from a single window, review file changes in a dedicated diff panel, schedule automated agent runs, and migrate your existing setup from other coding agents.
+Elf is an open-source Electron app that gives [OpenCode](https://opencode.ai) a full desktop interface. OpenCode is a powerful terminal-based AI coding agent, but it runs one project at a time and lives in the terminal. Elf wraps it with a visual UI so you can manage multiple projects and sessions from a single window, review file changes in a dedicated diff panel, schedule automated agent runs, and migrate your existing setup from other coding agents.
 
-Palot spawns and manages the OpenCode server automatically, streams responses in real time, and renders tool calls with syntax-highlighted diffs, file previews, and terminal output.
+Elf spawns and manages the OpenCode server automatically, streams responses in real time, and renders tool calls with syntax-highlighted diffs, file previews, and terminal output.
 
 <br>
 
@@ -32,7 +32,7 @@ Palot spawns and manages the OpenCode server automatically, streams responses in
 
 ### Chat & Agent Interaction
 
-- **Multi-project workspace** -- Manage AI sessions across all your projects from a single window. OpenCode is scoped to one project per instance; Palot lifts that limitation.
+- **Multi-project workspace** -- Manage AI sessions across all your projects from a single window. OpenCode is scoped to one project per instance; Elf lifts that limitation.
 
 - **Full chat interface** -- Conversational UI with real-time SSE streaming, Markdown rendering, auto-scroll, lazy-load pagination, and draft persistence across session switches.
 
@@ -68,13 +68,13 @@ Palot spawns and manages the OpenCode server automatically, streams responses in
 
 - **Diff commenting** -- Click any line in the diff viewer to leave a comment. Comments are automatically collected and injected into the chat input so you can send feedback to the agent in one go.
 
-- **Commit and push** -- Integrated dialog to create branches, commit changes, push to remotes, and open a GitHub Pull Request, all without leaving Palot.
+- **Commit and push** -- Integrated dialog to create branches, commit changes, push to remotes, and open a GitHub Pull Request, all without leaving Elf
 
 - **Smart diff gates** -- Auto-collapses generated files (lockfiles, etc.) and very large diffs to keep the review panel responsive.
 
 ### Automations
 
-- **Scheduled agent runs** -- Define recurring tasks with RRule-based scheduling. Palot runs the agent in the background and queues the results for your review.
+- **Scheduled agent runs** -- Define recurring tasks with RRule-based scheduling. Elf runs the agent in the background and queues the results for your review.
 
 - **Human-in-the-loop review** -- Automation runs land in a `pending_review` state so you can inspect changes in the review panel before accepting or archiving them.
 
@@ -122,18 +122,18 @@ Palot spawns and manages the OpenCode server automatically, streams responses in
 | Windows | x64, ARM64 | NSIS installer |
 | Linux | x64 | AppImage, DEB, RPM |
 
-Download the latest release from the [Releases page](https://github.com/ItsWendell/palot/releases).
+Download the latest release from the [Releases page](https://github.com/ItsWendell/elf/releases).
 
 ### macOS: unsigned app warning
 
-Palot is not yet code-signed or notarized. macOS Gatekeeper will block the app on first launch with a message like *"Palot is damaged and can't be opened"* or *"Apple could not verify Palot"*. To fix this:
+Elf is not yet code-signed or notarized. macOS Gatekeeper will block the app on first launch with a message like *"Elf is damaged and can't be opened"* or *"Apple could not verify Elf"*. To fix this:
 
 **Option A** -- Right-click (or Control-click) the app in Finder and select **Open**, then click **Open** in the dialog.
 
 **Option B** -- Remove the quarantine attribute from the terminal:
 
 ```bash
-xattr -cr /Applications/Palot.app
+xattr -cr /Applications/Elfapp
 ```
 
 This is expected behavior for unsigned apps and does not indicate malware.
@@ -144,27 +144,27 @@ This is expected behavior for unsigned apps and does not indicate malware.
 
 ### From a release (recommended)
 
-1. Download and install from the [Releases page](https://github.com/ItsWendell/palot/releases)
+1. Download and install from the [Releases page](https://github.com/ItsWendell/elf/releases)
 2. Make sure [OpenCode CLI](https://opencode.ai) is installed (`~/.opencode/bin/opencode`)
-3. Palot will automatically manage the OpenCode server
+3. Elf will automatically manage the OpenCode server
 
 > OpenCode needs at least one AI provider configured (Anthropic, OpenAI, Google, etc.). Run `opencode` in a terminal once to complete initial setup.
 
 ### Coming from Claude Code or Cursor?
 
-On first launch, Palot offers a guided migration wizard that detects your existing config and history. You can also trigger it later from Settings.
+On first launch, Elf offers a guided migration wizard that detects your existing config and history. You can also trigger it later from Settings.
 
 ### Configuration
 
-Palot is a GUI layer on top of OpenCode, so core configuration like model providers, MCP servers, custom tools, and agent behavior is managed through OpenCode's own config files. Refer to the [OpenCode documentation](https://opencode.ai/docs) for setup instructions.
+Elf is a GUI layer on top of OpenCode, so core configuration like model providers, MCP servers, custom tools, and agent behavior is managed through OpenCode's own config files. Refer to the [OpenCode documentation](https://opencode.ai/docs) for setup instructions.
 
 ### From source
 
 **Prerequisites:** [Bun](https://bun.sh) 1.3.8+ and [OpenCode CLI](https://opencode.ai)
 
 ```bash
-git clone https://github.com/ItsWendell/palot.git
-cd palot
+git clone https://github.com/ItsWendell/elfgit
+cd elf
 bun install
 
 # Run the Electron app
@@ -192,7 +192,7 @@ apps/
   desktop/       Electron 40 + Vite + React 19 desktop app
   server/        Bun + Hono backend (browser-mode dev only)
 packages/
-  ui/            Shared shadcn/ui component library (@ch5me/palot-ui)
+  ui/            Shared shadcn/ui component library (@ch5me/elf-ui)
   configconv/    Universal agent config converter (Claude Code, Cursor, OpenCode)
   configconv-cli/ CLI wrapper for the config converter
 ```
@@ -200,7 +200,7 @@ packages/
 The desktop app has three runtime contexts:
 
 - **Main process** (Node.js) -- Window management, IPC handlers, OpenCode server lifecycle, automation scheduler
-- **Preload** -- Secure bridge exposing `window.palot` API via `contextBridge`
+- **Preload** -- Secure bridge exposing `window.elf` API via `contextBridge`
 - **Renderer** (Chromium) -- React app with components, hooks, services, and Jotai atoms
 
 <br>
@@ -255,7 +255,7 @@ bun run version-packages # Apply changesets and bump versions
 
 ## Contributing
 
-Palot is in early alpha and we welcome contributions! Here's how to get started:
+Elf is in early alpha and we welcome contributions! Here's how to get started:
 
 1. Fork the repository
 2. Create a feature branch (`git checkout -b feature/my-feature`)
@@ -271,7 +271,7 @@ For Firefly desktop surface work, also see [docs/firefly-surface-playbook.md](do
 
 ## Acknowledgments
 
-Palot is built on top of [OpenCode](https://github.com/opencode-ai/opencode), an open-source AI coding agent. Palot communicates with the OpenCode server via the [`@opencode-ai/sdk`](https://www.npmjs.com/package/@opencode-ai/sdk) package.
+Elf is built on top of [OpenCode](https://github.com/opencode-ai/opencode), an open-source AI coding agent. Elf communicates with the OpenCode server via the [`@opencode-ai/sdk`](https://www.npmjs.com/package/@opencode-ai/sdk) package.
 
 The UI component library is built with [shadcn/ui](https://ui.shadcn.com/), [Base UI](https://base-ui.com/), and [Tailwind CSS](https://tailwindcss.com/).
 

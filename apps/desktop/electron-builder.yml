@@ -1,6 +1,6 @@
-appId: com.palot.desktop
-productName: Palot
-copyright: Copyright (c) 2025 Palot Contributors
+appId: com.elfdesktop
+productName: Elf
+copyright: Copyright (c) 2025 Elf Contributors
 directories:
   buildResources: resources
   output: release
@@ -12,9 +12,9 @@ files:
   - "node_modules/electron-liquid-glass/**/*"
 
 # Bundle the CLI launcher script into the app package.
-# macOS: Contents/Resources/bin/palot
-# Linux: resources/bin/palot
-# Windows: resources/bin/palot.cmd
+# macOS: Contents/Resources/bin/elf
+# Linux: resources/bin/elf
+# Windows: resources/bin/elfcmd
 extraResources:
   - from: resources/bin
     to: bin
@@ -61,7 +61,7 @@ win:
       arch: [x64, arm64]
 
 linux:
-  executableName: palot
+  executableName: elf
   icon: resources/linux-icons
   target:
     - target: AppImage
@@ -71,13 +71,13 @@ linux:
     - target: rpm
       arch: [x64]
   category: Development
-  maintainer: palot
+  maintainer: elf
   desktop:
     entry:
-      Name: Palot
+      Name: Elf
       Comment: AI-powered coding assistant
       Categories: Development;IDE;
-      StartupWMClass: Palot
+      StartupWMClass: Elf
 
 nsis:
   oneClick: false

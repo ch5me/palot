@@ -14,9 +14,9 @@ import {
 	DropdownMenuSubContent,
 	DropdownMenuSubTrigger,
 	DropdownMenuTrigger,
-} from "@ch5me/palot-ui/components/dropdown-menu"
+} from "@ch5me/elf-ui/components/dropdown-menu"
 
-import { cn } from "@ch5me/palot-ui/lib/utils"
+import { cn } from "@ch5me/elf-ui/lib/utils"
 import { CheckIcon } from "lucide-react"
 import type * as React from "react"
 

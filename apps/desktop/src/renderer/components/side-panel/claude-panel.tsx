@@ -18,7 +18,7 @@ export function ClaudePanel({ agent, className }: ClaudePanelProps) {
 				<section className="rounded-lg border border-border px-3 py-3">
 					<h4 className="text-sm font-medium text-foreground">Migration</h4>
 					<p className="mt-1 text-xs text-muted-foreground">
-						Palot already supports Claude Code migration, preview, backup, and restore through onboarding and Setup.
+						Elf already supports Claude Code migration, preview, backup, and restore through onboarding and Setup.
 					</p>
 				</section>
 				<section className="rounded-lg border border-border px-3 py-3">
@@ -28,7 +28,7 @@ export function ClaudePanel({ agent, className }: ClaudePanelProps) {
 					</p>
 				</section>
 				<section className="rounded-lg border border-dashed border-border px-3 py-3 text-xs text-muted-foreground">
-					A live Claude Code runtime inside Palot is intentionally deferred. OpenCode remains the single interactive coding lane.
+					A live Claude Code runtime inside Elf is intentionally deferred. OpenCode remains the single interactive coding lane.
 				</section>
 			</div>
 		</div>

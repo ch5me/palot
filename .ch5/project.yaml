@@ -1,8 +1,8 @@
-id: palot
+id: elf
 version: 1
 project:
-  id: palot
-  name: Palot
+  id: elf
+  name: Elf
   kind: app
   lifecycle: active
   summary: Self-hostable, collaborative, AI-native design tool — think Figma, but open and yours.

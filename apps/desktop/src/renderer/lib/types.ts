@@ -150,7 +150,7 @@ export interface Agent {
 	parentId?: string
 	/** If set, the session runs in a git worktree at this root path */
 	worktreePath?: string
-	/** The branch name auto-created for the worktree (e.g. "palot/fix-auth-bug") */
+	/** The branch name auto-created for the worktree (e.g. "elf/fix-auth-bug") */
 	worktreeBranch?: string
 	/** Timestamp (ms) of session creation — stable, never changes */
 	createdAt: number

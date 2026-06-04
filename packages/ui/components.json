@@ -11,10 +11,10 @@
 	},
 	"iconLibrary": "lucide",
 	"aliases": {
-		"components": "@ch5me/palot-ui/components",
-		"hooks": "@ch5me/palot-ui/hooks",
-		"lib": "@ch5me/palot-ui/lib",
-		"utils": "@ch5me/palot-ui/lib/utils",
-		"ui": "@ch5me/palot-ui/components"
+		"components": "@ch5me/elf-ui/components",
+		"hooks": "@ch5me/elf-ui/hooks",
+		"lib": "@ch5me/elf-ui/lib",
+		"utils": "@ch5me/elf-ui/lib/utils",
+		"ui": "@ch5me/elf-ui/components"
 	}
 }

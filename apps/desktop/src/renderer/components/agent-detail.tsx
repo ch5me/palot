@@ -1,15 +1,15 @@
-import { Button } from "@ch5me/palot-ui/components/button"
+import { Button } from "@ch5me/elf-ui/components/button"
 import {
 	DropdownMenu,
 	DropdownMenuContent,
 	DropdownMenuItem,
 	DropdownMenuSeparator,
 	DropdownMenuTrigger,
-} from "@ch5me/palot-ui/components/dropdown-menu"
-import { Input } from "@ch5me/palot-ui/components/input"
-import { Popover, PopoverContent, PopoverTrigger } from "@ch5me/palot-ui/components/popover"
-import { Tooltip, TooltipContent, TooltipTrigger } from "@ch5me/palot-ui/components/tooltip"
-import { cn } from "@ch5me/palot-ui/lib/utils"
+} from "@ch5me/elf-ui/components/dropdown-menu"
+import { Input } from "@ch5me/elf-ui/components/input"
+import { Popover, PopoverContent, PopoverTrigger } from "@ch5me/elf-ui/components/popover"
+import { Tooltip, TooltipContent, TooltipTrigger } from "@ch5me/elf-ui/components/tooltip"
+import { cn } from "@ch5me/elf-ui/lib/utils"
 import { Pane, PaneSeam, ResizablePanes } from "@ch5me/workspace"
 import { useNavigate, useParams } from "@tanstack/react-router"
 import { useAtom, useAtomValue, useSetAtom } from "jotai"
@@ -68,7 +68,7 @@ import type { Agent, FileAttachment, QuestionAnswer } from "../lib/types"
 import { fetchOpenInTargets, isElectron, openInTarget } from "../services/backend"
 import { useSetAppBarContent } from "./app-bar-context"
 import { ChatView } from "./chat"
-import { PalotWordmark } from "./palot-wordmark"
+import { ElfWordmark } from "./elf-wordmark"
 import { SessionSidePanel } from "./side-panel/session-side-panel"
 import type { SidePanelTabDef } from "./side-panel/side-panel-tabs"
 import { SessionMetricsBar } from "./session-metrics-bar"
@@ -383,7 +383,7 @@ export function AgentDetail({
 
 	if (sidePanelOpen) {
 		return (
-			<ResizablePanes id="palot-workspace-center">
+			<ResizablePanes id="elf-workspace-center">
 				<Pane defaultSize="60%" minSize="30%">
 					<div className="min-h-0 min-w-0 h-full overflow-hidden flex flex-col">{chatContent}</div>
 				</Pane>
@@ -440,7 +440,7 @@ function SessionAppBarContent({
 
 	return (
 		<div className="flex h-full w-full min-w-0 items-center gap-2.5">
-			<PalotWordmark className="hidden h-[11px] w-auto shrink-0 text-muted-foreground/70 md:block" />
+			<ElfWordmark className="hidden h-[11px] w-auto shrink-0 text-muted-foreground/70 md:block" />
 
 			<div className="hidden h-3 w-px shrink-0 bg-border/60 md:block" />
 

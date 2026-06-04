@@ -4,9 +4,9 @@ import {
 	Collapsible,
 	CollapsibleContent,
 	CollapsibleTrigger,
-} from "@ch5me/palot-ui/components/collapsible"
-import { useControllableState } from "@ch5me/palot-ui/hooks/use-controllable-state"
-import { cn } from "@ch5me/palot-ui/lib/utils"
+} from "@ch5me/elf-ui/components/collapsible"
+import { useControllableState } from "@ch5me/elf-ui/hooks/use-controllable-state"
+import { cn } from "@ch5me/elf-ui/lib/utils"
 import { cjk } from "@streamdown/cjk"
 import { code } from "@streamdown/code"
 import { math } from "@streamdown/math"

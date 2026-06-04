@@ -7,7 +7,7 @@ Use `node-pty` for the PTY host, but do not add it yet in this slice.
 ## Why this choice <!-- oc:id=sec_ac -->
 
 - It is the standard Node/Electron PTY substrate.
-- It fits Palot's Electron main-process architecture better than inventing a custom shell-stream layer.
+- It fits Elf's Electron main-process architecture better than inventing a custom shell-stream layer.
 - It supports the worktree-first cwd policy already decided.
 
 ## Minimal protocol when implementation starts <!-- oc:id=sec_ad -->

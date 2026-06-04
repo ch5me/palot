@@ -1,4 +1,4 @@
-/* Bridge @ch5me/workspace --ws-* tokens into Palot's shadcn theme */
+/* Bridge @ch5me/workspace --ws-* tokens into Elf's shadcn theme */
 .workspace-shell {
   --ws-bg: hsl(var(--background));
   --ws-panel: hsl(var(--card));

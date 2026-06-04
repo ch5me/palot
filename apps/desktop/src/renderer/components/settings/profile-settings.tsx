@@ -1,4 +1,4 @@
-import { Button } from "@ch5me/palot-ui/components/button"
+import { Button } from "@ch5me/elf-ui/components/button"
 import { useAtomValue, useSetAtom } from "jotai"
 import { activeFireflyProfileAtom, fireflyProfilePreferencesAtom, setActiveFireflyProfileAtom } from "../../atoms/preferences"
 import { SettingsRow } from "./settings-row"

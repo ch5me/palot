@@ -3,10 +3,10 @@ import { contextBridge, ipcRenderer } from "electron"
 /**
  * Preload bridge — exposes a typed API from the main process to the renderer.
  *
- * The renderer accesses these via `window.palot.*`.
+ * The renderer accesses these via `window.elf*`.
  * All methods return Promises (backed by `ipcRenderer.invoke`).
  */
-contextBridge.exposeInMainWorld("palot", {
+contextBridge.exposeInMainWorld("elf", {
 	/** The host platform: "darwin", "win32", or "linux". */
 	platform: process.platform,
 
@@ -143,11 +143,11 @@ contextBridge.exposeInMainWorld("palot", {
 	// --- CLI install ---
 
 	cli: {
-		/** Checks whether the `palot` CLI command is installed. */
+		/** Checks whether the `elf` CLI command is installed. */
 		isInstalled: () => ipcRenderer.invoke("cli:is-installed"),
-		/** Installs the `palot` CLI command (symlinks to /usr/local/bin). */
+		/** Installs the `elf` CLI command (symlinks to /usr/local/bin). */
 		install: () => ipcRenderer.invoke("cli:install"),
-		/** Uninstalls the `palot` CLI command. */
+		/** Uninstalls the `elf` CLI command. */
 		uninstall: () => ipcRenderer.invoke("cli:uninstall"),
 	},
 

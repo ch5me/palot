@@ -6,7 +6,7 @@
  * Includes configuration for the local server's hostname, port, and password.
  */
 
-import { Button } from "@ch5me/palot-ui/components/button"
+import { Button } from "@ch5me/elf-ui/components/button"
 import {
 	Dialog,
 	DialogClose,
@@ -16,10 +16,10 @@ import {
 	DialogHeader,
 	DialogTitle,
 	DialogTrigger,
-} from "@ch5me/palot-ui/components/dialog"
-import { Input } from "@ch5me/palot-ui/components/input"
-import { Label } from "@ch5me/palot-ui/components/label"
-import { Switch } from "@ch5me/palot-ui/components/switch"
+} from "@ch5me/elf-ui/components/dialog"
+import { Input } from "@ch5me/elf-ui/components/input"
+import { Label } from "@ch5me/elf-ui/components/label"
+import { Switch } from "@ch5me/elf-ui/components/switch"
 import {
 	CheckCircle2Icon,
 	ChevronRightIcon,
@@ -247,7 +247,7 @@ export function ServerSettings() {
 // Local server configuration
 // ============================================================
 
-const isElectron = typeof window !== "undefined" && "palot" in window
+const isElectron = typeof window !== "undefined" && "elf" in window
 
 function LocalServerSettings() {
 	const { settings, updateSettings } = useSettings()
@@ -298,10 +298,10 @@ function LocalServerSettings() {
 		try {
 			// Store password in secure storage if provided
 			if (password && isElectron) {
-				await window.palot.credential.store("local", password)
+				await window.elf.credential.store("local", password)
 			} else if (!hasPassword && isElectron) {
 				// If password was cleared, delete stored credential
-				await window.palot.credential.delete("local")
+				await window.elf.credential.delete("local")
 			}
 
 			// Update local server config in settings
@@ -329,7 +329,7 @@ function LocalServerSettings() {
 
 			// Restart the server to apply new settings
 			if (isElectron) {
-				await window.palot.restartOpenCode()
+				await window.elf.restartOpenCode()
 			}
 
 			setPassword("")
@@ -342,7 +342,7 @@ function LocalServerSettings() {
 
 	const handleClearPassword = useCallback(async () => {
 		if (isElectron) {
-			await window.palot.credential.delete("local")
+			await window.elf.credential.delete("local")
 		}
 		setHasPassword(false)
 		setPassword("")
@@ -363,7 +363,7 @@ function LocalServerSettings() {
 
 		// Restart the server without password
 		if (isElectron) {
-			await window.palot.restartOpenCode()
+			await window.elf.restartOpenCode()
 		}
 	}, [settings, updateSettings])
 

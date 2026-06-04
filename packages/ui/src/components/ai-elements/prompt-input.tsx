@@ -8,30 +8,30 @@ import {
 	CommandItem,
 	CommandList,
 	CommandSeparator,
-} from "@ch5me/palot-ui/components/command"
+} from "@ch5me/elf-ui/components/command"
 import {
 	DropdownMenu,
 	DropdownMenuContent,
 	DropdownMenuItem,
 	DropdownMenuTrigger,
-} from "@ch5me/palot-ui/components/dropdown-menu"
-import { HoverCard, HoverCardContent, HoverCardTrigger } from "@ch5me/palot-ui/components/hover-card"
+} from "@ch5me/elf-ui/components/dropdown-menu"
+import { HoverCard, HoverCardContent, HoverCardTrigger } from "@ch5me/elf-ui/components/hover-card"
 import {
 	InputGroup,
 	InputGroupAddon,
 	InputGroupButton,
 	InputGroupTextarea,
-} from "@ch5me/palot-ui/components/input-group"
+} from "@ch5me/elf-ui/components/input-group"
 import {
 	Select,
 	SelectContent,
 	SelectItem,
 	SelectTrigger,
 	SelectValue,
-} from "@ch5me/palot-ui/components/select"
-import { Spinner } from "@ch5me/palot-ui/components/spinner"
-import { Tooltip, TooltipContent, TooltipTrigger } from "@ch5me/palot-ui/components/tooltip"
-import { cn } from "@ch5me/palot-ui/lib/utils"
+} from "@ch5me/elf-ui/components/select"
+import { Spinner } from "@ch5me/elf-ui/components/spinner"
+import { Tooltip, TooltipContent, TooltipTrigger } from "@ch5me/elf-ui/components/tooltip"
+import { cn } from "@ch5me/elf-ui/lib/utils"
 import type { ChatStatus, FileUIPart, SourceDocumentUIPart } from "ai"
 import { CornerDownLeftIcon, ImageIcon, PlusIcon, SquareIcon, XIcon } from "lucide-react"
 import { nanoid } from "nanoid"

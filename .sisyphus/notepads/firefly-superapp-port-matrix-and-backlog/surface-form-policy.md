@@ -2,7 +2,7 @@
 
 ## Decision <!-- oc:id=sec_ab -->
 
-Palot should use three surface forms, but only one is a default starting point:
+Elf should use three surface forms, but only one is a default starting point:
 
 - `side-panel-tab`: default for proof surfaces and lightweight operator workflows.
 - `main-pane`: reserved for workflows that need persistent primary workspace real estate inside an existing session view.
@@ -56,9 +56,9 @@ For the current port backlog:
 
 ## Why <!-- oc:id=sec_ah -->
 
-Current evidence in Palot:
+Current evidence in Elf:
 - the mature shell path is the side-panel registry in `firefly-surface-registry.tsx`, `agent-detail.tsx`, and `session-side-panel.tsx`
 - `@ch5me/workspace` already gives the session view a resizable main-content + side-panel seam
 - `SplitPane` and `ResizablePanes` cover current shell needs without importing a more complex grid model yet
 
-This means Palot does not need generalized multi-pane routing first. It needs disciplined promotion rules so new surfaces do not outrun the proven shell.
+This means Elf does not need generalized multi-pane routing first. It needs disciplined promotion rules so new surfaces do not outrun the proven shell.

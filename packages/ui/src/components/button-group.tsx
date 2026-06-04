@@ -1,8 +1,8 @@
 import { mergeProps } from "@base-ui/react/merge-props"
 import { useRender } from "@base-ui/react/use-render"
-import { Separator } from "@ch5me/palot-ui/components/separator"
+import { Separator } from "@ch5me/elf-ui/components/separator"
 
-import { cn } from "@ch5me/palot-ui/lib/utils"
+import { cn } from "@ch5me/elf-ui/lib/utils"
 import { cva, type VariantProps } from "class-variance-authority"
 
 const buttonGroupVariants = cva(

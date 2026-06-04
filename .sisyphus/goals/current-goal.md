@@ -6,21 +6,21 @@
 
 ## Interpreted Goal
 
-Ship ONE cohesive Firefly **desktop** front end by merging `aios-superapp` (Tauri super-app) and `palot` (Electron OpenCode GUI) into a single app, re-themed entirely on `@ch5me/firefly-design`, with every feature of both apps present and working.
+Ship ONE cohesive Firefly **desktop** front end by merging `aios-superapp` (Tauri super-app) and `elf` (Electron OpenCode GUI) into a single app, re-themed entirely on `@ch5me/firefly-design`, with every feature of both apps present and working.
 
 Decision already made and published (`ch5-company/firefly-frontend-merge-plan.md`, commit `dc0abb0`):
-- **Base = palot** (this repo). It becomes the Firefly desktop front end.
-- **aios is absorbed as a pane layer**, not as a runtime. Rebuild aios's super-app pane-shell + command-palette UX on palot's stack; bring aios features in as firefly-themed, **Jotai-flag-gated pane modules**.
-- aios's Rust/Tauri backend is reference-only; any kept native feature is reimplemented in palot's Electron main (`apps/desktop/src/main/`). Never import Tauri/Rust.
-- **Federation, not repo merge:** desktop (palot) + web (firefly-cloud) stay coherent via shared `@ch5me/*` chat/runtime/theme packages.
+- **Base = elf** (this repo). It becomes the Firefly desktop front end.
+- **aios is absorbed as a pane layer**, not as a runtime. Rebuild aios's super-app pane-shell + command-palette UX on elf's stack; bring aios features in as firefly-themed, **Jotai-flag-gated pane modules**.
+- aios's Rust/Tauri backend is reference-only; any kept native feature is reimplemented in elf's Electron main (`apps/desktop/src/main/`). Never import Tauri/Rust.
+- **Federation, not repo merge:** desktop (elf) + web (firefly-cloud) stay coherent via shared `@ch5me/*` chat/runtime/theme packages.
 
-"All repos merged" = palot is the single app; aios functionality is reproduced inside it; ch5-packages is consumed (not merged); firefly-cloud is federated (not merged).
+"All repos merged" = elf is the single app; aios functionality is reproduced inside it; ch5-packages is consumed (not merged); firefly-cloud is federated (not merged).
 
 ## Success Criteria
 
-- Single palot desktop app builds, lints, typechecks clean: `bun run check-types && bun run lint && bun run build`.
+- Single elf desktop app builds, lints, typechecks clean: `bun run check-types && bun run lint && bun run build`.
 - **Workspace pane-shell** exists: resizable multi-pane grid + global Cmd-K palette + pane registry (`id → component + enabled-flag + native-deps`).
-- **Flagship pane = chat-first OpenCode IDE** (palot's chat + tool-call viz + diff/review + automations) opens by default and works against a local OpenCode server.
+- **Flagship pane = chat-first OpenCode IDE** (elf's chat + tool-call viz + diff/review + automations) opens by default and works against a local OpenCode server.
 - **Every aios feature is present** as a registered pane, firefly-themed: Chat, Terminal, Files, Browser, Memory Graph, CRM/Contacts, Database Workbench, MotionBoards Studio, Automations, Bridges, Notes, Editor, Pulse/Usage, Plugins/Skills, Voice.
 - **Flag toggling works**: any heavy pane can be turned on/off from Cmd-K with no code change, nothing deleted.
 - **Theme is 100% firefly**: no aios `--color-*`/`--aios-*` leakage; dark/light both correct; uses `@ch5me/ch5-ui-web` primitives.
@@ -29,7 +29,7 @@ Decision already made and published (`ch5-company/firefly-frontend-merge-plan.md
 
 ## Constraints
 
-- palot is the base; do not switch runtimes. No Tauri/Rust imports.
+- elf is the base; do not switch runtimes. No Tauri/Rust imports.
 - firefly-design is the SOLE token authority. No second design system.
 - OpenCode is the primary chat runtime; do not maintain two chat stacks (aios multi-engine is optional/secondary).
 - Mac first, Windows next — Electron anchor; macOS-only natives (Liquid Glass, WKWebView→WebContentsView, Whisper) stay flagged until Windows backends exist.
@@ -47,21 +47,21 @@ Decision already made and published (`ch5-company/firefly-frontend-merge-plan.md
 ## Current State
 
 - **Decision + audit: DONE.** Published to `ch5-company/firefly-frontend-merge-plan.md` (`dc0abb0`). Full working plan: `~/.claude/plans/okay-i-d-like-you-adaptive-forest.md`. Goal doc committed `ec3dea0` (pushed).
-- **Firefly theming: DONE across products** (prior session handoff `handoff-20260531.md`). palot already bridges `@ch5me/firefly-design` tokens in `packages/ui/src/styles/globals.css`; warm brand fallbacks preserved.
-- **ARCHITECTURE CORRECTION (discovered 2026-06-01 by reading real renderer):** palot is **session-centric**, not a free-form pane grid. Shape = chat (session/Agent) in the main area + a **right-hand side panel with a TAB REGISTRY**. The pane system the goal needs ALREADY EXISTS in embryo:
+- **Firefly theming: DONE across products** (prior session handoff `handoff-20260531.md`). elf already bridges `@ch5me/firefly-design` tokens in `packages/ui/src/styles/globals.css`; warm brand fallbacks preserved.
+- **ARCHITECTURE CORRECTION (discovered 2026-06-01 by reading real renderer):** elf is **session-centric**, not a free-form pane grid. Shape = chat (session/Agent) in the main area + a **right-hand side panel with a TAB REGISTRY**. The pane system the goal needs ALREADY EXISTS in embryo:
   - Registry contract: `components/side-panel/side-panel-tabs.tsx` → `SidePanelTabDef { id, label, icon, isAvailable(ctx), render(ctx) }` where `ctx = { agent }`.
-  - Host: `components/side-panel/session-side-panel.tsx` (vertical tab strip + content, firefly-themed via `@ch5me/palot-ui`).
+  - Host: `components/side-panel/session-side-panel.tsx` (vertical tab strip + content, firefly-themed via `@ch5me/elf-ui`).
   - State: `atoms/ui.ts` → `SidePanelTabId = "review" | "browser"`, `sidePanelOpenAtom`, `sidePanelActiveTabAtom`.
   - Tabs so far: `review` (real) + `browser` (PLACEHOLDER — `browser-panel.tsx` says "Full webview coming soon… placeholder to verify the tab system works").
   - Flags: `atoms/feature-flags.ts` Jotai `atomWithStorage`, toggled via Cmd-K. (Currently only `automationsEnabledAtom`.)
   - **Therefore: aios features land as side-panel tabs (+ routes for big ones), via THIS registry. Do NOT build a parallel workspace pane-grid.**
 - **Side-panel surface system: LANDED** (Chris said "take it over"). Committed + pushed:
-  - `38645d6` — took over the in-flight slice: session side-panel tab registry (review + browser placeholder), rendered in `@ch5me/workspace` ResizablePanes. Also fixed a broken install: `@ch5me/motion` declares `@ch5me/vitest-react-native-mocks` as a runtime `dependency` (manifest bug — it's test-only); resolved by linking that dir in palot `workspaces`. Typecheck clean.
+  - `38645d6` — took over the in-flight slice: session side-panel tab registry (review + browser placeholder), rendered in `@ch5me/workspace` ResizablePanes. Also fixed a broken install: `@ch5me/motion` declares `@ch5me/vitest-react-native-mocks` as a runtime `dependency` (manifest bug — it's test-only); resolved by linking that dir in elf `workspaces`. Typecheck clean.
   - `17d2b01` — flag-gating mechanism: `browserPanelEnabledAtom` gates the Browser tab; Cmd-K > Features "Enable/Disable Browser Panel" toggle (mirrors Automations). **This is the reusable "disable without deleting" pattern every aios surface will use.** Typecheck + biome clean.
 - **TECH DEBT noted:** (a) `@ch5me/motion` should move `@ch5me/vitest-react-native-mocks` to devDependencies (cross-repo fix in ch5-packages); (b) the dir-link model (`../ch5-packages/...` in `workspaces`) leaks internal test deps — the company-correct end state is published `@ch5me/*` consumption from GitHub Packages.
 - **aios feature ports: STARTED** — pattern proven on Browser tab; remaining surfaces below are the bulk of the work.
 
-## Plan (corrected to palot's real architecture — side-panel tab registry, not a pane grid)
+## Plan (corrected to elf's real architecture — side-panel tab registry, not a pane grid)
 
 0. **Orient: DONE.** Real renderer read; architecture corrected.
 1. **Coordinate / take over in-flight slice: DONE** (`38645d6`).

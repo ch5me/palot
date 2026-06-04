@@ -1,5 +1,5 @@
-import { Button } from "@ch5me/palot-ui/components/button"
-import { Textarea } from "@ch5me/palot-ui/components/textarea"
+import { Button } from "@ch5me/elf-ui/components/button"
+import { Textarea } from "@ch5me/elf-ui/components/textarea"
 import { useMemo, useState } from "react"
 import { toast } from "sonner"
 import { useDraft, useDraftActions } from "../../hooks/use-draft"

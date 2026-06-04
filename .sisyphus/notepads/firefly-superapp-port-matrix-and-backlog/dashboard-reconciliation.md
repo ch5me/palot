@@ -1,6 +1,6 @@
 # Dashboard Reconciliation <!-- oc:id=sec_aa -->
 
-## Current Palot replacements <!-- oc:id=sec_ab -->
+## Current Elf replacements <!-- oc:id=sec_ab -->
 
 - `new-chat.tsx` already acts as the modern landing surface for starting work.
 - Sidebar empty state, Active Now, Recent, and Projects sections already cover most of the old dashboard/navigation role.
@@ -12,7 +12,7 @@ Do not port `IdleDashboard.tsx` or `dashboard.ts` directly.
 
 ## Why <!-- oc:id=sec_ad -->
 
-- Their core value has already been absorbed into existing Palot surfaces with a better fit:
+- Their core value has already been absorbed into existing Elf surfaces with a better fit:
   - launch / prompt entry → `new-chat.tsx`
   - recent + active work visibility → sidebar groups
   - session runtime stats → metrics bar and status bar
@@ -26,7 +26,7 @@ Do not port `IdleDashboard.tsx` or `dashboard.ts` directly.
 
 ## Future reopen condition <!-- oc:id=sec_af -->
 
-Only reopen dashboard-specific work if Palot needs a cross-project executive overview that cannot be expressed by:
+Only reopen dashboard-specific work if Elf needs a cross-project executive overview that cannot be expressed by:
 - current sidebar grouping
 - current `new-chat` landing surface
 - current session/app-bar metrics surfaces

@@ -16,7 +16,7 @@ The shell-level port is broad, but several high-value surfaces remain proof-grad
 ## What is effectively retired <!-- oc:id=sec_ad -->
 
 The old superapp no longer needs to be the place where new desktop shell work happens.
-Palot is now the canonical implementation base for:
+Elf is now the canonical implementation base for:
 - surface registry / flags / persistence
 - first shell presence for the major Firefly lanes
 - onboarding/migration compatibility work
@@ -24,7 +24,7 @@ Palot is now the canonical implementation base for:
 
 ## What still blocks full retirement <!-- oc:id=sec_ae -->
 
-Full retirement should wait until the user-facing product behavior is good enough in Palot for the core desired lanes, especially:
+Full retirement should wait until the user-facing product behavior is good enough in Elf for the core desired lanes, especially:
 - notes durability
 - browser usefulness
 - pulse/runtime telemetry

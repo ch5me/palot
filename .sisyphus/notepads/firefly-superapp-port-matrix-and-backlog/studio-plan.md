@@ -14,7 +14,7 @@ Studio should remain a route-level candidate, but the first proof can still star
 
 - There is no existing office-specific backend or creation workflow.
 - Route-level promotion should follow proven data/workflow complexity, not precede it.
-- A side-panel proof can validate whether users want document/office-specific inspection inside Palot at all.
+- A side-panel proof can validate whether users want document/office-specific inspection inside Elf at all.
 
 ## First shell shape <!-- oc:id=sec_ae -->
 

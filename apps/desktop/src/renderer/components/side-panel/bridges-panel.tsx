@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query"
-import { Button } from "@ch5me/palot-ui/components/button"
-import { cn } from "@ch5me/palot-ui/lib/utils"
+import { Button } from "@ch5me/elf-ui/components/button"
+import { cn } from "@ch5me/elf-ui/lib/utils"
 import {
 	ActivityIcon,
 	ArrowDownLeftIcon,
@@ -163,7 +163,7 @@ function BridgeCard({ channel }: { channel: BridgeChannel }) {
 	const tone = statusTone(channel.status)
 	const activity = useBridgeActivity(channel.id, open && channel.status === "connected")
 	const summary = useMemo(() => {
-		if (channel.status === "soon") return "Connector planned but not wired into Palot yet."
+		if (channel.status === "soon") return "Connector planned but not wired into Elf yet."
 		if (channel.status === "disconnected") return "Known integration lane with no active runtime signal."
 		return healthSentence(channel)
 	}, [channel])
