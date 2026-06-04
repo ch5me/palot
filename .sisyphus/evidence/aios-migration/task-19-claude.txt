@@ -1,0 +1,56 @@
+Task: T19 Claude Code compatibility surface + T21 cross-cutting fix
+Date: 2026-06-04
+
+Files changed
+- apps/desktop/src/renderer/components/side-panel/claude-panel.tsx
+  (proof shell -> real surface backed by onboarding.detectProviders)
+- apps/desktop/src/renderer/services/backend.ts
+  (re-exports MigrationProvider, MigrationPreview, ProviderDetection;
+   adds fetchClaudeMigrationPreview + restoreMigrationBackup wrappers)
+- apps/desktop/src/renderer/components/agent-detail.tsx
+  (cross-cutting: fix the broken chatContent useMemo / stray JSX
+   residue left from a prior partial refactor; restored the
+   parent-session back button properly inside the
+   `const chatContent = (...)` variable)
+
+What landed
+- The Claude Code surface now reflects real onboarding state:
+  * Pulls the live `claude-code` entry from
+    `onboarding.detectProviders()` via the existing
+    `fetchProviderDetections` wrapper.
+  * Renders an honest "Found" / "Missing" pill (no fabricated state)
+    plus the full summary from the detection result.
+  * Surfaces the six import categories (MCP servers, agents,
+    commands, rules, skills, projects) as live counts with icons.
+  * Adds a "How to rerun the flow" card pointing operators at
+    Settings → Migration, where the existing wizard lives.
+  * Adds a real "Restore the most recent migration backup" button
+    (calls `onboarding.restoreBackup()` through the new
+    `restoreMigrationBackup` wrapper) with confirm + toast.
+  * Documents the compatibility boundary up front: no live Claude
+    Code runtime is embedded; OpenCode stays the only interactive
+    coding lane.
+  * Explicit loading / error / empty states throughout (electron-mode
+    guard surfaces the "Settings → Migration" pointer when not
+    running in Electron).
+- agent-detail.tsx cross-cutting fix: the file was left with a
+  broken useMemo (missing `])` close) and a stray JSX block from
+  a prior partial refactor. Re-wrapped the ChatView + parent
+  back button into a proper `const chatContent = (...)` variable
+  and closed the useMemo dep array. The chatContent is used in
+  the SplitPane return (`{chatContent}`). This unblocks the
+  typecheck for all subsequent tasks and is necessary collateral.
+
+Verification
+- `node_modules/.bin/tsgo --noEmit -p apps/desktop` -> pass (no output).
+- `bun run lint` -> 86 files, 0 issues.
+- Manual flow described for Chris:
+  1. Open Claude Code surface on a machine with claude installed
+     -> "Found" pill, counts populate, restore-backup button shows.
+  2. Same surface on a clean machine -> "Missing" pill, counts all
+     zero, summary still reflects the detection result honestly.
+  3. Click Restore backup with no prior migration -> returns
+     gracefully ("Restore completed with no changes" or an error
+     toast), no crash.
+  4. Reload the surface -> detect query re-runs; spinner shows in
+     the Refresh button.

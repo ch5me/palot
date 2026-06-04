@@ -22,6 +22,8 @@ import type {
 	InboxChannel,
 	InboxMessage,
 	InboxSendResult,
+	MigrationPreview,
+	MigrationProvider,
 	OfficeConversionResult,
 	OracleInfo,
 	FilePreview,
@@ -105,6 +107,9 @@ export type {
 	InboxChannel,
 	InboxMessage,
 	InboxSendResult,
+	MigrationPreview,
+	MigrationProvider,
+	ProviderDetection,
 	OfficeConversionResult,
 	OracleInfo,
 	PtyDataEvent,
@@ -493,6 +498,29 @@ export async function fetchProviderDetections(): Promise<ProviderDetection[]> {
 		return window.elf.onboarding.detectProviders()
 	}
 	return []
+}
+
+export async function fetchClaudeMigrationPreview(
+	provider: MigrationProvider,
+	scanResult: unknown,
+	categories: string[],
+): Promise<MigrationPreview> {
+	if (isElectron) {
+		return window.elf.onboarding.previewMigration(provider, scanResult, categories)
+	}
+	throw new Error("Migration preview is only available in Electron mode")
+}
+
+export async function restoreMigrationBackup(): Promise<{
+	success: boolean
+	restored: string[]
+	removed: string[]
+	errors: string[]
+}> {
+	if (isElectron) {
+		return window.elf.onboarding.restoreBackup()
+	}
+	throw new Error("Migration restore is only available in Electron mode")
 }
 
 export async function fetchCrmStore(): Promise<CrmStore> {
