@@ -481,6 +481,7 @@ Final Wave
   **Acceptance Criteria**:
   - [ ] Default-on/off policy explicit
   - [ ] Hide/defer policy explicit
+  - [ ] Claude transition policy explicit in registry/tab model
   - [ ] Policy aligns with implementation order
 
   **QA Scenarios**:
@@ -675,6 +676,7 @@ Final Wave
   - [ ] Rollout order explicit
   - [ ] Verification commands/gates explicit
   - [ ] Browser/Electron split covered
+  - [ ] Surface-specific user-path proofs defined for Browser, Claude, and Memory
 
   **QA Scenarios**:
   Scenario: execution-sequence review
@@ -690,6 +692,11 @@ Final Wave
     Steps:
       1. Inspect verification matrix for browser, Claude, memory, and registry defaults <!-- oc:id=item_br -->
       1. Confirm each runtime-sensitive surface has explicit checks <!-- oc:id=item_bs -->
+      1. Confirm mandatory proof list exists for:
+         - Browser Electron: load same-origin lane, refresh, external-open, runtime error state
+         - Browser web mode: iframe same-origin route, unavailable-runtime fallback
+         - Claude: create, attach, send input, reconnect, resize, stop
+         - Memory: open doc, edit doc, save doc, reopen doc
     Expected Result: no missing runtime verification gaps
     Evidence: `.sisyphus/evidence/sidebar-surfaces/task-11-verification.txt`
 
