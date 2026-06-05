@@ -14,8 +14,10 @@ export function ElfHero({ className }: ElfHeroProps) {
 			noiseScale={0.8}
 			speed={2.2}
 			spread={0.55}
+			outlineMorph={0.12}
 			pointSize={9}
 			opacity={0.7}
+			outlineText="elf"
 			colorCore="#fb923c"
 			colorEdge="#8b5cf6"
 			cameraDistance={4}
