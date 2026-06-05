@@ -38,7 +38,11 @@ import type {
 	GitStatusInfo,
 	BrowserLane as BrowserLaneApi,
 	BrowserLaneHealth as BrowserLaneHealthApi,
+	BrowserLaneTabActionResult as BrowserLaneTabActionResultApi,
+	BrowserLaneTabsState as BrowserLaneTabsStateApi,
+	CreateBrowserLaneTabInput,
 	ModelState,
+	NavigateBrowserLaneTabInput,
 	OpenInTargetsResult,
 	OracleInfo,
 	PtyDataEvent,
@@ -127,6 +131,8 @@ export interface BridgeActivityResult {
 
 export type BrowserLane = BrowserLaneApi
 export type BrowserLaneHealth = BrowserLaneHealthApi
+export type BrowserLaneTabsState = BrowserLaneTabsStateApi
+export type BrowserLaneTabActionResult = BrowserLaneTabActionResultApi
 
 export type {
 	CrmContact,
@@ -264,6 +270,70 @@ export async function fetchBrowserLaneHealth(laneId: string): Promise<BrowserLan
 	}
 	const { fetchBrowserLaneHealth: httpHealth } = await import("./elf-server")
 	return (await httpHealth(laneId)) as BrowserLaneHealth
+}
+
+export async function navigateBrowserLane(
+	laneId: string,
+	url: string,
+): Promise<BrowserLaneTabActionResult> {
+	if (isElectron) {
+		return window.elf.browserLanes.navigate(laneId, url) as Promise<BrowserLaneTabActionResult>
+	}
+	const { navigateBrowserLane: httpNavigate } = await import("./elf-server")
+	return (await httpNavigate(laneId, url)) as BrowserLaneTabActionResult
+}
+
+export async function fetchBrowserLaneTabs(laneId: string): Promise<BrowserLaneTabsState> {
+	if (isElectron) {
+		return window.elf.browserLanes.listTabs(laneId) as Promise<BrowserLaneTabsState>
+	}
+	const { fetchBrowserLaneTabs: httpTabs } = await import("./elf-server")
+	return (await httpTabs(laneId)) as BrowserLaneTabsState
+}
+
+export async function createBrowserLaneTab(
+	laneId: string,
+	input: CreateBrowserLaneTabInput = {},
+): Promise<BrowserLaneTabActionResult> {
+	if (isElectron) {
+		return window.elf.browserLanes.createTab(laneId, input) as Promise<BrowserLaneTabActionResult>
+	}
+	const { createBrowserLaneTab: httpCreateTab } = await import("./elf-server")
+	return (await httpCreateTab(laneId, input)) as BrowserLaneTabActionResult
+}
+
+export async function activateBrowserLaneTab(
+	laneId: string,
+	tabId: string,
+): Promise<BrowserLaneTabActionResult> {
+	if (isElectron) {
+		return window.elf.browserLanes.activateTab(laneId, tabId) as Promise<BrowserLaneTabActionResult>
+	}
+	const { activateBrowserLaneTab: httpActivateTab } = await import("./elf-server")
+	return (await httpActivateTab(laneId, tabId)) as BrowserLaneTabActionResult
+}
+
+export async function closeBrowserLaneTab(
+	laneId: string,
+	tabId: string,
+): Promise<BrowserLaneTabActionResult> {
+	if (isElectron) {
+		return window.elf.browserLanes.closeTab(laneId, tabId) as Promise<BrowserLaneTabActionResult>
+	}
+	const { closeBrowserLaneTab: httpCloseTab } = await import("./elf-server")
+	return (await httpCloseTab(laneId, tabId)) as BrowserLaneTabActionResult
+}
+
+export async function navigateBrowserLaneTab(
+	laneId: string,
+	tabId: string,
+	input: NavigateBrowserLaneTabInput,
+): Promise<BrowserLaneTabActionResult> {
+	if (isElectron) {
+		return window.elf.browserLanes.navigateTab(laneId, tabId, input) as Promise<BrowserLaneTabActionResult>
+	}
+	const { navigateBrowserLaneTab: httpNavigateTab } = await import("./elf-server")
+	return (await httpNavigateTab(laneId, tabId, input)) as BrowserLaneTabActionResult
 }
 
 export function subscribeToActiveOpenCodeSessionEvents(

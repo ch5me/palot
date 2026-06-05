@@ -49,6 +49,11 @@ export type {
 	BrowserLaneRecord,
 	BrowserLaneRuntime,
 	BrowserLaneStatus,
+	BrowserLaneTab,
+	BrowserLaneTabActionResult,
+	BrowserLaneTabsState,
+	CreateBrowserLaneTabInput,
+	NavigateBrowserLaneTabInput,
 } from "../../preload/api"
 
 export interface BrowserLane extends PreloadBrowserLane {

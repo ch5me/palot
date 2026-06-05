@@ -2,6 +2,14 @@ import { promises as fs } from "node:fs"
 import os from "node:os"
 import path from "node:path"
 import { Hono } from "hono"
+import {
+	activateBrowserLaneCdpTab,
+	type BrowserLaneTab,
+	closeBrowserLaneCdpTab,
+	createBrowserLaneCdpTab,
+	listBrowserLaneCdpTabs,
+	navigateBrowserLaneCdp,
+} from "../services/browser-lane-cdp"
 
 interface BrowserLaneRouteEntry {
 	id: string
@@ -37,6 +45,7 @@ interface BrowserLaneRegistryFile {
 const app = new Hono()
 export const LOCAL_LANE_AUTH_HEADER = `Basic ${Buffer.from("abc:abc").toString("base64")}`
 const BROWSER_LANE_PAGE_SHIM = `<script data-elf-browser-lane-shim>(()=>{const warn=console.warn.bind(console);console.warn=(...args)=>{if(args[0]==="Received non-object message via window.postMessage:"&&typeof args[1]==="string"&&args[1].startsWith("setImmediate$"))return;warn(...args)}})();</script>`
+const activeBrowserLaneTabIds = new Map<string, string | null>()
 
 function normalizeRemoteLaneInput(input: {
 	id?: string
@@ -183,6 +192,94 @@ async function proxyLaneRequest(
 	})
 }
 
+function assertNavigableUrl(url: string): void {
+	try {
+		new URL(url)
+	} catch {
+		throw new Error(`Invalid browser navigation URL: ${url}`)
+	}
+}
+
+function getCdpEndpoint(lane: BrowserLaneRouteEntry): string {
+	if (!lane.cdpEndpoint) {
+		throw new Error(`Browser lane ${lane.id} has no CDP endpoint`)
+	}
+	return lane.cdpEndpoint
+}
+
+async function listLaneTabs(lane: BrowserLaneRouteEntry) {
+	const tabsState = await listBrowserLaneCdpTabs(
+		getCdpEndpoint(lane),
+		activeBrowserLaneTabIds.get(lane.id) ?? null,
+	)
+	activeBrowserLaneTabIds.set(lane.id, tabsState.activeTabId)
+	return {
+		laneId: lane.id,
+		activeTabId: tabsState.activeTabId,
+		tabs: tabsState.tabs,
+	}
+}
+
+function buildTabActionResult(
+	laneId: string,
+	state: Awaited<ReturnType<typeof listLaneTabs>>,
+	tab: BrowserLaneTab | null,
+) {
+	return {
+		laneId,
+		activeTabId: state.activeTabId,
+		tabs: state.tabs,
+		tab,
+	}
+}
+
+function delay(ms: number): Promise<void> {
+	return new Promise((resolve) => setTimeout(resolve, ms))
+}
+
+function normalizeComparableUrl(url: string): string {
+	try {
+		return new URL(url).toString()
+	} catch {
+		return url
+	}
+}
+
+function tabHasUrl(tab: BrowserLaneTab | undefined, url: string): boolean {
+	if (!tab?.url) return false
+	return normalizeComparableUrl(tab.url) === normalizeComparableUrl(url)
+}
+
+async function waitForNavigatedTabsState(lane: BrowserLaneRouteEntry, tabId: string, url: string) {
+	let state = await listLaneTabs(lane)
+	for (
+		let attempt = 0;
+		attempt < 10 &&
+		!tabHasUrl(
+			state.tabs.find((entry) => entry.id === tabId),
+			url,
+		);
+		attempt += 1
+	) {
+		await delay(100)
+		state = await listLaneTabs(lane)
+	}
+	return state
+}
+
+async function waitForClosedTabsState(lane: BrowserLaneRouteEntry, tabId: string) {
+	let state = await listLaneTabs(lane)
+	for (
+		let attempt = 0;
+		attempt < 10 && state.tabs.some((entry) => entry.id === tabId);
+		attempt += 1
+	) {
+		await delay(100)
+		state = await listLaneTabs(lane)
+	}
+	return state
+}
+
 const routes = app
 	.get("/", async (c) => {
 		return c.json(await readBrowserLaneRoutes(), 200)
@@ -249,10 +346,154 @@ const routes = app
 			return c.json({ error: error instanceof Error ? error.message : String(error) }, 400)
 		}
 	})
+	.get("/:laneId/tabs", async (c) => {
+		const laneId = c.req.param("laneId")
+		const lane = (await readBrowserLaneRoutes()).find((entry) => entry.id === laneId)
+		if (!lane) {
+			return c.json({ error: `Browser lane ${laneId} not found` }, 404)
+		}
+		try {
+			return c.json(await listLaneTabs(lane), 200)
+		} catch (error) {
+			return c.json({ error: error instanceof Error ? error.message : String(error) }, 503)
+		}
+	})
+	.post("/:laneId/tabs", async (c) => {
+		const laneId = c.req.param("laneId")
+		const lane = (await readBrowserLaneRoutes()).find((entry) => entry.id === laneId)
+		if (!lane) {
+			return c.json({ error: `Browser lane ${laneId} not found` }, 404)
+		}
+		const body = (await c.req.json().catch(() => ({}))) as { url?: string | null }
+		const url = body.url?.trim() || "about:blank"
+		try {
+			assertNavigableUrl(url)
+			const cdpEndpoint = getCdpEndpoint(lane)
+			const tab = await createBrowserLaneCdpTab(cdpEndpoint, url)
+			await activateBrowserLaneCdpTab(cdpEndpoint, tab.id)
+			activeBrowserLaneTabIds.set(lane.id, tab.id)
+			const state = await listLaneTabs(lane)
+			return c.json(
+				buildTabActionResult(
+					lane.id,
+					state,
+					state.tabs.find((entry) => entry.id === tab.id) ?? tab,
+				),
+				200,
+			)
+		} catch (error) {
+			return c.json({ error: error instanceof Error ? error.message : String(error) }, 502)
+		}
+	})
+	.post("/:laneId/tabs/:tabId", async (c) => {
+		const laneId = c.req.param("laneId")
+		const tabId = c.req.param("tabId")
+		const lane = (await readBrowserLaneRoutes()).find((entry) => entry.id === laneId)
+		if (!lane) {
+			return c.json({ error: `Browser lane ${laneId} not found` }, 404)
+		}
+		const body = (await c.req.json().catch(() => ({}))) as {
+			action?: "activate" | "navigate"
+			url?: string
+		}
+		const action = body.action || "activate"
+		try {
+			const cdpEndpoint = getCdpEndpoint(lane)
+			if (action === "navigate") {
+				if (!body.url) {
+					return c.json({ error: "Browser lane tab navigate requires url" }, 400)
+				}
+				assertNavigableUrl(body.url)
+				await navigateBrowserLaneCdp(cdpEndpoint, body.url, tabId)
+			} else {
+				await activateBrowserLaneCdpTab(cdpEndpoint, tabId)
+			}
+			activeBrowserLaneTabIds.set(lane.id, tabId)
+			const state =
+				action === "navigate" && body.url
+					? await waitForNavigatedTabsState(lane, tabId, body.url)
+					: await listLaneTabs(lane)
+			return c.json(
+				buildTabActionResult(
+					lane.id,
+					state,
+					state.tabs.find((entry) => entry.id === tabId) ?? null,
+				),
+				200,
+			)
+		} catch (error) {
+			return c.json({ error: error instanceof Error ? error.message : String(error) }, 502)
+		}
+	})
+	.delete("/:laneId/tabs/:tabId", async (c) => {
+		const laneId = c.req.param("laneId")
+		const tabId = c.req.param("tabId")
+		const lane = (await readBrowserLaneRoutes()).find((entry) => entry.id === laneId)
+		if (!lane) {
+			return c.json({ error: `Browser lane ${laneId} not found` }, 404)
+		}
+		try {
+			await closeBrowserLaneCdpTab(getCdpEndpoint(lane), tabId)
+			if (activeBrowserLaneTabIds.get(lane.id) === tabId) {
+				activeBrowserLaneTabIds.set(lane.id, null)
+			}
+			const state = await waitForClosedTabsState(lane, tabId)
+			return c.json(buildTabActionResult(lane.id, state, null), 200)
+		} catch (error) {
+			return c.json({ error: error instanceof Error ? error.message : String(error) }, 502)
+		}
+	})
 	.post("/:laneId", async (c) => {
 		const laneId = c.req.param("laneId")
-		const body = (await c.req.json().catch(() => ({}))) as { action?: string }
+		const body = (await c.req.json().catch(() => ({}))) as { action?: string; url?: string }
 		const action = body.action || "ensure"
+		const lane = (await readBrowserLaneRoutes()).find((entry) => entry.id === laneId)
+
+		if (!lane) {
+			return c.json({ error: `Browser lane ${laneId} not found` }, 404)
+		}
+
+		if (action === "navigate") {
+			if (!body.url) {
+				return c.json({ error: "Browser lane navigate requires url" }, 400)
+			}
+			if (!lane.cdpEndpoint) {
+				return c.json({ error: `Browser lane ${laneId} has no CDP endpoint` }, 503)
+			}
+			try {
+				new URL(body.url)
+				let state = await listLaneTabs(lane)
+				const tabId = state.activeTabId
+				if (!tabId) {
+					const tab = await createBrowserLaneCdpTab(lane.cdpEndpoint, body.url)
+					await activateBrowserLaneCdpTab(lane.cdpEndpoint, tab.id)
+					activeBrowserLaneTabIds.set(lane.id, tab.id)
+					state = await listLaneTabs(lane)
+					return c.json(
+						buildTabActionResult(
+							lane.id,
+							state,
+							state.tabs.find((entry) => entry.id === tab.id) ?? tab,
+						),
+						200,
+					)
+				}
+				await navigateBrowserLaneCdp(lane.cdpEndpoint, body.url, tabId)
+				activeBrowserLaneTabIds.set(lane.id, tabId)
+				state = await waitForNavigatedTabsState(lane, tabId, body.url)
+				return c.json(
+					buildTabActionResult(
+						lane.id,
+						state,
+						state.tabs.find((entry) => entry.id === tabId) ?? null,
+					),
+					200,
+				)
+			} catch (error) {
+				return c.json({ error: error instanceof Error ? error.message : String(error) }, 502)
+			}
+		}
+
 		const statusMessage =
 			action === "reset-profile"
 				? "Profile reset; restart lane to create a clean session"
@@ -264,11 +505,6 @@ const routes = app
 							? "Lane starting"
 							: "Lane runtime prepared"
 		const checkedAt = Date.now()
-		const lane = (await readBrowserLaneRoutes()).find((entry) => entry.id === laneId)
-
-		if (!lane) {
-			return c.json({ error: `Browser lane ${laneId} not found` }, 404)
-		}
 		return c.json(
 			{
 				...lane,

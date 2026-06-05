@@ -8,11 +8,23 @@ import {
 	type BrowserLaneRecord,
 } from "../shared/browser-lanes"
 import type { BrowserLane } from "../renderer/lib/types"
+import {
+	activateBrowserLaneCdpTab,
+	closeBrowserLaneCdpTab,
+	createBrowserLaneCdpTab,
+	listBrowserLaneCdpTabs,
+	navigateBrowserLaneCdp,
+} from "./browser-lane-cdp"
 import { getBrowserLaneDesktopUrl } from "./browser-lane-protocol"
 import type {
+	BrowserLaneTab,
+	BrowserLaneTabActionResult,
+	BrowserLaneTabsState,
 	BrowserLaneMode,
 	BrowserLaneRuntime,
+	CreateBrowserLaneTabInput,
 	CreateRemoteBrowserLaneInput,
+	NavigateBrowserLaneTabInput,
 } from "../preload/api"
 import {
 	createBrowserLaneRuntimeConfig,
@@ -41,6 +53,7 @@ interface LaneRuntimeState {
 	lastError: string | null
 	inFlight: Promise<BrowserLane> | null
 	profileResetAt: number | null
+	activeTabId: string | null
 }
 
 const laneState = new Map<string, LaneRuntimeState>()
@@ -94,6 +107,7 @@ function getLaneState(id: string): LaneRuntimeState {
 			lastError: null,
 			inFlight: null,
 			profileResetAt: null,
+			activeTabId: null,
 		}
 		laneState.set(id, state)
 	}
@@ -468,6 +482,166 @@ export async function resetBrowserLaneProfile(id: string): Promise<BrowserLane> 
 export async function restartBrowserLane(id: string): Promise<BrowserLane> {
 	await stopBrowserLane(id)
 	return await startBrowserLane(id)
+}
+
+function assertNavigableUrl(url: string): void {
+	try {
+		new URL(url)
+	} catch {
+		throw new Error(`Invalid browser navigation URL: ${url}`)
+	}
+}
+
+async function getBrowserLaneCdpEndpoint(id: string): Promise<string> {
+	const lane = await getBrowserLane(id)
+	if (!lane) throw new Error(`Browser lane ${id} not found`)
+	if (!lane.cdpEndpoint) {
+		throw new Error(`Browser lane ${id} has no CDP endpoint`)
+	}
+	return lane.cdpEndpoint
+}
+
+function withLaneId(id: string, state: Omit<BrowserLaneTabsState, "laneId">): BrowserLaneTabsState {
+	return {
+		laneId: id,
+		activeTabId: state.activeTabId,
+		tabs: state.tabs,
+	}
+}
+
+function buildTabResult(
+	id: string,
+	state: Omit<BrowserLaneTabsState, "laneId">,
+	tab: BrowserLaneTab | null,
+): BrowserLaneTabActionResult {
+	return {
+		...withLaneId(id, state),
+		tab,
+	}
+}
+
+function delay(ms: number): Promise<void> {
+	return new Promise((resolve) => setTimeout(resolve, ms))
+}
+
+function normalizeComparableUrl(url: string): string {
+	try {
+		return new URL(url).toString()
+	} catch {
+		return url
+	}
+}
+
+function tabHasUrl(tab: BrowserLaneTab | undefined, url: string): boolean {
+	if (!tab?.url) return false
+	return normalizeComparableUrl(tab.url) === normalizeComparableUrl(url)
+}
+
+async function listTabsFromCdp(id: string): Promise<BrowserLaneTabsState> {
+	const cdpEndpoint = await getBrowserLaneCdpEndpoint(id)
+	const state = getLaneState(id)
+	const tabsState = await listBrowserLaneCdpTabs(cdpEndpoint, state.activeTabId)
+	state.activeTabId = tabsState.activeTabId
+	return withLaneId(id, tabsState)
+}
+
+async function waitForNavigatedTabsState(
+	id: string,
+	tabId: string,
+	url: string,
+): Promise<BrowserLaneTabsState> {
+	let tabsState = await listTabsFromCdp(id)
+	for (let attempt = 0; attempt < 10 && !tabHasUrl(tabsState.tabs.find((entry) => entry.id === tabId), url); attempt += 1) {
+		await delay(100)
+		tabsState = await listTabsFromCdp(id)
+	}
+	return tabsState
+}
+
+async function waitForClosedTabsState(id: string, tabId: string): Promise<BrowserLaneTabsState> {
+	let tabsState = await listTabsFromCdp(id)
+	for (let attempt = 0; attempt < 10 && tabsState.tabs.some((entry) => entry.id === tabId); attempt += 1) {
+		await delay(100)
+		tabsState = await listTabsFromCdp(id)
+	}
+	return tabsState
+}
+
+export async function listBrowserLaneTabs(id: string): Promise<BrowserLaneTabsState> {
+	await initBrowserLaneManager()
+	return await listTabsFromCdp(id)
+}
+
+export async function createBrowserLaneTab(
+	id: string,
+	input: CreateBrowserLaneTabInput = {},
+): Promise<BrowserLaneTabActionResult> {
+	await initBrowserLaneManager()
+	const cdpEndpoint = await getBrowserLaneCdpEndpoint(id)
+	const url = input.url?.trim() || "about:blank"
+	assertNavigableUrl(url)
+	const tab = await createBrowserLaneCdpTab(cdpEndpoint, url)
+	await activateBrowserLaneCdpTab(cdpEndpoint, tab.id)
+	getLaneState(id).activeTabId = tab.id
+	const tabsState = await listTabsFromCdp(id)
+	return buildTabResult(id, tabsState, tabsState.tabs.find((entry) => entry.id === tab.id) ?? tab)
+}
+
+export async function activateBrowserLaneTab(
+	id: string,
+	tabId: string,
+): Promise<BrowserLaneTabActionResult> {
+	await initBrowserLaneManager()
+	const cdpEndpoint = await getBrowserLaneCdpEndpoint(id)
+	await activateBrowserLaneCdpTab(cdpEndpoint, tabId)
+	getLaneState(id).activeTabId = tabId
+	const tabsState = await listTabsFromCdp(id)
+	return buildTabResult(id, tabsState, tabsState.tabs.find((entry) => entry.id === tabId) ?? null)
+}
+
+export async function closeBrowserLaneTab(id: string, tabId: string): Promise<BrowserLaneTabActionResult> {
+	await initBrowserLaneManager()
+	const cdpEndpoint = await getBrowserLaneCdpEndpoint(id)
+	await closeBrowserLaneCdpTab(cdpEndpoint, tabId)
+	if (getLaneState(id).activeTabId === tabId) {
+		getLaneState(id).activeTabId = null
+	}
+	const tabsState = await waitForClosedTabsState(id, tabId)
+	return buildTabResult(id, tabsState, null)
+}
+
+export async function navigateBrowserLaneTab(
+	id: string,
+	tabId: string,
+	input: NavigateBrowserLaneTabInput,
+): Promise<BrowserLaneTabActionResult> {
+	await initBrowserLaneManager()
+	const cdpEndpoint = await getBrowserLaneCdpEndpoint(id)
+	assertNavigableUrl(input.url)
+	await navigateBrowserLaneCdp(cdpEndpoint, input.url, tabId)
+	getLaneState(id).activeTabId = tabId
+	const tabsState = await waitForNavigatedTabsState(id, tabId, input.url)
+	return buildTabResult(id, tabsState, tabsState.tabs.find((entry) => entry.id === tabId) ?? null)
+}
+
+export async function navigateBrowserLane(id: string, url: string): Promise<BrowserLaneTabActionResult> {
+	await initBrowserLaneManager()
+	const cdpEndpoint = await getBrowserLaneCdpEndpoint(id)
+	assertNavigableUrl(url)
+	const tabsState = await listBrowserLaneCdpTabs(cdpEndpoint, getLaneState(id).activeTabId)
+	const tabId = tabsState.activeTabId
+	if (!tabId) {
+		return await createBrowserLaneTab(id, { url })
+	}
+	const result = await navigateBrowserLaneCdp(cdpEndpoint, url, tabId)
+	getLaneState(id).activeTabId = result.targetId
+	await refreshBrowserLaneHealth(id)
+	const nextTabsState = await waitForNavigatedTabsState(id, result.targetId, url)
+	return buildTabResult(
+		id,
+		nextTabsState,
+		nextTabsState.tabs.find((entry) => entry.id === result.targetId) ?? null,
+	)
 }
 
 export async function refreshBrowserLaneHealth(id: string): Promise<BrowserLaneHealth> {

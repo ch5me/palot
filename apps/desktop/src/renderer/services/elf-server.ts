@@ -172,6 +172,76 @@ export async function fetchBrowserLaneHealth(laneId: string) {
 	return res.json()
 }
 
+export async function navigateBrowserLane(laneId: string, url: string) {
+	const res = await fetch(`${BASE_URL}/browser/${laneId}`, {
+		method: "POST",
+		headers: { "Content-Type": "application/json" },
+		body: JSON.stringify({ action: "navigate", url }),
+	})
+	if (!res.ok) {
+		throw new Error(await readError(res, `Browser lane navigate failed: ${res.status} ${res.statusText}`))
+	}
+	return res.json()
+}
+
+export async function fetchBrowserLaneTabs(laneId: string) {
+	const res = await fetch(`${BASE_URL}/browser/${laneId}/tabs`)
+	if (!res.ok) {
+		throw new Error(await readError(res, `Browser lane tabs failed: ${res.status} ${res.statusText}`))
+	}
+	return res.json()
+}
+
+export async function createBrowserLaneTab(laneId: string, input: { url?: string | null } = {}) {
+	const res = await fetch(`${BASE_URL}/browser/${laneId}/tabs`, {
+		method: "POST",
+		headers: { "Content-Type": "application/json" },
+		body: JSON.stringify(input),
+	})
+	if (!res.ok) {
+		throw new Error(await readError(res, `Browser lane tab create failed: ${res.status} ${res.statusText}`))
+	}
+	return res.json()
+}
+
+export async function activateBrowserLaneTab(laneId: string, tabId: string) {
+	const res = await fetch(`${BASE_URL}/browser/${laneId}/tabs/${tabId}`, {
+		method: "POST",
+		headers: { "Content-Type": "application/json" },
+		body: JSON.stringify({ action: "activate" }),
+	})
+	if (!res.ok) {
+		throw new Error(await readError(res, `Browser lane tab activate failed: ${res.status} ${res.statusText}`))
+	}
+	return res.json()
+}
+
+export async function closeBrowserLaneTab(laneId: string, tabId: string) {
+	const res = await fetch(`${BASE_URL}/browser/${laneId}/tabs/${tabId}`, {
+		method: "DELETE",
+	})
+	if (!res.ok) {
+		throw new Error(await readError(res, `Browser lane tab close failed: ${res.status} ${res.statusText}`))
+	}
+	return res.json()
+}
+
+export async function navigateBrowserLaneTab(
+	laneId: string,
+	tabId: string,
+	input: { url: string },
+) {
+	const res = await fetch(`${BASE_URL}/browser/${laneId}/tabs/${tabId}`, {
+		method: "POST",
+		headers: { "Content-Type": "application/json" },
+		body: JSON.stringify({ action: "navigate", url: input.url }),
+	})
+	if (!res.ok) {
+		throw new Error(await readError(res, `Browser lane tab navigate failed: ${res.status} ${res.statusText}`))
+	}
+	return res.json()
+}
+
 export function subscribeToActiveOpenCodeSessionEvents(
 	handlers: ActiveOpenCodeSessionStreamHandlers,
 ): () => void {

@@ -78,6 +78,35 @@ export interface CreateRemoteBrowserLaneInput {
 	profilePath?: string | null
 }
 
+export interface BrowserLaneTab {
+	id: string
+	title: string
+	url: string
+	type: string
+	active: boolean
+	attached: boolean
+	openerId: string | null
+	faviconUrl: string | null
+}
+
+export interface BrowserLaneTabsState {
+	laneId: string
+	activeTabId: string | null
+	tabs: BrowserLaneTab[]
+}
+
+export interface BrowserLaneTabActionResult extends BrowserLaneTabsState {
+	tab: BrowserLaneTab | null
+}
+
+export interface CreateBrowserLaneTabInput {
+	url?: string | null
+}
+
+export interface NavigateBrowserLaneTabInput {
+	url: string
+}
+
 export interface BrowserLaneCapabilityReport {
 	platform: NodeJS.Platform
 	localRuntimeSupported: boolean
@@ -717,6 +746,19 @@ export interface ElfAPI {
 		restart: (laneId: string) => Promise<BrowserLane>
 		resetProfile: (laneId: string) => Promise<BrowserLane>
 		health: (laneId: string) => Promise<BrowserLaneHealth>
+		navigate: (laneId: string, url: string) => Promise<BrowserLaneTabActionResult>
+		listTabs: (laneId: string) => Promise<BrowserLaneTabsState>
+		createTab: (
+			laneId: string,
+			input?: CreateBrowserLaneTabInput,
+		) => Promise<BrowserLaneTabActionResult>
+		activateTab: (laneId: string, tabId: string) => Promise<BrowserLaneTabActionResult>
+		closeTab: (laneId: string, tabId: string) => Promise<BrowserLaneTabActionResult>
+		navigateTab: (
+			laneId: string,
+			tabId: string,
+			input: NavigateBrowserLaneTabInput,
+		) => Promise<BrowserLaneTabActionResult>
 	}
 	onActiveOpenCodeSessionsChanged: (
 		callback: (snapshot: ActiveOpenCodeSessionsSnapshot) => void,

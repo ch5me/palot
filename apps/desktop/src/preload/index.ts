@@ -54,6 +54,20 @@ contextBridge.exposeInMainWorld("elf", {
 		restart: (laneId: string) => ipcRenderer.invoke("browser-lanes:restart", laneId),
 		resetProfile: (laneId: string) => ipcRenderer.invoke("browser-lanes:reset-profile", laneId),
 		health: (laneId: string) => ipcRenderer.invoke("browser-lanes:health", laneId),
+		navigate: (laneId: string, url: string) =>
+			ipcRenderer.invoke("browser-lanes:navigate", laneId, url),
+		listTabs: (laneId: string) => ipcRenderer.invoke("browser-lanes:tabs:list", laneId),
+		createTab: (laneId: string, input?: import("./api").CreateBrowserLaneTabInput) =>
+			ipcRenderer.invoke("browser-lanes:tabs:create", laneId, input),
+		activateTab: (laneId: string, tabId: string) =>
+			ipcRenderer.invoke("browser-lanes:tabs:activate", laneId, tabId),
+		closeTab: (laneId: string, tabId: string) =>
+			ipcRenderer.invoke("browser-lanes:tabs:close", laneId, tabId),
+		navigateTab: (
+			laneId: string,
+			tabId: string,
+			input: import("./api").NavigateBrowserLaneTabInput,
+		) => ipcRenderer.invoke("browser-lanes:tabs:navigate", laneId, tabId, input),
 	},
 
 	onActiveOpenCodeSessionsChanged: (

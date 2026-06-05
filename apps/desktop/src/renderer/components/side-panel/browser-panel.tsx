@@ -27,6 +27,7 @@ import {
 	fetchBrowserLaneHealth,
 	fetchBrowserLanes,
 	isElectron,
+	navigateBrowserLane,
 	restartBrowserLane,
 	resetBrowserLaneProfile,
 	startBrowserLane,
@@ -264,9 +265,12 @@ export function BrowserPanel({ agent, className }: BrowserPanelProps) {
 		}
 	}, [activeLane, laneHealth])
 
-	const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
-		event.preventDefault()
-		const nextUrl = buildNavigableUrl(inputValue)
+	const navigateToUrl = async (rawUrl: string) => {
+		if (!activeLane) {
+			setInputError("No browser lane is selected.")
+			return
+		}
+		const nextUrl = buildNavigableUrl(rawUrl)
 		if (!nextUrl) {
 			setInputError(
 				"Couldn't build a URL from that. Try https://example.com, example.com, or leave blank to reset.",
@@ -274,9 +278,29 @@ export function BrowserPanel({ agent, className }: BrowserPanelProps) {
 			return
 		}
 		setInputError(null)
-		setCurrentUrl(nextUrl)
-		setPersistedUrl(nextUrl)
-		setHistory((current) => pushBrowserHistory(current, nextUrl))
+		setLoadFailure(null)
+		setIsLoading(true)
+		try {
+			await navigateBrowserLane(activeLane.id, nextUrl)
+			const navigatedUrl = nextUrl
+			setCurrentUrl(navigatedUrl)
+			setInputValue(navigatedUrl)
+			setPersistedUrl(navigatedUrl)
+			setHistory((current) => pushBrowserHistory(current, navigatedUrl))
+			const health = await fetchBrowserLaneHealth(activeLane.id)
+			setLaneHealth(health)
+		} catch (error) {
+			const message = error instanceof Error ? error.message : String(error)
+			setInputError(message)
+			setLoadFailure(message)
+		} finally {
+			setIsLoading(false)
+		}
+	}
+
+	const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+		event.preventDefault()
+		void navigateToUrl(inputValue)
 	}
 
 	const handleOpenExternal = async () => {
@@ -293,20 +317,6 @@ export function BrowserPanel({ agent, className }: BrowserPanelProps) {
 		} catch (error) {
 			setInputError(error instanceof Error ? error.message : String(error))
 		}
-	}
-
-	const loadUrl = (rawUrl: string) => {
-		const nextUrl = buildNavigableUrl(rawUrl)
-		if (!nextUrl) {
-			setInputError(
-				"Couldn't build a URL from that. Try https://example.com, example.com, or leave blank to reset.",
-			)
-			return
-		}
-		setInputError(null)
-		setCurrentUrl(nextUrl)
-		setPersistedUrl(nextUrl)
-		setHistory((current) => pushBrowserHistory(current, nextUrl))
 	}
 
 	const handleRefresh = async () => {
@@ -646,7 +656,7 @@ export function BrowserPanel({ agent, className }: BrowserPanelProps) {
 								key={entry}
 								type="button"
 								className="rounded-md border border-border/60 px-2 py-0.5 transition-colors hover:bg-muted hover:text-foreground"
-								onClick={() => loadUrl(entry)}
+								onClick={() => void navigateToUrl(entry)}
 							>
 								{entry}
 							</button>

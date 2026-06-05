@@ -95,9 +95,15 @@ import {
 	stopServer,
 } from "./opencode-manager"
 import {
+	activateBrowserLaneTab,
+	closeBrowserLaneTab,
+	createBrowserLaneTab,
 	createRemoteBrowserLane,
 	ensureBrowserLane,
 	listBrowserLanes,
+	listBrowserLaneTabs,
+	navigateBrowserLane,
+	navigateBrowserLaneTab,
 	refreshBrowserLaneHealth,
 	resetBrowserLaneProfile,
 	restartBrowserLane,
@@ -320,6 +326,47 @@ export function registerIpcHandlers(): void {
 		withLogging(
 			"browser-lanes:health",
 			async (_, laneId: string) => await refreshBrowserLaneHealth(laneId),
+		),
+	)
+	ipcMain.handle(
+		"browser-lanes:navigate",
+		withLogging(
+			"browser-lanes:navigate",
+			async (_, laneId: string, url: string) => await navigateBrowserLane(laneId, url),
+		),
+	)
+	ipcMain.handle(
+		"browser-lanes:tabs:list",
+		withLogging("browser-lanes:tabs:list", async (_, laneId: string) => await listBrowserLaneTabs(laneId)),
+	)
+	ipcMain.handle(
+		"browser-lanes:tabs:create",
+		withLogging(
+			"browser-lanes:tabs:create",
+			async (_, laneId: string, input?: { url?: string | null }) =>
+				await createBrowserLaneTab(laneId, input),
+		),
+	)
+	ipcMain.handle(
+		"browser-lanes:tabs:activate",
+		withLogging(
+			"browser-lanes:tabs:activate",
+			async (_, laneId: string, tabId: string) => await activateBrowserLaneTab(laneId, tabId),
+		),
+	)
+	ipcMain.handle(
+		"browser-lanes:tabs:close",
+		withLogging(
+			"browser-lanes:tabs:close",
+			async (_, laneId: string, tabId: string) => await closeBrowserLaneTab(laneId, tabId),
+		),
+	)
+	ipcMain.handle(
+		"browser-lanes:tabs:navigate",
+		withLogging(
+			"browser-lanes:tabs:navigate",
+			async (_, laneId: string, tabId: string, input: { url: string }) =>
+				await navigateBrowserLaneTab(laneId, tabId, input),
 		),
 	)
 
