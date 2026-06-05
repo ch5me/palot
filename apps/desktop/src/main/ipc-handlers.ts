@@ -660,25 +660,6 @@ export function registerIpcHandlers(): void {
 		),
 	)
 
-	ipcMain.handle("oracles:list", withLogging("oracles:list", async (): Promise<OracleInfo[]> => await listOracles()))
-
-	ipcMain.handle(
-		"oracles:create",
-		withLogging("oracles:create", async (_, identity: string, command?: string | null) => await createOracle(identity, command)),
-	)
-
-	ipcMain.handle(
-		"oracles:rename",
-		withLogging("oracles:rename", async (_, from: string, to: string) => await renameOracle(from, to)),
-	)
-
-	ipcMain.handle(
-		"oracles:delete",
-		withLogging("oracles:delete", async (_, identity: string, force?: boolean) =>
-			await deleteOracle(identity, force),
-		),
-	)
-
 	ipcMain.handle(
 		"tmux:list",
 		withLogging("tmux:list", async (): Promise<TmuxSessionInfo[]> => await listTmuxSessions()),
@@ -687,22 +668,6 @@ export function registerIpcHandlers(): void {
 	ipcMain.handle(
 		"tmux:kill-session",
 		withLogging("tmux:kill-session", async (_, socket: string, session: string) => await killTmuxSession(socket, session)),
-	)
-
-	ipcMain.handle(
-		"pty:spawn-oracle",
-		withLogging("pty:spawn-oracle", async (_, args: SpawnPtyOracleArgs) => ({
-			ok: true,
-			args,
-		})),
-	)
-
-	ipcMain.handle(
-		"pty:spawn-tmux",
-		withLogging("pty:spawn-tmux", async (_, args: SpawnPtyTmuxArgs) => ({
-			ok: true,
-			args,
-		})),
 	)
 
 	// --- Fetch proxy (bypasses Chromium connection limits) ---
