@@ -46,6 +46,10 @@ generic knowledge.
 |---|---|
 | `react-best-practices` | Writing or reviewing renderer components, optimizing re-renders or bundle size |
 
+## Docs / Wiki
+
+- GenUI and artifact architecture is documented in `docs/genui-artifact-architecture.md`. Read it before changing the GenUI registry, renderer, artifact atoms, session widget surfaces, side-panel artifact surface, or prompt-context injection.
+
 ## Commands
 
 - **Runtime policy**: manage dev services only through the root devmux wrapper commands below. Do not start `vite`, `electron-vite`, `apps/server`, `apps/desktop`, `npm`, `npx`, or raw `node ...vite` foreground processes directly in agent sessions; that fights other agents, stale tmux panes, and owned ports. If you need logs, use `bun run svc:attach -- <service>`. If a bounded diagnostic ever needs a direct process, stop it immediately and restore devmux before handoff.

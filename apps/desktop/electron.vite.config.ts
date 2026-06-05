@@ -34,7 +34,7 @@ const EFFECTS_GRADIENT_BRAND_TEXT_ENTRY = path.resolve(
 )
 const MOTION_WEB_ENTRY = path.resolve(
 	__dirname,
-	"../../ch5-packages/packages/motion/motion/src/index.web.ts",
+	"../../../ch5-packages/packages/motion/motion/src/index.web.ts",
 )
 
 export default defineConfig({

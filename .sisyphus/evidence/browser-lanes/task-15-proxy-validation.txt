@@ -1,0 +1,54 @@
+=== Validation run 2026-06-05T15:49:04Z ===
+
+## Setup
+- Server (port 30206): running (PID seen respawning under 'bun run dev')
+- Lane container: lscr.io/linuxserver/chromium (Selkies)
+- Stream: http://127.0.0.1:59170
+- CDP: http://127.0.0.1:59171
+- Auth: STREAM_AUTH_USER/PASSWORD = abc/abc (in .env + lanes.json registry)
+- Lane registry: ~/.config/elf/browser-lanes/lanes.json  (laneId: default, ports 59170/59171)
+
+## Proxy contract (same-origin, laneId=default)
+GET /browser/default/                        -> HTTP 200 size=762
+GET /browser/default/assets/index-*.js       -> HTTP 200 size=694089
+GET /browser/default/assets/index-*.css      -> HTTP 200 size=27869
+GET /browser/default/icon.png                 -> HTTP 200 size=20283
+GET /browser/default/manifest.json            -> HTTP 200 size=315
+GET /browser/default/src/universalTouchGamepad.js -> HTTP 200 size=50201
+{"status":"profile-locked","stream":{"url":"http://127.0.0.1:59170","checkedAt":1780674544608,"state":"ready","error":null},"cdp":{"url":"http://127.0.0.1:59171","checkedAt":1780674544608,"state":"failed","error":"CDP endpoint unreachable"},"message":"Profile exists but runtime has not started yet"}
+
+
+## WebSocket upgrade (Bun fetch)
+GET /browser/default/websocket  Upgrade  -> HTTP 101 first-bytes=..MODE websockets.~.v{"type": "server_settings", "settings": {"audio_enabled": {
+
+## Bug fix this session
+Problem: Hono route '/:laneId/*' with c.req.param('*') returned empty for sub-paths.
+Effect:  /browser/default/assets/* was proxied as '/', returning the shell HTML
+         (762 bytes) instead of the real JS/CSS bundles.
+Fix:     Use c.req.path directly and strip the /browser/<laneId> prefix.
+File:    apps/server/src/routes/browser-lanes.ts (lines 342-351)
+Evidence before fix: 'JS asset: HTTP 200, 762 bytes' (shell HTML)
+Evidence after fix:  'JS asset: HTTP 200, 694089 bytes' (real Selkies JS)
+
+## Known gaps
+1. CDP probe unreachable (/json/version). LinuxServer/Selkies Chromium ignores
+   CHROME_CLI for --remote-debugging-port. Workaround: non-Selkies image or
+   custom-cont-init.d writing chromium-flags.conf. Already documented in
+   .sisyphus/evidence/browser-lanes/task-15-cdp.txt.
+
+2. WebSocket bridge in Hono fetch proxy doesn't hold the upgraded connection
+   open bidirectionally. fetch() returns the 101 + initial bytes from upstream
+   as a Response body, but doesn't pipe further messages. Selkies server sees
+   no keepalive pings and closes the upstream WS after ~10s:
+     'Data WS closed with error from 127.0.0.1:44546: sent 1011 (internal
+      error) keepalive ping timeout; no close frame received'
+   Net effect: the page loads (Selkies shell + UI bundles) but the desktop
+   stream does not appear, and input forwarding does not work.
+   Workaround scope: replace fetch() proxy with a Bun-native upgrade handler
+   (or proxy via a separate WebSocket server). Non-trivial; would need a new
+   bridge between Hono and Bun.serve websocket handlers.
+
+## URL to open in Chris's browser
+  http://abc:abc@127.0.0.1:30206/browser/default/
+  (Basic auth in URL; or just http://127.0.0.1:30206/browser/default/ and
+   enter abc/abc when prompted.)

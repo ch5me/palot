@@ -1,0 +1,36 @@
+=== Background checks I already did in the container ===
+
+## /config/.config/labwc/autostart (call site of wrapped-chromium)
+$ wrapped-chromium --[X] --ozone-platform=wayland ${CHROME_CLI}
+                                       ^^^^^^^^
+                            THIS IS THE SEAM (it IS read)
+
+## /usr/bin/wrapped-chromium (intermediate wrapper)
+It calls: /usr/bin/chromium <hardcoded-flags> "$@"
+So whatever ${CHROME_CLI} expands to gets passed through to /usr/bin/chromium
+
+## /usr/bin/chromium (Debian upstream launcher)
+Sources /etc/chromium.d/*.conf which set CHROMIUM_FLAGS env
+Then execs /usr/lib/chromium/chromium with CHROMIUM_FLAGS + "$@"
+
+## Current chromium process flags (in the running container):
+    --show-component-extension-options --enable-gpu-rasterization \
+    --no-default-browser-check --disable-pings --media-router=0 \
+    --disable-dev-shm-usage --enable-remote-extensions --load-extension= \
+    --no-first-run --no-sandbox --password-store=basic \
+    --simulate-outdated-no-au=Tue, 31 Dec 2099 23:59:59 GMT \
+    --start-maximized --test-type --user-data-dir \
+    --[X] --ozone-platform=wayland
+  NO --remote-debugging-port. CHROME_CLI was set to empty in compose.
+
+## /config/.config/chromium-flags.conf (sits there, dead)
+Contents:
+    --no-sandbox
+    --remote-debugging-port=0.0.0.0:9222
+    --remote-allow-origins=*
+  (a previous attempt wrote this, but nothing in the wrapper chain reads
+  $HOME/.config/chromium-flags.conf — only /etc/chromium.d/*)
+
+## Current compose (lane default):
+  CHROME_CLI=   (empty)
+  ports: 59170:3000, 59171:9222, 9222:9222

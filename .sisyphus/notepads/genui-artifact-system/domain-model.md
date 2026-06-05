@@ -1,0 +1,24 @@
+# GenUI artifact domain model <!-- oc:id=sec_aa -->
+
+- v1 source of truth should stay session-scoped in renderer state; no server or main-process persistence required for first slice.
+- Existing durable patterns split three ways:
+  - transient/session state -> Jotai families (`messages`, `parts`, `streaming`)
+  - renderer-local persisted prefs -> `atomWithStorage`
+  - durable app data -> Electron main XDG/Drizzle/JSON
+- artifact records need system-generated IDs, not model IDs.
+- minimum record shape:
+  - `id`
+  - `scope` = `session`
+  - `title`
+  - `component`
+  - `props`
+  - `source { sessionId, messageId, partId?, component, rawFence }`
+  - `createdAt`, `updatedAt`, `lastRenderedAt`
+  - `pin { pinned, placement, pinnedAt }`
+- recommended placements vocabulary:
+  - `inline`
+  - `above-chat`
+  - `chat-inline-right`
+  - `side-panel`
+- first implementation seam: renderer atom store in `apps/desktop/src/renderer/atoms/genui-artifacts.ts`
+- later persistence seam: Electron main modeled after automation subsystem and file routes, not needed for v1
