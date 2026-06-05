@@ -39,7 +39,7 @@ function GlobalAppChrome() {
 				WebkitAppRegion: "no-drag",
 			}}
 		>
-			<ElfWordmark className="mr-2 h-[11px] w-auto shrink-0 text-[11px] text-muted-foreground/80" />
+			<ElfWordmark className="mr-2 h-[16.5px] w-auto shrink-0 text-[16.5px] text-muted-foreground/80" />
 			<Tooltip>
 				<TooltipTrigger
 					render={
