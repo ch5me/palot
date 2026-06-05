@@ -1,0 +1,9 @@
+Task 17 panel state machine + create-lane affordance
+- Panel no longer overwrites user URL with stream URL on lane change
+- URL input defaults to https://example.com, not the same-origin stream URL
+- Iframe src still uses the stream URL (unchanged)
+- "Open in browser" button now opens the user URL, not the stream URL
+  and is disabled when the URL is about:blank or matches the stream URL
+- New "+ New lane" button next to the lane selector opens an inline form
+  to register a remote lane via createRemoteBrowserLane
+- Files touched: apps/desktop/src/renderer/components/side-panel/browser-panel.tsx

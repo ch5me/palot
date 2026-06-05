@@ -1,0 +1,9 @@
+Task 17 profile-persistence test (task 5 continuation)
+- Dropped fresh marker session-1780677499 into /Users/hassoncs/.local/share/elf/browser-profiles/default/persistence-marker.txt
+- Stopped and removed lane container
+- Re-ran start-lane to restart the lane
+- After restart, marker file content + mtime + size unchanged
+- Profile path volume mount preserves file across container lifecycle
+- Profile path is /Users/hassoncs/.local/share/elf/browser-profiles/default:/config
+- Stream surface (port 3000) returns 401 from nginx (auth required) confirming
+  the Selkies image is still running and serving the stream shell

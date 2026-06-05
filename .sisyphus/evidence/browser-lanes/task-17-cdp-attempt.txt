@@ -1,0 +1,20 @@
+Task 17 CDP via custom-cont-init.d/ approach (option b)
+- LinuxServer/Selkies Chromium image ignores CHROME_CLI for --remote-debugging-port
+- Non-Selkies Chromium images listed in user task are not available on Docker Hub
+  (chromium:stable, chromium/chromium:stable, lscr.io/chromium, selkies/chromium,
+  monokal/chromium all 404 or require auth)
+- Implemented option (b): custom-cont-init.d/ script that overwrites
+  /usr/bin/wrapped-chromium with a CDP-enabled equivalent
+- Mount: <runtimeDir>/custom-cont-init.d:/custom-cont-init.d via compose
+- Init script: apps/desktop/src/main/browser-lane-runtime.ts (INIT_CDP_SCRIPT_CONTENT)
+- Verify wrapper patched inside container: yes, --remote-debugging-port=0.0.0.0:9222
+  is in the chromium command line after labwc autostart triggers
+- Verify chromium binds 0.0.0.0:9222: NO. chromium 148 in this image does not
+  bind the debug port even with the flag present and correct user-data-dir.
+  Manually running `chromium --no-sandbox --user-data-dir=/tmp/test
+  --remote-debugging-port=0.0.0.0:9999` also fails to bind.
+- Same-origin stream surface (port 3000) and selkies websocket (port 8082) bind fine
+- Conclusion: CDP via LinuxServer/Selkies Chromium is a hard environmental
+  blocker, not a code-side issue. Documented in continuation notes.
+- Lane restart preserves the patched wrapper (init script idempotent on restart)
+- Files touched: apps/desktop/src/main/browser-lane-runtime.ts

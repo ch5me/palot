@@ -6,6 +6,7 @@ import {
 	GlobeIcon,
 	HistoryIcon,
 	LoaderCircleIcon,
+	PlusIcon,
 	RefreshCwIcon,
 	RotateCcwIcon,
 	XIcon,
@@ -21,6 +22,7 @@ import {
 	pushBrowserHistory,
 } from "../../atoms/browser"
 import {
+	createRemoteBrowserLane,
 	fetchBrowserLaneHealth,
 	fetchBrowserLanes,
 	restartBrowserLane,
@@ -35,18 +37,44 @@ interface BrowserPanelProps {
 }
 
 const FALLBACK_URL = "about:blank"
+const USER_DEFAULT_URL = "https://example.com"
+
+function pickInitialUserUrl(persisted: string | undefined): string {
+	if (!persisted || persisted === FALLBACK_URL) return USER_DEFAULT_URL
+	// Never seed the user input with a same-origin stream URL — those are iframe-only.
+	if (/^https?:\/\/elf-browser-lane\.local\b/.test(persisted)) return USER_DEFAULT_URL
+	return persisted
+}
+
+function isLikelyStreamUrl(url: string): boolean {
+	if (!url) return false
+	if (url === FALLBACK_URL) return true
+	if (/^https?:\/\/elf-browser-lane\.local\b/.test(url)) return true
+	return false
+}
 
 export function BrowserPanel({ agent, className }: BrowserPanelProps) {
 	const [persistedUrl, setPersistedUrl] = useAtom(lastBrowserUrlAtom)
 	const [history, setHistory] = useAtom(browserHistoryAtom)
 	const [activeLaneId, setActiveLaneId] = useAtom(activeBrowserLaneIdAtom)
-	const [inputValue, setInputValue] = useState(persistedUrl || FALLBACK_URL)
-	const [currentUrl, setCurrentUrl] = useState(persistedUrl || FALLBACK_URL)
+	const [inputValue, setInputValue] = useState(() => pickInitialUserUrl(persistedUrl))
+	const [currentUrl, setCurrentUrl] = useState(() => pickInitialUserUrl(persistedUrl))
 	const [inputError, setInputError] = useState<string | null>(null)
 	const [laneList, setLaneList] = useState<BrowserLane[]>([])
 	const [laneHealth, setLaneHealth] = useState<BrowserLaneHealth | null>(null)
 	const [isLoading, setIsLoading] = useState(false)
 	const [loadFailure, setLoadFailure] = useState<string | null>(null)
+	const [isCreateOpen, setIsCreateOpen] = useState(false)
+	const [createForm, setCreateForm] = useState({
+		id: "",
+		label: "",
+		streamBackendUrl: "",
+		cdpEndpoint: "",
+		host: "",
+		profilePath: "",
+	})
+	const [createError, setCreateError] = useState<string | null>(null)
+	const [createBusy, setCreateBusy] = useState(false)
 
 	const activeLane = useMemo(
 		() => laneList.find((lane) => lane.id === activeLaneId) ?? laneList[0] ?? null,
@@ -128,13 +156,8 @@ export function BrowserPanel({ agent, className }: BrowserPanelProps) {
 				if (cancelled) return
 				setLaneList(lanes)
 				const selected = lanes.find((lane) => lane.id === activeLaneId) ?? lanes[0] ?? null
-				if (selected) {
+				if (selected && selected.id !== activeLaneId) {
 					setActiveLaneId(selected.id)
-					const nextUrl = buildBrowserLaneDisplayUrl(selected)
-					setCurrentUrl(nextUrl)
-					setInputValue(nextUrl)
-					setPersistedUrl(nextUrl)
-					setHistory((current) => pushBrowserHistory(current, nextUrl))
 				}
 			})
 			.finally(() => {
@@ -143,7 +166,7 @@ export function BrowserPanel({ agent, className }: BrowserPanelProps) {
 		return () => {
 			cancelled = true
 		}
-	}, [activeLaneId, setActiveLaneId, setHistory, setPersistedUrl])
+	}, [activeLaneId, setActiveLaneId])
 
 	useEffect(() => {
 		if (!activeLane) return
@@ -151,15 +174,10 @@ export function BrowserPanel({ agent, className }: BrowserPanelProps) {
 		void fetchBrowserLaneHealth(activeLane.id).then((health) => {
 			if (!cancelled) setLaneHealth(health)
 		})
-		const nextUrl = buildBrowserLaneDisplayUrl(activeLane)
-		setCurrentUrl(nextUrl)
-		setInputValue(nextUrl)
-		setPersistedUrl(nextUrl)
-		setHistory((current) => pushBrowserHistory(current, nextUrl))
 		return () => {
 			cancelled = true
 		}
-	}, [activeLane, setHistory, setPersistedUrl])
+	}, [activeLane])
 
 	const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
 		event.preventDefault()
@@ -245,6 +263,50 @@ export function BrowserPanel({ agent, className }: BrowserPanelProps) {
 		setPersistedUrl(FALLBACK_URL)
 	}
 
+	const canOpenExternal = useMemo(() => {
+		if (!currentUrl) return false
+		if (isLikelyStreamUrl(currentUrl)) return false
+		return true
+	}, [currentUrl])
+
+	const handleCreateLane = async (event: React.FormEvent<HTMLFormElement>) => {
+		event.preventDefault()
+		setCreateError(null)
+		const id = createForm.id.trim()
+		const label = createForm.label.trim() || id
+		const streamBackendUrl = createForm.streamBackendUrl.trim()
+		if (!id) {
+			setCreateError("Lane id is required")
+			return
+		}
+		if (!streamBackendUrl) {
+			setCreateError("Stream backend URL is required")
+			return
+		}
+		setCreateBusy(true)
+		try {
+			const lane = await createRemoteBrowserLane({
+				id,
+				label,
+				streamBackendUrl,
+				cdpEndpoint: createForm.cdpEndpoint.trim() || null,
+				host: createForm.host.trim() || null,
+				profilePath: createForm.profilePath.trim() || null,
+			})
+			setLaneList((current) => {
+				const filtered = current.filter((entry) => entry.id !== lane.id)
+				return [...filtered, lane]
+			})
+			setActiveLaneId(lane.id)
+			setIsCreateOpen(false)
+			setCreateForm({ id: "", label: "", streamBackendUrl: "", cdpEndpoint: "", host: "", profilePath: "" })
+		} catch (error) {
+			setCreateError(error instanceof Error ? error.message : String(error))
+		} finally {
+			setCreateBusy(false)
+		}
+	}
+
 	return (
 		<div className={`flex h-full min-h-0 flex-col bg-background ${className ?? ""}`}>
 			<div className="border-b border-border px-4 py-3">
@@ -324,7 +386,7 @@ export function BrowserPanel({ agent, className }: BrowserPanelProps) {
 						variant="outline"
 						onClick={handleOpenExternal}
 						className="shrink-0"
-						disabled={currentUrl === FALLBACK_URL}
+						disabled={!canOpenExternal}
 					>
 						<ExternalLinkIcon className="size-4" aria-hidden="true" />
 						Open in browser
@@ -340,7 +402,7 @@ export function BrowserPanel({ agent, className }: BrowserPanelProps) {
 					<GlobeIcon className="size-3.5" aria-hidden="true" />
 					<span className="truncate">{currentUrl || FALLBACK_URL}</span>
 				</div>
-				<div className="flex items-center gap-2 text-xs text-muted-foreground">
+				<div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
 					<span>Lane:</span>
 					<select
 						value={activeLane?.id ?? activeLaneId}
@@ -354,7 +416,116 @@ export function BrowserPanel({ agent, className }: BrowserPanelProps) {
 						))}
 					</select>
 					{laneHealth ? <span>{laneHealth.status}</span> : null}
+					<Button
+						type="button"
+						variant="outline"
+						size="sm"
+						onClick={() => {
+							setIsCreateOpen((value) => !value)
+							setCreateError(null)
+						}}
+						className="h-7 px-2"
+						aria-expanded={isCreateOpen}
+					>
+						<PlusIcon className="size-3.5" aria-hidden="true" />
+						New lane
+					</Button>
 				</div>
+				{isCreateOpen ? (
+					<form
+						onSubmit={handleCreateLane}
+						className="flex flex-col gap-2 rounded-md border border-border/70 bg-muted/20 p-3 text-xs"
+					>
+						<div className="font-medium text-foreground">Register remote browser lane</div>
+						<div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+							<label className="flex flex-col gap-1 text-foreground">
+								<span className="text-[11px] text-muted-foreground">ID (required)</span>
+								<Input
+									value={createForm.id}
+									onChange={(event) => setCreateForm((form) => ({ ...form, id: event.target.value }))}
+									placeholder="prod-stream"
+									className="h-8"
+									required
+								/>
+							</label>
+							<label className="flex flex-col gap-1 text-foreground">
+								<span className="text-[11px] text-muted-foreground">Label</span>
+								<Input
+									value={createForm.label}
+									onChange={(event) => setCreateForm((form) => ({ ...form, label: event.target.value }))}
+									placeholder="Prod stream"
+									className="h-8"
+								/>
+							</label>
+							<label className="flex flex-col gap-1 text-foreground sm:col-span-2">
+								<span className="text-[11px] text-muted-foreground">Stream backend URL (required)</span>
+								<Input
+									value={createForm.streamBackendUrl}
+									onChange={(event) =>
+										setCreateForm((form) => ({ ...form, streamBackendUrl: event.target.value }))
+									}
+									placeholder="http://host:3000"
+									className="h-8"
+									required
+								/>
+							</label>
+							<label className="flex flex-col gap-1 text-foreground">
+								<span className="text-[11px] text-muted-foreground">CDP endpoint</span>
+								<Input
+									value={createForm.cdpEndpoint}
+									onChange={(event) =>
+										setCreateForm((form) => ({ ...form, cdpEndpoint: event.target.value }))
+									}
+									placeholder="http://host:9222"
+									className="h-8"
+								/>
+							</label>
+							<label className="flex flex-col gap-1 text-foreground">
+								<span className="text-[11px] text-muted-foreground">Host</span>
+								<Input
+									value={createForm.host}
+									onChange={(event) => setCreateForm((form) => ({ ...form, host: event.target.value }))}
+									placeholder="stream.example.com"
+									className="h-8"
+								/>
+							</label>
+							<label className="flex flex-col gap-1 text-foreground sm:col-span-2">
+								<span className="text-[11px] text-muted-foreground">Profile path</span>
+								<Input
+									value={createForm.profilePath}
+									onChange={(event) =>
+										setCreateForm((form) => ({ ...form, profilePath: event.target.value }))
+									}
+									placeholder="~/.local/share/elf/browser-profiles/remote"
+									className="h-8"
+								/>
+							</label>
+						</div>
+						{createError ? (
+							<div className="flex items-start gap-2 rounded-md border border-destructive/30 bg-destructive/5 px-2 py-1.5 text-destructive">
+								<AlertTriangleIcon className="mt-0.5 size-3.5 shrink-0" aria-hidden="true" />
+								<span>{createError}</span>
+							</div>
+						) : null}
+						<div className="flex justify-end gap-2">
+							<Button
+								type="button"
+								variant="ghost"
+								size="sm"
+								onClick={() => {
+									setIsCreateOpen(false)
+									setCreateError(null)
+								}}
+								disabled={createBusy}
+							>
+								Cancel
+							</Button>
+							<Button type="submit" variant="outline" size="sm" disabled={createBusy}>
+								{createBusy ? "Registering..." : "Register lane"}
+							</Button>
+						</div>
+					</form>
+				) : null}
 				{laneHealth ? (
 					<div className="rounded-md border border-border/70 bg-muted/30 px-3 py-2 text-xs text-muted-foreground">
 						<div className="font-medium text-foreground">{panelState.title}</div>
@@ -415,7 +586,7 @@ export function BrowserPanel({ agent, className }: BrowserPanelProps) {
 								<Button type="button" variant="outline" size="sm" onClick={() => void handleRestart()}>
 									Restart lane
 								</Button>
-								<Button type="button" variant="outline" size="sm" onClick={handleOpenExternal} disabled={currentUrl === FALLBACK_URL}>
+								<Button type="button" variant="outline" size="sm" onClick={handleOpenExternal} disabled={!canOpenExternal}>
 									Open diagnostics
 								</Button>
 							</div>
