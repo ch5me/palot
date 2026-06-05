@@ -38,6 +38,7 @@
 	},
 	"dependencies": {
 		"@ch5me/dag-sparkline": "workspace:*",
+		"@ch5me/effects": "workspace:*",
 		"@ch5me/elf-configconv": "workspace:*",
 		"@ch5me/elf-ui": "workspace:*",
 		"@ch5me/firefly-design": "workspace:*",
