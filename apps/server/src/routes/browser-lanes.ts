@@ -346,7 +346,9 @@ const routes = app
 			return c.json({ error: `Browser lane ${laneId} not found` }, 404)
 		}
 		const lanePrefix = `/browser/${laneId}`
-		const rest = c.req.path.startsWith(lanePrefix) ? c.req.path.slice(lanePrefix.length) || "/" : "/"
+		const rest = c.req.path.startsWith(lanePrefix)
+			? c.req.path.slice(lanePrefix.length) || "/"
+			: "/"
 		return await proxyLaneRequest(c.req.raw, lane, rest)
 	})
 
