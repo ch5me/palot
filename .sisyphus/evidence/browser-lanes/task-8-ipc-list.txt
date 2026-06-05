@@ -1,0 +1,7 @@
+Renderer seam proof
+
+- `window.elf.browserLanes.list()` added in `apps/desktop/src/preload/index.ts`.
+- Main-process handler `browser-lanes:list` added in `apps/desktop/src/main/ipc-handlers.ts`.
+- Backend wrapper `fetchBrowserLanes()` added in `apps/desktop/src/renderer/services/backend.ts`.
+- Browser-mode HTTP parity added in `apps/desktop/src/renderer/services/elf-server.ts` via `GET /browser`.
+- Validation: `bun run lint` PASS, `bun run check-types` PASS.

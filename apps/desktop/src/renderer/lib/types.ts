@@ -38,6 +38,22 @@ export type {
 	ToolStateCompleted,
 	UserMessage,
 } from "@opencode-ai/sdk/v2/client"
+import type { BrowserLane as PreloadBrowserLane } from "../../preload/api"
+
+export type {
+	BrowserLaneCapabilityReport,
+	BrowserLaneEndpoint,
+	BrowserLaneHealth,
+	BrowserLaneMode,
+	BrowserLaneReadiness,
+	BrowserLaneRecord,
+	BrowserLaneRuntime,
+	BrowserLaneStatus,
+} from "../../preload/api"
+
+export interface BrowserLane extends PreloadBrowserLane {
+	desktopStreamUrl?: string | null
+}
 
 // ============================================================
 // File attachment types
@@ -116,6 +132,43 @@ export interface Activity {
  * only needed by the SessionMetricsBar and command palette. Those components
  * subscribe to `sessionMetricsFamily` directly.
  */
+export type GenUiArtifactScope = "session"
+
+export type GenUiArtifactPlacement = "inline" | "above-chat" | "chat-inline-right" | "side-panel"
+
+export interface GenUiArtifactSource {
+	sessionId: string
+	messageId: string
+	partId?: string
+	component: string
+	rawFence: string
+}
+
+export interface GenUiArtifactPinState {
+	pinned: boolean
+	placement: GenUiArtifactPlacement | null
+	pinnedAt: number | null
+}
+
+export interface GenUiArtifactRecord {
+	id: string
+	scope: GenUiArtifactScope
+	title: string
+	component: string
+	props: Record<string, unknown>
+	source: GenUiArtifactSource
+	createdAt: number
+	updatedAt: number
+	lastRenderedAt: number
+	pin: GenUiArtifactPinState
+}
+
+export interface GenUiArtifactDescriptor {
+	component: string
+	title?: string
+	props: Record<string, unknown>
+}
+
 export type FireflySurfaceTarget = {
 	kind: "side-panel"
 	tab: SidePanelTabId

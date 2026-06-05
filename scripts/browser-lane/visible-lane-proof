@@ -1,0 +1,133 @@
+#!/usr/bin/env bun
+import { mkdirSync, writeFileSync } from "node:fs"
+import path from "node:path"
+import { existsSync, readFileSync } from "node:fs"
+import { getBrowserLaneDataDir } from "../../apps/desktop/src/main/automation/paths"
+import {
+	encodeBrowserLaneAuth,
+	parseBrowserLaneArgs,
+	readBrowserLaneAuthFromEnv,
+	runRemoteCommand,
+} from "./lib"
+
+function getLaneEndpoints(laneId: string) {
+	const envFile = path.join(getBrowserLaneDataDir(), laneId, ".env")
+	if (!existsSync(envFile)) {
+		throw new Error(`Missing runtime env for lane ${laneId}`)
+	}
+	const env = Object.fromEntries(
+		readFileSync(envFile, "utf-8")
+			.split("\n")
+			.filter(Boolean)
+			.map((line) => {
+				const [key, ...rest] = line.split("=")
+				return [key, rest.join("=")]
+			}),
+	)
+	return {
+		streamBackendUrl: `http://127.0.0.1:${env.STREAM_PORT}`,
+		cdpEndpoint: `http://127.0.0.1:${env.CDP_PORT}`,
+		auth: readBrowserLaneAuthFromEnv(env),
+	}
+}
+
+const args = parseBrowserLaneArgs(process.argv.slice(2))
+const laneId = args.lane
+const output = path.join(
+	process.cwd(),
+	".sisyphus",
+	"evidence",
+	"browser-lanes",
+	"task-11-visible-proof.txt",
+)
+mkdirSync(path.dirname(output), { recursive: true })
+
+try {
+	const endpoints =
+		args.mode === "remote"
+			? {
+				streamBackendUrl: args.streamBackendUrl || "http://127.0.0.1:3000",
+				cdpEndpoint: args.cdpEndpoint || "http://127.0.0.1:9222",
+				auth:
+					args.streamUser && args.streamPassword
+						? { user: args.streamUser, password: args.streamPassword }
+						: undefined,
+			}
+			: getLaneEndpoints(laneId)
+	const authHeader = endpoints.auth ? encodeBrowserLaneAuth(endpoints.auth) : undefined
+	if (args.mode === "remote" && args.ssh) {
+		const streamProbe = await runRemoteCommand(
+			args.ssh,
+			authHeader
+				? `curl -sf -u ${JSON.stringify(endpoints.auth?.user)}:${JSON.stringify(endpoints.auth?.password)} ${JSON.stringify(endpoints.streamBackendUrl)}`
+				: `curl -sf ${JSON.stringify(endpoints.streamBackendUrl)}`,
+		)
+		const cdpProbe = await runRemoteCommand(
+			args.ssh,
+			authHeader
+				? `curl -sf -u ${JSON.stringify(endpoints.auth?.user)}:${JSON.stringify(endpoints.auth?.password)} ${JSON.stringify(`${endpoints.cdpEndpoint}/json/version`)}`
+				: `curl -sf ${JSON.stringify(`${endpoints.cdpEndpoint}/json/version`)}`,
+		)
+		writeFileSync(
+			output,
+			JSON.stringify(
+				{
+					mode: "remote",
+					laneId,
+					ssh: args.ssh,
+					streamUrl: endpoints.streamBackendUrl,
+					cdpUrl: `${endpoints.cdpEndpoint}/json/version`,
+					streamOk: streamProbe.code === 0,
+					cdpOk: cdpProbe.code === 0,
+					streamStdout: streamProbe.stdout,
+					streamStderr: streamProbe.stderr,
+					cdpStdout: cdpProbe.stdout,
+					cdpStderr: cdpProbe.stderr,
+				},
+				null,
+				2,
+			),
+			"utf-8",
+		)
+		process.exit(streamProbe.code === 0 && cdpProbe.code === 0 ? 0 : 1)
+	}
+	const [streamResponse, cdpResponse] = await Promise.all([
+		fetch(endpoints.streamBackendUrl, {
+			signal: AbortSignal.timeout(5000),
+			headers: authHeader ? { authorization: authHeader } : undefined,
+		}),
+		fetch(`${endpoints.cdpEndpoint}/json/version`, {
+			signal: AbortSignal.timeout(5000),
+			headers: authHeader ? { authorization: authHeader } : undefined,
+		}),
+	])
+	const [streamBody, cdpBody] = await Promise.all([streamResponse.text(), cdpResponse.text()])
+	const streamContainsSignal = /vnc|novnc|kasm|websocket|canvas/i.test(streamBody)
+	writeFileSync(
+		output,
+		JSON.stringify(
+			{
+				mode: args.mode,
+				laneId,
+				streamUrl: endpoints.streamBackendUrl,
+				cdpUrl: `${endpoints.cdpEndpoint}/json/version`,
+				streamStatus: streamResponse.status,
+				cdpStatus: cdpResponse.status,
+				streamContainsSignal,
+				streamBodyPreview: streamBody.slice(0, 1500),
+				cdpBody,
+			},
+			null,
+			2,
+		),
+		"utf-8",
+	)
+	process.exit(streamResponse.ok && cdpResponse.ok && streamContainsSignal ? 0 : 1)
+} catch (error) {
+	writeFileSync(
+		output,
+		JSON.stringify({ mode: args.mode, laneId, error: error instanceof Error ? error.message : String(error) }, null, 2),
+		"utf-8",
+	)
+	process.exit(1)
+}

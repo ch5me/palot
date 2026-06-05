@@ -1,0 +1,8 @@
+{
+  "stopStatus": "profile-locked",
+  "stopMessage": "Profile exists at /Users/hassoncs/.local/share/elf/browser-profiles/task13-mock. Restart reuses it unless you reset profile.",
+  "resetStatus": "profile-locked",
+  "resetMessage": "Profile reset at 2026-06-05T06:28:39.812Z. Restart lane to create a clean session.",
+  "markerExistsAfterReset": false,
+  "profilePath": "/Users/hassoncs/.local/share/elf/browser-profiles/task13-mock"
+}

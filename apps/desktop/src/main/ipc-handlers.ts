@@ -95,6 +95,16 @@ import {
 	restartServer,
 	stopServer,
 } from "./opencode-manager"
+import {
+	createRemoteBrowserLane,
+	ensureBrowserLane,
+	listBrowserLanes,
+	refreshBrowserLaneHealth,
+	resetBrowserLaneProfile,
+	restartBrowserLane,
+	startBrowserLane,
+	stopBrowserLane,
+} from "./browser-lane-manager"
 import { getOpaqueWindows, getSettings, onSettingsChanged, updateSettings } from "./settings-store"
 import {
 	checkForUpdates,
@@ -272,6 +282,58 @@ export function registerIpcHandlers(): void {
 	ipcMain.handle(
 		"opencode:active-sessions",
 		withLogging("opencode:active-sessions", async () => await getActiveOpenCodeSessions()),
+	)
+
+	ipcMain.handle(
+		"browser-lanes:list",
+		withLogging("browser-lanes:list", async () => await listBrowserLanes()),
+	)
+	ipcMain.handle(
+		"browser-lanes:create-remote",
+		withLogging(
+			"browser-lanes:create-remote",
+			async (
+				_,
+				input: {
+					id: string
+					label: string
+					streamBackendUrl: string
+					cdpEndpoint: string | null
+					host?: string | null
+					profilePath?: string | null
+				},
+			) => await createRemoteBrowserLane(input),
+		),
+	)
+	ipcMain.handle(
+		"browser-lanes:ensure",
+		withLogging("browser-lanes:ensure", async (_, laneId: string) => await ensureBrowserLane(laneId)),
+	)
+	ipcMain.handle(
+		"browser-lanes:start",
+		withLogging("browser-lanes:start", async (_, laneId: string) => await startBrowserLane(laneId)),
+	)
+	ipcMain.handle(
+		"browser-lanes:stop",
+		withLogging("browser-lanes:stop", async (_, laneId: string) => await stopBrowserLane(laneId)),
+	)
+	ipcMain.handle(
+		"browser-lanes:restart",
+		withLogging("browser-lanes:restart", async (_, laneId: string) => await restartBrowserLane(laneId)),
+	)
+	ipcMain.handle(
+		"browser-lanes:reset-profile",
+		withLogging(
+			"browser-lanes:reset-profile",
+			async (_, laneId: string) => await resetBrowserLaneProfile(laneId),
+		),
+	)
+	ipcMain.handle(
+		"browser-lanes:health",
+		withLogging(
+			"browser-lanes:health",
+			async (_, laneId: string) => await refreshBrowserLaneHealth(laneId),
+		),
 	)
 
 	// --- Model state ---

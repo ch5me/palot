@@ -4,11 +4,13 @@ import path from "node:path"
 import { fileURLToPath } from "node:url"
 import { app, BrowserWindow, Menu, session, shell } from "electron"
 import { initAutomations, shutdownAutomations } from "./automation"
+import { registerBrowserLaneProtocol } from "./browser-lane-protocol"
 import { initCredentialStore } from "./credential-store"
 import { getOpaqueWindowsPref, registerIpcHandlers } from "./ipc-handlers"
 import { installLiquidGlass, resolveWindowChrome } from "./liquid-glass"
 import { createLogger } from "./logger"
 import { startMdnsScanner, stopMdnsScanner } from "./mdns-scanner"
+import { initBrowserLaneManager, shutdownBrowserLaneManager } from "./browser-lane-manager"
 import { stopServer } from "./opencode-manager"
 import { initSettingsStore } from "./settings-store"
 import { startEnvResolution } from "./shell-env"
@@ -283,10 +285,12 @@ if (!gotLock) {
 			},
 		)
 		log.info("Registered PNA header injection for 127.0.0.1 requests")
+		registerBrowserLaneProtocol(session.defaultSession).catch(console.error)
 
 		initSettingsStore()
 		initCredentialStore()
 		registerIpcHandlers()
+		initBrowserLaneManager().catch(console.error)
 		initAutomations().catch(console.error)
 		startMdnsScanner().catch((err) => log.warn("mDNS scanner failed to start", err))
 		createWindow()
@@ -311,6 +315,7 @@ if (!gotLock) {
 	app.on("before-quit", () => {
 		destroyTray()
 		shutdownAutomations()
+		shutdownBrowserLaneManager().catch(console.error)
 		stopMdnsScanner()
 		stopServer()
 		stopAutoUpdater()

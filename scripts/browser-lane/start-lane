@@ -1,0 +1,68 @@
+#!/usr/bin/env bun
+import { existsSync, readFileSync } from "node:fs"
+import path from "node:path"
+import { detectBrowserLaneCapabilities } from "../../apps/desktop/src/main/browser-lane-capabilities"
+import { getBrowserLaneDataDir } from "../../apps/desktop/src/main/automation/paths"
+import { parseBrowserLaneArgs, runCommand, runRemoteCommand } from "./lib"
+
+const args = parseBrowserLaneArgs(process.argv.slice(2))
+const laneId = args.lane
+
+if (args.mode === "remote") {
+	if (args.ssh) {
+		const result = await runRemoteCommand(args.ssh, `cd ~/.local/share/elf/browser-lanes/${laneId} && docker compose up -d`)
+		if (result.code !== 0) {
+			console.error(result.stderr || "Remote start failed")
+			process.exit(result.code)
+		}
+	}
+	if (!args.streamBackendUrl) {
+		console.error("Remote mode requires --stream-backend-url when no registry-backed runtime lookup exists")
+		process.exit(1)
+	}
+	console.log(JSON.stringify({
+		action: "start-lane",
+		mode: "remote",
+		laneId,
+		ssh: args.ssh,
+		streamBackendUrl: args.streamBackendUrl,
+		streamPath: `/browser/${laneId}/`,
+		cdpEndpoint: args.cdpEndpoint,
+		profilePath: args.profilePath,
+	}, null, 2))
+	process.exit(0)
+}
+
+const capabilities = await detectBrowserLaneCapabilities()
+if (!capabilities.compose.available || !capabilities.compose.command) {
+	console.error(capabilities.unsupportedReason || "Docker Compose unavailable")
+	process.exit(1)
+}
+
+const runtimeDir = path.join(getBrowserLaneDataDir(), laneId)
+const envFile = path.join(runtimeDir, ".env")
+const composeFile = path.join(runtimeDir, "docker-compose.yml")
+if (!existsSync(composeFile) || !existsSync(envFile)) {
+	console.error(`Missing runtime files for lane ${laneId}. Run install-runtime first.`)
+	process.exit(1)
+}
+
+const envText = readFileSync(envFile, "utf-8")
+const env = Object.fromEntries(envText.split("\n").filter(Boolean).map((line) => {
+	const [key, ...rest] = line.split("=")
+	return [key, rest.join("=")]
+}))
+const composeArgs = capabilities.compose.command === "docker compose"
+	? ["compose", "-f", composeFile, "up", "-d"]
+	: ["-f", composeFile, "up", "-d"]
+const result = await runCommand(capabilities.compose.command === "docker compose" ? "docker" : "docker-compose", composeArgs)
+if (result.code !== 0) process.exit(result.code)
+console.log(JSON.stringify({
+	action: "start-lane",
+	mode: "local",
+	laneId,
+	streamBackendUrl: `http://127.0.0.1:${env.STREAM_PORT}`,
+	streamPath: `/browser/${laneId}/`,
+	cdpEndpoint: `http://127.0.0.1:${env.CDP_PORT}`,
+	profilePath: env.PROFILE_PATH,
+}, null, 2))

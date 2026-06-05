@@ -1,5 +1,6 @@
 import { describe, expect, test } from "bun:test"
-import { mapSnapshotBundleToCards } from "./project-manager-cards"
+import { isTaggedProjectManagerSession } from "./atoms/project-manager"
+import { mapSnapshotBundleToCards, resolvePmTicketProjectSlug } from "./project-manager-cards"
 import { composePmPrompt, markPendingAssignment, markPendingFailure } from "./project-manager-launcher"
 import { createPendingSubmission } from "./project-manager-types"
 
@@ -70,5 +71,71 @@ describe("project manager cards", () => {
 		expect(cards[1]?.status).toBe("queued")
 		expect(cards[2]?.status).toBe("blocked")
 		expect(cards[0]?.meta).toContain("palot")
+	})
+
+	test("ticket route resolution prefers live session slug", () => {
+		const [card] = mapSnapshotBundleToCards({
+			activeTickets: [
+				{
+					ticketId: "CH5-1",
+					name: "Fix PM route",
+					repo: "palot",
+					sessionId: "ses_1",
+				},
+			],
+			queueTickets: [],
+			blockedTickets: [],
+		})
+
+		expect(
+			resolvePmTicketProjectSlug(card!, {
+				projects: [{ name: "palot", directory: "/repo/palot", slug: "palot-local" }],
+				sessions: [{ id: "ses_1", sessionId: "ses_1", projectSlug: "fitbot-live" }],
+				fallbackProjectSlug: "fallback",
+			}),
+		).toBe("fitbot-live")
+	})
+
+	test("ticket route resolution falls back to repo project match", () => {
+		const [card] = mapSnapshotBundleToCards({
+			activeTickets: [
+				{
+					ticketId: "CH5-1",
+					name: "Fix PM route",
+					repo: "palot",
+					sessionId: "ses_missing",
+				},
+			],
+			queueTickets: [],
+			blockedTickets: [],
+		})
+
+		expect(
+			resolvePmTicketProjectSlug(card!, {
+				projects: [{ name: "palot", directory: "/repo/palot", slug: "palot-local" }],
+				sessions: [],
+				fallbackProjectSlug: "fallback",
+			}),
+		).toBe("palot-local")
+	})
+})
+
+describe("project manager session tags", () => {
+	test("identifies tagged PM sessions by session id", () => {
+		expect(
+			isTaggedProjectManagerSession(
+				{
+					ses_pm_1: {
+						sessionId: "ses_pm_1",
+						projectDirectory: "/tmp/palot",
+						projectSlug: "palot-123",
+						projectName: "palot",
+						createdAt: 1,
+					},
+				},
+				"ses_pm_1",
+			),
+		).toBe(true)
+		expect(isTaggedProjectManagerSession({}, "ses_pm_1")).toBe(false)
 	})
 })

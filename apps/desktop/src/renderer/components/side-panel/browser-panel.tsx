@@ -2,199 +2,239 @@ import { Button } from "@ch5me/elf-ui/components/button"
 import { Input } from "@ch5me/elf-ui/components/input"
 import {
 	AlertTriangleIcon,
-	ArrowLeftIcon,
-	ArrowRightIcon,
 	ExternalLinkIcon,
 	GlobeIcon,
 	HistoryIcon,
 	LoaderCircleIcon,
 	RefreshCwIcon,
+	RotateCcwIcon,
 	XIcon,
 } from "lucide-react"
-import { useAtom, useAtomValue } from "jotai"
-import React, { useCallback, useEffect, useMemo, useRef, useState } from "react"
-import { activeFireflyProfileAtom } from "../../atoms/preferences"
-import { browserHistoryAtom, buildNavigableUrl, lastBrowserUrlAtom, pushBrowserHistory } from "../../atoms/browser"
-import type { Agent } from "../../lib/types"
+import { useAtom } from "jotai"
+import React, { useEffect, useMemo, useState } from "react"
+import {
+	activeBrowserLaneIdAtom,
+	browserHistoryAtom,
+	buildBrowserLaneDisplayUrl,
+	buildNavigableUrl,
+	lastBrowserUrlAtom,
+	pushBrowserHistory,
+} from "../../atoms/browser"
+import {
+	fetchBrowserLaneHealth,
+	fetchBrowserLanes,
+	restartBrowserLane,
+	resetBrowserLaneProfile,
+} from "../../services/backend"
+import { summarizeBrowserLaneHealth } from "../../../shared/browser-lanes"
+import type { Agent, BrowserLane, BrowserLaneHealth } from "../../lib/types"
 
 interface BrowserPanelProps {
 	agent: Agent
 	className?: string
 }
 
-type ElectronWebview = HTMLElement & {
-	src: string
-	canGoBack: () => boolean
-	canGoForward: () => boolean
-	goBack: () => void
-	goForward: () => void
-	reload: () => void
-	stop: () => void
-	addEventListener: (
-		type:
-			| "did-start-loading"
-			| "did-stop-loading"
-			| "did-navigate"
-			| "did-navigate-in-page"
-			| "did-fail-load"
-			| "did-finish-load",
-		listener: EventListenerOrEventListenerObject,
-	) => void
-	removeEventListener: (
-		type:
-			| "did-start-loading"
-			| "did-stop-loading"
-			| "did-navigate"
-			| "did-navigate-in-page"
-			| "did-fail-load"
-			| "did-finish-load",
-		listener: EventListenerOrEventListenerObject,
-	) => void
-}
-
-interface WebviewNavigationEvent extends Event {
-	url: string
-}
-
-interface WebviewFailureEvent extends Event {
-	errorCode: number
-	errorDescription: string
-	validatedURL: string
-	isMainFrame: boolean
-}
-
 const FALLBACK_URL = "about:blank"
-
-function isElectron(): boolean {
-	return typeof window !== "undefined" && "elf" in window
-}
 
 export function BrowserPanel({ agent, className }: BrowserPanelProps) {
 	const [persistedUrl, setPersistedUrl] = useAtom(lastBrowserUrlAtom)
 	const [history, setHistory] = useAtom(browserHistoryAtom)
-	const profileId = useAtomValue(activeFireflyProfileAtom).id
-	const initialUrl = useMemo(() => persistedUrl || FALLBACK_URL, [persistedUrl])
-	const webviewRef = useRef<ElectronWebview | null>(null)
-	const [inputValue, setInputValue] = useState(initialUrl)
-	const [currentUrl, setCurrentUrl] = useState(initialUrl)
-	const [isLoading, setIsLoading] = useState(false)
-	const [canGoBack, setCanGoBack] = useState(false)
-	const [canGoForward, setCanGoForward] = useState(false)
+	const [activeLaneId, setActiveLaneId] = useAtom(activeBrowserLaneIdAtom)
+	const [inputValue, setInputValue] = useState(persistedUrl || FALLBACK_URL)
+	const [currentUrl, setCurrentUrl] = useState(persistedUrl || FALLBACK_URL)
 	const [inputError, setInputError] = useState<string | null>(null)
-	const [loadFailure, setLoadFailure] = useState<{ code: number; description: string; url: string } | null>(null)
+	const [laneList, setLaneList] = useState<BrowserLane[]>([])
+	const [laneHealth, setLaneHealth] = useState<BrowserLaneHealth | null>(null)
+	const [isLoading, setIsLoading] = useState(false)
+	const [loadFailure, setLoadFailure] = useState<string | null>(null)
 
-	const syncNavState = useCallback(() => {
-		const webview = webviewRef.current
-		if (!webview) return
-		setCanGoBack(webview.canGoBack())
-		setCanGoForward(webview.canGoForward())
-		const liveUrl = webview.src || FALLBACK_URL
-		setCurrentUrl(liveUrl)
-	}, [])
-
-	const loadUrl = useCallback(
-		(rawUrl: string) => {
-			const nextUrl = buildNavigableUrl(rawUrl)
-			if (!nextUrl) {
-				setInputError(
-					"Couldn't build a URL from that. Try https://example.com, example.com, or leave blank to reset.",
-				)
-				return
-			}
-			setInputError(null)
-			setInputValue(nextUrl)
-			setCurrentUrl(nextUrl)
-			setLoadFailure(null)
-			const webview = webviewRef.current
-			if (webview && webview.src !== nextUrl) {
-				webview.src = nextUrl
-			}
-			setPersistedUrl(nextUrl)
-			setHistory((current) => pushBrowserHistory(current, nextUrl))
-		},
-		[setHistory, setPersistedUrl],
+	const activeLane = useMemo(
+		() => laneList.find((lane) => lane.id === activeLaneId) ?? laneList[0] ?? null,
+		[laneList, activeLaneId],
 	)
 
+	const streamUrl = useMemo(() => {
+		if (!activeLane) return FALLBACK_URL
+		return buildBrowserLaneDisplayUrl(activeLane)
+	}, [activeLane])
+
+	const healthSummary = useMemo(
+		() => (laneHealth ? summarizeBrowserLaneHealth(laneHealth) : "No lane health yet"),
+		[laneHealth],
+	)
+
+	const panelState = useMemo(() => {
+		if (!activeLane) {
+			return {
+				title: "No browser lane ready",
+				detail: "Create or start a browser lane to render streamed browser surface.",
+				showFrame: false,
+			}
+		}
+		if (!laneHealth) {
+			return {
+				title: "Checking browser lane",
+				detail: "Waiting for stream and CDP status.",
+				showFrame: false,
+			}
+		}
+		if (loadFailure) {
+			return {
+				title: "Lane request failed",
+				detail: loadFailure,
+				showFrame: false,
+			}
+		}
+		if (laneHealth.stream.state === "ready") {
+			return {
+				title: "Stream live",
+				detail: healthSummary,
+				showFrame: true,
+			}
+		}
+		if (laneHealth.cdp.state === "ready") {
+			return {
+				title: "CDP alive, stream missing",
+				detail: "Restart or refresh lane route. Automation can connect but panel stream is stale.",
+				showFrame: false,
+			}
+		}
+		if (laneHealth.status === "profile-locked") {
+			return {
+				title: "Profile waiting",
+				detail: laneHealth.message,
+				showFrame: false,
+			}
+		}
+		if (laneHealth.status === "error") {
+			return {
+				title: "Browser lane broken",
+				detail: laneHealth.message,
+				showFrame: false,
+			}
+		}
+		return {
+			title: "Browser lane not visible yet",
+			detail: healthSummary,
+			showFrame: false,
+		}
+	}, [activeLane, healthSummary, laneHealth, loadFailure])
+
 	useEffect(() => {
-		const webview = webviewRef.current
-		if (!webview) return
-
-		const handleDidStartLoading = () => {
-			setIsLoading(true)
-			setLoadFailure(null)
-			syncNavState()
-		}
-		const handleDidStopLoading = () => {
-			setIsLoading(false)
-			syncNavState()
-		}
-		const handleDidFinishLoad = () => {
-			setIsLoading(false)
-			syncNavState()
-		}
-		const handleDidNavigate = (event: Event) => {
-			const nextUrl = (event as WebviewNavigationEvent).url ?? webview.src ?? FALLBACK_URL
-			setInputValue(nextUrl)
-			setCurrentUrl(nextUrl)
-			setPersistedUrl(nextUrl)
-			setHistory((current) => pushBrowserHistory(current, nextUrl))
-			syncNavState()
-		}
-		const handleDidFailLoad = (event: Event) => {
-			const detail = event as WebviewFailureEvent
-			setIsLoading(false)
-			setLoadFailure({
-				code: detail.errorCode,
-				description: detail.errorDescription || "Unknown load error",
-				url: detail.validatedURL || webview.src || FALLBACK_URL,
+		let cancelled = false
+		setIsLoading(true)
+		void fetchBrowserLanes()
+			.then((lanes) => {
+				if (cancelled) return
+				setLaneList(lanes)
+				const selected = lanes.find((lane) => lane.id === activeLaneId) ?? lanes[0] ?? null
+				if (selected) {
+					setActiveLaneId(selected.id)
+					const nextUrl = buildBrowserLaneDisplayUrl(selected)
+					setCurrentUrl(nextUrl)
+					setInputValue(nextUrl)
+					setPersistedUrl(nextUrl)
+					setHistory((current) => pushBrowserHistory(current, nextUrl))
+				}
 			})
-		}
-
-		webview.addEventListener("did-start-loading", handleDidStartLoading)
-		webview.addEventListener("did-stop-loading", handleDidStopLoading)
-		webview.addEventListener("did-finish-load", handleDidFinishLoad)
-		webview.addEventListener("did-navigate", handleDidNavigate)
-		webview.addEventListener("did-navigate-in-page", handleDidNavigate)
-		webview.addEventListener("did-fail-load", handleDidFailLoad)
-		syncNavState()
-
+			.finally(() => {
+				if (!cancelled) setIsLoading(false)
+			})
 		return () => {
-			webview.removeEventListener("did-start-loading", handleDidStartLoading)
-			webview.removeEventListener("did-stop-loading", handleDidStopLoading)
-			webview.removeEventListener("did-finish-load", handleDidFinishLoad)
-			webview.removeEventListener("did-navigate", handleDidNavigate)
-			webview.removeEventListener("did-navigate-in-page", handleDidNavigate)
-			webview.removeEventListener("did-fail-load", handleDidFailLoad)
+			cancelled = true
 		}
-	}, [setHistory, setPersistedUrl, syncNavState])
+	}, [activeLaneId, setActiveLaneId, setHistory, setPersistedUrl])
+
+	useEffect(() => {
+		if (!activeLane) return
+		let cancelled = false
+		void fetchBrowserLaneHealth(activeLane.id).then((health) => {
+			if (!cancelled) setLaneHealth(health)
+		})
+		const nextUrl = buildBrowserLaneDisplayUrl(activeLane)
+		setCurrentUrl(nextUrl)
+		setInputValue(nextUrl)
+		setPersistedUrl(nextUrl)
+		setHistory((current) => pushBrowserHistory(current, nextUrl))
+		return () => {
+			cancelled = true
+		}
+	}, [activeLane, setHistory, setPersistedUrl])
 
 	const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
 		event.preventDefault()
-		loadUrl(inputValue)
+		const nextUrl = buildNavigableUrl(inputValue)
+		if (!nextUrl) {
+			setInputError(
+				"Couldn't build a URL from that. Try https://example.com, example.com, or leave blank to reset.",
+			)
+			return
+		}
+		setInputError(null)
+		setCurrentUrl(nextUrl)
+		setPersistedUrl(nextUrl)
+		setHistory((current) => pushBrowserHistory(current, nextUrl))
 	}
 
 	const handleOpenExternal = async () => {
-		if (!isElectron()) return
 		await window.elf.openExternal(currentUrl)
 	}
 
-	const handleGoBack = () => {
-		const webview = webviewRef.current
-		if (!webview || !webview.canGoBack()) return
-		webview.goBack()
+	const loadUrl = (rawUrl: string) => {
+		const nextUrl = buildNavigableUrl(rawUrl)
+		if (!nextUrl) {
+			setInputError(
+				"Couldn't build a URL from that. Try https://example.com, example.com, or leave blank to reset.",
+			)
+			return
+		}
+		setInputError(null)
+		setCurrentUrl(nextUrl)
+		setPersistedUrl(nextUrl)
+		setHistory((current) => pushBrowserHistory(current, nextUrl))
 	}
 
-	const handleGoForward = () => {
-		const webview = webviewRef.current
-		if (!webview || !webview.canGoForward()) return
-		webview.goForward()
-	}
-
-	const handleRefresh = () => {
-		const webview = webviewRef.current
-		if (!webview) return
+	const handleRefresh = async () => {
+		if (!activeLane) return
 		setLoadFailure(null)
-		webview.reload()
+		setIsLoading(true)
+		try {
+			await fetchBrowserLaneHealth(activeLane.id).then((health) => setLaneHealth(health))
+		} catch (error) {
+			setLoadFailure(error instanceof Error ? error.message : String(error))
+		} finally {
+			setIsLoading(false)
+		}
+	}
+
+	const handleRestart = async () => {
+		if (!activeLane) return
+		setLoadFailure(null)
+		setIsLoading(true)
+		try {
+			await restartBrowserLane(activeLane.id)
+			const health = await fetchBrowserLaneHealth(activeLane.id)
+			setLaneHealth(health)
+		} catch (error) {
+			setLoadFailure(error instanceof Error ? error.message : String(error))
+		} finally {
+			setIsLoading(false)
+		}
+	}
+
+	const handleResetProfile = async () => {
+		if (!activeLane) return
+		setLoadFailure(null)
+		setIsLoading(true)
+		try {
+			await resetBrowserLaneProfile(activeLane.id)
+			const health = await fetchBrowserLaneHealth(activeLane.id)
+			setLaneHealth(health)
+		} catch (error) {
+			setLoadFailure(error instanceof Error ? error.message : String(error))
+		} finally {
+			setIsLoading(false)
+		}
 	}
 
 	const handleReset = () => {
@@ -203,10 +243,6 @@ export function BrowserPanel({ agent, className }: BrowserPanelProps) {
 		setInputError(null)
 		setLoadFailure(null)
 		setPersistedUrl(FALLBACK_URL)
-		const webview = webviewRef.current
-		if (webview) {
-			webview.src = FALLBACK_URL
-		}
 	}
 
 	return (
@@ -237,29 +273,7 @@ export function BrowserPanel({ agent, className }: BrowserPanelProps) {
 						type="button"
 						variant="outline"
 						size="icon"
-						onClick={handleGoBack}
-						disabled={!canGoBack}
-						className="shrink-0"
-						aria-label="Go back"
-					>
-						<ArrowLeftIcon className="size-4" aria-hidden="true" />
-					</Button>
-					<Button
-						type="button"
-						variant="outline"
-						size="icon"
-						onClick={handleGoForward}
-						disabled={!canGoForward}
-						className="shrink-0"
-						aria-label="Go forward"
-					>
-						<ArrowRightIcon className="size-4" aria-hidden="true" />
-					</Button>
-					<Button
-						type="button"
-						variant="outline"
-						size="icon"
-						onClick={handleRefresh}
+						onClick={() => void handleRefresh()}
 						className="shrink-0"
 						aria-label="Refresh"
 					>
@@ -268,6 +282,25 @@ export function BrowserPanel({ agent, className }: BrowserPanelProps) {
 						) : (
 							<RefreshCwIcon className="size-4" aria-hidden="true" />
 						)}
+					</Button>
+					<Button
+						type="button"
+						variant="outline"
+						size="icon"
+						onClick={() => void handleRestart()}
+						className="shrink-0"
+						aria-label="Restart lane"
+					>
+						<RotateCcwIcon className="size-4" aria-hidden="true" />
+					</Button>
+					<Button
+						type="button"
+						variant="outline"
+						size="sm"
+						onClick={() => void handleResetProfile()}
+						className="shrink-0"
+					>
+						Reset profile
 					</Button>
 					<Input
 						value={inputValue}
@@ -291,7 +324,7 @@ export function BrowserPanel({ agent, className }: BrowserPanelProps) {
 						variant="outline"
 						onClick={handleOpenExternal}
 						className="shrink-0"
-						disabled={!isElectron() || currentUrl === FALLBACK_URL}
+						disabled={currentUrl === FALLBACK_URL}
 					>
 						<ExternalLinkIcon className="size-4" aria-hidden="true" />
 						Open in browser
@@ -307,6 +340,32 @@ export function BrowserPanel({ agent, className }: BrowserPanelProps) {
 					<GlobeIcon className="size-3.5" aria-hidden="true" />
 					<span className="truncate">{currentUrl || FALLBACK_URL}</span>
 				</div>
+				<div className="flex items-center gap-2 text-xs text-muted-foreground">
+					<span>Lane:</span>
+					<select
+						value={activeLane?.id ?? activeLaneId}
+						onChange={(event) => setActiveLaneId(event.target.value)}
+						className="h-8 rounded-md border border-border bg-background px-2 text-xs text-foreground"
+					>
+						{laneList.map((lane) => (
+							<option key={lane.id} value={lane.id}>
+								{lane.label}
+							</option>
+						))}
+					</select>
+					{laneHealth ? <span>{laneHealth.status}</span> : null}
+				</div>
+				{laneHealth ? (
+					<div className="rounded-md border border-border/70 bg-muted/30 px-3 py-2 text-xs text-muted-foreground">
+						<div className="font-medium text-foreground">{panelState.title}</div>
+						<div className="mt-1">{panelState.detail}</div>
+						<div className="mt-1 flex flex-wrap gap-3">
+							<span>Stream: {laneHealth.stream.state}</span>
+							<span>CDP: {laneHealth.cdp.state}</span>
+							{activeLane?.mode === "remote" ? <span>Mode: remote</span> : null}
+						</div>
+					</div>
+				) : null}
 				{history.length > 1 ? (
 					<div className="flex flex-wrap items-center gap-1.5 text-[11px] text-muted-foreground">
 						<HistoryIcon className="size-3" aria-hidden="true" />
@@ -325,10 +384,8 @@ export function BrowserPanel({ agent, className }: BrowserPanelProps) {
 				) : null}
 				{loadFailure ? (
 					<div className="rounded-md border border-destructive/30 bg-destructive/5 px-3 py-2 text-xs text-destructive">
-						<div className="font-medium">
-							Load failed: {loadFailure.description} ({loadFailure.code})
-						</div>
-						<div className="mt-1 break-all text-[11px] opacity-80">{loadFailure.url}</div>
+						<div className="font-medium">Lane failed: {loadFailure}</div>
+						<div className="mt-1 text-[11px] opacity-80">Use restart or refresh to recover stream state.</div>
 					</div>
 				) : null}
 				<div
@@ -338,24 +395,29 @@ export function BrowserPanel({ agent, className }: BrowserPanelProps) {
 						WebkitAppRegion: "no-drag",
 					}}
 				>
-					{isElectron() ? (
-						React.createElement("webview", {
-							ref: (node: Element | null) => {
-								webviewRef.current = node as ElectronWebview | null
-							},
-							src: initialUrl,
-							className: "h-full w-full",
-							autosize: true,
-							partition: `persist:elf-browser-${profileId}`,
-						}) as React.ReactNode
+					{activeLane && panelState.showFrame ? (
+						<iframe
+							src={streamUrl}
+							title={`Browser lane ${activeLane.label}`}
+							className="h-full w-full rounded-lg border-0 bg-background"
+						/>
 					) : (
 						<div className="flex h-full flex-col items-center justify-center gap-3 p-6 text-center">
 							<GlobeIcon className="size-10 text-muted-foreground/40" aria-hidden="true" />
 							<div>
-								<p className="text-sm font-medium text-foreground">Inline browser needs Electron</p>
-								<p className="mt-1 text-xs text-muted-foreground">
-									Inline webview unavailable in browser-only dev mode.
-								</p>
+								<p className="text-sm font-medium text-foreground">{panelState.title}</p>
+								<p className="mt-1 text-xs text-muted-foreground">{panelState.detail}</p>
+							</div>
+							<div className="flex flex-wrap justify-center gap-2">
+								<Button type="button" variant="outline" size="sm" onClick={() => void handleRefresh()}>
+									Refresh route
+								</Button>
+								<Button type="button" variant="outline" size="sm" onClick={() => void handleRestart()}>
+									Restart lane
+								</Button>
+								<Button type="button" variant="outline" size="sm" onClick={handleOpenExternal} disabled={currentUrl === FALLBACK_URL}>
+									Open diagnostics
+								</Button>
 							</div>
 						</div>
 					)}

@@ -44,6 +44,10 @@ import { memo, useCallback, useEffect, useMemo, useRef, useState, useTransition 
 import { activeServerConfigAtom } from "../atoms/connection"
 import { agentFamily, projectSessionIdsFamily, sandboxMappingsAtom } from "../atoms/derived/agents"
 import { automationsEnabledAtom } from "../atoms/feature-flags"
+import {
+	isTaggedProjectManagerSession,
+	projectManagerSessionTagsAtom,
+} from "../atoms/project-manager"
 import { projectPaginationFamily } from "../atoms/sessions"
 import { appStore } from "../atoms/store"
 import type { Agent, AgentStatus, SidebarProject } from "../lib/types"
@@ -121,6 +125,7 @@ export function AppSidebarContent({
 	const routeParams = useParams({ strict: false }) as { sessionId?: string }
 	const selectedSessionId = routeParams.sessionId ?? null
 	const automationsEnabled = useAtomValue(automationsEnabledAtom)
+	const pmSessionTags = useAtomValue(projectManagerSessionTagsAtom)
 	const activeServer = useAtomValue(activeServerConfigAtom)
 	const isLocalServer = activeServer.type === "local"
 
@@ -148,6 +153,11 @@ export function AppSidebarContent({
 		})
 	}, [])
 
+	const isProjectManagerSession = useCallback(
+		(agent: Agent) => isTaggedProjectManagerSession(pmSessionTags, agent.id),
+		[pmSessionTags],
+	)
+
 	// Auto-focus search input when activated
 	useEffect(() => {
 		if (projectSearchActive && projectSearchRef.current) {
@@ -159,9 +169,9 @@ export function AppSidebarContent({
 	const activeSessions = useMemo(
 		() =>
 			agents
-				.filter((a) => !a.parentId && isSidebarActiveAgent(a))
+				.filter((a) => !a.parentId && !isProjectManagerSession(a) && isSidebarActiveAgent(a))
 				.sort((a, b) => b.createdAt - a.createdAt),
-		[agents],
+		[agents, isProjectManagerSession],
 	)
 
 	const activeIds = useMemo(() => new Set(activeSessions.map((a) => a.id)), [activeSessions])
@@ -169,18 +179,18 @@ export function AppSidebarContent({
 	const recentSessions = useMemo(
 		() =>
 			agents
-				.filter((a) => !a.parentId && !activeIds.has(a.id))
+				.filter((a) => !a.parentId && !activeIds.has(a.id) && !isProjectManagerSession(a))
 				.sort((a, b) => b.lastActiveAt - a.lastActiveAt)
 				.slice(0, RECENT_COUNT),
-		[agents, activeIds],
+		[agents, activeIds, isProjectManagerSession],
 	)
 
 	const pmSessions = useMemo(
 		() =>
 			agents
-				.filter((a) => !a.parentId && a.name.toLowerCase().includes("project manager"))
+				.filter((a) => !a.parentId && isProjectManagerSession(a))
 				.sort((a, b) => b.lastActiveAt - a.lastActiveAt),
-		[agents],
+		[agents, isProjectManagerSession],
 	)
 
 	const hasContent = agents.length > 0 || projects.length > 0

@@ -1,0 +1,67 @@
+#!/usr/bin/env bun
+import { detectBrowserLaneCapabilities } from "../../apps/desktop/src/main/browser-lane-capabilities"
+import { ensureBrowserLaneRuntimeFiles, createBrowserLaneRuntimeConfig } from "../../apps/desktop/src/main/browser-lane-runtime"
+import { inflateBrowserLane } from "../../apps/desktop/src/shared/browser-lanes"
+import { parseBrowserLaneArgs, runRemoteCommand } from "./lib"
+
+const args = parseBrowserLaneArgs(process.argv.slice(2))
+const laneId = args.lane
+
+if (args.mode === "remote") {
+	if (args.ssh) {
+		const result = await runRemoteCommand(
+			args.ssh,
+			`mkdir -p ~/.config/elf/browser-lanes ~/.local/share/elf/browser-lanes ~/.local/share/elf/browser-profiles/${laneId}`,
+		)
+		if (result.code !== 0) {
+			console.error(result.stderr || "Remote install failed")
+			process.exit(result.code)
+		}
+	}
+	console.log(JSON.stringify({
+		action: "install-runtime",
+		mode: "remote",
+		laneId,
+		ssh: args.ssh,
+		streamBackendUrl: args.streamBackendUrl,
+		streamPath: `/browser/${laneId}/`,
+		cdpEndpoint: args.cdpEndpoint,
+		profilePath: args.profilePath || `~/.local/share/elf/browser-profiles/${laneId}`,
+	}, null, 2))
+	process.exit(0)
+}
+
+const capabilities = await detectBrowserLaneCapabilities()
+if (!capabilities.localRuntimeSupported) {
+	console.error(capabilities.unsupportedReason || "Local browser lane runtime unsupported")
+	if (capabilities.remediation) console.error(capabilities.remediation)
+	process.exit(1)
+}
+
+const record = {
+	id: laneId,
+	label: laneId,
+	mode: "local" as const,
+	runtime: "docker-chromium" as const,
+	streamBackendUrl: null,
+	cdpEndpoint: null,
+	profilePath: null,
+	host: args.host,
+	createdAt: Date.now(),
+	updatedAt: Date.now(),
+}
+
+const config = await createBrowserLaneRuntimeConfig(record, capabilities)
+ensureBrowserLaneRuntimeFiles(config)
+const lane = inflateBrowserLane({ ...record, profilePath: config.profilePath, streamBackendUrl: config.streamBackendUrl, cdpEndpoint: config.cdpEndpoint, host: config.host })
+console.log(JSON.stringify({
+	action: "install-runtime",
+	mode: "local",
+	laneId,
+	streamBackendUrl: lane.streamBackendUrl,
+	streamPath: lane.streamPath,
+	cdpEndpoint: lane.cdpEndpoint,
+	profilePath: lane.profilePath,
+	composeFile: config.composeFile,
+	envFile: config.envFile,
+}, null, 2))

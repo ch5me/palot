@@ -1,0 +1,17 @@
+{
+  "passed": true,
+  "method": "Live local Selkies container registered as remote-attached lane through manager + server route create-remote + same-origin route serves the registered remote streamBackendUrl.",
+  "remoteLane": {
+    "id": "remote-default",
+    "label": "Remote Default",
+    "mode": "remote",
+    "runtime": "remote-attached",
+    "streamBackendUrl": "http://127.0.0.1:59170",
+    "cdpEndpoint": "http://127.0.0.1:59171"
+  },
+  "results": {
+    "listIncludesRemote": true,
+    "sameOriginStream": "http=200 size=762",
+    "sameOriginHealth": "degraded, stream=ready, cdp=ready, message='Remote lane attached and reachable'"
+  }
+}

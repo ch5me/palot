@@ -1,0 +1,7 @@
+Task 11 blocker
+
+- CDP smoke helpers added: `scripts/browser-lane/cdp-smoke`, `scripts/browser-lane/visible-lane-proof`.
+- Live proof still blocked on this host because local browser lane runtime cannot start without Docker.
+- Existing blocker already observed in task 7: `scripts/browser-lane/start-lane --mode local --lane default` fails with `Docker not installed`.
+- Because no live runtime exists, helper execution cannot prove attach/navigation locally.
+- Fastest path: run the new helpers against a remote Linux lane host or a local machine with Docker installed.

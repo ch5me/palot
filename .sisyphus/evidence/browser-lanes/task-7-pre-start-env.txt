@@ -1,0 +1,4 @@
+LANE_ID=default
+STREAM_PORT=60122
+CDP_PORT=60126
+PROFILE_PATH=/Users/hassoncs/.local/share/elf/browser-profiles/default

@@ -1,7 +1,9 @@
-import { ActivityIcon, BookTextIcon, DatabaseIcon, FileDiffIcon, FilesIcon, GlobeIcon, MicIcon, MonitorPlayIcon, PlugIcon, RectangleEllipsisIcon, Share2Icon, SquarePenIcon, TerminalSquareIcon, UsersIcon, WandSparklesIcon, type LucideIcon } from "lucide-react"
+import { 	ActivityIcon, BookTextIcon, BoxesIcon, DatabaseIcon, FileDiffIcon, FilesIcon, GlobeIcon, MicIcon, MonitorPlayIcon, PlugIcon, RectangleEllipsisIcon, Share2Icon, SquarePenIcon, TerminalSquareIcon, UsersIcon, WandSparklesIcon, type LucideIcon } from "lucide-react"
+
 import type { ReactNode } from "react"
 import {
 	browserPanelEnabledAtom,
+	artifactsSurfaceEnabledAtom,
 	bridgesSurfaceEnabledAtom,
 	claudeSurfaceEnabledAtom,
 	ch5pmSurfaceEnabledAtom,
@@ -22,6 +24,7 @@ import {
 import type { SidePanelTabId } from "./atoms/ui"
 import { Ch5PmDashboardPanel } from "./ch5pm-dashboard/panel"
 import { ReviewPanel } from "./components/review/review-panel"
+import { ArtifactsPanel } from "./components/side-panel/artifacts-panel"
 import { BrowserPanel } from "./components/side-panel/browser-panel"
 import { BridgesPanel } from "./components/side-panel/bridges-panel"
 import { ClaudePanel } from "./components/side-panel/claude-panel"
@@ -170,6 +173,26 @@ export const FIREFLY_SURFACE_REGISTRY: FireflySurfaceDef[] = [
 		telemetryNamespace: "firefly.surface.pulse",
 		target: { kind: "side-panel", tab: "pulse" },
 		spawn: (ctx) => <PulsePanel agent={ctx.agent} />,
+	},
+	{
+		id: "artifacts",
+		title: "Artifacts",
+		icon: BoxesIcon,
+		formFactor: "side-panel-tab",
+		enabledFlag: {
+			key: "artifacts",
+			atom: artifactsSurfaceEnabledAtom,
+		},
+		defaultOn: true,
+		availability: (ctx) =>
+			ctx.flags.artifacts
+				? { available: true }
+				: { available: false, reason: "Artifacts surface is disabled in feature flags" },
+		commandIds: ["surface.artifacts.open", "surface.artifacts.toggle"],
+		persistenceKey: "side-panel.artifacts",
+		telemetryNamespace: "firefly.surface.artifacts",
+		target: { kind: "side-panel", tab: "artifacts" },
+		spawn: (ctx) => <ArtifactsPanel agent={ctx.agent} />,
 	},
 	{
 		id: "memory",

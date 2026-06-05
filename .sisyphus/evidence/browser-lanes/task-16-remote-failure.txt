@@ -1,0 +1,11 @@
+{
+  "passed": true,
+  "scenario": "remote connectivity failure shows degraded-but-safe behavior",
+  "setup": { "remoteId": "remote-broken", "streamBackendUrl": "http://127.0.0.1:1", "cdpEndpoint": "http://127.0.0.1:1" },
+  "result": {
+    "status": "error",
+    "stream": "failed with 'Stream backend URL unreachable'",
+    "cdp": "failed with 'CDP endpoint unreachable'",
+    "message": "Remote lane unreachable or not configured"
+  }
+}

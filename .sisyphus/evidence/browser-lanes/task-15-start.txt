@@ -1,0 +1,13 @@
+ Container default-browser-lane-default-1 Recreate 
+ Container default-browser-lane-default-1 Recreated 
+ Container default-browser-lane-default-1 Starting 
+ Container default-browser-lane-default-1 Started 
+{
+  "action": "start-lane",
+  "mode": "local",
+  "laneId": "default",
+  "streamBackendUrl": "http://127.0.0.1:59170",
+  "streamPath": "/browser/default/",
+  "cdpEndpoint": "http://127.0.0.1:59171",
+  "profilePath": "/Users/hassoncs/.local/share/elf/browser-profiles/default"
+}

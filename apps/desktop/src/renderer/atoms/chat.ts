@@ -2,6 +2,7 @@ import { atom } from "jotai"
 import { atomFamily } from "jotai-family"
 import { buildGenUiCatalog } from "../genui/registry"
 import type { ModelRef } from "../hooks/use-opencode-data"
+import { sessionGenUiArtifactListFamily } from "./genui-artifacts"
 import { appStore } from "./store"
 
 // ============================================================
@@ -79,6 +80,34 @@ export function buildPlanModeText(args: {
 	if (args.enabled && !args.primed) blocks.push(PLAN_MODE_DAG_NUDGE)
 	if (blocks.length === 0) return args.userText
 	return `${args.userText}\n\n${blocks.join("\n")}`
+}
+
+export function primeSessionGenUi(sessionId: string, userText: string): string {
+	const primed = appStore.get(planModePrimedFamily(sessionId))
+	const enabled = appStore.get(planModeFamily(sessionId))
+	const baseText = buildPlanModeText({ enabled, primed, userText })
+	const artifactContext = buildArtifactPromptContext(sessionId)
+	const finalText = artifactContext ? `${baseText}\n\n${artifactContext}` : baseText
+	if (!primed) appStore.set(primePlanModeAtom, sessionId)
+	return finalText
+}
+
+function buildArtifactPromptContext(sessionId: string): string {
+	const artifacts = appStore.get(sessionGenUiArtifactListFamily(sessionId))
+	if (!artifacts || artifacts.length === 0) {
+		return ""
+	}
+
+	const lines = artifacts.slice(0, 8).map((artifact) => {
+		const pin = artifact.pin.pinned && artifact.pin.placement ? ` pinned:${artifact.pin.placement}` : ""
+		return `- ${artifact.id} | component:${artifact.component}${pin} | title:${artifact.title}`
+	})
+
+	return [
+		"[Artifact Context] Previously rendered session artifacts:",
+		...lines,
+		'When the user refers to an existing artifact, prefer its stable `artifact_...` id. For edits, describe prop patches against the existing artifact before fully regenerating.',
+	].join("\n")
 }
 
 const GENUI_CONTEXT_RE = /\n*\[Inline UI][\s\S]*$/

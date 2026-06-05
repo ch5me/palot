@@ -1,0 +1,115 @@
+#!/usr/bin/env bun
+import { existsSync, readFileSync } from "node:fs"
+import path from "node:path"
+import { getBrowserLaneDataDir } from "../../apps/desktop/src/main/automation/paths"
+import {
+	encodeBrowserLaneAuth,
+	parseBrowserLaneArgs,
+	readBrowserLaneAuthFromEnv,
+	runRemoteCommand,
+} from "./lib"
+
+async function check(url: string, pathSuffix = "", authHeader?: string) {
+	try {
+		const headers: Record<string, string> = {}
+		if (authHeader) headers.authorization = authHeader
+		const response = await fetch(`${url}${pathSuffix}`, {
+			signal: AbortSignal.timeout(3000),
+			headers,
+		})
+		return {
+			ok: response.ok,
+			status: response.status,
+		}
+	} catch (error) {
+		return {
+			ok: false,
+			status: 0,
+			error: error instanceof Error ? error.message : String(error),
+		}
+	}
+}
+
+const args = parseBrowserLaneArgs(process.argv.slice(2))
+const laneId = args.lane
+
+if (args.mode === "remote") {
+		const streamTarget = args.streamBackendUrl || "http://127.0.0.1:3000"
+		const cdpTarget = args.cdpEndpoint || "http://127.0.0.1:9222"
+		const auth =
+			args.streamUser && args.streamPassword
+				? encodeBrowserLaneAuth({ user: args.streamUser, password: args.streamPassword })
+				: undefined
+		if (args.ssh) {
+			const streamProbe = await runRemoteCommand(
+				args.ssh,
+				auth
+					? `curl -sf -u ${JSON.stringify(args.streamUser)}:${JSON.stringify(args.streamPassword)} ${JSON.stringify(streamTarget)} >/dev/null`
+					: `curl -sf ${JSON.stringify(streamTarget)} >/dev/null`,
+			)
+			const cdpProbe = await runRemoteCommand(
+				args.ssh,
+				auth
+					? `curl -sf -u ${JSON.stringify(args.streamUser)}:${JSON.stringify(args.streamPassword)} ${JSON.stringify(`${cdpTarget}/json/version`)}`
+					: `curl -sf ${JSON.stringify(`${cdpTarget}/json/version`)}`,
+			)
+			const streamOk = streamProbe.code === 0
+			const cdpOk = cdpProbe.code === 0
+			console.log(JSON.stringify({
+				action: "healthcheck",
+				mode: "remote",
+				laneId,
+				ssh: args.ssh,
+				streamBackendUrl: streamTarget,
+				streamPath: `/browser/${laneId}/`,
+				cdpEndpoint: cdpTarget,
+				stream: { ok: streamOk, status: streamOk ? 200 : 0, error: streamOk ? undefined : streamProbe.stderr.trim() || streamProbe.stdout.trim() },
+				cdp: { ok: cdpOk, status: cdpOk ? 200 : 0, error: cdpOk ? undefined : cdpProbe.stderr.trim() || cdpProbe.stdout.trim() },
+			}, null, 2))
+			process.exit(streamOk || cdpOk ? 0 : 1)
+		}
+		const [stream, cdp] = await Promise.all([
+			check(streamTarget, "", auth),
+			check(cdpTarget, "/json/version", auth),
+		])
+		console.log(JSON.stringify({
+			action: "healthcheck",
+			mode: "remote",
+			laneId,
+			streamBackendUrl: streamTarget,
+			streamPath: `/browser/${laneId}/`,
+			cdpEndpoint: cdpTarget,
+			stream,
+			cdp,
+		}, null, 2))
+		process.exit(stream.ok || cdp.ok ? 0 : 1)
+}
+
+const envFile = path.join(getBrowserLaneDataDir(), laneId, ".env")
+if (!existsSync(envFile)) {
+	console.error(`Missing runtime env for lane ${laneId}`)
+	process.exit(1)
+}
+const env = Object.fromEntries(readFileSync(envFile, "utf-8").split("\n").filter(Boolean).map((line) => {
+	const [key, ...rest] = line.split("=")
+	return [key, rest.join("=")]
+}))
+const streamBackendUrl = `http://127.0.0.1:${env.STREAM_PORT}`
+const cdpEndpoint = `http://127.0.0.1:${env.CDP_PORT}`
+const localAuth = readBrowserLaneAuthFromEnv(env)
+const authHeader = localAuth ? encodeBrowserLaneAuth(localAuth) : undefined
+const [stream, cdp] = await Promise.all([
+	check(streamBackendUrl, "", authHeader),
+	check(cdpEndpoint, "/json/version", authHeader),
+])
+console.log(JSON.stringify({
+	action: "healthcheck",
+	mode: "local",
+	laneId,
+	streamBackendUrl,
+	streamPath: `/browser/${laneId}/`,
+	cdpEndpoint,
+	stream,
+	cdp,
+}, null, 2))
+process.exit(stream.ok || cdp.ok ? 0 : 1)

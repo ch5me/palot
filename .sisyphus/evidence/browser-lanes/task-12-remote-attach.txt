@@ -1,0 +1,16 @@
+{
+  "action": "healthcheck",
+  "mode": "remote",
+  "laneId": "remote-default",
+  "streamBackendUrl": "http://127.0.0.1:39111",
+  "streamPath": "/browser/remote-default/",
+  "cdpEndpoint": "http://127.0.0.1:39222",
+  "stream": {
+    "ok": true,
+    "status": 200
+  },
+  "cdp": {
+    "ok": true,
+    "status": 200
+  }
+}

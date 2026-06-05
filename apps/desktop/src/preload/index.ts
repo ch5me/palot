@@ -44,6 +44,17 @@ contextBridge.exposeInMainWorld("elf", {
 	restartOpenCode: () => ipcRenderer.invoke("opencode:restart"),
 
 	getActiveOpenCodeSessions: () => ipcRenderer.invoke("opencode:active-sessions"),
+	browserLanes: {
+		list: () => ipcRenderer.invoke("browser-lanes:list"),
+		createRemote: (input: import("./api").CreateRemoteBrowserLaneInput) =>
+			ipcRenderer.invoke("browser-lanes:create-remote", input),
+		ensure: (laneId: string) => ipcRenderer.invoke("browser-lanes:ensure", laneId),
+		start: (laneId: string) => ipcRenderer.invoke("browser-lanes:start", laneId),
+		stop: (laneId: string) => ipcRenderer.invoke("browser-lanes:stop", laneId),
+		restart: (laneId: string) => ipcRenderer.invoke("browser-lanes:restart", laneId),
+		resetProfile: (laneId: string) => ipcRenderer.invoke("browser-lanes:reset-profile", laneId),
+		health: (laneId: string) => ipcRenderer.invoke("browser-lanes:health", laneId),
+	},
 
 	onActiveOpenCodeSessionsChanged: (
 		callback: (snapshot: {

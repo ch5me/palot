@@ -1,0 +1,16 @@
+[main:browser-lane-runtime] Browser lane runtime files ready {
+  laneId: "default",
+  runtimeDir: "/Users/hassoncs/.local/share/elf/browser-lanes/default",
+  profilePath: "/Users/hassoncs/.local/share/elf/browser-profiles/default",
+}
+{
+  "action": "install-runtime",
+  "mode": "local",
+  "laneId": "default",
+  "streamBackendUrl": "http://127.0.0.1:59170",
+  "streamPath": "/browser/default/",
+  "cdpEndpoint": "http://127.0.0.1:59171",
+  "profilePath": "/Users/hassoncs/.local/share/elf/browser-profiles/default",
+  "composeFile": "/Users/hassoncs/.local/share/elf/browser-lanes/default/docker-compose.yml",
+  "envFile": "/Users/hassoncs/.local/share/elf/browser-lanes/default/.env"
+}

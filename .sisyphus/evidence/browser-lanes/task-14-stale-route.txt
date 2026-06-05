@@ -1,0 +1,13 @@
+{
+  "blocked": true,
+  "message": "Stale-route recovery UX implemented in panel state machine, but end-to-end proof needs live route cycling against real lane.",
+  "stateCardExpected": [
+    "CDP alive, stream missing",
+    "Restart or refresh lane route"
+  ],
+  "actions": [
+    "Refresh route",
+    "Restart lane",
+    "Open diagnostics"
+  ]
+}

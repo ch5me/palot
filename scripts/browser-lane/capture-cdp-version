@@ -1,0 +1,47 @@
+#!/usr/bin/env bun
+import { mkdirSync, writeFileSync } from "node:fs"
+import path from "node:path"
+
+function parseArgs(argv: string[]) {
+	const parsed: Record<string, string> = {}
+	for (let index = 0; index < argv.length; index++) {
+		const part = argv[index]
+		if (!part.startsWith("--")) continue
+		parsed[part.slice(2)] = argv[index + 1] && !argv[index + 1].startsWith("--") ? argv[++index] : "true"
+	}
+	return parsed
+}
+
+const args = parseArgs(process.argv.slice(2))
+const laneId = args.lane || "default"
+const url = args.url
+const output = args.output || path.join(
+	process.cwd(),
+	".sisyphus",
+	"evidence",
+	"browser-lanes",
+	`${laneId}-cdp-version.txt`,
+)
+
+if (!url) {
+	console.error("capture-cdp-version requires --url")
+	process.exit(1)
+}
+
+mkdirSync(path.dirname(output), { recursive: true })
+
+try {
+	const response = await fetch(url, { signal: AbortSignal.timeout(5000) })
+	const body = await response.text()
+	writeFileSync(output, JSON.stringify({ url, status: response.status, body }, null, 2), "utf-8")
+	console.log(output)
+	process.exit(response.ok ? 0 : 1)
+} catch (error) {
+	writeFileSync(
+		output,
+		JSON.stringify({ url, error: error instanceof Error ? error.message : String(error) }, null, 2),
+		"utf-8",
+	)
+	console.log(output)
+	process.exit(1)
+}

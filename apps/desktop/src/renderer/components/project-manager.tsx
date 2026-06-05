@@ -24,6 +24,7 @@ import {
 } from "lucide-react"
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { projectModelsAtom, setProjectModelAtom } from "../atoms/preferences"
+import { tagProjectManagerSessionAtom } from "../atoms/project-manager"
 import { agentFamily } from "../atoms/derived/agents"
 import { appStore } from "../atoms/store"
 import { useAgents, useProjectList } from "../hooks/use-agents"
@@ -53,7 +54,11 @@ import { PromptToolbar, StatusBar } from "./chat/prompt-toolbar"
 import { ElfHero } from "./elf-hero"
 import { fetchCh5PmDashboard } from "../ch5pm-dashboard/client"
 import { MOCK_CH5PM_DASHBOARD_STATE } from "../ch5pm-dashboard/fixtures"
-import { getPmSnapshotBundle, mapSnapshotBundleToCards } from "../project-manager-cards"
+import {
+	getPmSnapshotBundle,
+	mapSnapshotBundleToCards,
+	resolvePmTicketProjectSlug,
+} from "../project-manager-cards"
 import {
 	launchProjectManagerSession,
 	markPendingAssignment,
@@ -352,6 +357,14 @@ export function ProjectManager() {
 						item.id === submission.id ? markPendingAssignment(item, result.assignment) : item,
 					),
 				)
+				appStore.set(tagProjectManagerSessionAtom, {
+					sessionId: result.assignment.sessionId,
+					projectDirectory: result.assignment.projectDirectory,
+					projectSlug: result.assignment.projectSlug,
+					projectName: result.assignment.projectName,
+					pendingId: result.pendingId,
+					createdAt: Date.now(),
+				})
 				setAssignments((current) => [result.assignment, ...current])
 				clearDraft()
 				navigate({
@@ -434,6 +447,16 @@ export function ProjectManager() {
 	}, [activeSessionCount, pendingCards.length, snapshotCards])
 
 	const hasToolbar = providers
+
+	const resolveTicketCardProjectSlug = useCallback(
+		(card: Extract<PmCard, { kind: "ticket" }>) =>
+			resolvePmTicketProjectSlug(card, {
+				projects,
+				sessions: allAgents,
+				fallbackProjectSlug: selectedProject?.slug,
+			}),
+		[allAgents, projects, selectedProject?.slug],
+	)
 
 	return (
 		<div className="relative flex h-full flex-col">
@@ -540,7 +563,10 @@ export function ProjectManager() {
 													const targetSessionId = card.kind === "session" ? card.sessionId : card.sessionId
 													if (!targetSessionId) return
 													const targetProjectSlug =
-														card.kind === "session" ? card.projectSlug : selectedProject?.slug ?? "unknown"
+														card.kind === "session"
+															? card.projectSlug
+															: resolveTicketCardProjectSlug(card)
+													if (!targetProjectSlug) return
 													navigate({
 														to: "/project/$projectSlug/session/$sessionId",
 														params: { projectSlug: targetProjectSlug, sessionId: targetSessionId },

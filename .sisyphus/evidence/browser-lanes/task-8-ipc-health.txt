@@ -1,0 +1,7 @@
+Renderer action/health seam proof
+
+- `window.elf.browserLanes.ensure/start/stop/restart/health` added in `apps/desktop/src/preload/index.ts`.
+- Main-process handlers `browser-lanes:ensure|start|stop|restart|health` added in `apps/desktop/src/main/ipc-handlers.ts`.
+- Backend wrappers `ensureBrowserLane()`, `startBrowserLane()`, `stopBrowserLane()`, `restartBrowserLane()`, `fetchBrowserLaneHealth()` added in `apps/desktop/src/renderer/services/backend.ts`.
+- Browser-mode HTTP parity added in `apps/desktop/src/renderer/services/elf-server.ts` plus `apps/server/src/routes/browser-lanes.ts` POST/health endpoints.
+- Validation: `bun run lint` PASS, `bun run check-types` PASS.

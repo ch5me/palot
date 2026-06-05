@@ -1,5 +1,6 @@
 import { Hono } from "hono"
 import { cors } from "hono/cors"
+import browserLanes from "./routes/browser-lanes"
 import files from "./routes/files"
 import health from "./routes/health"
 import modelState from "./routes/model-state"
@@ -25,6 +26,7 @@ const routes = app
 	.route("/api/servers", servers)
 	.route("/api/model-state", modelState)
 	.route("/api/files", files)
+	.route("/browser", browserLanes)
 	.route("/health", health)
 
 export type AppType = typeof routes

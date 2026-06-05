@@ -1,6 +1,7 @@
 import type { ReactNode } from "react"
-import { CheckSquare2Icon } from "lucide-react"
+import { BoxesIcon, CheckSquare2Icon } from "lucide-react"
 import { SessionTaskList } from "./components/chat/session-task-list"
+import { GenUiArtifactWidget } from "./components/genui/genui-artifact-widget"
 import type { SessionWidgetId, SessionWidgetZoneId } from "./atoms/session-widgets"
 import type { Agent } from "./lib/types"
 
@@ -23,5 +24,12 @@ export const SESSION_WIDGET_REGISTRY: Record<SessionWidgetId, SessionWidgetDefin
 		defaultZoneId: "above-chat",
 		icon: CheckSquare2Icon,
 		render: ({ agent }) => <SessionTaskList sessionId={agent.sessionId} />,
+	},
+	"genui-artifacts": {
+		id: "genui-artifacts",
+		title: "Artifacts",
+		defaultZoneId: "chat-inline-right",
+		icon: BoxesIcon,
+		render: ({ agent }) => <GenUiArtifactWidget agent={agent} placement="chat-inline-right" />,
 	},
 }

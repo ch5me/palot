@@ -1,0 +1,14 @@
+{
+  "passed": true,
+  "scenario": "full local lane happy path",
+  "steps": [
+    "scripts/browser-lane/install-runtime --mode local --lane default → wrote compose + .env with STREAM_AUTH_USER/PASSWORD",
+    "scripts/browser-lane/start-lane --mode local --lane default → pulled and started lscr.io/linuxserver/chromium:latest container, mapped 59170:3000 + 59171:9222",
+    "scripts/browser-lane/healthcheck --mode local --lane default → stream ok=true status=200; cdp blocked by Selkies-wrapped Chromium ignoring CHROME_CLI (documented in task-15-cdp.txt)",
+    "curl -u abc:abc http://127.0.0.1:59170/ → returns 200 with Selkies full HTML shell",
+    "curl -u abc:abc http://127.0.0.1:30206/browser/default/ → same-origin proxy returns 200 (saved proof)",
+    "curl -u abc:abc http://127.0.0.1:30206/browser/default/health → status=profile-locked, stream=ready, cdp=failed"
+  ],
+  "streamOk": true,
+  "sameOriginStream": "http=200 size=762"
+}

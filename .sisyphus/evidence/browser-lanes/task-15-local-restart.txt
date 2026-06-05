@@ -1,0 +1,11 @@
+{
+  "passed": true,
+  "markerBefore": "session-1780672210",
+  "markerAfterStop": "session-1780672210",
+  "markerAfterStart": "session-1780672210",
+  "profilePath": "/Users/hassoncs/.local/share/elf/browser-profiles/default",
+  "operations": ["install", "start", "write-marker", "stop", "start"],
+  "sameOriginProxy": "http=200 size=762",
+  "streamHealthcheck": "stream ok=true status=200",
+  "cdpPartial": "Selkies image ignores CHROME_CLI for --remote-debugging-port; documented in task-15-cdp.txt"
+}

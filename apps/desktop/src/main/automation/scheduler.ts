@@ -10,8 +10,10 @@ import { createLogger } from "../logger"
 
 const log = createLogger("automation-scheduler")
 
+type TimerHandle = ReturnType<typeof setTimeout> & { unref?: () => void }
+
 interface ScheduledTask {
-	timer: ReturnType<typeof setTimeout> | null
+	timer: TimerHandle | null
 	rruleStr: string
 	timezone: string
 	paused: boolean
@@ -146,12 +148,10 @@ async function scheduleNext(id: string, task: ScheduledTask): Promise<Date | nul
 				})
 			}
 		}
-	}, delay)
+	}, delay) as TimerHandle
 
 	// Don't prevent app exit
-	if (task.timer && typeof task.timer === "object" && "unref" in task.timer) {
-		task.timer.unref()
-	}
+	task.timer.unref?.()
 
 	return next
 }

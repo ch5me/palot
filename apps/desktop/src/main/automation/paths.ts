@@ -15,6 +15,7 @@ import os from "node:os"
 import path from "node:path"
 
 const APP_NAME = "elf"
+const BROWSER_LANES_DIR = "browser-lanes"
 
 /**
  * Returns the XDG config directory for Elf
@@ -32,4 +33,16 @@ export function getConfigDir(): string {
 export function getDataDir(): string {
 	const xdgData = process.env.XDG_DATA_HOME || path.join(os.homedir(), ".local", "share")
 	return path.join(xdgData, APP_NAME)
+}
+
+export function getBrowserLaneConfigDir(): string {
+	return path.join(getConfigDir(), BROWSER_LANES_DIR)
+}
+
+export function getBrowserLaneDataDir(): string {
+	return path.join(getDataDir(), BROWSER_LANES_DIR)
+}
+
+export function getBrowserLaneProfileRootDir(): string {
+	return path.join(getDataDir(), "browser-profiles")
 }

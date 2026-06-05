@@ -1,0 +1,12 @@
+{
+  "blocked": "partial",
+  "streamOk": true,
+  "streamStatus": 200,
+  "streamBody": "Selkies full HTML shell returned on /",
+  "cdpOk": false,
+  "cdpError": "LinuxServer/Selkies Chromium image does not honor CHROME_CLI for --remote-debugging-port. Wrapped-chromium launcher in svc-selkies overrides the CLI args; CDP must be enabled through selkies config (not in this MVP scope).",
+  "cdpProbeHost": "http://127.0.0.1:9222/json/version",
+  "containerProcess": "/usr/lib/chromium/chromium --ozone-platform=wayland (no --remote-debugging-port)",
+  "workaround": "Use lscr.io/chromium Docker image directly (not -selkies variant), or wire a custom-cont-init.d script that writes /config/.config/chromium-flags.conf",
+  "nextStep": "Switch MVP image to non-Selkies Chromium or document 'use Selkies HTML surface only; CDP via separate devtools-relay' as a follow-up"
+}

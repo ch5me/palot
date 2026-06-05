@@ -18,6 +18,7 @@ import type {
 	CrmStore,
 	Customer,
 	CreateAutomationInput,
+	CreateRemoteBrowserLaneInput,
 	FileGitStatusResult,
 	InboxChannel,
 	InboxMessage,
@@ -35,6 +36,8 @@ import type {
 	GitPushResult,
 	GitStashResult,
 	GitStatusInfo,
+	BrowserLane as BrowserLaneApi,
+	BrowserLaneHealth as BrowserLaneHealthApi,
 	ModelState,
 	OpenInTargetsResult,
 	OracleInfo,
@@ -119,6 +122,9 @@ export interface BridgeActivityResult {
 	messages: BridgeMessage[]
 }
 
+export type BrowserLane = BrowserLaneApi
+export type BrowserLaneHealth = BrowserLaneHealthApi
+
 export type {
 	CrmContact,
 	CrmStore,
@@ -191,6 +197,70 @@ export async function fetchActiveOpenCodeSessions(): Promise<ActiveOpenCodeSessi
 	}
 	const { fetchActiveOpenCodeSessions: httpFetch } = await import("./elf-server")
 	return httpFetch()
+}
+
+export async function fetchBrowserLanes(): Promise<BrowserLane[]> {
+	if (isElectron) {
+		return window.elf.browserLanes.list() as Promise<BrowserLane[]>
+	}
+	const { fetchBrowserLanes: httpFetch } = await import("./elf-server")
+	return (await httpFetch()) as BrowserLane[]
+}
+
+export async function createRemoteBrowserLane(input: CreateRemoteBrowserLaneInput): Promise<BrowserLane> {
+	if (isElectron) {
+		return window.elf.browserLanes.createRemote(input) as Promise<BrowserLane>
+	}
+	const { createRemoteBrowserLane: httpCreate } = await import("./elf-server")
+	return (await httpCreate(input)) as BrowserLane
+}
+
+export async function ensureBrowserLane(laneId: string): Promise<BrowserLane> {
+	if (isElectron) {
+		return window.elf.browserLanes.ensure(laneId) as Promise<BrowserLane>
+	}
+	const { ensureBrowserLane: httpEnsure } = await import("./elf-server")
+	return (await httpEnsure(laneId)) as BrowserLane
+}
+
+export async function startBrowserLane(laneId: string): Promise<BrowserLane> {
+	if (isElectron) {
+		return window.elf.browserLanes.start(laneId) as Promise<BrowserLane>
+	}
+	const { startBrowserLane: httpStart } = await import("./elf-server")
+	return (await httpStart(laneId)) as BrowserLane
+}
+
+export async function stopBrowserLane(laneId: string): Promise<BrowserLane> {
+	if (isElectron) {
+		return window.elf.browserLanes.stop(laneId) as Promise<BrowserLane>
+	}
+	const { stopBrowserLane: httpStop } = await import("./elf-server")
+	return (await httpStop(laneId)) as BrowserLane
+}
+
+export async function restartBrowserLane(laneId: string): Promise<BrowserLane> {
+	if (isElectron) {
+		return window.elf.browserLanes.restart(laneId) as Promise<BrowserLane>
+	}
+	const { restartBrowserLane: httpRestart } = await import("./elf-server")
+	return (await httpRestart(laneId)) as BrowserLane
+}
+
+export async function resetBrowserLaneProfile(laneId: string): Promise<BrowserLane> {
+	if (isElectron) {
+		return window.elf.browserLanes.resetProfile(laneId) as Promise<BrowserLane>
+	}
+	const { resetBrowserLaneProfile: httpReset } = await import("./elf-server")
+	return (await httpReset(laneId)) as BrowserLane
+}
+
+export async function fetchBrowserLaneHealth(laneId: string): Promise<BrowserLaneHealth> {
+	if (isElectron) {
+		return window.elf.browserLanes.health(laneId) as Promise<BrowserLaneHealth>
+	}
+	const { fetchBrowserLaneHealth: httpHealth } = await import("./elf-server")
+	return (await httpHealth(laneId)) as BrowserLaneHealth
 }
 
 export function subscribeToActiveOpenCodeSessionEvents(

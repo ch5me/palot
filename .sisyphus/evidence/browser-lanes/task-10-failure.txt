@@ -1,0 +1,9 @@
+Failure UX proof
+
+- Browser panel now shows status summary card with:
+  - top-line actionable message
+  - explicit `Stream: <state>` and `CDP: <state>` indicators
+  - restart and refresh controls kept visible in toolbar
+- Load failures surface `Lane failed: <message>` plus recovery hint.
+- Browser/server seam returns `profile-locked` when profile exists but runtime is not started.
+- Validation: `bun run lint` PASS, `bun run check-types` PASS.

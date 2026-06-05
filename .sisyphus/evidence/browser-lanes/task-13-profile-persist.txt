@@ -1,0 +1,5 @@
+{
+  "blocked": true,
+  "message": "Live restart persistence proof still blocked without reachable browser runtime. Manager/runtime preserve stable profilePath and local start/stop now echo profilePath, but user-facing restart persistence needs Docker or reachable remote lane.",
+  "nextStep": "Run install/start/stop/start against real lane, then verify persisted marker/session survives."
+}

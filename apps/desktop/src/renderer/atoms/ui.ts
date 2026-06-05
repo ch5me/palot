@@ -9,7 +9,7 @@ export const leftPanelOpenAtom = atom(true)
 
 export const viewedSessionIdAtom = atom<string | null>(null)
 
-export type SidePanelTabId = "review" | "browser" | "notes" | "pulse" | "memory" | "files" | "terminal" | "editor" | "plugins" | "bridges" | "crm" | "studio" | "voice" | "oracle" | "claude" | "ch5pm"
+export type SidePanelTabId = "review" | "browser" | "notes" | "pulse" | "memory" | "files" | "terminal" | "editor" | "plugins" | "bridges" | "crm" | "studio" | "voice" | "oracle" | "claude" | "ch5pm" | "artifacts"
 
 export interface SidePanelRoute {
 	tab: SidePanelTabId

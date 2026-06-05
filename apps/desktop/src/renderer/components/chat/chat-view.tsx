@@ -40,9 +40,9 @@ import {
 } from "react"
 import { messagesFamily, removeMessageAtom } from "../../atoms/messages"
 import {
-	buildPlanModeText,
 	planModeFamily,
 	planModePrimedFamily,
+	primeSessionGenUi,
 	primePlanModeAtom,
 	setPlanModeAtom,
 } from "../../atoms/chat"
@@ -1085,13 +1085,7 @@ function ChatInputSection({
 				// Prepend diff comments as structured context if any exist
 				const commentPrefix = serializeCommentsForChat(diffComments)
 				const textWithComments = commentPrefix ? `${commentPrefix}${text.trim()}` : text.trim()
-				// Plan mode: pair the FIRST user message with a DAG-build system
-				// block so the agent's response can render as a graph.
-				const finalText = buildPlanModeText({
-					enabled: planMode,
-					primed: planModePrimed,
-					userText: textWithComments,
-				})
+				const finalText = primeSessionGenUi(agent.sessionId, textWithComments)
 				const augmentingPlanMode = planMode && !planModePrimed
 
 				await onSendMessage(agent, finalText, {

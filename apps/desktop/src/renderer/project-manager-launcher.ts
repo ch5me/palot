@@ -3,7 +3,7 @@ import type { FileAttachment } from "./lib/types"
 import type { ModelRef } from "./hooks/use-opencode-data"
 import type { PmAssignment, PmPendingSubmission } from "./project-manager-types"
 
-export const PROJECT_MANAGER_PROMPT_PATH = "apps/desktop/src/renderer/project-manager-prompt.md"
+export const PROJECT_MANAGER_PROMPT_PATH = new URL("./project-manager-prompt.md", import.meta.url).pathname
 
 export interface LaunchPmSessionOptions {
 	projectDirectory: string

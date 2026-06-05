@@ -34,6 +34,10 @@ export interface ActiveOpenCodeSessionStreamHandlers {
 	onSnapshot?: (snapshot: ActiveOpenCodeSessionsSnapshot) => void
 }
 
+interface ErrorBodyResponse {
+	json(): Promise<unknown>
+}
+
 /**
  * Pre-typed Hono RPC client.
  * All routes are fully typed — autocomplete on paths, inferred request/response types.
@@ -68,6 +72,101 @@ export async function fetchActiveOpenCodeSessions(): Promise<ActiveOpenCodeSessi
 	const res = await client.api.servers.opencode["active-sessions"].$get()
 	if (!res.ok) {
 		throw new Error(await readError(res, `Active session presence failed: ${res.status} ${res.statusText}`))
+	}
+	return res.json()
+}
+
+export async function fetchBrowserLanes() {
+	const res = await client.browser.$get()
+	if (!res.ok) {
+		throw new Error(`Browser lane list failed: ${res.status} ${res.statusText}`)
+	}
+	return res.json()
+}
+
+export async function createRemoteBrowserLane(input: {
+	id: string
+	label: string
+	streamBackendUrl: string
+	cdpEndpoint: string | null
+	host?: string | null
+	profilePath?: string | null
+}) {
+	const res = await fetch(`${BASE_URL}/browser`, {
+		method: "POST",
+		headers: { "Content-Type": "application/json" },
+		body: JSON.stringify({ action: "create-remote", lane: input }),
+	})
+	if (!res.ok) {
+		throw new Error(`Remote browser lane create failed: ${res.status} ${res.statusText}`)
+	}
+	return res.json()
+}
+
+export async function ensureBrowserLane(laneId: string) {
+	const res = await fetch(`${BASE_URL}/browser/${laneId}`, {
+		method: "POST",
+		headers: { "Content-Type": "application/json" },
+		body: JSON.stringify({ action: "ensure" }),
+	})
+	if (!res.ok) {
+		throw new Error(`Browser lane ensure failed: ${res.status} ${res.statusText}`)
+	}
+	return res.json()
+}
+
+export async function startBrowserLane(laneId: string) {
+	const res = await fetch(`${BASE_URL}/browser/${laneId}`, {
+		method: "POST",
+		headers: { "Content-Type": "application/json" },
+		body: JSON.stringify({ action: "start" }),
+	})
+	if (!res.ok) {
+		throw new Error(`Browser lane start failed: ${res.status} ${res.statusText}`)
+	}
+	return res.json()
+}
+
+export async function stopBrowserLane(laneId: string) {
+	const res = await fetch(`${BASE_URL}/browser/${laneId}`, {
+		method: "POST",
+		headers: { "Content-Type": "application/json" },
+		body: JSON.stringify({ action: "stop" }),
+	})
+	if (!res.ok) {
+		throw new Error(`Browser lane stop failed: ${res.status} ${res.statusText}`)
+	}
+	return res.json()
+}
+
+export async function restartBrowserLane(laneId: string) {
+	const res = await fetch(`${BASE_URL}/browser/${laneId}`, {
+		method: "POST",
+		headers: { "Content-Type": "application/json" },
+		body: JSON.stringify({ action: "restart" }),
+	})
+	if (!res.ok) {
+		throw new Error(`Browser lane restart failed: ${res.status} ${res.statusText}`)
+	}
+	return res.json()
+}
+
+export async function resetBrowserLaneProfile(laneId: string) {
+	const res = await fetch(`${BASE_URL}/browser/${laneId}`, {
+		method: "POST",
+		headers: { "Content-Type": "application/json" },
+		body: JSON.stringify({ action: "reset-profile" }),
+	})
+	if (!res.ok) {
+		throw new Error(`Browser lane profile reset failed: ${res.status} ${res.statusText}`)
+	}
+	return res.json()
+}
+
+export async function fetchBrowserLaneHealth(laneId: string) {
+	const res = await fetch(`${BASE_URL}/browser/${laneId}/health`)
+	if (!res.ok) {
+		throw new Error(`Browser lane health failed: ${res.status} ${res.statusText}`)
 	}
 	return res.json()
 }
@@ -153,7 +252,7 @@ export async function updateModelRecent(model: { providerID: string; modelID: st
 /**
  * Checks if the Elf server is running.
  */
-async function readError(res: Response, fallback: string): Promise<string> {
+async function readError(res: ErrorBodyResponse, fallback: string): Promise<string> {
 	try {
 		const data = await res.json()
 		if (typeof data === "object" && data !== null && "error" in data && typeof data.error === "string") {

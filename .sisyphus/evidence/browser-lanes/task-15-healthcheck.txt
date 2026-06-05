@@ -1,0 +1,17 @@
+{
+  "action": "healthcheck",
+  "mode": "local",
+  "laneId": "default",
+  "streamBackendUrl": "http://127.0.0.1:59170",
+  "streamPath": "/browser/default/",
+  "cdpEndpoint": "http://127.0.0.1:59171",
+  "stream": {
+    "ok": true,
+    "status": 200
+  },
+  "cdp": {
+    "ok": false,
+    "status": 0,
+    "error": "The socket connection was closed unexpectedly. For more information, pass `verbose: true` in the second argument to fetch()"
+  }
+}

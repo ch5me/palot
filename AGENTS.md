@@ -48,13 +48,14 @@ generic knowledge.
 
 ## Commands
 
+- **Runtime policy**: manage dev services only through the root devmux wrapper commands below. Do not start `vite`, `electron-vite`, `apps/server`, `apps/desktop`, `npm`, `npx`, or raw `node ...vite` foreground processes directly in agent sessions; that fights other agents, stale tmux panes, and owned ports. If you need logs, use `bun run svc:attach -- <service>`. If a bounded diagnostic ever needs a direct process, stop it immediately and restore devmux before handoff.
 - **Start project**: `bun run dev` (starts browser-mode stack via devmux: backend on `30206`, web on `20883`)
 - **Service status**: `bun run svc:status`
 - **Attach logs**: `bun run svc:attach -- <service>`
 - **Stop services**: `bun run svc:stop -- <service>`
-- **Electron dev**: `cd apps/desktop && bun run dev:electron-local` (electron-vite, renderer on port `1420`)
-- **Browser-only dev**: `cd apps/desktop && bun run dev:web` (Vite on `20883`, managed by devmux)
-- **Backend server** (browser mode only): `cd apps/server && bun run dev` (Bun server on `30206`, managed by devmux)
+- **Electron dev**: use devmux service `desktop` / `desktop-wayland`; do not run `cd apps/desktop && bun run dev:electron-local` manually unless editing that service definition
+- **Browser-only dev**: devmux service `web` runs Vite on `20883`; do not run `cd apps/desktop && bun run dev:web` manually unless editing that service definition
+- **Backend server** (browser mode only): devmux service `server` runs Bun server on `30206`; do not run `cd apps/server && bun run dev` manually unless editing that service definition
 - **Lint check**: `bun run lint` (from root)
 - **Lint/format fix**: `bun run lint:fix` or `bunx biome check --write .` (from root)
 - **Type check all**: `bun run check-types` (from root, via Turborepo)

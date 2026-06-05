@@ -797,11 +797,17 @@ export const ChatTurnComponent = memo(
 									if (item.kind === "text") {
 										return (
 											<div key={item.id} className="py-0.5">
-												<Message from="assistant">
-													<MessageContent>
-														<TextWithGenUi text={item.text} isStreaming={working} />
-													</MessageContent>
-												</Message>
+											<Message from="assistant">
+												<MessageContent>
+													<TextWithGenUi
+														text={item.text}
+														isStreaming={working}
+														sessionId={turn.id}
+														messageId={turn.assistantMessages[0]?.info.id}
+													/>
+												</MessageContent>
+											</Message>
+
 											</div>
 										)
 									}
@@ -962,7 +968,12 @@ export const ChatTurnComponent = memo(
 										<div key={item.id} className="py-0.5">
 											<Message from="assistant">
 												<MessageContent>
-													<TextWithGenUi text={item.text} isStreaming={working} />
+													<TextWithGenUi
+														text={item.text}
+														isStreaming={working}
+														sessionId={turn.id}
+														messageId={turn.assistantMessages[0]?.info.id}
+													/>
 												</MessageContent>
 											</Message>
 										</div>
@@ -986,7 +997,13 @@ export const ChatTurnComponent = memo(
 			{!working && responseText && !textAlreadyInline && (
 				<Message from="assistant">
 					<MessageContent>
-						<TextWithGenUi text={responseText} isStreaming={false} />
+						<TextWithGenUi
+							text={responseText}
+							isStreaming={false}
+							sessionId={turn.id}
+							messageId={turn.assistantMessages.at(-1)?.info.id}
+							partId={turn.assistantMessages.at(-1)?.info.id}
+						/>
 					</MessageContent>
 				</Message>
 			)}
@@ -995,7 +1012,13 @@ export const ChatTurnComponent = memo(
 			{working && responseText && !textAlreadyInline && (
 				<Message from="assistant">
 					<MessageContent>
-						<TextWithGenUi text={responseText} isStreaming={true} />
+						<TextWithGenUi
+							text={responseText}
+							isStreaming={true}
+							sessionId={turn.id}
+							messageId={turn.assistantMessages.at(-1)?.info.id}
+							partId={turn.assistantMessages.at(-1)?.info.id}
+						/>
 					</MessageContent>
 				</Message>
 			)}

@@ -1,0 +1,10 @@
+{
+  "blocked": true,
+  "message": "Dead-backend UI foundation implemented, but screenshot-level proof needs live panel harness or reachable runtime.",
+  "stateCardExpected": [
+    "Lane request failed",
+    "Refresh route",
+    "Restart lane",
+    "Open diagnostics"
+  ]
+}

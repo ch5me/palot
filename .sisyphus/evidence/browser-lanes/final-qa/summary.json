@@ -1,0 +1,21 @@
+{
+  "captured": [
+    "task-7-stream-route.txt",
+    "task-7-blocker.txt",
+    "task-10-partial-ready.txt",
+    "task-10-failure.txt",
+    "task-11-blocker.txt",
+    "task-12-remote-attach.txt",
+    "task-12-remote-panel.txt",
+    "task-13-profile-reset.txt",
+    "task-13-profile-persist.txt",
+    "task-14-dead-backend.txt",
+    "task-14-stale-route.txt",
+    "task-15-local-e2e.txt",
+    "task-15-local-restart.txt",
+    "task-16-remote-e2e.txt",
+    "task-16-remote-failure.txt"
+  ],
+  "missing": [],
+  "timestamp": "2026-06-05T06:34:38.209Z"
+}

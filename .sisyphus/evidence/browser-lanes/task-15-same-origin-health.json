@@ -1,0 +1,1 @@
+{"status":"degraded","stream":{"url":"http://127.0.0.1:59170","checkedAt":1780672181379,"state":"ready","error":null},"cdp":{"url":"http://127.0.0.1:59171","checkedAt":1780672181379,"state":"pending","error":null},"message":"Stream route ready, CDP probe pending"}

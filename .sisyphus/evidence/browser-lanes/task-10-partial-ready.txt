@@ -1,0 +1,10 @@
+Split health model proof
+
+- `apps/desktop/src/main/browser-lane-manager.ts` now builds explicit health states via `buildHealth()`.
+- `refreshBrowserLaneHealth()` distinguishes:
+  - stream ready + cdp pending -> `degraded` with message `Stream route ready, CDP probe pending`
+  - stream ready + cdp failed -> `degraded` with message `Stream route ready, CDP unavailable`
+  - cdp ready + stream failed -> `degraded` with message `CDP ready, stream unavailable`
+  - profile path present but no endpoints -> `profile-locked`
+- `apps/desktop/src/renderer/components/side-panel/browser-panel.tsx` renders both stream and CDP states plus message.
+- Validation: `bun run lint` PASS, `bun run check-types` PASS.

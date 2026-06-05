@@ -1,0 +1,7 @@
+{
+  "mode": "remote",
+  "laneId": "remote-default",
+  "blocked": true,
+  "message": "Remote panel proof helper still assumes live browser-like stream semantics; mocked remote endpoint was enough for health proof but not iframe-visible proof.",
+  "nextStep": "Run browser panel against reachable remote lane or stronger local mock that behaves like real streamed surface."
+}

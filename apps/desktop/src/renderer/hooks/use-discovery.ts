@@ -20,8 +20,10 @@ import {
 
 const log = createLogger("discovery")
 const ACTIVE_SESSION_FALLBACK_POLL_MS = 10_000
+const POST_PAINT_DISCOVERY_DELAY_MS = 150
 
 const FOCUSED_PROJECT_LIMIT = 10
+const PRELOADED_PROJECT_LIMIT = 3
 
 function isDiscoveryNoiseProject(project: OpenCodeProject): boolean {
 	const worktree = project.worktree?.trim()
@@ -42,6 +44,32 @@ function getFocusedProjects(projects: OpenCodeProject[]): OpenCodeProject[] {
 		.filter((project) => !isDiscoveryNoiseProject(project))
 		.sort((a, b) => (b.time.updated ?? 0) - (a.time.updated ?? 0))
 		.slice(0, FOCUSED_PROJECT_LIMIT)
+}
+
+function scheduleAfterFirstPaint(callback: () => void): () => void {
+	let cancelled = false
+	let timeoutId: number | null = null
+
+	const scheduleTimeout = () => {
+		timeoutId = window.setTimeout(() => {
+			if (!cancelled) callback()
+		}, POST_PAINT_DISCOVERY_DELAY_MS)
+	}
+
+	if (typeof window !== "undefined" && "requestAnimationFrame" in window) {
+		window.requestAnimationFrame(() => {
+			if (!cancelled) scheduleTimeout()
+		})
+	} else {
+		scheduleTimeout()
+	}
+
+	return () => {
+		cancelled = true
+		if (timeoutId !== null) {
+			window.clearTimeout(timeoutId)
+		}
+	}
 }
 
 // Module-level guard to prevent concurrent discovery runs.
@@ -80,6 +108,7 @@ export function useDiscovery() {
 	const activeServer = useAtomValue(activeServerConfigAtom)
 	const serverConnected = useAtomValue(serverConnectedAtom)
 	const { loaded, loading } = discovery
+	const discoveryReady = loaded || discovery.phase === "ready"
 
 	useEffect(() => {
 		// In mock mode, atoms are hydrated by useMockMode() -- skip real discovery
@@ -135,10 +164,6 @@ export function useDiscovery() {
 					return
 				}
 
-				if (activeServer.type === "local") {
-					await syncActiveSessionPresence()
-				}
-
 				// --- Step 4: Discover projects from the API ---
 				setPhase("loading-projects")
 				log.info("Loading projects from API...")
@@ -161,30 +186,28 @@ export function useDiscovery() {
 					projects: focusedProjects,
 				})
 
-				// --- Step 5: Pre-fetch sessions for the focused projects ---
-				// We keep the sidebar small by trimming the project universe, then load
-				// root sessions for every focused project so Recent/Active are accurate
-				// across that working set on first paint.
-				if (focusedProjects.length > 0) {
-					// Build sandbox lookup for worktree metadata restoration
-					const projectSandboxMap = new Map<string, Set<string>>()
-					for (const project of projects) {
-						if (!project.worktree || !project.sandboxes?.length) continue
-						const sandboxSet = new Set<string>()
-						for (const s of project.sandboxes) sandboxSet.add(s)
-						projectSandboxMap.set(project.worktree, sandboxSet)
-					}
+				const projectSandboxMap = new Map<string, Set<string>>()
+				for (const project of projects) {
+					if (!project.worktree || !project.sandboxes?.length) continue
+					const sandboxSet = new Set<string>()
+					for (const s of project.sandboxes) sandboxSet.add(s)
+					projectSandboxMap.set(project.worktree, sandboxSet)
+				}
 
-					await Promise.allSettled(
-						focusedProjects.map((project) => {
-							const sandboxDirs = projectSandboxMap.get(project.worktree!)
-							return loadProjectSessions(
-								project.worktree!,
-								sandboxDirs?.size ? sandboxDirs : undefined,
-								{ limit: 5, roots: true },
-							)
-						}),
-					)
+				const projectsToPreload = focusedProjects.slice(0, PRELOADED_PROJECT_LIMIT)
+				if (projectsToPreload.length > 0) {
+					scheduleAfterFirstPaint(() => {
+						void Promise.allSettled(
+							projectsToPreload.map((project) => {
+								const sandboxDirs = projectSandboxMap.get(project.worktree!)
+								return loadProjectSessions(
+									project.worktree!,
+									sandboxDirs?.size ? sandboxDirs : undefined,
+									{ limit: 5, roots: true },
+								)
+							}),
+						)
+					})
 				}
 
 				log.info("Discovery complete", {
@@ -209,25 +232,34 @@ export function useDiscovery() {
 	useEffect(() => {
 		if (isMockMode) return
 		if (activeServer.type !== "local") return
-		if (!serverConnected) return
+		if (!serverConnected || !discoveryReady) return
 
-		void syncActiveSessionPresence()
-		const unsubscribe = subscribeToActiveOpenCodeSessionEvents({
-			onError: (message) => {
-				log.warn("Active OpenCode session stream error", { message })
-			},
-			onSnapshot: (snapshot) => {
-				void syncActiveSessionPresence(snapshot)
-			},
+		let cancelDeferredStart = () => {}
+		let unsubscribe = () => {}
+		let intervalId: number | null = null
+
+		cancelDeferredStart = scheduleAfterFirstPaint(() => {
+			void syncActiveSessionPresence()
+			unsubscribe = subscribeToActiveOpenCodeSessionEvents({
+				onError: (message) => {
+					log.warn("Active OpenCode session stream error", { message })
+				},
+				onSnapshot: (snapshot) => {
+					void syncActiveSessionPresence(snapshot)
+				},
+			})
+
+			intervalId = window.setInterval(() => {
+				void syncActiveSessionPresence()
+			}, ACTIVE_SESSION_FALLBACK_POLL_MS)
 		})
 
-		const intervalId = window.setInterval(() => {
-			void syncActiveSessionPresence()
-		}, ACTIVE_SESSION_FALLBACK_POLL_MS)
-
 		return () => {
+			cancelDeferredStart()
 			unsubscribe()
-			window.clearInterval(intervalId)
+			if (intervalId !== null) {
+				window.clearInterval(intervalId)
+			}
 		}
-	}, [isMockMode, activeServer.id, activeServer.type, serverConnected])
+	}, [isMockMode, activeServer.id, activeServer.type, serverConnected, discoveryReady])
 }

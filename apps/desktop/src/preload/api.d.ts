@@ -11,6 +11,90 @@ export interface OpenCodeServerInfo {
 	managed: boolean
 }
 
+export type BrowserLaneMode = "local" | "remote"
+
+export type BrowserLaneRuntime = "docker-chromium" | "remote-attached"
+
+export type BrowserLaneStatus =
+	| "installing"
+	| "starting"
+	| "running"
+	| "degraded"
+	| "stopped"
+	| "error"
+	| "profile-locked"
+
+export type BrowserLaneReadiness = "unknown" | "pending" | "ready" | "failed"
+
+export interface BrowserLaneEndpoint {
+	url: string | null
+	checkedAt: number | null
+	state: BrowserLaneReadiness
+	error: string | null
+}
+
+export interface BrowserLaneHealth {
+	status: BrowserLaneStatus
+	stream: BrowserLaneEndpoint
+	cdp: BrowserLaneEndpoint
+	message: string
+}
+
+export interface BrowserLane {
+	id: string
+	label: string
+	mode: BrowserLaneMode
+	runtime: BrowserLaneRuntime
+	streamPath: string
+	streamBackendUrl: string | null
+	desktopStreamUrl?: string | null
+	cdpEndpoint: string | null
+	profilePath: string | null
+	host: string | null
+	createdAt: number
+	updatedAt: number
+	health: BrowserLaneHealth
+}
+
+export interface BrowserLaneRecord {
+	id: string
+	label: string
+	mode: BrowserLaneMode
+	runtime: BrowserLaneRuntime
+	streamBackendUrl: string | null
+	cdpEndpoint: string | null
+	profilePath: string | null
+	host: string | null
+	createdAt: number
+	updatedAt: number
+}
+
+export interface CreateRemoteBrowserLaneInput {
+	id: string
+	label: string
+	streamBackendUrl: string
+	cdpEndpoint: string | null
+	host?: string | null
+	profilePath?: string | null
+}
+
+export interface BrowserLaneCapabilityReport {
+	platform: NodeJS.Platform
+	localRuntimeSupported: boolean
+	remoteAttachSupported: boolean
+	docker: {
+		installed: boolean
+		version: string | null
+	}
+	compose: {
+		available: boolean
+		command: "docker compose" | "docker-compose" | null
+		version: string | null
+	}
+	unsupportedReason: string | null
+	remediation: string | null
+}
+
 export interface ActiveOpenCodeSessionPresence {
 	sessionId: string
 	directory: string
@@ -624,6 +708,16 @@ export interface ElfAPI {
 	stopOpenCode: () => Promise<boolean>
 	restartOpenCode: () => Promise<OpenCodeServerInfo>
 	getActiveOpenCodeSessions: () => Promise<ActiveOpenCodeSessionsSnapshot>
+	browserLanes: {
+		list: () => Promise<BrowserLane[]>
+		createRemote: (input: CreateRemoteBrowserLaneInput) => Promise<BrowserLane>
+		ensure: (laneId: string) => Promise<BrowserLane>
+		start: (laneId: string) => Promise<BrowserLane>
+		stop: (laneId: string) => Promise<BrowserLane>
+		restart: (laneId: string) => Promise<BrowserLane>
+		resetProfile: (laneId: string) => Promise<BrowserLane>
+		health: (laneId: string) => Promise<BrowserLaneHealth>
+	}
 	onActiveOpenCodeSessionsChanged: (
 		callback: (snapshot: ActiveOpenCodeSessionsSnapshot) => void,
 	) => () => void

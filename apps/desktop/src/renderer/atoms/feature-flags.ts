@@ -25,7 +25,7 @@ export const toggleAutomationsAtom = atom(null, (get, set) => {
 
 export const fireflySurfaceDefaults = {
 	review: true,
-	browserPanelEnabled: false,
+	browserPanelEnabled: true,
 	notes: true,
 	pulse: false,
 	memory: false,
@@ -40,12 +40,13 @@ export const fireflySurfaceDefaults = {
 	oracle: true,
 	claude: true,
 	ch5pm: false,
+	artifacts: true,
 } as const
 
 export type FireflySurfaceFlagKey = keyof typeof fireflySurfaceDefaults
 
 export const reviewSurfaceEnabledAtom = atomWithStorage<boolean>("elf:reviewSurfaceEnabled", true)
-export const browserPanelEnabledAtom = atomWithStorage<boolean>("elf:browserPanelEnabled", false)
+export const browserPanelEnabledAtom = atomWithStorage<boolean>("elf:browserPanelEnabled", true)
 export const notesSurfaceEnabledAtom = atomWithStorage<boolean>("elf:notesSurfaceEnabled", true)
 export const pulseSurfaceEnabledAtom = atomWithStorage<boolean>("elf:pulseSurfaceEnabled", false)
 export const memorySurfaceEnabledAtom = atomWithStorage<boolean>("elf:memorySurfaceEnabled", false)
@@ -60,6 +61,7 @@ export const voiceSurfaceEnabledAtom = atomWithStorage<boolean>("elf:voiceSurfac
 export const oracleSurfaceEnabledAtom = atomWithStorage<boolean>("elf:oracleSurfaceEnabled", true)
 export const claudeSurfaceEnabledAtom = atomWithStorage<boolean>("elf:claudeSurfaceEnabled", true)
 export const ch5pmSurfaceEnabledAtom = atomWithStorage<boolean>("elf:ch5pmSurfaceEnabled", false)
+export const artifactsSurfaceEnabledAtom = atomWithStorage<boolean>("elf:artifactsSurfaceEnabled", true)
 
 export const fireflySurfaceFlagAtoms: Record<FireflySurfaceFlagKey, typeof reviewSurfaceEnabledAtom> = {
 	review: reviewSurfaceEnabledAtom,
@@ -78,6 +80,7 @@ export const fireflySurfaceFlagAtoms: Record<FireflySurfaceFlagKey, typeof revie
 	oracle: oracleSurfaceEnabledAtom,
 	claude: claudeSurfaceEnabledAtom,
 	ch5pm: ch5pmSurfaceEnabledAtom,
+	artifacts: artifactsSurfaceEnabledAtom,
 }
 
 export const fireflySurfaceLabels: Record<FireflySurfaceFlagKey, string> = {
@@ -97,6 +100,7 @@ export const fireflySurfaceLabels: Record<FireflySurfaceFlagKey, string> = {
 	oracle: "Oracle Roster",
 	claude: "Claude Code",
 	ch5pm: "CH5PM Dashboard",
+	artifacts: "Artifacts",
 }
 
 export const toggleReviewSurfaceAtom = atom(null, (get, set) => {
@@ -161,4 +165,8 @@ export const toggleClaudeSurfaceAtom = atom(null, (get, set) => {
 
 export const toggleCh5PmSurfaceAtom = atom(null, (get, set) => {
 	set(ch5pmSurfaceEnabledAtom, !get(ch5pmSurfaceEnabledAtom))
+})
+
+export const toggleArtifactsSurfaceAtom = atom(null, (get, set) => {
+	set(artifactsSurfaceEnabledAtom, !get(artifactsSurfaceEnabledAtom))
 })

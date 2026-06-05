@@ -24,6 +24,19 @@ function copyDrizzleMigrations(): Plugin {
 	}
 }
 
+const EFFECTS_SWARM_ENTRY = path.resolve(
+	__dirname,
+	"../../node_modules/@ch5me/effects/dist/particles/SwarmParticles/index.js",
+)
+const EFFECTS_GRADIENT_BRAND_TEXT_ENTRY = path.resolve(
+	__dirname,
+	"../../node_modules/@ch5me/effects/dist/text/GradientBrandText/GradientBrandText.js",
+)
+const MOTION_WEB_ENTRY = path.resolve(
+	__dirname,
+	"../../ch5-packages/packages/motion/motion/src/index.web.ts",
+)
+
 export default defineConfig({
 	main: {
 		plugins: [
@@ -54,6 +67,9 @@ export default defineConfig({
 		resolve: {
 			alias: {
 				"@": path.resolve(__dirname, "src/renderer"),
+				"@ch5me/effects/particles": EFFECTS_SWARM_ENTRY,
+				"@ch5me/effects/text": EFFECTS_GRADIENT_BRAND_TEXT_ENTRY,
+				"@ch5me/motion": MOTION_WEB_ENTRY,
 				"@ch5me/elf-ui": path.resolve(__dirname, "../../packages/ui/src"),
 				react: path.resolve(__dirname, "node_modules/react"),
 				"react-dom": path.resolve(__dirname, "node_modules/react-dom"),

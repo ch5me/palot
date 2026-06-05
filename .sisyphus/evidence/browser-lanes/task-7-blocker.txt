@@ -1,0 +1,7 @@
+Local websocket proof blocked.
+
+- `scripts/browser-lane/start-lane --mode local --lane default` failed in tmux session `palot-browserlane-proof`.
+- Failure text: `Docker not installed`.
+- `bun run svc:status` confirms browser-mode server/web are running, so route layer exists, but upstream runtime cannot be started on this host.
+- Because no live upstream browser stream exists, task 7c websocket proof cannot be completed locally.
+- Fastest next path: use remote Linux lane runtime via SSH-capable host with Docker, or install Docker locally and rerun task 7 proof.

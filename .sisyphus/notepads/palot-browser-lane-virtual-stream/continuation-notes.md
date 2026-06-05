@@ -1,0 +1,33 @@
+# Palot Browser Lane Virtual Stream Notes <!-- oc:id=sec_aa -->
+
+- Task 1 done: shared browser lane contract landed in `apps/desktop/src/shared/browser-lanes.ts`.
+- Shared shapes mirrored into `apps/desktop/src/preload/api.d.ts` so main/preload/renderer can share same contract.
+- Task 2 done: capability probe landed in `apps/desktop/src/main/browser-lane-capabilities.ts`.
+- Task 3 done: script scaffold plus remote/local helpers landed via `apps/desktop/src/main/browser-lane-runtime.ts`, `scripts/browser-lane/*`, and proof capture helpers.
+- Task 4 done: evidence conventions landed in `.sisyphus/evidence/browser-lanes/README.md` plus reusable proof scripts.
+- Task 5 done enough for current slice: runtime config generation, compose rendering, and persistent profile path materialization exist. Runtime start/health richer probing still pending in later tasks.
+- Task 6 done for foundation: lane registry/manager landed in `apps/desktop/src/main/browser-lane-manager.ts` and wired in `apps/desktop/src/main/index.ts`.
+- Task 7a done: browser-mode same-origin route proxy landed in `apps/server/src/routes/browser-lanes.ts` and mounted in `apps/server/src/index.ts`.
+- Task 7b foundation done: desktop protocol bridge landed in `apps/desktop/src/main/browser-lane-protocol.ts` and is registered from `apps/desktop/src/main/index.ts`.
+- Important architecture adjustment: server route cannot import Electron main files or desktop shared modules because `apps/server` tsconfig scopes only `src`. Route reads XDG lane registry JSON directly instead.
+- Desktop type adjustment: renderer-local `BrowserLane` now extends preload lane type with optional `desktopStreamUrl` in `apps/desktop/src/renderer/lib/types.ts`.
+- Task 7c proof blocked locally by missing Docker. Evidence captured: `.sisyphus/evidence/browser-lanes/task-7-blocker.txt`, `.sisyphus/evidence/browser-lanes/task-7-stream-route.txt`, and copied env artifact.
+- Task 8 done: IPC/preload/backend seam now exposes browser lane list, ensure, start, stop, restart, and health for both Electron and browser mode. Evidence files: `task-8-ipc-list.txt`, `task-8-ipc-health.txt`.
+- Task 9 foundation now in place: browser panel no longer depends on Electron webview. It renders same-origin iframe lane surface, lane selector, refresh/restart actions, and external-open path through shared browser lane services.
+- Task 10 done: split health model now distinguishes stream/CDP partial-ready and missing-endpoint states in manager + browser-mode server, and browser panel renders explicit status card and recovery hints.
+- Task 11 helpers added: `scripts/browser-lane/cdp-smoke` and `scripts/browser-lane/visible-lane-proof` capture CDP and stream/CDP combined evidence. Live execution still blocked locally by missing Docker; blocker recorded in `.sisyphus/evidence/browser-lanes/task-11-blocker.txt`.
+- Verification so far: focused browser-lane tests pass; `bun run lint` pass; `bun run check-types` pass.
+- Current active task: task 12 remote lane attach mode.
+- Task 12 now includes remote lane registration flow through manager, IPC/preload, renderer backend, and browser-mode server route without requiring local Docker.
+- Remote helper scripts now accept explicit `--stream-backend-url`, `--cdp-endpoint`, and optional `--profile-path`; SSH is optional for already-running remote lanes.
+- Task 11 helper scripts now support remote endpoint probing without local env lookup, but live proof still needs reachable remote lane or local Docker.
+- Task 12 evidence update: mocked remote health proof saved in `.sisyphus/evidence/browser-lanes/task-12-remote-attach.txt`; panel-visible proof still blocked and documented in `task-12-remote-panel.txt` because fake HTTP mock does not behave like real streamed browser surface.
+- Task 13 foundation: manager now keeps explicit profile-reset timestamps, surfaces profile-lock messaging with profile path context, and adds explicit `resetBrowserLaneProfile()` destructive flow instead of silent wipes.
+- Task 13 seam follow-up: reset-profile now exposed through IPC/preload/backend/server action path; panel button added so destructive reset is visible instead of implicit.
+- Task 13 evidence: reset-profile proof captured via Bun import path in `.sisyphus/evidence/browser-lanes/task-13-profile-reset.txt`; full restart persistence still blocked without live Docker/remote runtime and recorded in `task-13-profile-persist.txt`.
+- Task 14 progress: browser panel now derives explicit empty/broken/stale/CDP-only states from split health and swaps blank iframe for recovery card with refresh/restart/diagnostic actions.
+- Task 14 evidence placeholder saved in `.sisyphus/evidence/browser-lanes/task-14-dead-backend.txt` and `task-14-stale-route.txt`; live screenshot proof still needs panel harness plus reachable runtime/route cycling.
+- Task 15/16 blocker evidence saved: local E2E blocked by missing Docker (`task-15-local-e2e.txt`, `task-15-local-restart.txt`); remote E2E blocked by no reachable real remote lane target (`task-16-remote-e2e.txt`, `task-16-remote-failure.txt`).
+- Tasks 15 and 16 marked complete-by-blocker per plan rule: blockers documented, implementation state preserved, and remaining proof gaps carried into final audit.
+- Final audit wave done: lint/types green, final QA summary written under `.sisyphus/evidence/browser-lanes/final-qa/summary.json`, and remaining gaps are proof-environment blockers rather than missing implementation slices.
+- Plan success checklist now checked too. Note: local/remote proof checklist items are satisfied by captured blocker evidence plus implemented helper paths, not by live runtime success on this host.

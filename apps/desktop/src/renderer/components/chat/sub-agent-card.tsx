@@ -19,7 +19,7 @@ import { sessionFamily } from "../../atoms/sessions"
 import { appStore } from "../../atoms/store"
 import { getStreamingPartsForSession, streamingVersionFamily } from "../../atoms/streaming"
 import { useToolElapsedTime } from "../../hooks/use-elapsed-time"
-import type { ToolPart, ToolState } from "../../lib/types"
+import type { ReasoningPart, ToolPart, ToolState } from "../../lib/types"
 import { getToolDuration, getToolInfo, getToolSubtitle } from "./chat-tool-call"
 import { getToolCategory, TOOL_CATEGORY_COLORS } from "./tool-card"
 
@@ -29,22 +29,17 @@ import { getToolCategory, TOOL_CATEGORY_COLORS } from "./tool-card"
 
 type CollapseState = "closed" | "summary" | "expanded"
 
-/**
- * Extract the first meaningful plain-text line from a markdown string.
- * Strips headings, horizontal rules, bold/italic markers, link syntax,
- * and skips blank/decoration-only lines.
- */
 function extractFirstLine(md: string): string | undefined {
 	const lines = md.split("\n")
 	for (const raw of lines) {
 		const line = raw
-			.replace(/^#{1,6}\s+/, "") // strip heading markers
-			.replace(/^[-*_]{3,}\s*$/, "") // strip horizontal rules
-			.replace(/\*{1,2}([^*]+)\*{1,2}/g, "$1") // strip bold/italic
-			.replace(/`([^`]+)`/g, "$1") // strip inline code
-			.replace(/\[([^\]]+)\]\([^)]+\)/g, "$1") // strip links → keep label
-			.replace(/^[-*+]\s+/, "") // strip list markers
-			.replace(/^\d+\.\s+/, "") // strip ordered list markers
+			.replace(/^#{1,6}\s+/, "")
+			.replace(/^[-*_]{3,}\s*$/, "")
+			.replace(/\*{1,2}([^*]+)\*{1,2}/g, "$1")
+			.replace(/`([^`]+)`/g, "$1")
+			.replace(/\[([^\]]+)\]\([^)]+\)/g, "$1")
+			.replace(/^[-*+]\s+/, "")
+			.replace(/^\d+\.\s+/, "")
 			.trim()
 		if (line.length > 0) return line
 	}
@@ -149,22 +144,9 @@ export const SubAgentCard = memo(function SubAgentCard({ part: propPart }: SubAg
 	)
 	const wasRunningRef = useRef(isRunning)
 
-	useEffect(() => {
-		// When transitioning from running → completed/error,
-		// auto-collapse to "summary" if there's text, otherwise "closed"
-		if (wasRunningRef.current && !isRunning) {
-			// We defer to next render so latestText is populated
-			requestAnimationFrame(() => {
-				setCollapseState((prev) => (prev === "expanded" ? "summary" : prev))
-			})
-		}
-		wasRunningRef.current = isRunning
-	}, [isRunning])
-
 	const handleHeaderToggle = useCallback(() => {
 		setCollapseState((prev) => {
 			if (prev === "closed") return isRunning ? "expanded" : "summary"
-			// Both "summary" and "expanded" collapse to "closed"
 			return "closed"
 		})
 	}, [isRunning])
@@ -190,23 +172,28 @@ export const SubAgentCard = memo(function SubAgentCard({ part: propPart }: SubAg
 	// when this child session streams, not when any other session streams.
 	const streamingVersion = useAtomValue(streamingVersionFamily(sessionId ?? ""))
 
-	// Derive child session's activity.
-	// Optimized: iterates messages backwards and collects only what's needed
-	// (last 3 tool parts, last text, status) without building a full allParts array.
-	const { latestToolParts, latestText, childStatus } = useMemo(() => {
+	const {
+		latestToolParts,
+		latestText,
+		latestReasoning,
+		childStatus,
+		hasAnyVisibleContent,
+	} = useMemo(() => {
 		if (!childMessages || childMessages.length === 0) {
-			return { latestToolParts: [], latestText: undefined, childStatus: undefined }
+			return {
+				latestToolParts: [],
+				latestText: undefined,
+				latestReasoning: undefined,
+				childStatus: undefined,
+				hasAnyVisibleContent: false,
+			}
 		}
 
-		// Reference streamingVersion so the linter sees it as used and it triggers recomputation.
 		void streamingVersion
 		const streaming = getStreamingPartsForSession(sessionId ?? "")
-
-		// Single-pass collection: walk all messages forward, but only keep
-		// the last 3 tool parts and overwrite latestText + status as we go.
-		// This avoids building a temporary allParts array.
 		const toolParts: ToolPart[] = []
 		let latestText: string | undefined
+		let latestReasoning: ReasoningPart | undefined
 		let lastStatus: string | undefined
 
 		for (const msg of childMessages) {
@@ -219,11 +206,12 @@ export const SubAgentCard = memo(function SubAgentCard({ part: propPart }: SubAg
 				if (p.type === "tool" && p.tool !== "todoread") {
 					toolParts.push(p)
 				}
-				// Track last text part (overwrites as we move forward)
 				if (p.type === "text" && !p.synthetic && p.text.trim()) {
 					latestText = p.text.trim()
 				}
-				// Track status from the last meaningful part
+				if (p.type === "reasoning" && p.text.replace("[REDACTED]", "").trim()) {
+					latestReasoning = p
+				}
 				if (p.type === "tool") {
 					switch (p.tool) {
 						case "task":
@@ -267,28 +255,59 @@ export const SubAgentCard = memo(function SubAgentCard({ part: propPart }: SubAg
 		return {
 			latestToolParts: toolParts.slice(-3),
 			latestText,
+			latestReasoning,
 			childStatus: lastStatus ?? "Working...",
+			hasAnyVisibleContent:
+				toolParts.length > 0 || Boolean(latestText) || Boolean(latestReasoning),
 		}
 	}, [childMessages, streamingVersion, sessionId])
 
-	// Extract first meaningful line for the summary teaser.
-	// "hasMore" is true when the full text has content beyond the first line.
-	const firstLine = useMemo(() => extractFirstLine(latestText ?? ""), [latestText])
-	const hasMore = useMemo(() => {
-		if (!latestText || !firstLine) return false
-		// If there's any non-trivial content beyond the first line, we have more
-		const rest = latestText.slice(latestText.indexOf(firstLine) + firstLine.length).trim()
-		return rest.length > 0
-	}, [latestText, firstLine])
-
-	// If there's no text and we're in summary mode, fall back to closed
-	// (summary with nothing to show is pointless)
 	useEffect(() => {
-		if (collapseState === "summary" && !firstLine) {
+		if (wasRunningRef.current && !isRunning) {
+			requestAnimationFrame(() => {
+				setCollapseState((prev) => {
+					if (prev !== "expanded") return prev
+					return hasAnyVisibleContent ? "summary" : "closed"
+				})
+			})
+		}
+		wasRunningRef.current = isRunning
+	}, [isRunning, hasAnyVisibleContent])
+
+	const summarySource = latestText ?? latestReasoning?.text.replace("[REDACTED]", "").trim() ?? ""
+	const firstLine = useMemo(() => extractFirstLine(summarySource), [summarySource])
+	const hasMore = useMemo(() => {
+		if (!summarySource || !firstLine) return false
+		const rest = summarySource.slice(summarySource.indexOf(firstLine) + firstLine.length).trim()
+		return rest.length > 0
+	}, [summarySource, firstLine])
+
+	useEffect(() => {
+		if (collapseState === "summary" && !firstLine && !hasAnyVisibleContent) {
 			setCollapseState("closed")
 		}
-	}, [collapseState, firstLine])
+	}, [collapseState, firstLine, hasAnyVisibleContent])
 
+	const terminalMessage = useMemo(() => {
+		if (isError) {
+			return part.state.status === "error" ? part.state.error : "Sub-agent failed"
+		}
+		if (childSessionEntry?.error) {
+			if ("message" in childSessionEntry.error.data && childSessionEntry.error.data.message) {
+				const message = String(childSessionEntry.error.data.message)
+				if (message.toLowerCase().includes("timed out")) {
+					return `Sub-agent timed out — ${message}`
+				}
+				return message
+			}
+			return childSessionEntry.error.name
+		}
+		if (isCompleted && !hasAnyVisibleContent) return "Sub-agent completed with no visible output"
+		if (!isRunning && !isCompleted && !hasAnyVisibleContent) return "Sub-agent stopped with no visible output"
+		return undefined
+	}, [isError, part.state, childSessionEntry?.error, isCompleted, hasAnyVisibleContent, isRunning])
+
+	const shouldShowOpenButton = Boolean(sessionId)
 	const showSummary = collapseState === "summary" || collapseState === "expanded"
 	const showExpanded = collapseState === "expanded"
 
@@ -356,7 +375,7 @@ export const SubAgentCard = memo(function SubAgentCard({ part: propPart }: SubAg
 					{!isRunning && duration && (
 						<span className="text-[11px] text-muted-foreground/40">{duration}</span>
 					)}
-					{sessionId && (
+					{shouldShowOpenButton && (
 						<button
 							type="button"
 							onClick={handleNavigate}
@@ -391,6 +410,14 @@ export const SubAgentCard = memo(function SubAgentCard({ part: propPart }: SubAg
 			{/* ── Expanded state: full content ────────────────────── */}
 			{showExpanded && (
 				<>
+					{latestReasoning && (
+						<div className="border-t border-border/30 px-3.5 py-2.5">
+							<div className="max-h-72 overflow-y-auto rounded-md bg-muted/20 px-2.5 py-2 text-[11px] leading-relaxed text-muted-foreground/80 whitespace-pre-wrap">
+								{latestReasoning.text.replace("[REDACTED]", "").trim()}
+							</div>
+						</div>
+					)}
+
 					{/* Live activity: latest tool calls */}
 					{latestToolParts.length > 0 && (
 						<div className="border-t border-border/30 px-3.5 py-2">
@@ -465,27 +492,46 @@ export const SubAgentCard = memo(function SubAgentCard({ part: propPart }: SubAg
 						</div>
 					)}
 
-					{/* Completion / error state */}
-					{isCompleted && !latestToolParts.length && !latestText && (
-						<div className="border-t border-border/30 px-3.5 py-2">
-							<span className="text-[11px] text-muted-foreground/50">Completed</span>
-						</div>
-					)}
-					{isError && (
-						<div className="border-t border-red-500/20 bg-red-500/5 px-3.5 py-2">
-							<span className="text-[11px] text-red-400">
-								{part.state.status === "error" ? part.state.error : "Sub-agent failed"}
+					{terminalMessage && (
+						<div
+							className={cn(
+								"border-t px-3.5 py-2",
+								isError || childSessionEntry?.error
+									? "border-red-500/20 bg-red-500/5"
+									: "border-border/30",
+							)}
+						>
+							<span
+								className={cn(
+									"text-[11px]",
+									isError || childSessionEntry?.error
+										? "text-red-400"
+										: "text-muted-foreground/50",
+								)}
+							>
+								{terminalMessage}
 							</span>
 						</div>
 					)}
 				</>
 			)}
 
-			{/* Error shown in summary state too (not just expanded) */}
-			{showSummary && !showExpanded && isError && (
-				<div className="border-t border-red-500/20 bg-red-500/5 px-3.5 py-2">
-					<span className="text-[11px] text-red-400">
-						{part.state.status === "error" ? part.state.error : "Sub-agent failed"}
+			{showSummary && !showExpanded && terminalMessage && (
+				<div
+					className={cn(
+						"border-t px-3.5 py-2",
+						isError || childSessionEntry?.error
+							? "border-red-500/20 bg-red-500/5"
+							: "border-border/30",
+					)}
+				>
+					<span
+						className={cn(
+							"text-[11px]",
+							isError || childSessionEntry?.error ? "text-red-400" : "text-muted-foreground/50",
+						)}
+					>
+						{terminalMessage}
 					</span>
 				</div>
 			)}

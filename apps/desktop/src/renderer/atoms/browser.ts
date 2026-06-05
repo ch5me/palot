@@ -2,8 +2,10 @@ import { atomWithStorage } from "jotai/utils"
 
 const PERSISTED_KEY = "elf:browser-panel:last-url"
 const MAX_HISTORY = 8
+const DEFAULT_LANE_ID = "default"
 
 export const lastBrowserUrlAtom = atomWithStorage<string>(PERSISTED_KEY, "about:blank")
+export const activeBrowserLaneIdAtom = atomWithStorage<string>("elf:browser-panel:lane-id", DEFAULT_LANE_ID)
 
 export const browserHistoryAtom = atomWithStorage<string[]>(PERSISTED_KEY + ":history", [])
 
@@ -31,4 +33,8 @@ export function buildNavigableUrl(input: string): string | null {
 	if (/\s/.test(trimmed)) return null
 	if (!/^[\w.-]+/.test(trimmed)) return null
 	return `https://${trimmed}`
+}
+
+export function buildBrowserLaneDisplayUrl(input: { desktopStreamUrl?: string | null; streamPath: string }): string {
+	return input.desktopStreamUrl || input.streamPath
 }

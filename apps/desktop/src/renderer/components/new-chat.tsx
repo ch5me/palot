@@ -25,6 +25,7 @@ import {
 	MonitorIcon,
 } from "lucide-react"
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
+import { primeSessionGenUi } from "../atoms/chat"
 import { projectModelsAtom, setProjectModelAtom } from "../atoms/preferences"
 import {
 	removeSessionAtom,
@@ -424,6 +425,7 @@ export function NewChat() {
 		async (promptText: string, files?: FileAttachment[]) => {
 			const session = await createSession(selectedDirectory)
 			if (!session) return
+			const finalText = primeSessionGenUi(session.id, promptText)
 
 			const currentBranch = vcs?.branch ?? ""
 			if (currentBranch) {
@@ -432,7 +434,7 @@ export function NewChat() {
 
 			persistProjectModel()
 
-			await sendPrompt(selectedDirectory, session.id, promptText, {
+			await sendPrompt(selectedDirectory, session.id, finalText, {
 				model: effectiveModel ?? undefined,
 				agent: selectedAgent ?? undefined,
 				variant: selectedVariant,
@@ -508,6 +510,7 @@ export function NewChat() {
 					if (!session) {
 						throw new Error("Failed to create session in worktree")
 					}
+					const finalText = primeSessionGenUi(session.id, promptText)
 
 					// Replace the stub with the real session data. Override the
 					// directory back to the parent so it groups correctly in the sidebar.
@@ -530,7 +533,7 @@ export function NewChat() {
 					appStore.set(removeSessionAtom, stubId)
 
 					// Phase 3: Send the prompt
-					await sendPrompt(sdkDirectory, session.id, promptText, {
+					await sendPrompt(sdkDirectory, session.id, finalText, {
 						model: effectiveModel ?? undefined,
 						agent: selectedAgent ?? undefined,
 						variant: selectedVariant,
