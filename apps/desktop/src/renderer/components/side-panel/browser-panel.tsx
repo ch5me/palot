@@ -25,6 +25,7 @@ import {
 	createRemoteBrowserLane,
 	fetchBrowserLaneHealth,
 	fetchBrowserLanes,
+	isElectron,
 	restartBrowserLane,
 	resetBrowserLaneProfile,
 	startBrowserLane,
@@ -234,7 +235,19 @@ export function BrowserPanel({ agent, className }: BrowserPanelProps) {
 	}
 
 	const handleOpenExternal = async () => {
-		await window.elf.openExternal(currentUrl)
+		if (!canOpenExternal) return
+		try {
+			if (isElectron && "elf" in window) {
+				await window.elf.openExternal(currentUrl)
+				return
+			}
+			const opened = window.open(currentUrl, "_blank", "noopener,noreferrer")
+			if (!opened) {
+				setInputError("Browser blocked opening a new tab.")
+			}
+		} catch (error) {
+			setInputError(error instanceof Error ? error.message : String(error))
+		}
 	}
 
 	const loadUrl = (rawUrl: string) => {
@@ -369,7 +382,7 @@ export function BrowserPanel({ agent, className }: BrowserPanelProps) {
 				</div>
 			</div>
 			<div className="flex min-h-0 flex-1 flex-col gap-3 px-4 py-4">
-				<form className="flex items-center gap-2" onSubmit={handleSubmit}>
+				<form className="flex flex-wrap items-center gap-2" onSubmit={handleSubmit}>
 					<Button
 						type="button"
 						variant="outline"
@@ -410,7 +423,7 @@ export function BrowserPanel({ agent, className }: BrowserPanelProps) {
 							if (inputError) setInputError(null)
 						}}
 						placeholder="Enter URL (https://example.com)"
-						className="h-9 flex-1"
+						className="h-9 min-w-0 flex-1 basis-52"
 						aria-invalid={inputError != null}
 						style={{
 							// @ts-expect-error -- vendor-prefixed CSS property
