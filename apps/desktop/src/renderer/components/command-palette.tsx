@@ -28,6 +28,7 @@ import {
 	MonitorIcon,
 	MonitorPlayIcon,
 	PanelRightCloseIcon,
+	FileTextIcon,
 	PanelRightOpenIcon,
 	PlugIcon,
 	RectangleEllipsisIcon,
@@ -59,6 +60,7 @@ import {
 	memorySurfaceEnabledAtom,
 	notesSurfaceEnabledAtom,
 	pluginsSurfaceEnabledAtom,
+	pdfReviewSurfaceEnabledAtom,
 	pulseSurfaceEnabledAtom,
 	reviewSurfaceEnabledAtom,
 	studioSurfaceEnabledAtom,
@@ -73,6 +75,7 @@ import {
 	toggleFilesSurfaceAtom,
 	toggleMemorySurfaceAtom,
 	toggleNotesSurfaceAtom,
+	togglePdfReviewSurfaceAtom,
 	togglePluginsSurfaceAtom,
 	togglePulseSurfaceAtom,
 	toggleReviewSurfaceAtom,
@@ -150,6 +153,7 @@ export function CommandPalette({ open, onOpenChange, agents, onForkSession }: Co
 	const voiceSurfaceEnabled = useAtomValue(voiceSurfaceEnabledAtom)
 	const claudeSurfaceEnabled = useAtomValue(claudeSurfaceEnabledAtom)
 	const ch5pmSurfaceEnabled = useAtomValue(ch5pmSurfaceEnabledAtom)
+	const pdfReviewSurfaceEnabled = useAtomValue(pdfReviewSurfaceEnabledAtom)
 	const toggleBrowserPanel = useSetAtom(toggleBrowserPanelAtom)
 	const toggleReviewSurface = useSetAtom(toggleReviewSurfaceAtom)
 	const toggleNotesSurface = useSetAtom(toggleNotesSurfaceAtom)
@@ -163,6 +167,7 @@ export function CommandPalette({ open, onOpenChange, agents, onForkSession }: Co
 	const toggleVoiceSurface = useSetAtom(toggleVoiceSurfaceAtom)
 	const toggleClaudeSurface = useSetAtom(toggleClaudeSurfaceAtom)
 	const toggleCh5PmSurface = useSetAtom(toggleCh5PmSurfaceAtom)
+	const togglePdfReviewSurface = useSetAtom(togglePdfReviewSurfaceAtom)
 	const toggleTerminalSurface = useSetAtom(toggleTerminalSurfaceAtom)
 	const openSidePanelTab = useSetAtom(openSidePanelTabAtom)
 	const [sidePanelOpen, setSidePanelOpen] = useAtom(sidePanelOpenAtom)
@@ -247,6 +252,7 @@ export function CommandPalette({ open, onOpenChange, agents, onForkSession }: Co
 				voice: voiceSurfaceEnabled,
 				claude: claudeSurfaceEnabled,
 				ch5pm: ch5pmSurfaceEnabled,
+				pdfReview: pdfReviewSurfaceEnabled,
 			},
 			chatTurnCount: 1,
 		}
@@ -267,6 +273,7 @@ export function CommandPalette({ open, onOpenChange, agents, onForkSession }: Co
 			voiceSurfaceEnabled,
 			claudeSurfaceEnabled,
 			ch5pmSurfaceEnabled,
+			pdfReviewSurfaceEnabled,
 		])
 
 
@@ -583,6 +590,28 @@ export function CommandPalette({ open, onOpenChange, agents, onForkSession }: Co
 						<MonitorPlayIcon />
 						<span>{ch5pmSurfaceEnabled ? "Disable CH5PM Dashboard" : "Enable CH5PM Dashboard"}</span>
 						{ch5pmSurfaceEnabled && <CheckIcon className="ml-auto h-4 w-4" />}
+					</CommandItem>
+					<CommandItem
+						keywords={["pdf", "document", "reader", "annotations", "citations"]}
+						onSelect={() => {
+							togglePdfReviewSurface()
+							onOpenChange(false)
+						}}
+					>
+						<FileTextIcon />
+						<span>{pdfReviewSurfaceEnabled ? "Disable PDF Review Surface" : "Enable PDF Review Surface"}</span>
+						{pdfReviewSurfaceEnabled && <CheckIcon className="ml-auto h-4 w-4" />}
+					</CommandItem>
+					<CommandItem
+						keywords={["pdf", "pdf review", "document", "paper", "citation"]}
+						onSelect={() => {
+							togglePdfReviewSurface()
+							onOpenChange(false)
+						}}
+					>
+						<FileTextIcon />
+						<span>{pdfReviewSurfaceEnabled ? "Disable PDF Review Surface" : "Enable PDF Review Surface"}</span>
+						{pdfReviewSurfaceEnabled && <CheckIcon className="ml-auto h-4 w-4" />}
 					</CommandItem>
 				</CommandGroup>
 				{hasSession && availableSurfaceTabs.length > 0 && (

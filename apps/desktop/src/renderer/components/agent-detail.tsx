@@ -35,6 +35,7 @@ import {
 	notesSurfaceEnabledAtom,
 	oracleSurfaceEnabledAtom,
 	pluginsSurfaceEnabledAtom,
+	pdfReviewSurfaceEnabledAtom,
 	pulseSurfaceEnabledAtom,
 	reviewSurfaceEnabledAtom,
 	studioSurfaceEnabledAtom,
@@ -226,6 +227,7 @@ export function AgentDetail({
 	const oracleSurfaceEnabled = useAtomValue(oracleSurfaceEnabledAtom)
 	const claudeSurfaceEnabled = useAtomValue(claudeSurfaceEnabledAtom)
 	const ch5pmSurfaceEnabled = useAtomValue(ch5pmSurfaceEnabledAtom)
+	const pdfReviewSurfaceEnabled = useAtomValue(pdfReviewSurfaceEnabledAtom)
 
 	const sidePanelTabs: SidePanelTabDef[] = useMemo(() => {
 		const ctx: FireflySurfaceContext = {
@@ -248,6 +250,7 @@ export function AgentDetail({
 				oracle: oracleSurfaceEnabled,
 				claude: claudeSurfaceEnabled,
 				ch5pm: ch5pmSurfaceEnabled,
+				pdfReview: pdfReviewSurfaceEnabled,
 			},
 			chatTurnCount: chatTurns.length,
 		}
@@ -271,6 +274,7 @@ export function AgentDetail({
 		oracleSurfaceEnabled,
 		claudeSurfaceEnabled,
 		ch5pmSurfaceEnabled,
+		pdfReviewSurfaceEnabled,
 		chatTurns.length,
 	])
 	const availableSidePanelTabs = useMemo(

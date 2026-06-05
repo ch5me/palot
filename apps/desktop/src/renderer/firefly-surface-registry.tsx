@@ -1,4 +1,4 @@
-import { 	ActivityIcon, BookTextIcon, BoxesIcon, DatabaseIcon, FileDiffIcon, FilesIcon, GlobeIcon, MicIcon, MonitorPlayIcon, PlugIcon, RectangleEllipsisIcon, Share2Icon, SquarePenIcon, TerminalSquareIcon, UsersIcon, WandSparklesIcon, type LucideIcon } from "lucide-react"
+import { 	ActivityIcon, BookTextIcon, BoxesIcon, DatabaseIcon, FileDiffIcon, FileTextIcon, FilesIcon, GlobeIcon, MicIcon, MonitorPlayIcon, PlugIcon, RectangleEllipsisIcon, Share2Icon, SquarePenIcon, TerminalSquareIcon, UsersIcon, WandSparklesIcon, type LucideIcon } from "lucide-react"
 
 import type { ReactNode } from "react"
 import {
@@ -14,6 +14,7 @@ import {
 	notesSurfaceEnabledAtom,
 	oracleSurfaceEnabledAtom,
 	pluginsSurfaceEnabledAtom,
+	pdfReviewSurfaceEnabledAtom,
 	pulseSurfaceEnabledAtom,
 	reviewSurfaceEnabledAtom,
 	studioSurfaceEnabledAtom,
@@ -31,6 +32,7 @@ import { ClaudePanel } from "./components/side-panel/claude-panel"
 import { CrmPanel } from "./components/side-panel/crm-panel"
 import { MemoryPanel } from "./components/side-panel/memory-panel"
 import { OraclePanel } from "./components/side-panel/oracle-panel"
+import { PdfReviewPanel } from "./components/side-panel/pdf-review-panel"
 import { StudioPanel } from "./components/side-panel/studio-panel"
 import { VoicePanel } from "./components/side-panel/voice-panel"
 import { NotesPanel } from "./components/side-panel/notes-panel"
@@ -433,6 +435,26 @@ export const FIREFLY_SURFACE_REGISTRY: FireflySurfaceDef[] = [
 		telemetryNamespace: "firefly.surface.ch5pm",
 		target: { kind: "side-panel", tab: "ch5pm" },
 		spawn: () => <Ch5PmDashboardPanel />,
+	},
+	{
+		id: "pdf-review",
+		title: "PDF Review",
+		icon: FileTextIcon,
+		formFactor: "side-panel-tab",
+		enabledFlag: {
+			key: "pdfReview",
+			atom: pdfReviewSurfaceEnabledAtom,
+		},
+		defaultOn: false,
+		availability: (ctx) =>
+			ctx.flags.pdfReview
+				? { available: true }
+				: { available: false, reason: "PDF review surface is disabled in feature flags" },
+		commandIds: ["surface.pdfReview.open", "surface.pdfReview.toggle"],
+		persistenceKey: "side-panel.pdf-review",
+		telemetryNamespace: "firefly.surface.pdf-review",
+		target: { kind: "side-panel", tab: "pdf-review" },
+		spawn: (ctx) => <PdfReviewPanel agent={ctx.agent} />,
 	},
 ]
 
