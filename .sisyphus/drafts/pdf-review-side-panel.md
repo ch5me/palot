@@ -20,11 +20,27 @@
 ## Research Findings <!-- oc:id=sec_ad -->
 - Side-panel system is registry-driven via `apps/desktop/src/renderer/firefly-surface-registry.tsx`, `apps/desktop/src/renderer/components/agent-detail.tsx`, `apps/desktop/src/renderer/components/side-panel/session-side-panel.tsx`, `apps/desktop/src/renderer/atoms/ui.ts`.
 - Existing proof surfaces show expected shape: `notes-panel.tsx`, `memory-panel.tsx`, `artifacts-panel.tsx`, `review-panel.tsx`.
+- `apps/desktop/src/renderer/firefly-surface-registry.tsx` is source of truth for tab IDs, feature flags, command IDs, persistence keys, telemetry namespaces, and per-surface spawn wiring.
+- `apps/desktop/src/renderer/atoms/ui.ts` persists side-panel open state, active tab, focus token, file-diff routing, and available-tab fallback behavior.
+- `apps/desktop/src/renderer/components/agent-detail.tsx` composes chat + right split pane, computes available tabs from feature flags plus session context, and owns panel width / expand-collapse behavior.
 - Chat shell already adapts width when side panel open via `apps/desktop/src/renderer/components/chat/chat-view.tsx` and `SessionWidgetWorkspace`.
 - GenUI system already has streaming fence parser and artifact capture in `apps/desktop/src/renderer/genui/genui-renderer.tsx` and `apps/desktop/src/renderer/atoms/chat.ts`.
 - Artifact architecture doc strongly prefers registry-driven, session-scoped, prompt-context-backed surfaces in `docs/genui-artifact-architecture.md`.
 - Feature flags and persisted surface toggles live in `apps/desktop/src/renderer/atoms/feature-flags.ts`.
-- No obvious local matches yet for masking proxy / retrieval / PDF-specific infra inside this repo; pending deeper agent results.
+- Notes surface is a good proof-surface precedent: lightweight local state, draft persistence, and send-to-chat bridge in `apps/desktop/src/renderer/components/side-panel/notes-panel.tsx`.
+- Memory surface is a good backend-seam precedent: local/remote/hybrid mode, service layer, and graceful fallback in `apps/desktop/src/renderer/components/side-panel/memory-panel.tsx` plus `apps/desktop/src/renderer/services/memory-service.ts`.
+- Review surface is a good high-density precedent: pinned header behavior, large-content gating, virtualization, and worker offload in `apps/desktop/src/renderer/components/review/review-panel.tsx`.
+- OpenPaper public materials consistently center split-pane reading: paper visible beside chat so AI augments reading without context switching.
+- Grounded citation behavior: responses stream while carrying inline citations that jump to exact source passages. Public README/blog admit string-matching locator baseline is imperfect but fast enough.
+- Upload flow includes automatic brief plus starter questions before first prompt.
+- Highlighting opens inline menu with actions like ask AI, annotate, save quote; highlights/annotations become first-class retrieval context.
+- Projects are multi-document workspaces with cross-paper chat, grounded citations across sources, generated artifacts, audio summaries, and structured extraction tables.
+- Data tables use user-defined schemas; each extracted cell links back to source text and CSV export is first-class.
+- Recommended locator pattern from standards/prior art: combine exact quote + prefix/suffix context + text positions + structural/page anchors, then resolve with fast-to-fuzzy fallback chain.
+- W3C/Hypothesis prior art suggests selector stack: range selector, text position selector, text quote selector, fuzzy reattachment when document structure/text drifts.
+- Readium prior art reinforces locator object carrying progression/position plus format-specific anchors rather than one brittle identifier.
+- React Native text selection on PDFs is materially harder than web/pdf.js; parity should likely come through shared contracts first, native UX later.
+- No obvious local matches yet for masking proxy / retrieval / PDF-specific infra inside this repo; one exploratory task timed out, so those seams remain a planning risk rather than a confirmed reuse path.
 
 ## Scope Boundaries <!-- oc:id=sec_ae -->
 - INCLUDE: planning PDF review side panel and dependencies required to support requested behaviors.
@@ -33,9 +49,12 @@
 - EXCLUDE: implementation itself.
 
 ## Open Questions <!-- oc:id=sec_af -->
-- Should plan assume browser/Electron web PDF surface first, or true React Native/Expo parity from first slice?
-- What test strategy should plan assume here: tests-after, TDD, or no automated tests?
 - Need pending research results on masking/retrieval/document infra in repo.
+
+## User Answers
+- Scope target: desktop plus shared contracts for future mobile/native parity.
+- First implementation target: web/Electron first.
+- Automated test strategy: tests after implementation, with agent-run QA scenarios.
 
 ## User Answers
 - Scope target: desktop plus shared contracts for future mobile/native parity.

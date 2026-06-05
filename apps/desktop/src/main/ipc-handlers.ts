@@ -71,7 +71,6 @@ import {
 	listOracles,
 	listTmuxSessions,
 	renameOracle,
-	type OracleInfo,
 	type TmuxSessionInfo,
 } from "./oracles"
 
@@ -154,18 +153,6 @@ interface FileReadResult {
 	content: string
 }
 
-interface SpawnPtyOracleArgs {
-	identity: string
-	cols?: number
-	rows?: number
-}
-
-interface SpawnPtyTmuxArgs {
-	socket: string
-	session: string
-	cols?: number
-	rows?: number
-}
 /**
  * Generic fetch proxy handler for the renderer process.
  *

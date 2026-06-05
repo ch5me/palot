@@ -12,6 +12,9 @@ import { PinIcon, PinOffIcon } from "lucide-react"
 import { useMemo } from "react"
 import { GenUiBlock } from "../../genui/genui-renderer"
 import type { GenUiArtifactPlacement, GenUiArtifactRecord } from "../../lib/types"
+
+const PINNABLE_ARTIFACT_PLACEMENT_FALLBACK: Exclude<GenUiArtifactPlacement, "inline"> =
+	"chat-inline-right"
 import { GenUiArtifactPropActions } from "./genui-artifact-prop-actions"
 
 interface GenUiArtifactCardProps {
@@ -70,7 +73,13 @@ export function GenUiArtifactCard({
 							<ArtifactAction
 								tooltip={pinTooltip}
 								label={pinTooltip}
-								onClick={() => onTogglePin(artifact.pin.placement ?? "chat-inline-right")}
+								onClick={() =>
+									onTogglePin(
+										artifact.pin.placement === "inline"
+											? PINNABLE_ARTIFACT_PLACEMENT_FALLBACK
+											: (artifact.pin.placement ?? PINNABLE_ARTIFACT_PLACEMENT_FALLBACK),
+									)
+								}
 								icon={artifact.pin.pinned ? PinOffIcon : PinIcon}
 							/>
 						) : null}

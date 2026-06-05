@@ -23,7 +23,25 @@ export interface PersistedModelRef {
 }
 
 export interface FireflySurfacePreferences {
-	lastSidePanelTab: "review" | "browser" | "notes" | "pulse" | "memory" | "files" | "terminal" | "editor" | "plugins" | "bridges" | "crm" | "studio" | "voice" | "oracle" | "claude" | "ch5pm"
+	lastSidePanelTab:
+		| "review"
+		| "browser"
+		| "notes"
+		| "pulse"
+		| "memory"
+		| "files"
+		| "terminal"
+		| "editor"
+		| "plugins"
+		| "bridges"
+		| "crm"
+		| "studio"
+		| "voice"
+		| "oracle"
+		| "claude"
+		| "ch5pm"
+		| "artifacts"
+		| "pdf-review"
 }
 
 export interface BrowserPanelState {
