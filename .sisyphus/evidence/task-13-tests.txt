@@ -1,0 +1,2 @@
+cd apps/desktop && bun test src/renderer/project-manager.test.ts
+PASS

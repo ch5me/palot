@@ -1,0 +1,6 @@
+Prompt file: apps/desktop/src/renderer/project-manager-prompt.md
+Launcher seam: apps/desktop/src/renderer/project-manager-launcher.ts
+Optimistic state: apps/desktop/src/renderer/project-manager-types.ts
+PM cards: apps/desktop/src/renderer/components/project-manager.tsx
+Sidebar subsection: apps/desktop/src/renderer/components/sidebar.tsx
+CH5PM hydration: apps/desktop/src/renderer/project-manager-cards.ts

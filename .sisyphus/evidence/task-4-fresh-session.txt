@@ -1,0 +1,98 @@
+import { readTextFile } from "./services/backend"
+import type { FileAttachment } from "./lib/types"
+import type { ModelRef } from "./hooks/use-opencode-data"
+import type { PmAssignment, PmPendingSubmission } from "./project-manager-types"
+
+export const PROJECT_MANAGER_PROMPT_PATH = "apps/desktop/src/renderer/project-manager-prompt.md"
+
+export interface LaunchPmSessionOptions {
+	projectDirectory: string
+	projectName: string
+	projectSlug: string
+	prompt: string
+	pendingId: string
+	model?: ModelRef | null
+	agent?: string
+	variant?: string
+	files?: FileAttachment[]
+	createSession: (directory: string, title?: string) => Promise<{ id: string; title?: string } | null | undefined>
+	sendPrompt: (
+		directory: string,
+		sessionId: string,
+		text: string,
+		options?: {
+			model?: { providerID: string; modelID: string }
+			agent?: string
+			variant?: string
+			files?: FileAttachment[]
+		},
+	) => Promise<void>
+	persistProjectModel: () => void
+}
+
+export interface LaunchPmSessionResult {
+	assignment: PmAssignment
+	promptDocument: string
+	pendingId: string
+}
+
+export async function loadProjectManagerPrompt(): Promise<string> {
+	return readTextFile(PROJECT_MANAGER_PROMPT_PATH)
+}
+
+export async function launchProjectManagerSession(
+	options: LaunchPmSessionOptions,
+): Promise<LaunchPmSessionResult> {
+	const promptDocument = await loadProjectManagerPrompt()
+	const session = await options.createSession(options.projectDirectory, "Project Manager")
+	if (!session) {
+		throw new Error("Failed to create PM session")
+	}
+
+	options.persistProjectModel()
+
+	await options.sendPrompt(options.projectDirectory, session.id, composePmPrompt(promptDocument, options.prompt), {
+		model: options.model ?? undefined,
+		agent: options.agent,
+		variant: options.variant,
+		files: options.files,
+	})
+
+	return {
+		pendingId: options.pendingId,
+		promptDocument,
+		assignment: {
+			sessionId: session.id,
+			projectDirectory: options.projectDirectory,
+			projectSlug: options.projectSlug,
+			projectName: options.projectName,
+			sessionTitle: session.title?.trim() || "Project Manager",
+		},
+	}
+}
+
+export function markPendingAssignment(
+	submission: PmPendingSubmission,
+	assignment: PmAssignment,
+): PmPendingSubmission {
+	return {
+		...submission,
+		status: "assigned",
+		assignedSessionId: assignment.sessionId,
+	}
+}
+
+export function markPendingFailure(
+	submission: PmPendingSubmission,
+	error: string,
+): PmPendingSubmission {
+	return {
+		...submission,
+		status: "failed",
+		error,
+	}
+}
+
+function composePmPrompt(promptDocument: string, userPrompt: string): string {
+	return `${promptDocument.trim()}\n\n## User Request\n\n${userPrompt.trim()}`
+}

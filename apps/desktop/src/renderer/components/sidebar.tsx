@@ -175,6 +175,14 @@ export function AppSidebarContent({
 		[agents, activeIds],
 	)
 
+	const pmSessions = useMemo(
+		() =>
+			agents
+				.filter((a) => !a.parentId && a.name.toLowerCase().includes("project manager"))
+				.sort((a, b) => b.lastActiveAt - a.lastActiveAt),
+		[agents],
+	)
+
 	const hasContent = agents.length > 0 || projects.length > 0
 	const showEmptyState = !hasContent
 
@@ -287,8 +295,29 @@ export function AppSidebarContent({
 					</SidebarGroup>
 				)}
 
+				{pmSessions.length > 0 && (
+					<SidebarGroup>
+						<SidebarGroupLabel>PM Sessions</SidebarGroupLabel>
+						<SidebarGroupContent>
+							<SidebarMenu>
+								{pmSessions.map((agent) => (
+									<SessionItem
+										key={agent.id}
+										agent={agent}
+										isSelected={agent.id === selectedSessionId}
+										onRename={onRenameSession}
+										onDelete={onDeleteSession}
+										onFork={onForkSession}
+										showProject
+									/>
+								))}
+							</SidebarMenu>
+						</SidebarGroupContent>
+					</SidebarGroup>
+				)}
+
 				{/* Projects */}
-				{hasContent && (activeSessions.length > 0 || recentSessions.length > 0) && (
+				{hasContent && (activeSessions.length > 0 || recentSessions.length > 0 || pmSessions.length > 0) && (
 					<SidebarSeparator className="bg-sidebar-border/5" />
 				)}
 				{hasContent && (

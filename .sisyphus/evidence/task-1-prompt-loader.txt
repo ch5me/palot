@@ -1,0 +1,4 @@
+6: export const PROJECT_MANAGER_PROMPT_PATH = "apps/desktop/src/renderer/project-manager-prompt.md"
+39: export async function loadProjectManagerPrompt(): Promise<string> {
+40: 	return readTextFile(PROJECT_MANAGER_PROMPT_PATH)
+46: 	const promptDocument = await loadProjectManagerPrompt()

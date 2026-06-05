@@ -49,6 +49,7 @@ export interface FireflyProfilePreferences {
 // ============================================================
 
 function migrateFromZustandPersist(): void {
+	if (typeof localStorage === "undefined") return
 	const oldKey = "elf-preferences"
 	const raw = localStorage.getItem(oldKey)
 	if (!raw) return
@@ -76,6 +77,7 @@ migrateFromZustandPersist()
 
 // Migrate removed "compact" display mode to "default"
 function migrateDisplayMode(): void {
+	if (typeof localStorage === "undefined") return
 	const raw = localStorage.getItem("elf:displayMode")
 	if (raw === '"compact"') {
 		localStorage.setItem("elf:displayMode", '"default"')
