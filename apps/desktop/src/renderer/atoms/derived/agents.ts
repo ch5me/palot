@@ -1,4 +1,5 @@
 import { atom } from "jotai"
+import type { ToolPart } from "@opencode-ai/sdk/v2/client"
 import { atomFamily } from "jotai-family"
 import type {
 	Agent,
@@ -7,9 +8,13 @@ import type {
 	SessionStatus,
 	SidebarProject,
 } from "../../lib/types"
+import { messagesFamily } from "../messages"
+import { partsFamily } from "../parts"
+import { appStore } from "../store"
+import { getStreamingPartsForSession } from "../streaming"
 import { discoveryAtom } from "../discovery"
 import { attachedSessionFamily, sessionFamily, sessionIdsAtom } from "../sessions"
-import { effectivePermissionFamily, effectiveQuestionFamily } from "./session-requests"
+import { effectivePermissionFamily, effectiveQuestionFamily, sessionDescendantIdsFamily } from "./session-requests"
 
 // ============================================================
 // Structural equality for Agent objects
@@ -43,10 +48,15 @@ function agentEqual(prev: Agent | null, next: Agent | null): boolean {
 		prev.worktreeBranch === next.worktreeBranch &&
 		prev.createdAt === next.createdAt &&
 		prev.lastActiveAt === next.lastActiveAt &&
+		prev.providerID === next.providerID &&
+		prev.modelID === next.modelID &&
+		prev.agentType === next.agentType &&
 		prev.permissions.length === next.permissions.length &&
 		prev.questions.length === next.questions.length &&
+		prev.childSessionIds.length === next.childSessionIds.length &&
 		prev.permissions[0] === next.permissions[0] &&
-		prev.questions[0] === next.questions[0]
+		prev.questions[0] === next.questions[0] &&
+		prev.childSessionIds.every((id, i) => id === next.childSessionIds[i])
 	)
 }
 
@@ -98,6 +108,40 @@ export function formatElapsed(startMs: number): string {
 
 function projectNameFromDir(directory: string): string {
 	return directory.split("/").pop() || "/"
+}
+
+function parseLastTaskPart(sessionId: string): ToolPart | undefined {
+	const messages = appStore.get(messagesFamily(sessionId)) ?? []
+	const streaming = getStreamingPartsForSession(sessionId)
+	for (let i = messages.length - 1; i >= 0; i--) {
+		const msg = messages[i]
+		const baseParts = appStore.get(partsFamily(msg.id))
+		if (!baseParts) continue
+		const overrides = streaming[msg.id]
+		for (let j = baseParts.length - 1; j >= 0; j--) {
+			const part = overrides?.[baseParts[j].id] ?? baseParts[j]
+			if (part.type === "tool" && part.tool === "task") {
+				return part as ToolPart
+			}
+		}
+	}
+	return undefined
+}
+
+function parseLatestAssistantModel(sessionId: string):
+	| { providerID?: string; modelID?: string }
+	| undefined {
+	const messages = appStore.get(messagesFamily(sessionId)) ?? []
+	for (let i = messages.length - 1; i >= 0; i--) {
+		const msg = messages[i] as Record<string, unknown>
+		if (msg.role === "assistant") {
+			return {
+				providerID: typeof msg.providerID === "string" ? msg.providerID : undefined,
+				modelID: typeof msg.modelID === "string" ? msg.modelID : undefined,
+			}
+		}
+	}
+	return undefined
 }
 
 // ============================================================
@@ -293,6 +337,15 @@ export const agentFamily = atomFamily((sessionId: string) => {
 		const slugMap = get(projectSlugMapAtom)
 		const { sandboxToParent } = get(sandboxMappingsAtom)
 		const { session, status, directory } = entry
+		const childSessionIds = get(sessionDescendantIdsFamily(session.id))
+		const lastTaskPart = parseLastTaskPart(session.id)
+		const latestAssistantModel = parseLatestAssistantModel(session.id)
+		const providerID = latestAssistantModel?.providerID
+		const modelID = latestAssistantModel?.modelID
+		const agentType =
+			typeof lastTaskPart?.state?.input === "object" && lastTaskPart.state.input
+				? ((lastTaskPart.state.input as Record<string, unknown>).subagent_type as string | undefined)
+				: undefined
 
 		// Use tree-scoped requests to determine blocking status so the parent
 		// session shows "waiting" when any descendant sub-agent has a pending
@@ -345,6 +398,10 @@ export const agentFamily = atomFamily((sessionId: string) => {
 			worktreeBranch: entry.worktreeBranch,
 			createdAt: created,
 			lastActiveAt,
+			providerID,
+			modelID,
+			agentType,
+			childSessionIds,
 		}
 
 		// Return the previous reference if structurally equal to avoid

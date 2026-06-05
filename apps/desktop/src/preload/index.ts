@@ -43,6 +43,45 @@ contextBridge.exposeInMainWorld("elf", {
 	/** Restarts the managed OpenCode server (stops and re-starts with current settings). */
 	restartOpenCode: () => ipcRenderer.invoke("opencode:restart"),
 
+	getActiveOpenCodeSessions: () => ipcRenderer.invoke("opencode:active-sessions"),
+
+	onActiveOpenCodeSessionsChanged: (
+		callback: (snapshot: {
+			serverUrl: string
+			clientCount: number
+			sessionCount: number
+			sessions: Array<{
+				sessionId: string
+				directory: string
+				pid: number
+				source: "attach" | "inferred"
+				command: string
+			}>
+			refreshedAt: number
+		}) => void,
+	) => {
+		const listener = (
+			_event: unknown,
+			snapshot: {
+				serverUrl: string
+				clientCount: number
+				sessionCount: number
+				sessions: Array<{
+					sessionId: string
+					directory: string
+					pid: number
+					source: "attach" | "inferred"
+					command: string
+				}>
+				refreshedAt: number
+			},
+		) => callback(snapshot)
+		ipcRenderer.on("opencode:active-sessions", listener)
+		return () => {
+			ipcRenderer.removeListener("opencode:active-sessions", listener)
+		}
+	},
+
 	// --- Credential storage (safeStorage-backed) ---
 
 	credential: {

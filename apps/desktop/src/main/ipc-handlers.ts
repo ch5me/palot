@@ -88,7 +88,13 @@ import {
 	scanProvider,
 } from "./onboarding"
 import { getOpenInTargets, openInTarget, setPreferredTarget } from "./open-in-targets"
-import { ensureServer, getServerUrl, restartServer, stopServer } from "./opencode-manager"
+import {
+	ensureServer,
+	getActiveOpenCodeSessions,
+	getServerUrl,
+	restartServer,
+	stopServer,
+} from "./opencode-manager"
 import { getOpaqueWindows, getSettings, onSettingsChanged, updateSettings } from "./settings-store"
 import {
 	checkForUpdates,
@@ -261,6 +267,11 @@ export function registerIpcHandlers(): void {
 	ipcMain.handle(
 		"opencode:restart",
 		withLogging("opencode:restart", async () => await restartServer()),
+	)
+
+	ipcMain.handle(
+		"opencode:active-sessions",
+		withLogging("opencode:active-sessions", async () => await getActiveOpenCodeSessions()),
 	)
 
 	// --- Model state ---

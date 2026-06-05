@@ -16,10 +16,10 @@ import {
 	CheckIcon,
 	CopyIcon,
 	ExternalLinkIcon,
-	FileDiffIcon,
+	PanelRightCloseIcon,
+	PanelRightOpenIcon,
 	PencilIcon,
 	TerminalIcon,
-	XIcon,
 } from "lucide-react"
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import type { OpenInTarget } from "../../preload/api"
@@ -65,7 +65,6 @@ import type { Agent, FileAttachment, QuestionAnswer } from "../lib/types"
 import { fetchOpenInTargets, isElectron, openInTarget } from "../services/backend"
 import { useSetAppBarContent } from "./app-bar-context"
 import { ChatView } from "./chat"
-import { ElfWordmark } from "./elf-wordmark"
 import { SessionSidePanel } from "./side-panel/session-side-panel"
 import type { SidePanelTabDef } from "./side-panel/side-panel-tabs"
 import { SessionMetricsBar } from "./session-metrics-bar"
@@ -211,41 +210,6 @@ export function AgentDetail({
 		}
 	}, [isEditingTitle])
 
-	useEffect(() => {
-		setAppBarContent(
-			<SessionAppBarContent
-				agent={agent}
-				isEditingTitle={isEditingTitle}
-				titleValue={titleValue}
-				titleInputRef={titleInputRef}
-				onTitleValueChange={setTitleValue}
-				onStartEditing={startEditingTitle}
-				onConfirmTitle={confirmTitle}
-				onCancelEditing={cancelEditingTitle}
-				onRename={onRename}
-				projectSlug={projectSlug}
-				sidePanelOpen={sidePanelOpen}
-				sidePanelActiveTab={sidePanelActiveTab}
-				onToggleSidePanel={() => setSidePanelOpen((prev) => !prev)}
-			/>,
-		)
-
-		return () => setAppBarContent(null)
-	}, [
-		agent,
-		isEditingTitle,
-		titleValue,
-		startEditingTitle,
-		confirmTitle,
-		cancelEditingTitle,
-		onRename,
-		projectSlug,
-		setAppBarContent,
-		sidePanelOpen,
-		setSidePanelOpen,
-		sidePanelActiveTab,
-	])
-
 	const browserPanelEnabled = useAtomValue(browserPanelEnabledAtom)
 	const reviewSurfaceEnabled = useAtomValue(reviewSurfaceEnabledAtom)
 	const notesSurfaceEnabled = useAtomValue(notesSurfaceEnabledAtom)
@@ -309,12 +273,51 @@ export function AgentDetail({
 		ch5pmSurfaceEnabled,
 		chatTurns.length,
 	])
+	const availableSidePanelTabs = useMemo(
+		() => sidePanelTabs.filter((tab) => tab.availability.available),
+		[sidePanelTabs],
+	)
 
 	useEffect(() => {
-		setAvailableSidePanelTabs(
-			sidePanelTabs.filter((tab) => tab.availability.available).map((tab) => tab.id),
+		setAvailableSidePanelTabs(availableSidePanelTabs.map((tab) => tab.id))
+	}, [availableSidePanelTabs, setAvailableSidePanelTabs])
+
+	useEffect(() => {
+		setAppBarContent(
+			<SessionAppBarContent
+				agent={agent}
+				isEditingTitle={isEditingTitle}
+				titleValue={titleValue}
+				titleInputRef={titleInputRef}
+				onTitleValueChange={setTitleValue}
+				onStartEditing={startEditingTitle}
+				onConfirmTitle={confirmTitle}
+				onCancelEditing={cancelEditingTitle}
+				onRename={onRename}
+				projectSlug={projectSlug}
+				sidePanelOpen={sidePanelOpen}
+				sidePanelActiveTab={sidePanelActiveTab}
+				hasAvailableSidePanel={availableSidePanelTabs.length > 0}
+				onToggleSidePanel={() => setSidePanelOpen((prev) => !prev)}
+			/>,
 		)
-	}, [setAvailableSidePanelTabs, sidePanelTabs])
+
+		return () => setAppBarContent(null)
+	}, [
+		agent,
+		isEditingTitle,
+		titleValue,
+		startEditingTitle,
+		confirmTitle,
+		cancelEditingTitle,
+		onRename,
+		projectSlug,
+		setAppBarContent,
+		sidePanelOpen,
+		setSidePanelOpen,
+		sidePanelActiveTab,
+		availableSidePanelTabs,
+	])
 
 	const chatContent = (
 		<>
@@ -410,6 +413,7 @@ function SessionAppBarContent({
 	projectSlug,
 	sidePanelOpen,
 	sidePanelActiveTab,
+	hasAvailableSidePanel,
 	onToggleSidePanel,
 }: {
 	agent: Agent
@@ -424,9 +428,9 @@ function SessionAppBarContent({
 	projectSlug?: string
 	sidePanelOpen: boolean
 	sidePanelActiveTab: string
+	hasAvailableSidePanel: boolean
 	onToggleSidePanel: () => void
 }) {
-	const navigate = useNavigate()
 	const { url } = useServerConnection()
 	const [copied, setCopied] = useState(false)
 	const [openInTargets, setOpenInTargets] = useState<OpenInTarget[]>([])
@@ -450,17 +454,6 @@ function SessionAppBarContent({
 	return (
 		<div className="flex min-w-0 items-center gap-3 px-3">
 			<div className="flex min-w-0 items-center gap-3">
-				<div className="flex items-center gap-2">
-					<Button
-						variant="ghost"
-						size="icon"
-						className="size-7"
-						onClick={() => navigate({ to: "/" })}
-					>
-						<XIcon className="size-3.5" />
-					</Button>
-					<ElfWordmark className="h-4" />
-				</div>
 				<div className="min-w-0">
 					{isEditingTitle ? (
 						<Input
@@ -478,6 +471,7 @@ function SessionAppBarContent({
 								}
 							}}
 							className="h-8 min-w-[220px] max-w-[360px]"
+							style={{ WebkitAppRegion: "no-drag" } as React.CSSProperties}
 						/>
 					) : (
 						<div className="flex items-center gap-2">
@@ -488,6 +482,7 @@ function SessionAppBarContent({
 									size="icon"
 									className="size-6"
 									onClick={onStartEditing}
+									style={{ WebkitAppRegion: "no-drag" } as React.CSSProperties}
 								>
 									<PencilIcon className="size-3.5" />
 								</Button>
@@ -497,10 +492,38 @@ function SessionAppBarContent({
 					<div className="truncate text-xs text-muted-foreground">{agent.project}</div>
 				</div>
 			</div>
-			<div className="ml-auto flex items-center gap-2">
-				<Button variant="ghost" size="icon" className="size-7" onClick={onToggleSidePanel}>
-					<FileDiffIcon className="size-3.5" />
-				</Button>
+			<div
+				className="ml-auto flex items-center gap-2"
+				style={{ WebkitAppRegion: "no-drag" } as React.CSSProperties}
+			>
+				<Tooltip>
+					<TooltipTrigger
+						render={
+							<Button
+								variant="ghost"
+								size="icon"
+								className="size-7"
+								onClick={onToggleSidePanel}
+								disabled={!hasAvailableSidePanel}
+								aria-label={sidePanelOpen ? "Close side panel" : "Open side panel"}
+								title={sidePanelOpen ? "Close side panel" : "Open side panel"}
+							/>
+						}
+					>
+						{sidePanelOpen ? (
+							<PanelRightCloseIcon className="size-3.5" />
+						) : (
+							<PanelRightOpenIcon className="size-3.5" />
+						)}
+					</TooltipTrigger>
+					<TooltipContent>
+						{hasAvailableSidePanel ? (
+							<>{sidePanelOpen ? "Close" : "Open"} side panel (&#8679;&#8984;D)</>
+						) : (
+							"No side-panel surfaces available"
+						)}
+					</TooltipContent>
+				</Tooltip>
 				<Tooltip>
 					<TooltipTrigger
 						render={

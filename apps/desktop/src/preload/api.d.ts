@@ -11,6 +11,22 @@ export interface OpenCodeServerInfo {
 	managed: boolean
 }
 
+export interface ActiveOpenCodeSessionPresence {
+	sessionId: string
+	directory: string
+	pid: number
+	source: "attach" | "inferred"
+	command: string
+}
+
+export interface ActiveOpenCodeSessionsSnapshot {
+	serverUrl: string
+	clientCount: number
+	sessionCount: number
+	sessions: ActiveOpenCodeSessionPresence[]
+	refreshedAt: number
+}
+
 export type BridgeStatus = "connected" | "disconnected" | "soon"
 
 export interface BridgeChannel {
@@ -607,6 +623,10 @@ export interface ElfAPI {
 	getServerUrl: () => Promise<string | null>
 	stopOpenCode: () => Promise<boolean>
 	restartOpenCode: () => Promise<OpenCodeServerInfo>
+	getActiveOpenCodeSessions: () => Promise<ActiveOpenCodeSessionsSnapshot>
+	onActiveOpenCodeSessionsChanged: (
+		callback: (snapshot: ActiveOpenCodeSessionsSnapshot) => void,
+	) => () => void
 	getModelState: () => Promise<ModelState>
 	updateModelRecent: (model: ModelRef) => Promise<ModelState>
 

@@ -187,13 +187,7 @@ export async function fetchOpenCodeUrl(): Promise<{ url: string }> {
 
 export async function fetchActiveOpenCodeSessions(): Promise<ActiveOpenCodeSessionsSnapshot> {
 	if (isElectron) {
-		return {
-			serverUrl: "",
-			clientCount: 0,
-			sessionCount: 0,
-			sessions: [],
-			refreshedAt: Date.now(),
-		}
+		return window.elf.getActiveOpenCodeSessions()
 	}
 	const { fetchActiveOpenCodeSessions: httpFetch } = await import("./elf-server")
 	return httpFetch()
@@ -203,8 +197,9 @@ export function subscribeToActiveOpenCodeSessionEvents(
 	handlers: ActiveOpenCodeSessionStreamHandlers,
 ): () => void {
 	if (isElectron) {
-		handlers.onError?.("Active session stream unavailable in Electron")
-		return () => {}
+		return window.elf.onActiveOpenCodeSessionsChanged((snapshot) => {
+			handlers.onSnapshot?.(snapshot)
+		})
 	}
 	return httpSubscribeActiveOpenCodeSessionEvents(handlers)
 }

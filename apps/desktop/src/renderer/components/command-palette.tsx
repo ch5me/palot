@@ -27,6 +27,8 @@ import {
 	MicIcon,
 	MonitorIcon,
 	MonitorPlayIcon,
+	PanelRightCloseIcon,
+	PanelRightOpenIcon,
 	PlugIcon,
 	RectangleEllipsisIcon,
 	Share2Icon,
@@ -82,7 +84,7 @@ import { getFireflySurfaceTabs, type FireflySurfaceContext } from "../firefly-su
 import { isMockModeAtom, toggleMockModeAtom } from "../atoms/mock-mode"
 import { opaqueWindowsAtom } from "../atoms/preferences"
 import { isReactScanAtom, toggleReactScanAtom } from "../atoms/react-scan"
-import { openSidePanelTabAtom } from "../atoms/ui"
+import { openSidePanelTabAtom, sidePanelOpenAtom } from "../atoms/ui"
 import { useSessionRevert } from "../hooks/use-commands"
 import {
 	useAvailableThemes,
@@ -163,6 +165,7 @@ export function CommandPalette({ open, onOpenChange, agents, onForkSession }: Co
 	const toggleCh5PmSurface = useSetAtom(toggleCh5PmSurfaceAtom)
 	const toggleTerminalSurface = useSetAtom(toggleTerminalSurfaceAtom)
 	const openSidePanelTab = useSetAtom(openSidePanelTabAtom)
+	const [sidePanelOpen, setSidePanelOpen] = useAtom(sidePanelOpenAtom)
 	const [reloading, setReloading] = useState(false)
 
 	const isElectron = typeof window !== "undefined" && "elf" in window
@@ -207,7 +210,15 @@ export function CommandPalette({ open, onOpenChange, agents, onForkSession }: Co
 	}, [open, onOpenChange])
 
 	const activeSessions = useMemo(
-		() => (open ? agents.filter((a) => a.status === "running" || a.status === "waiting") : []),
+		() =>
+			open
+				? agents.filter(
+						(a) =>
+							a.status === "running" ||
+							a.status === "waiting" ||
+							(a.isAttached && a.status === "idle"),
+					)
+				: [],
 		[agents, open],
 	)
 
@@ -263,6 +274,7 @@ export function CommandPalette({ open, onOpenChange, agents, onForkSession }: Co
 		() => (surfaceContext ? getFireflySurfaceTabs(surfaceContext) : []),
 		[surfaceContext],
 	)
+	const hasAvailableSurfaceTab = availableSurfaceTabs.some((surface) => surface.availability.available)
 
 	const hasSession = !!activeAgent
 
@@ -307,28 +319,41 @@ export function CommandPalette({ open, onOpenChange, agents, onForkSession }: Co
 							<CommandShortcut>&#8679;&#8984;Z</CommandShortcut>
 						</CommandItem>
 					)}
-				{hasSession && (
-					<CommandItem
-						onSelect={() => {
-							onOpenChange(false)
-						}}
-						disabled
-					>
-						<SparklesIcon />
-						<span>Compact Conversation</span>
-					</CommandItem>
-				)}
-				{hasSession && onForkSession && (
-					<CommandItem
-						onSelect={async () => {
-							onOpenChange(false)
-							await onForkSession()
-						}}
-					>
-						<GitForkIcon />
-						<span>Fork Session</span>
-					</CommandItem>
-				)}
+					{hasSession && (
+						<CommandItem
+							onSelect={() => {
+								setSidePanelOpen((prev) => !prev)
+								onOpenChange(false)
+							}}
+							disabled={!hasAvailableSurfaceTab}
+						>
+							{sidePanelOpen ? <PanelRightCloseIcon /> : <PanelRightOpenIcon />}
+							<span>{sidePanelOpen ? "Close Side Panel" : "Open Side Panel"}</span>
+							<CommandShortcut>&#8679;&#8984;D</CommandShortcut>
+						</CommandItem>
+					)}
+					{hasSession && (
+						<CommandItem
+							onSelect={() => {
+								onOpenChange(false)
+							}}
+							disabled
+						>
+							<SparklesIcon />
+							<span>Compact Conversation</span>
+						</CommandItem>
+					)}
+					{hasSession && onForkSession && (
+						<CommandItem
+							onSelect={async () => {
+								onOpenChange(false)
+								await onForkSession()
+							}}
+						>
+							<GitForkIcon />
+							<span>Fork Session</span>
+						</CommandItem>
+					)}
 					<CommandItem onSelect={handleReloadConfig} disabled={reloading}>
 						<RefreshCwIcon />
 						<span>{reloading ? "Reloading..." : "Reload Config"}</span>

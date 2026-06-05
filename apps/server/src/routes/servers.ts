@@ -94,9 +94,7 @@ const app = new Hono()
 						} catch (err) {
 							emit("presence-error", {
 								message:
-									err instanceof Error
-										? err.message
-										: "Failed to inspect active OpenCode sessions",
+									err instanceof Error ? err.message : "Failed to inspect active OpenCode sessions",
 								at: Date.now(),
 							})
 						} finally {
@@ -135,9 +133,7 @@ const app = new Hono()
 			})
 		} catch (err) {
 			const message =
-				err instanceof Error
-					? err.message
-					: "Failed to open active OpenCode session event stream"
+				err instanceof Error ? err.message : "Failed to open active OpenCode session event stream"
 			return c.json({ error: message }, 500)
 		}
 	})

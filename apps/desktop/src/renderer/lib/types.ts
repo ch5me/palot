@@ -125,37 +125,26 @@ export interface Agent {
 	id: string
 	name: string
 	status: AgentStatus
-	/** True when a live OpenCode client is attached to this session */
 	isAttached: boolean
 	environment: EnvironmentType
 	project: string
-	/** URL slug for the project (for router navigation) */
 	projectSlug: string
-	/** Full project directory path (for auto-starting servers) */
 	directory: string
-	/** The root project directory. For worktree sessions this is the parent project,
-	 *  for regular sessions it equals `directory`. Use this as the target for
-	 *  apply-to-project and other operations that should target the main checkout. */
 	projectDirectory: string
 	branch: string
-	/** Relative "last active" time, e.g. "5m" */
 	duration: string
 	currentActivity?: string
 	activities: Activity[]
-	/** The underlying OpenCode session ID */
 	sessionId: string
-	/** Pending permission requests for this agent */
 	permissions: SdkPermissionRequest[]
-	/** Pending question requests for this agent */
 	questions: SdkQuestionRequest[]
-	/** If set, this is a sub-agent spawned by the parent session */
 	parentId?: string
-	/** If set, the session runs in a git worktree at this root path */
 	worktreePath?: string
-	/** The branch name auto-created for the worktree (e.g. "elf/fix-auth-bug") */
 	worktreeBranch?: string
-	/** Timestamp (ms) of session creation — stable, never changes */
 	createdAt: number
-	/** Timestamp (ms) of last activity — for sorting and relative time display */
 	lastActiveAt: number
+	providerID?: string
+	modelID?: string
+	agentType?: string
+	childSessionIds: string[]
 }

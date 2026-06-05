@@ -1,10 +1,7 @@
-import { Button } from "@ch5me/elf-ui/components/button"
 import { SidebarProvider } from "@ch5me/elf-ui/components/sidebar"
-import { Tooltip, TooltipContent, TooltipTrigger } from "@ch5me/elf-ui/components/tooltip"
 import { SplitPane } from "@ch5me/workspace"
 import { Outlet, useNavigate } from "@tanstack/react-router"
 import { useAtom, useAtomValue } from "jotai"
-import { PanelLeftIcon, PlusIcon } from "lucide-react"
 import { useCallback, useEffect, useRef, useState } from "react"
 import { activeServerConfigAtom, serverConnectedAtom } from "../atoms/connection"
 import { leftPanelOpenAtom } from "../atoms/ui"
@@ -19,12 +16,6 @@ import { AppSidebarContent } from "./sidebar"
 import { useSidebarSlot } from "./sidebar-slot-context"
 import { UpdateBanner } from "./update-banner"
 
-const isMac =
-	typeof window !== "undefined" && "elf" in window && window.elf.platform === "darwin"
-const isElectronEnv = typeof window !== "undefined" && "elf" in window
-
-const WINDOW_CONTROLS_LEFT = isMac && isElectronEnv ? 93 : 8
-const WINDOW_CONTROLS_INSET = isMac && isElectronEnv ? 160 : 72
 const COLLAPSE_THRESHOLD = 600
 
 function NarrowWindowCollapser() {
@@ -49,58 +40,6 @@ function NarrowWindowCollapser() {
 	}, [setLeftPanelOpen])
 
 	return null
-}
-
-function WindowControls() {
-	const [, setLeftPanelOpen] = useAtom(leftPanelOpenAtom)
-	const navigate = useNavigate()
-
-	const handleToggleSidebar = useCallback(() => {
-		setLeftPanelOpen((prev) => !prev)
-	}, [setLeftPanelOpen])
-
-	return (
-		<div
-			className="absolute z-50 flex items-center gap-0.5"
-			style={{
-				top: 8,
-				left: WINDOW_CONTROLS_LEFT,
-				// @ts-expect-error -- vendor-prefixed CSS property
-				WebkitAppRegion: "no-drag",
-			}}
-		>
-			<Tooltip>
-				<TooltipTrigger
-					render={
-						<Button
-							variant="ghost"
-							size="icon"
-							className="size-7 shrink-0"
-							onClick={handleToggleSidebar}
-						/>
-					}
-				>
-					<PanelLeftIcon className="size-3.5" />
-				</TooltipTrigger>
-				<TooltipContent>Toggle sidebar (&#8984;B)</TooltipContent>
-			</Tooltip>
-			<Tooltip>
-				<TooltipTrigger
-					render={
-						<Button
-							variant="ghost"
-							size="icon"
-							className="size-7 shrink-0"
-							onClick={() => navigate({ to: "/" })}
-						/>
-					}
-				>
-					<PlusIcon className="size-3.5" />
-				</TooltipTrigger>
-				<TooltipContent>New session (&#8984;N)</TooltipContent>
-			</Tooltip>
-		</div>
-	)
 }
 
 export function SidebarLayout() {
@@ -210,17 +149,9 @@ export function SidebarLayout() {
 					width: "100%",
 				}}
 			>
-			<div
-				className="relative"
-				style={
-					{
-						"--window-controls-inset": `${WINDOW_CONTROLS_INSET}px`,
-					} as React.CSSProperties
-				}
-			>
+			<div className="relative">
 				<UpdateBanner />
 				<AppBar />
-				<WindowControls />
 			</div>
 
 			<div style={{ minWidth: 0, overflow: "hidden" }}>

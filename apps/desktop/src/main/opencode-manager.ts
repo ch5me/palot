@@ -1,9 +1,13 @@
-import { type ChildProcess, spawn } from "node:child_process"
+import { execFile, type ChildProcess, spawn } from "node:child_process"
 import { homedir } from "node:os"
 import path from "node:path"
 import { setTimeout as sleep } from "node:timers/promises"
-import { dialog } from "electron"
-import type { LocalServerConfig } from "../preload/api"
+import { promisify } from "node:util"
+import { BrowserWindow, dialog } from "electron"
+import type {
+	ActiveOpenCodeSessionsSnapshot,
+	LocalServerConfig,
+} from "../preload/api"
 import { getCredential } from "./credential-store"
 import { findFreePort } from "./find-free-port"
 import { createLogger } from "./logger"
@@ -14,6 +18,8 @@ import { getSettings } from "./settings-store"
 import { waitForEnv } from "./shell-env"
 
 const log = createLogger("opencode-manager")
+const execFileAsync = promisify(execFile)
+const ACTIVE_SESSION_STREAM_POLL_MS = 1000
 
 // ============================================================
 // Types
@@ -39,6 +45,9 @@ let singleServer: {
 	server: OpenCodeServer
 	process: ChildProcess | null
 } | null = null
+
+let activeSessionPoller: ReturnType<typeof setInterval> | null = null
+let lastActiveSessionSnapshotKey: string | null = null
 
 const DEFAULT_PORT = Number(process.env.OPENCODE_PORT) || 4096
 const DEFAULT_HOSTNAME = process.env.OPENCODE_HOSTNAME || "127.0.0.1"
@@ -95,6 +104,7 @@ export async function ensureServer(): Promise<OpenCodeServer> {
 		log.info("Detected existing same-user server", { url: detection.server.url })
 		singleServer = { server: detection.server, process: null }
 		startNotificationWatcher(detection.server.url)
+		startActiveSessionBroadcast(detection.server.url)
 		return detection.server
 	}
 
@@ -113,11 +123,17 @@ export function getServerUrl(): string | null {
 	return singleServer?.server.url ?? null
 }
 
+export async function getActiveOpenCodeSessions(): Promise<ActiveOpenCodeSessionsSnapshot> {
+	const server = await ensureServer()
+	return buildActiveOpenCodeSessionsSnapshot(server.url)
+}
+
 /**
  * Stops the single server if we manage it and removes the lockfile.
  */
 export function stopServer(): boolean {
 	stopNotificationWatcher()
+	stopActiveSessionBroadcast()
 	if (!singleServer?.process) {
 		log.debug("No managed server to stop")
 		removeLockfile()
@@ -181,6 +197,7 @@ async function handleLockfile(
 		const server: OpenCodeServer = { url, pid: lockfile.pid, managed: false }
 		singleServer = { server, process: null }
 		startNotificationWatcher(url)
+		startActiveSessionBroadcast(url)
 		return server
 	}
 
@@ -281,10 +298,12 @@ async function handleConflict(
 	if (response === 1) {
 		// Connect anyway (user accepts the risk)
 		log.warn("User chose to connect to foreign server anyway", { url: conflict.url })
-		const server: OpenCodeServer = { url: conflict.url, pid: null, managed: false }
-		singleServer = { server, process: null }
-		startNotificationWatcher(conflict.url)
-		return server
+			const server: OpenCodeServer = { url: conflict.url, pid: null, managed: false }
+			singleServer = { server, process: null }
+			startNotificationWatcher(conflict.url)
+			startActiveSessionBroadcast(conflict.url)
+			return server
+
 	}
 
 	// Cancel
@@ -299,6 +318,96 @@ async function handleConflict(
  * Spawns a new opencode server process on the given hostname:port.
  * Writes a lockfile on success.
  */
+function buildActiveSessionSnapshotKey(snapshot: ActiveOpenCodeSessionsSnapshot): string {
+	const sessions = [...snapshot.sessions]
+		.sort((a, b) => a.sessionId.localeCompare(b.sessionId))
+		.map((session) => ({
+			sessionId: session.sessionId,
+			directory: session.directory,
+			pid: session.pid,
+			source: session.source,
+		}))
+
+	return JSON.stringify({
+		serverUrl: snapshot.serverUrl,
+		clientCount: snapshot.clientCount,
+		sessionCount: snapshot.sessionCount,
+		sessions,
+	})
+}
+
+async function listClientProcesses(serverUrl: string): Promise<ActiveOpenCodeSessionsSnapshot["sessions"]> {
+	const { stdout } = await execFileAsync("ps", ["-axo", "pid=,command=", "-ww"])
+	const target = new URL(serverUrl)
+	const targetOrigin = `${target.protocol}//${target.hostname}:${target.port}`
+	const sessions: ActiveOpenCodeSessionsSnapshot["sessions"] = []
+
+	for (const line of stdout.split("\n")) {
+		const match = line.match(/^\s*(\d+)\s+(.*)$/)
+		if (!match) continue
+		const pid = Number(match[1])
+		const command = match[2]
+		if (!command.includes("opencode")) continue
+		if (!command.includes(" attach ")) continue
+		if (!command.includes(targetOrigin)) continue
+		const sessionMatch = command.match(/--session(?:=|\s+)(\S+)/)
+		const dirMatch = command.match(/--dir(?:=|\s+)(\S+)/)
+		if (!sessionMatch || !dirMatch) continue
+		sessions.push({
+			sessionId: sessionMatch[1],
+			directory: dirMatch[1],
+			pid,
+			source: "attach",
+			command,
+		})
+	}
+
+	return sessions
+}
+
+async function buildActiveOpenCodeSessionsSnapshot(
+	serverUrl: string,
+): Promise<ActiveOpenCodeSessionsSnapshot> {
+	const sessions = await listClientProcesses(serverUrl)
+	return {
+		serverUrl,
+		clientCount: sessions.length,
+		sessionCount: sessions.length,
+		sessions,
+		refreshedAt: Date.now(),
+	}
+}
+
+async function broadcastActiveSessionSnapshot(serverUrl: string): Promise<void> {
+	const snapshot = await buildActiveOpenCodeSessionsSnapshot(serverUrl)
+	const nextKey = buildActiveSessionSnapshotKey(snapshot)
+	if (nextKey === lastActiveSessionSnapshotKey) return
+	lastActiveSessionSnapshotKey = nextKey
+	for (const win of BrowserWindow.getAllWindows()) {
+		win.webContents.send("opencode:active-sessions", snapshot)
+	}
+}
+
+function stopActiveSessionBroadcast(): void {
+	if (activeSessionPoller) {
+		clearInterval(activeSessionPoller)
+		activeSessionPoller = null
+	}
+	lastActiveSessionSnapshotKey = null
+}
+
+function startActiveSessionBroadcast(serverUrl: string): void {
+	stopActiveSessionBroadcast()
+	void broadcastActiveSessionSnapshot(serverUrl).catch((err) => {
+		log.error("Initial active session snapshot failed", err)
+	})
+	activeSessionPoller = setInterval(() => {
+		void broadcastActiveSessionSnapshot(serverUrl).catch((err) => {
+			log.error("Active session snapshot poll failed", err)
+		})
+	}, ACTIVE_SESSION_STREAM_POLL_MS)
+}
+
 async function spawnServer(
 	hostname: string,
 	port: number,
@@ -350,6 +459,7 @@ async function spawnServer(
 	}
 
 	singleServer = { server, process: proc }
+	startActiveSessionBroadcast(url)
 
 	// Capture stdout/stderr for diagnostics
 	proc.stdout?.on("data", (data: Buffer) => {
@@ -373,12 +483,13 @@ async function spawnServer(
 
 	// Clean up on exit -- allow lazy restart on next request
 	proc.on("exit", (code, signal) => {
-		if (singleServer?.process === proc) {
-			log.warn("Server process exited", { pid: proc.pid, code, signal })
-			singleServer = null
-			removeLockfile()
-		}
+		log.info("opencode server exited", { code, signal })
+		stopNotificationWatcher()
+		stopActiveSessionBroadcast()
+		singleServer = null
+		removeLockfile()
 	})
+
 
 	// Wait for the server to be ready
 	await waitForReady(url, 15_000)

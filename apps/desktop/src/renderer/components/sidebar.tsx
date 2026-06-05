@@ -24,6 +24,7 @@ import { useAtomValue } from "jotai"
 import {
 	AlertCircleIcon,
 	BotIcon,
+	BlocksIcon,
 	CheckCircle2Icon,
 	ChevronDownIcon,
 	ChevronRightIcon,
@@ -76,6 +77,11 @@ const STATUS_COLOR: Record<AgentStatus, string> = {
 
 function isSidebarActiveAgent(agent: Agent): boolean {
 	return agent.status === "running" || agent.status === "waiting" || agent.status === "failed"
+}
+
+function renderAgentMeta(agent: Agent): string | undefined {
+	const parts = [agent.agentType, agent.modelID].filter(Boolean)
+	return parts.length > 0 ? parts.join(" · ") : undefined
 }
 
 // ============================================================
@@ -211,6 +217,16 @@ export function AppSidebarContent({
 								<span>New Session</span>
 							</SidebarMenuButton>
 						</SidebarMenuItem>
+							<SidebarMenuItem>
+								<SidebarMenuButton
+									tooltip="Project Manager"
+									onClick={() => navigate({ to: "/project-manager" })}
+									className="text-muted-foreground"
+								>
+									<BlocksIcon className="size-4" />
+									<span>Project Manager</span>
+								</SidebarMenuButton>
+							</SidebarMenuItem>
 						{automationsEnabled && isLocalServer && (
 							<SidebarMenuItem>
 								<SidebarMenuButton
@@ -277,66 +293,67 @@ export function AppSidebarContent({
 				)}
 				{hasContent && (
 					<SidebarGroup>
-						<SidebarGroupLabel>Projects</SidebarGroupLabel>
-						{/* Action buttons row */}
-						<div className="absolute top-3.5 right-3 flex max-w-[calc(100%-4rem)] items-center gap-0.5 overflow-hidden">
-							<Tooltip>
-								<TooltipTrigger
-									render={
-										<button
-											type="button"
-											onClick={toggleProjectSearch}
-											className={`text-sidebar-foreground ring-sidebar-ring hover:bg-sidebar-accent hover:text-sidebar-accent-foreground flex aspect-square w-5 items-center justify-center rounded-md p-0 transition-colors ${
-												projectSearchActive
-													? "bg-sidebar-accent text-sidebar-accent-foreground"
-													: ""
-											}`}
-										/>
-									}
-								>
-									{projectSearchActive ? (
-										<XIcon className="size-4 shrink-0" />
-									) : (
-										<SearchIcon className="size-4 shrink-0" />
-									)}
-									<span className="sr-only">Search projects</span>
-								</TooltipTrigger>
-								<TooltipContent side="bottom">
-									{projectSearchActive ? "Close search" : "Search projects"}
-								</TooltipContent>
-							</Tooltip>
-							<Tooltip>
-								<TooltipTrigger
-									render={
-										<button
-											type="button"
-											onClick={onOpenCommandPalette}
-											className="text-sidebar-foreground ring-sidebar-ring hover:bg-sidebar-accent hover:text-sidebar-accent-foreground flex aspect-square w-5 shrink-0 items-center justify-center rounded-md p-0 transition-colors"
-										/>
-									}
-								>
-									<CommandIcon className="size-4 shrink-0" />
-									<span className="sr-only">Command palette</span>
-								</TooltipTrigger>
-								<TooltipContent side="bottom">Command palette (&#8984;K)</TooltipContent>
-							</Tooltip>
-							{onAddProject && (
+						<div className="flex items-center justify-between gap-2 px-2 pb-1">
+							<SidebarGroupLabel className="h-auto p-0">Projects</SidebarGroupLabel>
+							<div className="flex shrink-0 items-center gap-0.5">
 								<Tooltip>
 									<TooltipTrigger
 										render={
 											<button
 												type="button"
-												onClick={onAddProject}
+												onClick={toggleProjectSearch}
+												className={`text-sidebar-foreground ring-sidebar-ring hover:bg-sidebar-accent hover:text-sidebar-accent-foreground flex aspect-square w-5 items-center justify-center rounded-md p-0 transition-colors ${
+													projectSearchActive
+														? "bg-sidebar-accent text-sidebar-accent-foreground"
+														: ""
+												}`}
+											/>
+										}
+									>
+										{projectSearchActive ? (
+											<XIcon className="size-4 shrink-0" />
+										) : (
+											<SearchIcon className="size-4 shrink-0" />
+										)}
+										<span className="sr-only">Search projects</span>
+									</TooltipTrigger>
+									<TooltipContent side="bottom">
+										{projectSearchActive ? "Close search" : "Search projects"}
+									</TooltipContent>
+								</Tooltip>
+								<Tooltip>
+									<TooltipTrigger
+										render={
+											<button
+												type="button"
+												onClick={onOpenCommandPalette}
 												className="text-sidebar-foreground ring-sidebar-ring hover:bg-sidebar-accent hover:text-sidebar-accent-foreground flex aspect-square w-5 shrink-0 items-center justify-center rounded-md p-0 transition-colors"
 											/>
 										}
 									>
-										<PlusIcon className="size-4 shrink-0" />
-										<span className="sr-only">Add Project</span>
+										<CommandIcon className="size-4 shrink-0" />
+										<span className="sr-only">Command palette</span>
 									</TooltipTrigger>
-									<TooltipContent side="bottom">Add project</TooltipContent>
+									<TooltipContent side="bottom">Command palette (&#8984;K)</TooltipContent>
 								</Tooltip>
-							)}
+								{onAddProject && (
+									<Tooltip>
+										<TooltipTrigger
+											render={
+												<button
+													type="button"
+													onClick={onAddProject}
+													className="text-sidebar-foreground ring-sidebar-ring hover:bg-sidebar-accent hover:text-sidebar-accent-foreground flex aspect-square w-5 shrink-0 items-center justify-center rounded-md p-0 transition-colors"
+												/>
+											}
+										>
+											<PlusIcon className="size-4 shrink-0" />
+											<span className="sr-only">Add Project</span>
+										</TooltipTrigger>
+										<TooltipContent side="bottom">Add project</TooltipContent>
+									</Tooltip>
+								)}
+							</div>
 						</div>
 
 						{/* Inline project search */}
@@ -628,6 +645,7 @@ const SessionItem = memo(function SessionItem({
 	const lastActive = useLiveLastActive(agent)
 	const showSpinner = agent.status === "running"
 	const showAttachedPulse = agent.isAttached && agent.status === "idle"
+	const meta = renderAgentMeta(agent)
 
 	const [isEditing, setIsEditing] = useState(false)
 	const [editValue, setEditValue] = useState(agent.name)
@@ -707,11 +725,15 @@ const SessionItem = memo(function SessionItem({
 							{agent.name}
 						</span>
 
-						{agent.status === "waiting" && agent.currentActivity && (
+						{agent.status === "waiting" && agent.currentActivity ? (
 							<span className="block truncate text-[11px] leading-tight text-yellow-500">
 								{agent.currentActivity}
 							</span>
-						)}
+						) : meta ? (
+							<span className="block truncate text-[11px] leading-tight text-muted-foreground/70">
+								{meta}
+							</span>
+						) : null}
 					</div>
 				)}
 
