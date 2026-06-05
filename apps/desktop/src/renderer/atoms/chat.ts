@@ -1,5 +1,6 @@
 import { atom } from "jotai"
 import { atomFamily } from "jotai-family"
+import { buildGenUiCatalog } from "../genui/registry"
 import type { ModelRef } from "../hooks/use-opencode-data"
 import { appStore } from "./store"
 
@@ -63,28 +64,28 @@ export const primePlanModeAtom = atom(null, (_get, set, sessionId: string) => {
 	set(planModePrimedFamily(sessionId), true)
 })
 
-/**
- * System-block prepended to the first user message when plan mode is
- * active. Tells the agent to emit a ```dag JSON fence describing the
- * plan so the renderer can display it inline.
- */
-export const PLAN_MODE_DAG_PREFIX =
-	"\n\n[Plan mode] Along with your answer, also include a single ```dag code fence with the plan as a DAG.\n" +
-	"Shape: { \"nodes\": [{ \"id\": \"step1\", \"label\": \"Short label\" }], \"edges\": [{ \"source\": \"step1\", \"target\": \"step2\" }] }.\n" +
-	"Use 3-8 nodes. Each node id is a short slug. Each edge source/target must reference an existing node id.\n" +
-	"Skip the fence entirely if the task is trivial."
+const PLAN_MODE_DAG_NUDGE =
+	"\n\n[Plan mode] Also render the plan as an inline dag-sparkline via a ```genui fence " +
+	"(component: \"dag-sparkline\"). Use 3-8 nodes; skip it if the task is trivial."
 
-/**
- * Build the final text to send: if plan mode is on and the session
- * has not yet been primed, prepend the DAG-build instruction.
- */
+/** Injects the GenUI catalog once per session so the agent can render inline components; stripped from the displayed bubble. */
 export function buildPlanModeText(args: {
 	enabled: boolean
 	primed: boolean
 	userText: string
 }): string {
-	if (!args.enabled || args.primed) return args.userText
-	return `${args.userText}${PLAN_MODE_DAG_PREFIX}`
+	const blocks: string[] = []
+	if (!args.primed) blocks.push(buildGenUiCatalog())
+	if (args.enabled && !args.primed) blocks.push(PLAN_MODE_DAG_NUDGE)
+	if (blocks.length === 0) return args.userText
+	return `${args.userText}\n\n${blocks.join("\n")}`
+}
+
+const GENUI_CONTEXT_RE = /\n*\[Inline UI][\s\S]*$/
+
+/** Strips the injected GenUI context so the user's chat bubble shows only what they typed. */
+export function stripGenUiContext(text: string): string {
+	return text.replace(GENUI_CONTEXT_RE, "").trimEnd()
 }
 
 /**

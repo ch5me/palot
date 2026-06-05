@@ -28,6 +28,8 @@ import {
 	XIcon,
 } from "lucide-react"
 import { memo, useCallback, useDeferredValue, useMemo, useRef, useState } from "react"
+import { stripGenUiContext } from "../../atoms/chat"
+import { TextWithGenUi } from "../../genui/genui-renderer"
 import { useDisplayMode } from "../../hooks/use-agents"
 import type { ChatMessageEntry, ChatTurn as ChatTurnType } from "../../hooks/use-session-chat"
 import {
@@ -39,7 +41,6 @@ import {
 } from "../../lib/session-metrics"
 import type { FilePart, Part, ReasoningPart, TextPart, ToolPart } from "../../lib/types"
 import { ChatToolCall, getToolInfo, getToolSubtitle } from "./chat-tool-call"
-import { TextWithDag } from "./dag-spark-renderer"
 import { getToolCategory, TOOL_CATEGORY_COLORS, type ToolCategory } from "./tool-card"
 
 // ============================================================
@@ -116,10 +117,11 @@ function isSyntheticMessage(entry: ChatMessageEntry): boolean {
 }
 
 function getUserText(entry: ChatMessageEntry): string {
-	return entry.parts
+	const text = entry.parts
 		.filter((p): p is TextPart => p.type === "text" && !p.synthetic)
 		.map((p) => p.text)
 		.join("\n")
+	return stripGenUiContext(text)
 }
 
 function getSyntheticLabel(entry: ChatMessageEntry): string {
@@ -797,7 +799,7 @@ export const ChatTurnComponent = memo(
 											<div key={item.id} className="py-0.5">
 												<Message from="assistant">
 													<MessageContent>
-														<TextWithDag text={item.text} isStreaming={working} />
+														<TextWithGenUi text={item.text} isStreaming={working} />
 													</MessageContent>
 												</Message>
 											</div>
@@ -960,7 +962,7 @@ export const ChatTurnComponent = memo(
 										<div key={item.id} className="py-0.5">
 											<Message from="assistant">
 												<MessageContent>
-													<TextWithDag text={item.text} isStreaming={working} />
+													<TextWithGenUi text={item.text} isStreaming={working} />
 												</MessageContent>
 											</Message>
 										</div>
@@ -984,7 +986,7 @@ export const ChatTurnComponent = memo(
 			{!working && responseText && !textAlreadyInline && (
 				<Message from="assistant">
 					<MessageContent>
-						<TextWithDag text={responseText} isStreaming={false} />
+						<TextWithGenUi text={responseText} isStreaming={false} />
 					</MessageContent>
 				</Message>
 			)}
@@ -993,7 +995,7 @@ export const ChatTurnComponent = memo(
 			{working && responseText && !textAlreadyInline && (
 				<Message from="assistant">
 					<MessageContent>
-						<TextWithDag text={responseText} isStreaming={true} />
+						<TextWithGenUi text={responseText} isStreaming={true} />
 					</MessageContent>
 				</Message>
 			)}

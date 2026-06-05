@@ -46,8 +46,9 @@ import { getPartFirstSeenAt } from "../../atoms/parts"
 import { viewFileInDiffPanelAtom } from "../../atoms/ui"
 import { detectContentLanguage, detectLanguage, prettyPrintJson } from "../../lib/language"
 import type { FilePart, ToolPart, ToolStateCompleted } from "../../lib/types"
+import type { DagSparkEdge, DagSparkNode } from "@ch5me/dag-sparkline"
+import { GenUiBlock, GenUiErrorBlock } from "../../genui/genui-renderer"
 import { SubAgentCard } from "./sub-agent-card"
-import { DagErrorBlock, DagSparkBlock, type DagSparkEdge, type DagSparkNode } from "./dag-spark-renderer"
 import { getToolCategory, ToolCard } from "./tool-card"
 
 // ============================================================
@@ -775,7 +776,7 @@ function DagToolContent({ part }: { part: ToolPart }) {
 	for (const candidate of candidates) {
 		const parsed = tryParseDagInput(candidate)
 		if (parsed.ok) {
-			return <DagSparkBlock nodes={parsed.nodes} edges={parsed.edges} />
+			return <GenUiBlock name="dag-sparkline" props={{ nodes: parsed.nodes, edges: parsed.edges }} />
 		}
 	}
 
@@ -788,10 +789,9 @@ function DagToolContent({ part }: { part: ToolPart }) {
 		)
 	}
 
-	// Completed but unparseable — show the raw candidate so the user can debug
 	const firstCandidate = candidates.find((c) => typeof c === "string" && c.length > 0)
 	if (typeof firstCandidate === "string") {
-		return <DagErrorBlock error="Could not parse dag input" raw={firstCandidate} />
+		return <GenUiErrorBlock error="Could not parse dag input" raw={firstCandidate} />
 	}
 	return <GenericContent part={part} />
 }
