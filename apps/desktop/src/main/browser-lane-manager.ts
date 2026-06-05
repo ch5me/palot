@@ -146,7 +146,7 @@ function buildHealth(input: {
 function toBrowserLane(record: BrowserLaneRecord): BrowserLane {
 	return {
 		...inflateBrowserLane(record, getLaneState(record.id).health),
-		desktopStreamUrl: getBrowserLaneDesktopUrl(record.id),
+		desktopStreamUrl: getBrowserLaneDesktopUrl(record.id, record.streamBackendUrl),
 	}
 }
 

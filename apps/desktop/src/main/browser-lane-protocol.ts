@@ -1,7 +1,21 @@
+import fs from "node:fs"
+import path from "node:path"
 import type { Session } from "electron"
+import { getBrowserLaneConfigDir } from "./automation/paths"
 
 const BROWSER_LANE_ORIGIN = "http://elf-browser-lane.local"
 const LOCAL_LANE_AUTH_HEADER = `Basic ${Buffer.from("abc:abc").toString("base64")}`
+const REGISTRY_FILE = path.join(getBrowserLaneConfigDir(), "lanes.json")
+
+interface BrowserLaneProtocolRecord {
+	id: string
+	streamBackendUrl: string | null
+	mode?: "local" | "remote"
+}
+
+interface BrowserLaneProtocolRegistry {
+	lanes?: BrowserLaneProtocolRecord[]
+}
 
 function createBrowserLaneUrl(upstreamBase: string, requestUrl: string): string {
 	const upstream = new URL(upstreamBase)
@@ -27,10 +41,83 @@ async function resolveLaneRegistry(fetchImpl: typeof fetch): Promise<Map<string,
 	)
 }
 
+function normalizeHttpOrigin(rawUrl: string): string | null {
+	try {
+		const url = new URL(rawUrl)
+		if (url.protocol === "ws:") url.protocol = "http:"
+		if (url.protocol === "wss:") url.protocol = "https:"
+		return url.origin
+	} catch {
+		return null
+	}
+}
+
+function isLoopbackUrl(rawUrl: string): boolean {
+	try {
+		const url = new URL(rawUrl)
+		return url.hostname === "127.0.0.1" || url.hostname === "localhost" || url.hostname === "::1"
+	} catch {
+		return false
+	}
+}
+
+function readLocalBrowserLaneStreamOrigins(): Set<string> {
+	try {
+		const data = JSON.parse(fs.readFileSync(REGISTRY_FILE, "utf-8")) as BrowserLaneProtocolRegistry
+		return new Set(
+			(data.lanes ?? [])
+				.filter((lane) => lane.mode !== "remote")
+				.map((lane) => lane.streamBackendUrl)
+				.filter((url): url is string => Boolean(url))
+				.filter((url) => isLoopbackUrl(url))
+				.map((url) => normalizeHttpOrigin(url))
+				.filter((origin): origin is string => Boolean(origin)),
+		)
+	} catch {
+		return new Set()
+	}
+}
+
+function isKnownLocalBrowserLaneRequest(rawUrl: string): boolean {
+	const origin = normalizeHttpOrigin(rawUrl)
+	if (!origin) return false
+	return readLocalBrowserLaneStreamOrigins().has(origin)
+}
+
+function withLocalLaneAuthorizationHeader(
+	requestHeaders: Record<string, string>,
+): Record<string, string> {
+	const hasAuthorization = Object.keys(requestHeaders).some(
+		(header) => header.toLowerCase() === "authorization",
+	)
+	if (hasAuthorization) return requestHeaders
+	return { ...requestHeaders, Authorization: LOCAL_LANE_AUTH_HEADER }
+}
+
 export async function registerBrowserLaneProtocol(
 	session: Session,
 	fetchImpl: typeof fetch = fetch,
 ): Promise<void> {
+	session.webRequest.onBeforeSendHeaders(
+		{
+			urls: [
+				"http://127.0.0.1:*/*",
+				"http://localhost:*/*",
+				"ws://127.0.0.1:*/*",
+				"ws://localhost:*/*",
+			],
+		},
+		(details, callback) => {
+			if (!isKnownLocalBrowserLaneRequest(details.url)) {
+				callback({ requestHeaders: details.requestHeaders })
+				return
+			}
+			callback({
+				requestHeaders: withLocalLaneAuthorizationHeader(details.requestHeaders),
+			})
+		},
+	)
+
 	if (session.protocol.isProtocolHandled("http")) {
 		return
 	}
@@ -65,6 +152,9 @@ export async function registerBrowserLaneProtocol(
 	})
 }
 
-export function getBrowserLaneDesktopUrl(laneId: string): string {
+export function getBrowserLaneDesktopUrl(laneId: string, streamBackendUrl?: string | null): string {
+	if (streamBackendUrl && isLoopbackUrl(streamBackendUrl)) {
+		return new URL("/", streamBackendUrl).toString()
+	}
 	return `${BROWSER_LANE_ORIGIN}/browser/${laneId}/`
 }
