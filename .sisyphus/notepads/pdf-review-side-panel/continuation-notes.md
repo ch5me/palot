@@ -8,7 +8,7 @@
 - T5 locator contract: one shared versioned locator with `documentId`, selector bag, and explicit degraded states.
 
 ## Active next task <!-- oc:id=sec_ac -->
-- Final verification wave in order: F3 QA execution, F4 scope fidelity.
+- No remaining design/planning task. Runtime QA still blocked on devmux port conflicts (`30206`, `20883`).
 
 ## Resolver direction <!-- oc:id=sec_ad -->
 - Order: structure -> page+position -> quote+context fuzzy -> page fallback.
@@ -114,6 +114,16 @@
 - `FireflySurfacePreferences.lastSidePanelTab` needed widening for `artifacts` and `pdf-review` to match `SidePanelTabId`.
 - `GenUiArtifactCard` pin toggle needed explicit non-`inline` fallback to satisfy placement contract.
 - `ipc-handlers.ts` carried stale unused oracle/pty types; safe cleanup unblocked typecheck.
+
+## F3 blocker notes <!-- oc:id=sec_au -->
+- `bun run svc:status` shows `server` and `web` blocked by unrelated Chrome helper owning ports `30206` and `20883`.
+- Repo policy forbids unmanaged foreground service starts; without devmux health, runtime QA is blocked.
+- Safe continuation path: free conflicting ports, restore devmux services, then run browser/Electron QA.
+
+## F4 notes <!-- oc:id=sec_av -->
+- Scope stayed inside desktop shell notes, shared grounding contracts, degraded/perf/native-boundary docs, and tiny follow-up type fixes.
+- No AGPL contamination or second subsystem drift found.
+- Final remaining gap is execution proof, not scope drift.
 
 ## Future implementation notes <!-- oc:id=sec_ae -->
 - Durable document/project store should likely mirror automation DB style (libsql + drizzle), not localStorage atoms.

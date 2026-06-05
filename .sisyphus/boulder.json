@@ -5,7 +5,8 @@
     "ses_166bf63b8ffeRc706MKXXgbYWh",
     "ses_166a45b50ffeUPZ6b0rH1BiA6X",
     "ses_166a387e3ffeVwacQU8K02nwso",
-    "ses_1669571f4ffe1MSr4cS3OYVGzn"
+    "ses_1669571f4ffe1MSr4cS3OYVGzn",
+    "ses_1662ae7e3ffem69kKHZGOe7aNw"
   ],
   "plan_name": "pdf-review-side-panel",
   "agent": "atlas",
@@ -136,6 +137,14 @@
       "task_title": "**Code Quality Review** — `unspecified-high`",
       "session_id": "ses_166bf63b8ffeRc706MKXXgbYWh",
       "updated_at": "2026-06-05T21:45:49.421Z",
+      "no_progress_resume_count": 0
+    },
+    "final-wave:f3": {
+      "task_key": "final-wave:f3",
+      "task_label": "F3",
+      "task_title": "**Real QA Scenario Execution** — `visual-engineering`",
+      "session_id": "ses_166bf63b8ffeRc706MKXXgbYWh",
+      "updated_at": "2026-06-05T22:18:51.991Z",
       "no_progress_resume_count": 0
     }
   }

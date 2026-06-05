@@ -1393,7 +1393,7 @@ Max Concurrent: 5
   Read implemented work against this plan. Verify every must-have exists, every must-not-have remains absent, and evidence files exist for every task QA scenario.
   Output: `Must Have [N/N] | Must NOT Have [N/N] | Tasks [N/N] | VERDICT`
 
-- [ ] F2. **Code Quality Review** — `unspecified-high`
+- [x] F2. **Code Quality Review** — `unspecified-high`
   Run repo quality gates applicable to touched areas, inspect changed files for duplicated shell plumbing, ad hoc locator shapes, hidden false-precision states, and performance regressions.
   Output: `Build [PASS/FAIL] | Lint [PASS/FAIL] | Tests [PASS/FAIL] | VERDICT`
 
@@ -1401,7 +1401,7 @@ Max Concurrent: 5
   Execute all task-level QA scenarios end-to-end using browser automation and supporting commands. Save final evidence under `.sisyphus/evidence/final-qa/`.
   Output: `Scenarios [N/N] | Integration [N/N] | Edge cases [N tested] | VERDICT`
 
-- [ ] F4. **Scope Fidelity Check** — `deep`
+- [x] F4. **Scope Fidelity Check** — `deep`
   Compare final diff to planned scope. Verify desktop-plus-contracts scope held, native implementation did not sprawl, AGPL clean-room guardrails held, and no duplicate artifact/notes/panel systems were introduced.
   Output: `Tasks [N/N compliant] | Contamination [CLEAN/N issues] | Unaccounted [CLEAN/N files] | VERDICT`
 
