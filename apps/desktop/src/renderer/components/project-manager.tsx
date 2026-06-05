@@ -440,7 +440,7 @@ export function ProjectManager() {
 			<div className="flex flex-1 flex-col px-0 pb-6 pt-8 sm:px-6">
 				<div className="mx-auto flex w-full max-w-5xl flex-1 flex-col gap-8">
 					<div className="flex justify-center">
-						<ElfWordmark className="h-4 w-auto text-foreground" />
+						<ElfWordmark className="h-8 w-auto text-2xl text-foreground" />
 					</div>
 
 					<div className="text-center">
