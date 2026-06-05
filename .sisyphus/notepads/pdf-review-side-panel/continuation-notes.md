@@ -110,6 +110,11 @@
 - Shared schema must reject viewport pixels, DOM ids, IPC handles, tab ids, command ids, and transient UI state.
 - If platform-specific data ever leaks upward, keep it optional, versioned, and explicitly scoped.
 
+## F2 notes <!-- oc:id=sec_at -->
+- `FireflySurfacePreferences.lastSidePanelTab` needed widening for `artifacts` and `pdf-review` to match `SidePanelTabId`.
+- `GenUiArtifactCard` pin toggle needed explicit non-`inline` fallback to satisfy placement contract.
+- `ipc-handlers.ts` carried stale unused oracle/pty types; safe cleanup unblocked typecheck.
+
 ## Future implementation notes <!-- oc:id=sec_ae -->
 - Durable document/project store should likely mirror automation DB style (libsql + drizzle), not localStorage atoms.
 - Browser mode needs explicit degraded/unavailable behavior until PDF bytes/URL serving seam exists.
