@@ -1,6 +1,7 @@
 import type { Session } from "electron"
 
 const BROWSER_LANE_ORIGIN = "http://elf-browser-lane.local"
+const LOCAL_LANE_AUTH_HEADER = `Basic ${Buffer.from("abc:abc").toString("base64")}`
 
 function createBrowserLaneUrl(upstreamBase: string, requestUrl: string): string {
 	const upstream = new URL(upstreamBase)
@@ -52,7 +53,15 @@ export async function registerBrowserLaneProtocol(
 			return new Response("browser lane not found", { status: 404 })
 		}
 		const upstreamUrl = createBrowserLaneUrl(upstream, `${BROWSER_LANE_ORIGIN}${remainder}${url.search}`)
-		return await fetchImpl(upstreamUrl)
+		const upstreamHeaders = new Headers(request.headers)
+		upstreamHeaders.delete("host")
+		upstreamHeaders.set("authorization", LOCAL_LANE_AUTH_HEADER)
+		return await fetchImpl(upstreamUrl, {
+			method: request.method,
+			headers: upstreamHeaders,
+			body: request.method === "GET" || request.method === "HEAD" ? undefined : request.body,
+			redirect: "manual",
+		})
 	})
 }
 

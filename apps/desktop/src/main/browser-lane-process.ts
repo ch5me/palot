@@ -3,6 +3,8 @@ import type { BrowserLaneHealth } from "../shared/browser-lanes"
 
 const PROBE_TIMEOUT_MS = 2500
 const COMPOSE_TIMEOUT_MS = 90_000
+const START_PROBE_ATTEMPTS = 40
+const START_PROBE_INTERVAL_MS = 1000
 
 export type ComposeAction = "up" | "down"
 
@@ -77,9 +79,16 @@ export interface ProbeInput {
 	auth: { user: string; password: string }
 }
 
+export interface ProbeResult {
+	streamReady: boolean
+	cdpReady: boolean
+	streamError: string | null
+	cdpError: string | null
+}
+
 export async function probeBrowserLaneEndpoints(
 	input: ProbeInput,
-): Promise<{ streamReady: boolean; cdpReady: boolean; streamError: string | null; cdpError: string | null }> {
+): Promise<ProbeResult> {
 	const streamPromise: Promise<{ ok: boolean; status: number; error: string | null }> = input.streamUrl
 		? probeUrl(input.streamUrl, "HEAD", input.auth)
 		: Promise.resolve({ ok: false, status: 0, error: "Stream URL missing" })
@@ -94,6 +103,24 @@ export async function probeBrowserLaneEndpoints(
 		streamError: stream.error,
 		cdpError: cdp.error,
 	}
+}
+
+function delay(ms: number): Promise<void> {
+	return new Promise((resolve) => setTimeout(resolve, ms))
+}
+
+export async function waitForBrowserLaneEndpoints(
+	input: ProbeInput,
+	options: { attempts?: number; intervalMs?: number } = {},
+): Promise<ProbeResult> {
+	const attempts = options.attempts ?? START_PROBE_ATTEMPTS
+	const intervalMs = options.intervalMs ?? START_PROBE_INTERVAL_MS
+	let probe = await probeBrowserLaneEndpoints(input)
+	for (let attempt = 1; attempt < attempts && !(probe.streamReady && probe.cdpReady); attempt += 1) {
+		await delay(intervalMs)
+		probe = await probeBrowserLaneEndpoints(input)
+	}
+	return probe
 }
 
 export interface HealthFromProbeInput {
@@ -115,8 +142,8 @@ export function buildHealthFromProbe(input: HealthFromProbeInput): BrowserLaneHe
 	let message: string
 	if (mode === "local") {
 		if (streamReady && cdpReady) {
-			status = "degraded"
-			message = "Stream route ready, CDP probe pending"
+			status = "running"
+			message = "Stream and CDP ready"
 		} else if (streamReady) {
 			status = "degraded"
 			message = "Stream route ready, CDP probe pending"

@@ -202,9 +202,11 @@ export function BrowserPanel({ agent, className }: BrowserPanelProps) {
 		setIsLoading(true)
 		let cancelled = false
 		void startBrowserLane(activeLane.id)
-			.then((lane) => {
+			.then(async () => {
 				if (cancelled) return
-				setLaneHealth(lane.health)
+				const health = await fetchBrowserLaneHealth(activeLane.id)
+				if (cancelled) return
+				setLaneHealth(health)
 			})
 			.catch((error) => {
 				if (cancelled) return

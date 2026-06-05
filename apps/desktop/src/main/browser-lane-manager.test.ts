@@ -13,6 +13,20 @@ function setupTempXdg() {
 	}
 }
 
+async function withTimeout<T>(promise: Promise<T>, timeoutMs: number): Promise<T> {
+	let timeout: ReturnType<typeof setTimeout> | null = null
+	try {
+		return await Promise.race([
+			promise,
+			new Promise<never>((_, reject) => {
+				timeout = setTimeout(() => reject(new Error(`timed out after ${timeoutMs}ms`)), timeoutMs)
+			}),
+		])
+	} finally {
+		if (timeout) clearTimeout(timeout)
+	}
+}
+
 test("browser lane manager seeds default lane", async () => {
 	const cleanup = setupTempXdg()
 	try {
@@ -67,6 +81,30 @@ test("browser lane manager reports remote lane health without local docker", asy
 		assert.equal(health.cdp.state, "ready")
 		assert.equal(health.message, "Remote lane attached and reachable")
 	} finally {
+		cleanup()
+	}
+})
+
+test("browser lane manager start does not wait on its own ensure lock", async () => {
+	const cleanup = setupTempXdg()
+	const originalPath = process.env.PATH
+	process.env.PATH = path.join(process.env.XDG_DATA_HOME!, "missing-bin")
+	try {
+		const manager = await import("./browser-lane-manager")
+		await manager.shutdownBrowserLaneManager()
+		await manager.initBrowserLaneManager()
+		await manager.createBrowserLane({
+			id: "local-no-docker",
+			label: "Local No Docker",
+			mode: "local",
+			runtime: "docker-chromium",
+		})
+		await assert.rejects(
+			() => withTimeout(manager.startBrowserLane("local-no-docker"), 1000),
+			/Docker not installed/,
+		)
+	} finally {
+		process.env.PATH = originalPath
 		cleanup()
 	}
 })

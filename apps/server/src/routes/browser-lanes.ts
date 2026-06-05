@@ -35,6 +35,7 @@ interface BrowserLaneRegistryFile {
 }
 
 const app = new Hono()
+const LOCAL_LANE_AUTH_HEADER = `Basic ${Buffer.from("abc:abc").toString("base64")}`
 
 function normalizeRemoteLaneInput(input: {
 	id?: string
@@ -119,6 +120,7 @@ async function proxyLaneRequest(
 
 	const upstreamHeaders = new Headers(request.headers)
 	upstreamHeaders.delete("host")
+	upstreamHeaders.set("authorization", LOCAL_LANE_AUTH_HEADER)
 	const upstreamResponse = await fetch(upstreamUrl, {
 		method: request.method,
 		headers: upstreamHeaders,
@@ -296,7 +298,7 @@ const routes = app
 			: remoteDegraded
 				? "degraded"
 				: localBothOk
-					? "degraded"
+					? "running"
 					: lane.profilePath
 						? "profile-locked"
 						: "stopped"
@@ -307,7 +309,7 @@ const routes = app
 				: localBothOk
 					? lane.mode === "remote"
 						? "Remote lane attached and reachable"
-						: "Stream route ready, CDP probe pending"
+						: "Stream and CDP ready"
 					: lane.profilePath
 						? "Profile exists but runtime has not started yet"
 						: "Lane stopped"
