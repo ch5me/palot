@@ -1,19 +1,31 @@
 /**
  * Bridges the OpenCode session lifecycle into the cmux tab/surface title.
  *
- * cmux-split-opencode.sh sets a placeholder tab title at dispatch time.
- * Once OpenCode creates a real session, Session.title from the server is
- * the authoritative value, so this plugin renames the surface to match
- * on session.created and session.updated.
+ * Mirrors the existing cmux-session.js hook pattern: on session.created /
+ * session.updated, sends a session-start hook to cmux with the title in the
+ * payload. As an immediate fallback that works without a cmux-side change,
+ * the plugin also reads ~/.cmuxterm/opencode-hook-sessions.json (populated
+ * by cmux when the hook is recorded) to resolve session_id -> surface_id and
+ * then calls `cmux rename-tab` directly.
  *
- * Auto-loaded by OpenCode from `~/.config/opencode/plugins/`.
+ * Auto-loaded by OpenCode from ~/.config/opencode/plugins/.
  */
 
 import { spawnSync } from "node:child_process";
+import * as fs from "node:fs";
+import * as os from "node:os";
+import * as path from "node:path";
 
 const INSTALLED_KEY = Symbol.for("cmux.title.sync.installed");
+const HOOK_TIMEOUT_MS = 5000;
+const LOOKUP_TIMEOUT_MS = 1500;
+const LOOKUP_POLL_MS = 50;
+const HOOK_SESSIONS_FILE = path.join(
+	os.homedir(),
+	".cmuxterm",
+	"opencode-hook-sessions.json",
+);
 const MAX_TITLE_CHARS = 80;
-const CMUX_RENAME_TIMEOUT_MS = 3000;
 
 function firstString(...values) {
 	for (const value of values) {
@@ -30,11 +42,61 @@ function sanitizeTitle(raw) {
 	return `${collapsed.slice(0, MAX_TITLE_CHARS - 1)}\u2026`;
 }
 
-function resolveSurface() {
-	const workspaceId = firstString(process.env.CMUX_WORKSPACE_ID);
-	const surfaceId = firstString(process.env.CMUX_SURFACE_ID);
-	if (!workspaceId || !surfaceId) return null;
-	return { workspaceId, surfaceId };
+function hookEnv(cwd) {
+	const env = { ...process.env };
+	delete env.AMP_API_KEY;
+	if (!env.CMUX_AGENT_LAUNCH_CWD) {
+		env.CMUX_AGENT_LAUNCH_CWD = cwd || process.cwd();
+	}
+	return env;
+}
+
+function sendTitleHook({ sessionId, title, cwd }) {
+	if (process.env.CMUX_OPENCODE_HOOKS_DISABLED === "1") return;
+	const bin = firstString(process.env.CMUX_OPENCODE_CMUX_BIN) || "cmux";
+	try {
+		spawnSync(
+			bin,
+			["hooks", "opencode", "session-start"],
+			{
+				input: JSON.stringify({
+					session_id: sessionId,
+					title,
+					cwd,
+					event: "session.title",
+					hook_event_name: "SessionTitle",
+				}),
+				encoding: "utf8",
+				env: hookEnv(cwd),
+				stdio: ["pipe", "ignore", "ignore"],
+				timeout: HOOK_TIMEOUT_MS,
+			},
+		);
+	} catch (_) {}
+}
+
+function sleepSync(ms) {
+	const end = Date.now() + ms;
+	while (Date.now() < end) {}
+}
+
+function lookupSurfaceForSession(sessionId) {
+	const deadline = Date.now() + LOOKUP_TIMEOUT_MS;
+	while (Date.now() < deadline) {
+		try {
+			const raw = fs.readFileSync(HOOK_SESSIONS_FILE, "utf8");
+			const data = JSON.parse(raw);
+			const sessions = data && typeof data === "object" ? data.sessions : null;
+			if (sessions && typeof sessions === "object") {
+				const entry = sessions[sessionId];
+				if (entry && typeof entry === "object" && entry.surfaceId) {
+					return entry.surfaceId;
+				}
+			}
+		} catch (_) {}
+		sleepSync(LOOKUP_POLL_MS);
+	}
+	return null;
 }
 
 function renameTab(surface, title) {
@@ -43,16 +105,8 @@ function renameTab(surface, title) {
 	try {
 		const result = spawnSync(
 			bin,
-			[
-				"rename-tab",
-				"--workspace",
-				surface.workspaceId,
-				"--surface",
-				surface.surfaceId,
-				"--",
-				title,
-			],
-			{ encoding: "utf8", stdio: ["ignore", "ignore", "pipe"], timeout: CMUX_RENAME_TIMEOUT_MS },
+			["rename-tab", "--surface", surface, "--", title],
+			{ encoding: "utf8", stdio: ["ignore", "ignore", "pipe"], timeout: HOOK_TIMEOUT_MS },
 		);
 		return result.status === 0;
 	} catch (_) {
@@ -63,8 +117,6 @@ function renameTab(surface, title) {
 const CMUXTitleSync = async () => {
 	if (globalThis[INSTALLED_KEY]) return {};
 	globalThis[INSTALLED_KEY] = true;
-
-	if (!resolveSurface()) return {};
 
 	let activeSessionId = null;
 	let lastAppliedTitle = null;
@@ -87,10 +139,12 @@ const CMUXTitleSync = async () => {
 			const title = sanitizeTitle(info.title);
 			if (!title || title === lastAppliedTitle) return;
 
-			const surface = resolveSurface();
-			if (!surface) return;
+			const cwd = firstString(info.directory, props.cwd, process.cwd());
 
-			if (renameTab(surface, title)) {
+			sendTitleHook({ sessionId, title, cwd });
+
+			const surface = lookupSurfaceForSession(sessionId);
+			if (surface && renameTab(surface, title)) {
 				lastAppliedTitle = title;
 			}
 		},
