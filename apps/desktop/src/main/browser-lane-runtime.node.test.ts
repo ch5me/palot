@@ -15,8 +15,13 @@ test("browser lane compose keeps persistent profile volume and split ports", () 
 		streamBackendUrl: "http://127.0.0.1:3901",
 		cdpEndpoint: "http://127.0.0.1:9229",
 		auth: { user: "abc", password: "abc" },
+		startUrl: "https://example.com",
 	})
 	assert.match(compose, /\/tmp\/browser-profile-default:\/config/)
 	assert.match(compose, /"3901:3000"/)
 	assert.match(compose, /"9229:9222"/)
+	assert.match(compose, /NO_DECOR=1/)
+	assert.match(compose, /--app=https:\/\/example\.com/)
+	assert.doesNotMatch(compose, /SELKIES_MANUAL_WIDTH/)
+	assert.doesNotMatch(compose, /--window-size/)
 })

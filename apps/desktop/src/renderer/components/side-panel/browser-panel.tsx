@@ -23,6 +23,7 @@ import {
 } from "../../atoms/browser"
 import {
 	createRemoteBrowserLane,
+	ELF_SERVER_BASE_URL,
 	fetchBrowserLaneHealth,
 	fetchBrowserLanes,
 	isElectron,
@@ -85,7 +86,10 @@ export function BrowserPanel({ agent, className }: BrowserPanelProps) {
 
 	const streamUrl = useMemo(() => {
 		if (!activeLane) return FALLBACK_URL
-		return buildBrowserLaneDisplayUrl(activeLane)
+		return buildBrowserLaneDisplayUrl(activeLane, {
+			isElectron,
+			backendBaseUrl: ELF_SERVER_BASE_URL,
+		})
 	}, [activeLane])
 
 	const healthSummary = useMemo(

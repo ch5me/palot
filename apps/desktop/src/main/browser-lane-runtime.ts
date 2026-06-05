@@ -10,6 +10,7 @@ const log = createLogger("browser-lane-runtime")
 const IMAGE = "lscr.io/linuxserver/chromium:latest"
 const DEFAULT_HOST = "127.0.0.1"
 const DEFAULT_AUTH = { user: "abc", password: "abc" }
+const DEFAULT_START_URL = "https://example.com"
 
 const CHROMIUM_FLAGS_FILE = path.join(".config", "chromium-flags.conf")
 const CHROMIUM_FLAGS_CONTENT = [
@@ -98,6 +99,7 @@ export interface BrowserLaneRuntimeConfig {
 	streamBackendUrl: string
 	cdpEndpoint: string
 	auth: { user: string; password: string }
+	startUrl: string
 }
 
 export async function createBrowserLaneRuntimeConfig(
@@ -123,6 +125,7 @@ export async function createBrowserLaneRuntimeConfig(
 		streamBackendUrl: `http://${DEFAULT_HOST}:${streamPort}`,
 		cdpEndpoint: `http://${DEFAULT_HOST}:${cdpPort}`,
 		auth: DEFAULT_AUTH,
+		startUrl: process.env.ELF_BROWSER_LANE_START_URL?.trim() || DEFAULT_START_URL,
 	}
 }
 
@@ -147,6 +150,7 @@ export function ensureBrowserLaneRuntimeFiles(config: BrowserLaneRuntimeConfig):
 			`PROFILE_PATH=${config.profilePath}`,
 			`STREAM_AUTH_USER=${config.auth.user}`,
 			`STREAM_AUTH_PASSWORD=${config.auth.password}`,
+			`START_URL=${config.startUrl}`,
 		].join("\n") + "\n",
 		"utf-8",
 	)
@@ -173,7 +177,10 @@ export function renderBrowserLaneCompose(config: BrowserLaneRuntimeConfig): stri
 		"      - PUID=1000",
 		"      - PGID=1000",
 		"      - TZ=UTC",
-		"      - CHROME_CLI=",
+		"      - TITLE=Elf Browser Lane",
+		"      - NO_DECOR=1",
+		"      - SELKIES_SCALING_DPI=96",
+		`      - CHROME_CLI=${chromeCliForConfig(config)}`,
 		"    ports:",
 		`      - \"${config.streamPort}:3000\"`,
 		`      - \"${config.cdpPort}:9222\"`,
@@ -182,4 +189,15 @@ export function renderBrowserLaneCompose(config: BrowserLaneRuntimeConfig): stri
 		`      - ${path.join(config.runtimeDir, "custom-cont-init.d")}:/custom-cont-init.d`,
 		"",
 	].join("\n")
+}
+
+function chromeCliForConfig(config: BrowserLaneRuntimeConfig): string {
+	return [
+		"--remote-debugging-port=9222",
+		"--remote-allow-origins=*",
+		"--no-first-run",
+		"--disable-session-crashed-bubble",
+		"--start-maximized",
+		`--app=${config.startUrl}`,
+	].join(" ")
 }

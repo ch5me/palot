@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test"
-import { buildNavigableUrl, pushBrowserHistory } from "./browser"
+import { buildBrowserLaneDisplayUrl, buildNavigableUrl, pushBrowserHistory } from "./browser"
 
 describe("buildNavigableUrl", () => {
 	test("passes through http(s) URLs unchanged", () => {
@@ -50,5 +50,27 @@ describe("pushBrowserHistory", () => {
 		const next = pushBrowserHistory(seeded, "https://newest.com")
 		expect(next).toHaveLength(8)
 		expect(next[0]).toBe("https://newest.com")
+	})
+})
+
+describe("buildBrowserLaneDisplayUrl", () => {
+	const lane = {
+		streamPath: "/browser/default/",
+		desktopStreamUrl: "http://elf-browser-lane.local/browser/default/",
+	}
+
+	test("uses desktop protocol URL inside Electron", () => {
+		expect(buildBrowserLaneDisplayUrl(lane, { isElectron: true })).toBe(
+			"http://elf-browser-lane.local/browser/default/",
+		)
+	})
+
+	test("uses HTTP backend URL in browser mode", () => {
+		expect(
+			buildBrowserLaneDisplayUrl(lane, {
+				isElectron: false,
+				backendBaseUrl: "http://127.0.0.1:30206",
+			}),
+		).toBe("http://127.0.0.1:30206/browser/default/")
 	})
 })

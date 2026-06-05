@@ -8,7 +8,8 @@
 
 import { createClient } from "@ch5me/elf-server/client"
 
-const BASE_URL = "http://127.0.0.1:30206"
+export const ELF_SERVER_BASE_URL = "http://127.0.0.1:30206"
+const BASE_URL = ELF_SERVER_BASE_URL
 const ACTIVE_SESSION_EVENTS_PATH = "/api/servers/opencode/active-sessions/events"
 
 export interface ActiveOpenCodeSessionPresence {

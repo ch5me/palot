@@ -35,7 +35,8 @@ interface BrowserLaneRegistryFile {
 }
 
 const app = new Hono()
-const LOCAL_LANE_AUTH_HEADER = `Basic ${Buffer.from("abc:abc").toString("base64")}`
+export const LOCAL_LANE_AUTH_HEADER = `Basic ${Buffer.from("abc:abc").toString("base64")}`
+const BROWSER_LANE_PAGE_SHIM = `<script data-elf-browser-lane-shim>(()=>{const warn=console.warn.bind(console);console.warn=(...args)=>{if(args[0]==="Received non-object message via window.postMessage:"&&typeof args[1]==="string"&&args[1].startsWith("setImmediate$"))return;warn(...args)}})();</script>`
 
 function normalizeRemoteLaneInput(input: {
 	id?: string
@@ -99,13 +100,54 @@ async function readBrowserLaneRoutes(): Promise<BrowserLaneRouteEntry[]> {
 	}
 }
 
-function normalizeUpstreamUrl(lane: BrowserLaneRouteEntry, remainder: string): string | null {
+function normalizeUpstreamUrl(
+	lane: BrowserLaneRouteEntry,
+	remainder: string,
+	search = "",
+): string | null {
 	if (!lane.streamBackendUrl) return null
 	const base = new URL(lane.streamBackendUrl)
 	const cleaned = remainder.startsWith("/") ? remainder : `/${remainder}`
 	base.pathname = cleaned === "/" ? "/" : cleaned
-	base.search = ""
+	base.search = search
 	return base.toString()
+}
+
+export async function resolveBrowserLaneProxyTarget(
+	requestUrl: string,
+	protocol: "http:" | "ws:",
+): Promise<string | null> {
+	const url = new URL(requestUrl)
+	const match = url.pathname.match(/^\/browser\/([^/]+)(\/.*)?$/)
+	if (!match) return null
+	const lane = (await readBrowserLaneRoutes()).find((entry) => entry.id === match[1])
+	if (!lane) return null
+	const upstreamUrl = normalizeUpstreamUrl(lane, match[2] || "/", url.search)
+	if (!upstreamUrl) return null
+	const upstream = new URL(upstreamUrl)
+	upstream.protocol = protocol
+	return upstream.toString()
+}
+
+export function injectBrowserLanePageShim(html: string): string {
+	if (html.includes("data-elf-browser-lane-shim")) return html
+	if (html.includes('<script type="module"')) {
+		return html.replace('<script type="module"', `${BROWSER_LANE_PAGE_SHIM}<script type="module"`)
+	}
+	if (html.includes("</head>")) {
+		return html.replace("</head>", `${BROWSER_LANE_PAGE_SHIM}</head>`)
+	}
+	return `${BROWSER_LANE_PAGE_SHIM}${html}`
+}
+
+async function rewriteBrowserLaneResponseBody(
+	request: Request,
+	response: Response,
+): Promise<BodyInit | null> {
+	if (request.method !== "GET") return response.body
+	const contentType = response.headers.get("content-type") ?? ""
+	if (!contentType.toLowerCase().includes("text/html")) return response.body
+	return injectBrowserLanePageShim(await response.text())
 }
 
 async function proxyLaneRequest(
@@ -113,7 +155,8 @@ async function proxyLaneRequest(
 	lane: BrowserLaneRouteEntry,
 	remainder: string,
 ): Promise<Response> {
-	const upstreamUrl = normalizeUpstreamUrl(lane, remainder)
+	const requestUrl = new URL(request.url)
+	const upstreamUrl = normalizeUpstreamUrl(lane, remainder, requestUrl.search)
 	if (!upstreamUrl) {
 		return Response.json({ error: `Lane ${lane.id} has no stream backend URL` }, { status: 503 })
 	}
@@ -128,8 +171,12 @@ async function proxyLaneRequest(
 		redirect: "manual",
 	})
 	const responseHeaders = new Headers(upstreamResponse.headers)
+	responseHeaders.delete("content-encoding")
+	responseHeaders.delete("content-length")
+	responseHeaders.delete("transfer-encoding")
 	responseHeaders.set("cache-control", "no-store")
-	return new Response(upstreamResponse.body, {
+	const responseBody = await rewriteBrowserLaneResponseBody(request, upstreamResponse)
+	return new Response(responseBody, {
 		status: upstreamResponse.status,
 		statusText: upstreamResponse.statusText,
 		headers: responseHeaders,

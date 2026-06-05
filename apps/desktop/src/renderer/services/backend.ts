@@ -55,9 +55,12 @@ import type {
 	UpdateAutomationInput,
 } from "../../preload/api"
 import {
+	ELF_SERVER_BASE_URL,
 	subscribeToActiveOpenCodeSessionEvents as httpSubscribeActiveOpenCodeSessionEvents,
 	type ActiveOpenCodeSessionStreamHandlers,
 } from "./elf-server"
+
+export { ELF_SERVER_BASE_URL }
 
 export interface FileSystemEntry {
 	name: string

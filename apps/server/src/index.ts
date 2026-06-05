@@ -1,6 +1,9 @@
 import { Hono } from "hono"
 import { cors } from "hono/cors"
-import browserLanes from "./routes/browser-lanes"
+import browserLanes, {
+	LOCAL_LANE_AUTH_HEADER,
+	resolveBrowserLaneProxyTarget,
+} from "./routes/browser-lanes"
 import files from "./routes/files"
 import health from "./routes/health"
 import modelState from "./routes/model-state"
@@ -31,6 +34,19 @@ const routes = app
 
 export type AppType = typeof routes
 
+type BrowserProxyMessage = string | ArrayBuffer | Uint8Array
+
+interface BrowserProxyWebSocketData {
+	closed: boolean
+	queue: BrowserProxyMessage[]
+	upstream: WebSocket
+	upstreamReady: boolean
+}
+
+const BrowserWebSocket = WebSocket as unknown as {
+	new (url: string, options: Bun.WebSocketOptions): WebSocket
+}
+
 // ============================================================
 // Start
 // ============================================================
@@ -50,5 +66,78 @@ ensureSingleServer()
 
 export default {
 	port,
-	fetch: app.fetch,
+	async fetch(request: Request, server: Bun.Server<BrowserProxyWebSocketData>) {
+		if (request.headers.get("upgrade")?.toLowerCase() === "websocket") {
+			const upstreamUrl = await resolveBrowserLaneProxyTarget(request.url, "ws:")
+			if (upstreamUrl) {
+				const upstream = new BrowserWebSocket(upstreamUrl, {
+					headers: { authorization: LOCAL_LANE_AUTH_HEADER },
+				})
+				upstream.binaryType = "arraybuffer"
+				const data: BrowserProxyWebSocketData = {
+					closed: false,
+					queue: [],
+					upstream,
+					upstreamReady: false,
+				}
+				const upgraded = server.upgrade(request, { data })
+				if (!upgraded) {
+					upstream.close()
+					return new Response("WebSocket upgrade failed", { status: 400 })
+				}
+				return
+			}
+		}
+		return app.fetch(request)
+	},
+	websocket: {
+		open(ws: Bun.ServerWebSocket<BrowserProxyWebSocketData>) {
+			const { upstream } = ws.data
+			upstream.addEventListener("open", () => {
+				ws.data.upstreamReady = true
+				for (const message of ws.data.queue.splice(0)) {
+					upstream.send(message)
+				}
+			})
+			upstream.addEventListener("message", (event) => {
+				const data = event.data
+				if (typeof data === "string") {
+					ws.send(data)
+					return
+				}
+				if (data instanceof ArrayBuffer) {
+					ws.send(data)
+					return
+				}
+				if (data instanceof Blob) {
+					void data.arrayBuffer().then((buffer) => {
+						if (!ws.data.closed) ws.send(buffer)
+					})
+				}
+			})
+			upstream.addEventListener("close", (event) => {
+				if (!ws.data.closed) ws.close(event.code, event.reason)
+			})
+			upstream.addEventListener("error", () => {
+				if (!ws.data.closed) ws.close(1011, "Browser lane upstream websocket failed")
+			})
+		},
+		message(ws: Bun.ServerWebSocket<BrowserProxyWebSocketData>, message: string | Buffer) {
+			const { upstream } = ws.data
+			if (ws.data.upstreamReady && upstream.readyState === WebSocket.OPEN) {
+				upstream.send(message)
+				return
+			}
+			ws.data.queue.push(message)
+		},
+		close(ws: Bun.ServerWebSocket<BrowserProxyWebSocketData>) {
+			ws.data.closed = true
+			if (
+				ws.data.upstream.readyState === WebSocket.OPEN ||
+				ws.data.upstream.readyState === WebSocket.CONNECTING
+			) {
+				ws.data.upstream.close()
+			}
+		},
+	},
 }

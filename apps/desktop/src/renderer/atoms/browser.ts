@@ -35,6 +35,23 @@ export function buildNavigableUrl(input: string): string | null {
 	return `https://${trimmed}`
 }
 
-export function buildBrowserLaneDisplayUrl(input: { desktopStreamUrl?: string | null; streamPath: string }): string {
-	return input.desktopStreamUrl || input.streamPath
+interface BrowserLaneDisplayUrlInput {
+	desktopStreamUrl?: string | null
+	streamPath: string
+}
+
+interface BrowserLaneDisplayUrlOptions {
+	isElectron: boolean
+	backendBaseUrl?: string
+}
+
+export function buildBrowserLaneDisplayUrl(
+	input: BrowserLaneDisplayUrlInput,
+	options: BrowserLaneDisplayUrlOptions = { isElectron: true },
+): string {
+	if (options.isElectron && input.desktopStreamUrl) return input.desktopStreamUrl
+	if (!options.isElectron && options.backendBaseUrl) {
+		return new URL(input.streamPath, options.backendBaseUrl).toString()
+	}
+	return input.streamPath
 }
