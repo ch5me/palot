@@ -13,6 +13,7 @@ export function ElfHero({ className }: ElfHeroProps) {
 			curlStrength={1.3}
 			noiseScale={0.8}
 			speed={2.2}
+			spread={0.55}
 			pointSize={9}
 			opacity={0.7}
 			colorCore="#fb923c"
