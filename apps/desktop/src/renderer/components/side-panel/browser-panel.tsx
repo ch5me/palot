@@ -41,6 +41,8 @@ interface BrowserPanelProps {
 
 const FALLBACK_URL = "about:blank"
 const USER_DEFAULT_URL = "https://example.com"
+const STARTUP_HEALTH_POLL_INTERVAL_MS = 1000
+const STARTUP_HEALTH_MAX_POLLS = 60
 
 function pickInitialUserUrl(persisted: string | undefined): string {
 	if (!persisted || persisted === FALLBACK_URL) return USER_DEFAULT_URL
@@ -175,6 +177,7 @@ export function BrowserPanel({ agent, className }: BrowserPanelProps) {
 	}, [activeLaneId, setActiveLaneId])
 
 	const autoStartAttemptedRef = React.useRef<Set<string>>(new Set())
+	const startupHealthPollAttemptsRef = React.useRef<Map<string, number>>(new Map())
 
 	useEffect(() => {
 		if (!activeLane) return
@@ -202,6 +205,7 @@ export function BrowserPanel({ agent, className }: BrowserPanelProps) {
 		if (!health) return
 		if (health.status !== "profile-locked" && health.status !== "stopped") return
 		autoStartAttemptedRef.current.add(activeLane.id)
+		startupHealthPollAttemptsRef.current.delete(activeLane.id)
 		setLoadFailure(null)
 		setIsLoading(true)
 		let cancelled = false
@@ -222,6 +226,41 @@ export function BrowserPanel({ agent, className }: BrowserPanelProps) {
 			})
 		return () => {
 			cancelled = true
+		}
+	}, [activeLane, laneHealth])
+
+	useEffect(() => {
+		if (!activeLane) return
+		if (activeLane.mode !== "local" || activeLane.runtime !== "docker-chromium") return
+		if (!laneHealth) return
+		if (laneHealth.status === "error") return
+		if (laneHealth.stream.state === "ready" && laneHealth.cdp.state === "ready") {
+			startupHealthPollAttemptsRef.current.delete(activeLane.id)
+			return
+		}
+		const attempts = startupHealthPollAttemptsRef.current.get(activeLane.id) ?? 0
+		if (attempts >= STARTUP_HEALTH_MAX_POLLS) return
+
+		let cancelled = false
+		const timeout = window.setTimeout(() => {
+			startupHealthPollAttemptsRef.current.set(activeLane.id, attempts + 1)
+			void fetchBrowserLaneHealth(activeLane.id)
+				.then((health) => {
+					if (cancelled) return
+					setLaneHealth(health)
+					if (health.stream.state === "ready") {
+						setLoadFailure(null)
+					}
+				})
+				.catch((error) => {
+					if (cancelled) return
+					setLoadFailure(error instanceof Error ? error.message : String(error))
+				})
+		}, STARTUP_HEALTH_POLL_INTERVAL_MS)
+
+		return () => {
+			cancelled = true
+			window.clearTimeout(timeout)
 		}
 	}, [activeLane, laneHealth])
 
@@ -272,6 +311,7 @@ export function BrowserPanel({ agent, className }: BrowserPanelProps) {
 
 	const handleRefresh = async () => {
 		if (!activeLane) return
+		startupHealthPollAttemptsRef.current.delete(activeLane.id)
 		setLoadFailure(null)
 		setIsLoading(true)
 		try {
@@ -285,6 +325,7 @@ export function BrowserPanel({ agent, className }: BrowserPanelProps) {
 
 	const handleRestart = async () => {
 		if (!activeLane) return
+		startupHealthPollAttemptsRef.current.delete(activeLane.id)
 		setLoadFailure(null)
 		setIsLoading(true)
 		try {
@@ -300,6 +341,7 @@ export function BrowserPanel({ agent, className }: BrowserPanelProps) {
 
 	const handleResetProfile = async () => {
 		if (!activeLane) return
+		startupHealthPollAttemptsRef.current.delete(activeLane.id)
 		setLoadFailure(null)
 		setIsLoading(true)
 		try {
