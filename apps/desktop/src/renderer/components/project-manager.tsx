@@ -50,7 +50,7 @@ import {
 	insertMentionIntoText,
 } from "./chat/prompt-mentions"
 import { PromptToolbar, StatusBar } from "./chat/prompt-toolbar"
-import { ElfWordmark } from "./elf-wordmark"
+import { ElfHero } from "./elf-hero"
 import { fetchCh5PmDashboard } from "../ch5pm-dashboard/client"
 import { MOCK_CH5PM_DASHBOARD_STATE } from "../ch5pm-dashboard/fixtures"
 import { getPmSnapshotBundle, mapSnapshotBundleToCards } from "../project-manager-cards"
@@ -440,7 +440,7 @@ export function ProjectManager() {
 			<div className="flex flex-1 flex-col px-0 pb-6 pt-8 sm:px-6">
 				<div className="mx-auto flex w-full max-w-5xl flex-1 flex-col gap-8">
 					<div className="flex justify-center">
-						<ElfWordmark className="h-20 w-auto text-6xl text-foreground" />
+						<ElfHero />
 					</div>
 
 					<div className="text-center">

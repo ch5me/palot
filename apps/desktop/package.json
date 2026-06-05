@@ -48,6 +48,8 @@
 		"@libsql/client": "^0.17.0",
 		"@opencode-ai/sdk": "^1.2.1",
 		"@pierre/diffs": "^1.0.10",
+		"@react-three/drei": "^10.7.7",
+		"@react-three/fiber": "^9.6.1",
 		"@tanstack/react-query": "^5.90.20",
 		"@tanstack/react-router": "^1.158.4",
 		"@tanstack/react-virtual": "^3.13.0",
@@ -74,7 +76,8 @@
 		"rrule": "^2.8.1",
 		"semver": "^7.7.4",
 		"simple-git": "^3.30.0",
-		"sonner": "^2.0.7"
+		"sonner": "^2.0.7",
+		"three": "^0.184.0"
 	},
 	"optionalDependencies": {
 		"electron-liquid-glass": "^1.1.1"
@@ -88,6 +91,7 @@
 		"@types/react-dom": "^19.0.0",
 		"@types/react-syntax-highlighter": "^15.5.13",
 		"@types/semver": "^7.7.1",
+		"@types/three": "^0.184.1",
 		"@typescript/native-preview": "^7.0.0-dev.20260207.1",
 		"@vitejs/plugin-react": "^5.1.4",
 		"drizzle-kit": "^1.0.0-beta.15-859cf75",
