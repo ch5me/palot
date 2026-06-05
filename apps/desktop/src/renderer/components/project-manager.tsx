@@ -10,10 +10,10 @@ import { Popover, PopoverContent, PopoverTrigger } from "@ch5me/elf-ui/component
 import { useParams } from "@tanstack/react-router"
 import { useAtomValue } from "jotai"
 import { ChevronDownIcon, FileTextIcon, GitPullRequestIcon, Rows4Icon } from "lucide-react"
-import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react"
+import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { projectModelsAtom, setProjectModelAtom } from "../atoms/preferences"
 import { appStore } from "../atoms/store"
-import { useProjectList } from "../hooks/use-agents"
+import { useAgents, useProjectList } from "../hooks/use-agents"
 import { useDraftActions, useDraftSnapshot } from "../hooks/use-draft"
 import type { ModelRef } from "../hooks/use-opencode-data"
 import {
@@ -27,7 +27,6 @@ import {
 	useVcs,
 } from "../hooks/use-opencode-data"
 import type { FileAttachment } from "../lib/types"
-import { useSetAppBarContent } from "./app-bar-context"
 import { BranchPicker } from "./branch-picker"
 import { type MentionOption, MentionPopover, type MentionPopoverHandle } from "./chat/mention-popover"
 import { PromptAttachmentPreview } from "./chat/prompt-attachments"
@@ -118,12 +117,6 @@ function DraftSync({ setDraft }: { setDraft: (text: string) => void }) {
 export function ProjectManager() {
 	const { projectSlug } = useParams({ strict: false })
 	const projects = useProjectList()
-	const setAppBarContent = useSetAppBarContent()
-
-	useLayoutEffect(() => {
-		setAppBarContent(<ElfWordmark className="h-[11px] w-auto shrink-0 text-muted-foreground/70" />)
-		return () => setAppBarContent(null)
-	}, [setAppBarContent])
 
 	const [selectedDirectory, setSelectedDirectory] = useState<string>("")
 	const [launching, setLaunching] = useState(false)
@@ -131,6 +124,7 @@ export function ProjectManager() {
 	const draft = useDraftSnapshot(PROJECT_MANAGER_DRAFT_KEY)
 	const { setDraft, clearDraft } = useDraftActions(PROJECT_MANAGER_DRAFT_KEY)
 	const [projectPickerOpen, setProjectPickerOpen] = useState(false)
+	const allAgents = useAgents()
 	const [selectedModel, setSelectedModel] = useState<ModelRef | null>(null)
 	const [selectedAgent, setSelectedAgent] = useState<string | null>(null)
 	const [selectedVariant, setSelectedVariant] = useState<string | undefined>(undefined)
@@ -167,6 +161,15 @@ export function ProjectManager() {
 	const { data: vcs, reload: reloadVcs } = useVcs(selectedDirectory || null)
 	const { agents: openCodeAgents } = useOpenCodeAgents(selectedDirectory || null)
 	const { recentModels, addRecent: addRecentModel } = useModelState()
+
+	const activeSessionCount = useMemo(() => {
+		if (!selectedDirectory) return 0
+		return allAgents.filter(
+			(a) =>
+				a.directory === selectedDirectory &&
+				(a.status === "running" || a.status === "waiting" || (a.isAttached && a.status === "idle")),
+		).length
+	}, [allAgents, selectedDirectory])
 
 	const handleModelSelect = useCallback(
 		(model: ModelRef | null) => {
@@ -351,16 +354,22 @@ export function ProjectManager() {
 					</div>
 
 					<div className="rounded-2xl border border-dashed border-border/70 bg-card/40 p-6 text-left backdrop-blur-sm">
-						<div className="text-xs font-medium uppercase tracking-[0.22em] text-muted-foreground">
-							Placeholder visualization
+						<div className="flex items-center justify-between gap-3">
+							<div>
+								<div className="text-xs font-medium uppercase tracking-[0.22em] text-muted-foreground">
+									Active sessions in current project
+								</div>
+								<div className="mt-3 text-3xl font-semibold text-foreground">{activeSessionCount}</div>
+								<p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground">
+									Live root sessions for {selectedProject?.name ?? "this project"} currently visible in Palette.
+								</p>
+							</div>
+							<div className="min-w-[180px] rounded-xl border border-border/50 bg-background/40 p-4">
+								<div className="text-xs uppercase tracking-[0.18em] text-muted-foreground">All loaded roots</div>
+								<div className="mt-2 text-lg font-medium text-foreground">{allAgents.length}</div>
+								<div className="mt-1 text-sm text-muted-foreground">Across all projects in sidebar state</div>
+							</div>
 						</div>
-						<div className="mt-3 text-lg font-medium text-foreground">
-							PM graph / kanban / live agent map goes here
-						</div>
-						<p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground">
-							This surface will track ticket state, active OpenCode sessions, routing pressure,
-							and operator attention so one PM lane can coordinate whole workspace.
-						</p>
 					</div>
 
 					<div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
@@ -461,12 +470,13 @@ export function ProjectManager() {
 							isConnected={true}
 							branchSlot={
 								selectedDirectory ? (
-									<BranchPicker
-										directory={selectedDirectory}
-										currentBranch={vcs?.branch}
-										onBranchChanged={handleBranchChanged}
-										activeSessionCount={0}
-									/>
+							<BranchPicker
+								directory={selectedDirectory}
+								currentBranch={vcs?.branch}
+								onBranchChanged={handleBranchChanged}
+								activeSessionCount={activeSessionCount}
+							/>
+
 								) : undefined
 							}
 							extraSlot={undefined}
