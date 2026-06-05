@@ -1,0 +1,30 @@
+Task 18 — End-to-end same-instance visible proof
+- Container: elf-cdp-chrome:dev (built from lscr.io/linuxserver/chrome:latest +
+  wrapped-chrome override + socat relay), running as elf-cdp-chrome-dev on
+  --platform linux/amd64 (Rosetta emulation on this arm64 Mac host).
+- Stream surface (palot browser panel iframe src):
+    GET http://127.0.0.1:30180/  -> 200 (Selkies dashboard HTML)
+    GET https://127.0.0.1:30181/ -> 200 (Selkies dashboard HTML, self-signed)
+- CDP surface (palot browser panel automation target):
+    GET http://127.0.0.1:30192/json/version -> valid Chrome/149.0.7827.53 JSON
+    GET http://127.0.0.1:30192/json/list    -> 1 page tab (chrome://newtab/ on
+                                              cold start; example.com after CDP nav)
+- Same-instance navigation proof:
+    1. magic-browser/scripts/cdp-eval.mjs navigates to https://example.com
+       via the CDP websocket from the same browser. Returns title + h1 + UA.
+    2. agent-browser --cdp 30192 also navigates to https://example.com and
+       takes a 3024x1656 PNG screenshot. Screenshot shows the Example Domain
+       page, proving the visible chrome rendered the navigated content.
+    3. Selkies stream on port 30180 captures whatever the chrome is rendering;
+       since the chrome is on example.com, the stream is the example.com page.
+- Host cannot reach 127.0.0.1:9222 directly inside the container (Docker
+  userland proxy limitation on macOS), so the socat relay on 0.0.0.0:9222 inside
+  the container is what host port mapping (30192) terminates on. End-to-end
+  works for both selkies (3000/3001/8082) and CDP (9222) on the same container.
+- All evidence in .sisyphus/evidence/browser-lanes/:
+    task-18-cdp-chrome-visible-proof.png   (3024x1656 PNG of navigated page)
+    task-18-custom-selkies-chrome-build.txt
+    task-18-custom-selkies-chrome-cdp.txt
+    task-18-custom-selkies-chrome-stream.txt
+    task-18-magic-browser-remote-cdp.txt
+    task-18-e2e-visible-proof.txt          (this file)

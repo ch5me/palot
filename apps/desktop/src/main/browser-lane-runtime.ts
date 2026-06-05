@@ -11,30 +11,21 @@ const IMAGE = "lscr.io/linuxserver/chromium:latest"
 const DEFAULT_HOST = "127.0.0.1"
 const DEFAULT_AUTH = { user: "abc", password: "abc" }
 
-// LinuxServer/Selkies Chromium ignores CHROME_CLI for --remote-debugging-port,
-// so the image is configured via a custom-cont-init.d/ script that patches the
-// wrapped-chromium launcher in place to append the CDP flags. The s6-overlay
-// init runs everything in /custom-cont-init.d/ in lexical order before the
-// selkies service starts.
 const CHROMIUM_FLAGS_FILE = path.join(".config", "chromium-flags.conf")
 const CHROMIUM_FLAGS_CONTENT = [
 	"--no-sandbox",
-	"--remote-debugging-port=0.0.0.0:9222",
+	"--remote-debugging-port=9222",
 	"--remote-allow-origins=*",
 ].join("\n") + "\n"
+
 const INIT_CDP_SCRIPT_CONTENT = `#!/usr/bin/with-contenv bash
-# Patch wrapped-chromium so the CDP-enabling flags reach the chromium binary.
-# The upstream wrapper only honours flags it knows about; CHROME_CLI and the
-# chromium-flags.conf file both get filtered out for --remote-debugging-port.
-# We rewrite the wrapper to a CDP-enabled equivalent rather than try to splice
-# into the upstream multi-line shell-continued command.
 set -e
 WRAPPER=/usr/bin/wrapped-chromium
 if [ ! -f "$WRAPPER" ]; then
   echo "[elf-cdp] $WRAPPER not found; nothing to patch" >&2
   exit 0
 fi
-if grep -q -- "--remote-debugging-port" "$WRAPPER"; then
+if grep -q -- "--remote-debugging-port=9222 " "$WRAPPER"; then
   echo "[elf-cdp] CDP flags already present in $WRAPPER" >&2
   exit 0
 fi
@@ -56,7 +47,7 @@ if grep -q 'Seccomp:.0' /proc/1/status; then
   --simulate-outdated-no-au='Tue, 31 Dec 2099 23:59:59 GMT' \\
   --start-maximized \\
   --user-data-dir \\
-  --remote-debugging-port=0.0.0.0:9222 \\
+  --remote-debugging-port=9222 \\
   --remote-allow-origins=* \\
    "\$@" > /dev/null 2>&1
 else
@@ -68,13 +59,31 @@ else
   --start-maximized \\
   --test-type \\
   --user-data-dir \\
-  --remote-debugging-port=0.0.0.0:9222 \\
+  --remote-debugging-port=9222 \\
   --remote-allow-origins=* \\
    "\$@" > /dev/null 2>&1
 fi
 WRAPPER_EOF
 chmod +x "$WRAPPER"
 echo "[elf-cdp] Patched $WRAPPER to enable CDP" >&2
+`
+
+const INIT_CDP_RELAY_SCRIPT_CONTENT = `#!/usr/bin/with-contenv bash
+set -e
+if ! command -v socat >/dev/null 2>&1; then
+  apt-get update >/dev/null 2>&1
+  apt-get install -y --no-install-recommends socat >/dev/null 2>&1 || {
+    echo "[elf-cdp-relay] socat install failed; CDP will only be reachable from inside the container" >&2
+    exit 0
+  }
+fi
+pkill -f 'socat.*TCP-LISTEN:9222' >/dev/null 2>&1 || true
+sleep 0.1
+nohup socat \\
+  TCP-LISTEN:9222,fork,reuseaddr,bind=0.0.0.0 \\
+  TCP:[::1]:9222 \\
+  > /tmp/elf-cdp-relay.log 2>&1 &
+echo "[elf-cdp-relay] pid=$! relaying 0.0.0.0:9222 -> [::1]:9222" >&2
 `
 
 export interface BrowserLaneRuntimeConfig {
@@ -126,7 +135,9 @@ export function ensureBrowserLaneRuntimeFiles(config: BrowserLaneRuntimeConfig):
 	const initDir = path.join(config.runtimeDir, "custom-cont-init.d")
 	fs.mkdirSync(initDir, { recursive: true })
 	fs.writeFileSync(path.join(initDir, "10-enable-cdp.sh"), INIT_CDP_SCRIPT_CONTENT, "utf-8")
+	fs.writeFileSync(path.join(initDir, "20-cdp-relay.sh"), INIT_CDP_RELAY_SCRIPT_CONTENT, "utf-8")
 	fs.chmodSync(path.join(initDir, "10-enable-cdp.sh"), 0o755)
+	fs.chmodSync(path.join(initDir, "20-cdp-relay.sh"), 0o755)
 	fs.writeFileSync(
 		config.envFile,
 		[
@@ -166,7 +177,6 @@ export function renderBrowserLaneCompose(config: BrowserLaneRuntimeConfig): stri
 		"    ports:",
 		`      - \"${config.streamPort}:3000\"`,
 		`      - \"${config.cdpPort}:9222\"`,
-		`      - \"9222:9222\"`,
 		"    volumes:",
 		`      - ${config.profilePath}:/config`,
 		`      - ${path.join(config.runtimeDir, "custom-cont-init.d")}:/custom-cont-init.d`,

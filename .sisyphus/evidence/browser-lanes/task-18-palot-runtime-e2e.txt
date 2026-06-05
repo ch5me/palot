@@ -1,0 +1,25 @@
+Task 18 — palot lane runtime end-to-end proof
+- Lane id: elf-cdp-test
+- Container: elf-cdp-test-browser-lane-elf-cdp-test-1 (lscr.io/linuxserver/chromium:latest, arm64 native)
+- Started via: scripts/browser-lane/install-runtime + scripts/browser-lane/start-lane
+- Stream: http://127.0.0.1:60344/  -> 200 OK, 762 bytes Selkies dashboard HTML
+- CDP:    http://127.0.0.1:60345/  -> 200 OK, valid Chrome/148.0.7778.215 JSON
+- healthcheck: stream={ok:true,status:200} cdp={ok:true,status:200}
+- magic-browser/scripts/cdp-eval.mjs navigated to https://example.com and
+  returned:
+    { "title": "Example Domain", "h1": "Example Domain",
+      "ua": "Mozilla/5.0 ... Chrome/148.0.0.0 Safari/537.36" }
+- agent-browser --cdp 60345 screenshot shows the Example Domain page in the
+  same browser instance: .sisyphus/evidence/browser-lanes/task-18-palot-runtime-visible-proof.png
+- All four critical files in .sisyphus/evidence/browser-lanes/:
+    task-18-palot-runtime-stream.html     (Selkies dashboard HTML, 762 B)
+    task-18-palot-runtime-cdp.json        (Chrome/148.0.7778.215 JSON)
+    task-18-palot-runtime-visible-proof.png (Example Domain screenshot)
+    task-18-palot-runtime-e2e.txt         (this file)
+- Same host, same browser instance, visible stream + full CDP. No custom
+  image required: the existing lscr.io/linuxserver/chromium:latest base works
+  once the wrapper override uses --remote-debugging-port=9222 (bare port) and
+  the socat relay init script relays 0.0.0.0:9222 -> [::1]:9222 for host reach.
+- Root cause of the prior task-17 blocker was the --remote-debugging-port=
+  0.0.0.0:9222 (IP:PORT) flag format, which chromium 148 silently dropped.
+  Bare port format works on chromium 148 and chrome 149 alike.

@@ -1,0 +1,15 @@
+Task 18 — Custom Selkies+Chrome runtime (stream evidence)
+- Selkies stream on host:30180 (http, basic auth abc:abc):
+    GET / -> 200 OK
+    Body: <!doctype html>... selkies-dashboard index page
+          (assets/index-*.js, selkies-core, touch-gamepad)
+- Selkies https on host:30181:
+    GET / -k -> 200 OK (self-signed)
+- Selkies websocket on host:30182 (the data ws for stream/input):
+    LISTEN 0 100 0.0.0.0:8082 inside container
+- Both stream (Selkies) and CDP (chrome 149) are bound in the SAME container,
+  driven by the SAME labwc-launched chrome binary. No two-chrome-instance split.
+- Stream url (consumed by the palot browser panel): http://127.0.0.1:<streamPort>/
+  where <streamPort> is the host port mapped to container 3000.
+- Lane contract (streamBackendUrl, cdpEndpoint) is unchanged from the existing
+  palot browser-lane-runtime.ts shape; only the IMAGE constant needs to change.

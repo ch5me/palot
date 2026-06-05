@@ -1,0 +1,21 @@
+Task 18 — magic-browser remote-cdp drives the same visible browser
+- magic-browser/scripts/cdp-eval.mjs speaks raw CDP WebSocket (no extra lib).
+- Took webSocketDebuggerUrl from /json/version:
+    ws://127.0.0.1:30192/devtools/browser/2ffb6ace-92fb-4ca3-ab8b-a3522214a2f8
+- Drove:
+    node /Users/hassoncs/src/ch5/magic-browser/scripts/cdp-eval.mjs \
+      --cdp "$WS_URL" --url https://example.com \
+      --eval "({ title: document.title, h1: document.querySelector('h1')?.innerText, ua: navigator.userAgent })"
+- Returned:
+    {
+      "title": "Example Domain",
+      "h1": "Example Domain",
+      "ua": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36"
+    }
+- Same instance proof: chrome 149 UA reported by JS, exact same browser whose
+  Selkies stream is on host:30180. agent-browser --cdp 30192 took an
+  additional screenshot (.sisyphus/evidence/browser-lanes/task-18-cdp-chrome-visible-proof.png,
+  3024x1656 PNG) showing the same Example Domain page rendered by the visible
+  chrome, confirming the stream and CDP are the same instance.
+- No new CDP library was added to magic-browser; only the existing
+  scripts/cdp-eval.mjs was invoked.

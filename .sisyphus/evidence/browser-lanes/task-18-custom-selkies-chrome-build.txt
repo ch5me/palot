@@ -1,0 +1,19 @@
+Task 18 — Custom Selkies+Chrome runtime (image build)
+- lscr.io/linuxserver/chrome:latest is amd64-only (manifest: only amd64 listed).
+  lscr.io/linuxserver/baseimage-selkies:debiantrixie is multi-arch (amd64+arm64).
+  Host is arm64 (Darwin 25.4.0 / Docker Desktop), so cross-build for linux/amd64
+  via `docker buildx build --platform linux/amd64` and run with `--platform linux/amd64`
+  (Rosetta emulation; slow but works for proof).
+- Custom image: FROM --platform=linux/amd64 lscr.io/linuxserver/chrome:latest
+- Add layer: install socat (for 0.0.0.0:9222 -> 127.0.0.1:9222 relay, see task-18-cdp.txt).
+- Replace /usr/bin/wrapped-chrome with wrapped-chrome.sh that adds
+  --remote-debugging-port=9222 (bare port) and other CDP flags.
+- Drop in /custom-cont-init.d/10-cdp-relay.sh to start the socat relay before
+  labwc launches chrome.
+- Build target tag: elf-cdp-chrome:dev
+- Files touched:
+  - .sisyphus/experiments/cdp-chrome-pivot/Dockerfile
+  - .sisyphus/experiments/cdp-chrome-pivot/wrapped-chrome.sh
+  - .sisyphus/experiments/cdp-chrome-pivot/cdp-relay.sh
+  - .sisyphus/experiments/cdp-chrome-pivot/run.sh
+  - .sisyphus/experiments/cdp-chrome-pivot/verify.sh
