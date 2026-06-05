@@ -27,6 +27,7 @@ import {
 	fetchBrowserLanes,
 	restartBrowserLane,
 	resetBrowserLaneProfile,
+	startBrowserLane,
 } from "../../services/backend"
 import { summarizeBrowserLaneHealth } from "../../../shared/browser-lanes"
 import type { Agent, BrowserLane, BrowserLaneHealth } from "../../lib/types"
@@ -168,16 +169,54 @@ export function BrowserPanel({ agent, className }: BrowserPanelProps) {
 		}
 	}, [activeLaneId, setActiveLaneId])
 
+	const autoStartAttemptedRef = React.useRef<Set<string>>(new Set())
+
 	useEffect(() => {
 		if (!activeLane) return
 		let cancelled = false
 		void fetchBrowserLaneHealth(activeLane.id).then((health) => {
-			if (!cancelled) setLaneHealth(health)
+			if (cancelled) return
+			setLaneHealth(health)
+			if (
+				health.status === "profile-locked" ||
+				(health.status === "stopped" && activeLane.mode === "local" && activeLane.runtime === "docker-chromium")
+			) {
+				autoStartAttemptedRef.current.delete(activeLane.id)
+			}
 		})
 		return () => {
 			cancelled = true
 		}
 	}, [activeLane])
+
+	useEffect(() => {
+		if (!activeLane) return
+		if (activeLane.mode !== "local" || activeLane.runtime !== "docker-chromium") return
+		if (autoStartAttemptedRef.current.has(activeLane.id)) return
+		const health = laneHealth
+		if (!health) return
+		if (health.status !== "profile-locked" && health.status !== "stopped") return
+		autoStartAttemptedRef.current.add(activeLane.id)
+		setLoadFailure(null)
+		setIsLoading(true)
+		let cancelled = false
+		void startBrowserLane(activeLane.id)
+			.then((lane) => {
+				if (cancelled) return
+				setLaneHealth(lane.health)
+			})
+			.catch((error) => {
+				if (cancelled) return
+				autoStartAttemptedRef.current.delete(activeLane.id)
+				setLoadFailure(error instanceof Error ? error.message : String(error))
+			})
+			.finally(() => {
+				if (!cancelled) setIsLoading(false)
+			})
+		return () => {
+			cancelled = true
+		}
+	}, [activeLane, laneHealth])
 
 	const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
 		event.preventDefault()

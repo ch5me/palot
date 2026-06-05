@@ -20,8 +20,14 @@ import {
 	type BrowserLaneRuntimeConfig,
 } from "./browser-lane-runtime"
 import { detectBrowserLaneCapabilities } from "./browser-lane-capabilities"
+import {
+	buildHealthFromProbe,
+	probeBrowserLaneEndpoints,
+	runBrowserLaneCompose,
+} from "./browser-lane-process"
 import { getBrowserLaneConfigDir } from "./automation/paths"
 const REGISTRY_FILE = path.join(getBrowserLaneConfigDir(), "lanes.json")
+const LOCAL_LANE_AUTH = { user: "abc", password: "abc" }
 
 interface BrowserLaneRegistryFile {
 	version: 1
@@ -307,6 +313,26 @@ export async function startBrowserLane(id: string): Promise<BrowserLane> {
 	await initBrowserLaneManager()
 	return await withLaneLock(id, async () => {
 		const lane = (await ensureBrowserLane(id))
+		const state = getLaneState(id)
+		const config = state.runtimeConfig
+		if (!config) {
+			throw new Error(`Browser lane ${id} has no runtime config; ensure failed to populate it`)
+		}
+		const capabilities = await detectBrowserLaneCapabilities()
+		if (!capabilities.compose.command) {
+			setLaneHealth(
+				id,
+				buildHealth({
+					status: "error",
+					message: capabilities.unsupportedReason || "Docker Compose not available",
+					streamUrl: lane.streamBackendUrl,
+					streamState: "failed",
+					cdpUrl: lane.cdpEndpoint,
+					cdpState: "failed",
+				}),
+			)
+			return toBrowserLane(readRegistryFile().lanes.find((entry) => entry.id === id)!)
+		}
 		setLaneHealth(
 			id,
 			buildHealth({
@@ -318,6 +344,42 @@ export async function startBrowserLane(id: string): Promise<BrowserLane> {
 				cdpState: "pending",
 			}),
 		)
+		const result = await runBrowserLaneCompose(capabilities.compose.command, config.composeFile, "up")
+		if (!result.ok) {
+			setLaneHealth(
+				id,
+				buildHealth({
+					status: "error",
+					message: `docker compose up failed: ${result.stderr || result.error || `exit ${result.code}`}`,
+					streamUrl: lane.streamBackendUrl,
+					streamState: "failed",
+					streamError: result.stderr || result.error,
+					cdpUrl: lane.cdpEndpoint,
+					cdpState: "failed",
+				}),
+			)
+			return toBrowserLane(readRegistryFile().lanes.find((entry) => entry.id === id)!)
+		}
+		const probe = await probeBrowserLaneEndpoints({
+			streamUrl: lane.streamBackendUrl,
+			cdpUrl: lane.cdpEndpoint,
+			auth: LOCAL_LANE_AUTH,
+		})
+		const probeState = getLaneState(id)
+		setLaneHealth(
+			id,
+			buildHealthFromProbe({
+				streamUrl: lane.streamBackendUrl,
+				cdpUrl: lane.cdpEndpoint,
+				streamReady: probe.streamReady,
+				cdpReady: probe.cdpReady,
+				streamError: probe.streamError,
+				cdpError: probe.cdpError,
+				mode: lane.mode,
+				profilePath: lane.profilePath,
+				profileResetAt: probeState.profileResetAt,
+			}),
+		)
 		return toBrowserLane(readRegistryFile().lanes.find((entry) => entry.id === id)!)
 	})
 }
@@ -327,6 +389,31 @@ export async function stopBrowserLane(id: string): Promise<BrowserLane> {
 	const lane = await getBrowserLane(id)
 	if (!lane) throw new Error(`Browser lane ${id} not found`)
 	const state = getLaneState(id)
+	if (lane.mode === "local" && state.runtimeConfig) {
+		const capabilities = await detectBrowserLaneCapabilities()
+		if (capabilities.compose.command) {
+			const result = await runBrowserLaneCompose(
+				capabilities.compose.command,
+				state.runtimeConfig.composeFile,
+				"down",
+			)
+			if (!result.ok) {
+				setLaneHealth(
+					id,
+					buildHealth({
+						status: "error",
+						message: `docker compose down failed: ${result.stderr || result.error || `exit ${result.code}`}`,
+						streamUrl: lane.streamBackendUrl,
+						streamState: "failed",
+						streamError: result.stderr || result.error,
+						cdpUrl: lane.cdpEndpoint,
+						cdpState: "failed",
+					}),
+				)
+				return toBrowserLane(readRegistryFile().lanes.find((entry) => entry.id === id)!)
+			}
+		}
+	}
 	setLaneHealth(
 		id,
 		buildHealth({
@@ -380,48 +467,59 @@ export async function refreshBrowserLaneHealth(id: string): Promise<BrowserLaneH
 	await initBrowserLaneManager()
 	const lane = await getBrowserLane(id)
 	if (!lane) throw new Error(`Browser lane ${id} not found`)
-	let health: BrowserLaneHealth
-	if (lane.mode === "remote" && lane.streamBackendUrl && lane.cdpEndpoint) {
-		health = buildHealth({
-			status: "degraded",
-			message: "Remote lane attached and reachable",
-			streamUrl: lane.streamBackendUrl,
-			streamState: "ready",
-			cdpUrl: lane.cdpEndpoint,
-			cdpState: "ready",
-		})
-	} else if (lane.streamBackendUrl && lane.cdpEndpoint) {
-		health = buildHealth({
-			status: "degraded",
-			message: "Stream route ready, CDP probe pending",
-			streamUrl: lane.streamBackendUrl,
-			streamState: "ready",
-			cdpUrl: lane.cdpEndpoint,
-			cdpState: "pending",
-		})
-	} else if (lane.streamBackendUrl) {
-		health = buildHealth({
-			status: "degraded",
-			message: "Stream route ready, CDP unavailable",
-			streamUrl: lane.streamBackendUrl,
-			streamState: "ready",
-			cdpUrl: lane.cdpEndpoint,
-			cdpState: "failed",
-			cdpError: "CDP endpoint missing",
-		})
-	} else if (lane.cdpEndpoint) {
-		health = buildHealth({
-			status: "degraded",
-			message: "CDP ready, stream unavailable",
-			streamUrl: lane.streamBackendUrl,
-			streamState: "failed",
-			streamError: "Stream backend URL missing",
-			cdpUrl: lane.cdpEndpoint,
-			cdpState: "ready",
-		})
-	} else {
-		const state = getLaneState(id)
-		health = buildHealth({
+	const state = getLaneState(id)
+	const health: BrowserLaneHealth = await (async () => {
+		if (lane.mode === "local") {
+			const probe = await probeBrowserLaneEndpoints({
+				streamUrl: lane.streamBackendUrl,
+				cdpUrl: lane.cdpEndpoint,
+				auth: LOCAL_LANE_AUTH,
+			})
+			return buildHealthFromProbe({
+				streamUrl: lane.streamBackendUrl,
+				cdpUrl: lane.cdpEndpoint,
+				streamReady: probe.streamReady,
+				cdpReady: probe.cdpReady,
+				streamError: probe.streamError,
+				cdpError: probe.cdpError,
+				mode: lane.mode,
+				profilePath: lane.profilePath,
+				profileResetAt: state.profileResetAt,
+			})
+		}
+		if (lane.streamBackendUrl && lane.cdpEndpoint) {
+			return buildHealth({
+				status: "degraded",
+				message: "Remote lane attached and reachable",
+				streamUrl: lane.streamBackendUrl,
+				streamState: "ready",
+				cdpUrl: lane.cdpEndpoint,
+				cdpState: "ready",
+			})
+		}
+		if (lane.streamBackendUrl) {
+			return buildHealth({
+				status: "degraded",
+				message: "Stream route ready, CDP unavailable",
+				streamUrl: lane.streamBackendUrl,
+				streamState: "ready",
+				cdpUrl: lane.cdpEndpoint,
+				cdpState: "failed",
+				cdpError: "CDP endpoint missing",
+			})
+		}
+		if (lane.cdpEndpoint) {
+			return buildHealth({
+				status: "degraded",
+				message: "CDP ready, stream unavailable",
+				streamUrl: lane.streamBackendUrl,
+				streamState: "failed",
+				streamError: "Stream backend URL missing",
+				cdpUrl: lane.cdpEndpoint,
+				cdpState: "ready",
+			})
+		}
+		return buildHealth({
 			status: lane.mode === "remote" ? "error" : lane.profilePath ? "profile-locked" : "stopped",
 			message:
 				lane.mode === "remote"
@@ -436,7 +534,7 @@ export async function refreshBrowserLaneHealth(id: string): Promise<BrowserLaneH
 			cdpState: lane.mode === "remote" ? "failed" : "unknown",
 			cdpError: lane.mode === "remote" ? "CDP endpoint missing" : null,
 		})
-	}
+	})()
 	setLaneHealth(id, health)
 	return health
 }

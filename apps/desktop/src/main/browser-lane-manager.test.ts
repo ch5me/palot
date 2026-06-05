@@ -99,3 +99,32 @@ test("browser lane manager reset profile is explicit and preserves clean-state m
 		cleanup()
 	}
 })
+
+test("browser lane manager probes local stream and cdp on refresh", async () => {
+	const cleanup = setupTempXdg()
+	try {
+		const manager = await import("./browser-lane-manager")
+		await manager.shutdownBrowserLaneManager()
+		await manager.initBrowserLaneManager()
+		await manager.createBrowserLane({
+			id: "local-probe",
+			label: "Local Probe",
+			mode: "local",
+			runtime: "docker-chromium",
+			streamBackendUrl: "http://127.0.0.1:1/",
+			cdpEndpoint: "http://127.0.0.1:1",
+			profilePath: path.join(process.env.XDG_DATA_HOME!, "elf", "browser-profiles", "local-probe"),
+		})
+		const fs = await import("node:fs")
+		fs.mkdirSync(path.join(process.env.XDG_DATA_HOME!, "elf", "browser-profiles", "local-probe"), {
+			recursive: true,
+		})
+		const health = await manager.refreshBrowserLaneHealth("local-probe")
+		assert.equal(health.status, "profile-locked")
+		assert.equal(health.message, "Profile exists but runtime has not started yet")
+		assert.equal(health.stream.state, "failed")
+		assert.equal(health.cdp.state, "failed")
+	} finally {
+		cleanup()
+	}
+})
