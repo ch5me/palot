@@ -107,10 +107,10 @@ Every execution task must define agent-executed QA with evidence in `.sisyphus/e
 ## Product PRD <!-- oc:id=sec_ai -->
 
 ### Personas <!-- oc:id=sec_aj -->
-- **Researcher**: Reads papers, highlights evidence, extracts claims, compares sources, builds literature matrices.
-- **Law student / legal reviewer**: Reads cases/contracts, creates annotations, captures quotes, needs pincite-grade trust and issue spotting.
-- **Knowledge worker / analyst**: Reviews reports, specs, filings, and long documents; wants summaries, action items, and traceable notes.
-- **Agent-assisted operator**: Uses AI to summarize, explain, compare, and generate artifacts, but demands provenance and editability.
+- **Researcher**: Reads dense papers and source packets, builds literature matrices, and needs durable evidence capture that survives relaunch.
+- **Law student / legal reviewer**: Reads opinions, contracts, and filings; needs pincite-grade quote trust, issue spotting, and repeated-quote disambiguation.
+- **Knowledge worker / analyst**: Reviews long reports, specs, and decks; wants grounded summaries, action items, risk tables, and exportable brief artifacts.
+- **Agent-assisted operator**: Uses AI for extraction and synthesis, but requires editable outputs, explicit provenance, and confirm-before-mutate workflows.
 
 ### Product Promise <!-- oc:id=sec_ak -->
 Elf PDF Workspace is a local-first research desk where PDFs become durable, searchable, citeable, annotatable knowledge artifacts that agents can assist with — without breaking trust in the underlying source.
@@ -129,13 +129,20 @@ Three-tier model:
 1. **Main-pane PDF workspace** — serious reader with navigation, selection, highlights, notes, search, citation jumps, and split views. <!-- oc:id=item_ac -->
 
 ### Product Defaults <!-- oc:id=sec_an -->
-- **Viewer stack default**: `react-pdf` + PDF.js hybrid. Use library for rendering/text layer and own annotation/research UX in app code.
+- **Viewer stack default**: `react-pdf` + PDF.js hybrid. Use library for page rendering and text layer, keep search indexing, annotation persistence, citation anchoring, and research interactions in app-owned code.
 - **Fallback stack**: direct PDF.js custom integration if wrapper constraints block required UX/perf.
-- **Commercial path**: commercial SDK remains an evaluated fallback for later escalation, not default planning assumption.
-- **Scope default**: single-document durable reader first; project library and cross-document workflows in premium v1.
-- **Privacy default**: local-first explicit opt-in for remote/model-assisted indexing, embeddings, or enrichment.
+- **Commercial path**: commercial SDK remains an evaluated fallback for later escalation, especially for high-end annotation or form requirements, not default planning assumption.
+- **Scope default**: MVP is single-document durable reader/search/highlight/ask; project library and cross-document workflows start in premium v1.
+- **Privacy default**: local-first explicit opt-in for remote/model-assisted indexing, embeddings, OCR enrichment, or cloud sync.
 - **Document type default**: PDF first; office docs convert into PDF workflow through existing conversion seam.
 - **Agent default**: agents may suggest/draft/extract; persistent or destructive document-state changes require user confirmation.
+
+### Wave 1 Architecture Defaults <!-- oc:id=sec_wave1a -->
+- **Document identity**: `documentId` is content-hash based, not path-based; manifest stores original source path and ingest provenance separately.
+- **Annotation authority**: annotations, citations, and reading state share one locator family rooted in `apps/desktop/src/shared/pdf-locator.ts`, extended rather than replaced.
+- **Workspace shell**: full reader lives in a dedicated main-pane route under the existing session shell; side-panel `pdf-review` remains cockpit/control surface rather than primary reading surface.
+- **Ingestion seam**: local PDFs ingest directly; office docs flow through existing conversion seam and land as first-class PDF workspace documents after manifest/hash registration.
+- **Durability seam**: renderer mirrors state, main process owns durable source of truth via preload/backend service boundaries.
 
 ### Functional Requirements <!-- oc:id=sec_ao -->
 
@@ -145,6 +152,8 @@ Three-tier model:
 - Support session artifact / generated PDF / downloaded source as document sources later.
 - Extract metadata, text layer availability, hash, page count, and ingest status.
 - Degrade clearly for encrypted, corrupted, unsupported, and scan-only PDFs.
+- Register every imported document through a main-process manifest flow keyed by content hash before it becomes addressable in reader, annotations, or citations.
+- Persist original source path, derived PDF path, ingest timestamp, and conversion/OCR status separately from reader state so re-open and re-import stay deterministic.
 
 #### 2. Reader Workspace <!-- oc:id=sec_aq -->
 - Open document in dedicated workspace mode.
@@ -152,12 +161,15 @@ Three-tier model:
 - Text layer and selectable text.
 - Stable reopen state: page, zoom, last selection context, open side surfaces.
 - Keyboard-first control path.
+- Reader shell lives in a dedicated main-pane route inside existing session shell; side-panel remains auxiliary cockpit for notes, citations, AI actions, and artifact context.
+- Restore/focus behavior must preserve active document, side-panel tab, and citation jump target without breaking current session navigation patterns.
 
 #### 3. Search <!-- oc:id=sec_ar -->
 - In-document text search with snippets, page jumps, hit navigation.
 - Future: project-level and semantic search.
 - Search must remain usable on large PDFs.
 - If semantic path unavailable, lexical mode must remain explicit and useful.
+- Viewer integration should let lexical search ship before semantic/project search, with shared result cards reusable by chat citations and side-panel cockpit surfaces.
 
 #### 4. Annotation Layer <!-- oc:id=sec_as -->
 - Highlight text spans.
@@ -165,28 +177,34 @@ Three-tier model:
 - Support overlapping or adjacent highlights with deterministic rules.
 - All annotations anchored to locator contract with fallback strategy.
 - Reopen, reload, and changed-render paths must degrade safely if exact match lost.
+- Document model must treat annotation IDs, citation IDs, and note IDs as separate durable entities linked by locator references rather than merged UI-only records.
+- Repeated quotes, revised editions, and extraction drift must downgrade through `resolved -> ambiguous -> page-only -> unresolved` rather than breaking silently.
 
 #### 5. Notes and Review <!-- oc:id=sec_at -->
 - Document notes.
 - Highlight-linked notes.
 - Review modes later: issue spot, summarize section, build outline, compare sources, extract holdings/claims.
 - Notes must deep-link back to source span.
+- Selection actions should reuse existing draft/pane-bus patterns where possible so quote capture, note drafting, and send-to-chat stay consistent with current session workflows.
 
 #### 6. Citation and Provenance <!-- oc:id=sec_au -->
 - Every AI answer or artifact claim should reference source page/selection where possible.
 - Citation object should retain page, exact quote, locator metadata, confidence tier, and visible fallback state.
 - Copy/export action for quote + page + provenance metadata.
 - No fake precision.
+- Citation jumps must work from chat, notes, artifact cards, and side-panel cockpit surfaces through one shared viewer-open path.
 
 #### 7. Agent Workflows <!-- oc:id=sec_av -->
 - Ask about selected text, page, section, full document, later full project corpus.
 - Agent may draft notes, summaries, issue lists, matrices, and artifacts.
 - Persistent/destructive operations require user confirm.
 - All outputs should retain provenance to source spans.
+- Quote-bank and artifact generation flows should promote useful session outputs into project/document-scoped stores instead of leaving them trapped in session-only GenUI state.
 
 #### 8. Projects and Multi-Doc Work <!-- oc:id=sec_aw -->
-- Phase boundary explicit: single-document first; project library and multi-doc workflows in premium v1.
-- Future project includes documents, notes, annotations, extracted claims, compare artifacts, and cross-doc chat.
+- MVP excludes multi-document project workflows except placeholder architecture hooks.
+- Premium v1 adds project libraries, cross-document search/chat, compare workflows, and claim/quote banks across documents.
+- Later phases add deeper corpus intelligence, reusable research workspaces, and collaboration-oriented project structures.
 
 #### 9. Derived Artifacts <!-- oc:id=sec_ax -->
 - Summaries, briefs, outlines, quote banks, comparison tables, extraction sheets.
@@ -199,6 +217,8 @@ Three-tier model:
 - Accessibility: keyboard nav, screen-reader text layer, contrast-safe highlights.
 - Performance budgets required.
 - Browser-mode and Electron parity considered wherever backend seams change.
+- Viewer stack must remain Electron-friendly, renderer-safe, and compatible with `services/backend.ts` plus preload/main IPC seams for durable file access.
+- Rollout, degraded-state messaging, QA harness, and telemetry must share one vocabulary so feature flags and audit evidence stay aligned.
 
 ### Guardrails <!-- oc:id=sec_az -->
 - PDF first. Other docs convert into PDF workflow.
@@ -212,6 +232,7 @@ Three-tier model:
 - User trusts quote/page provenance.
 - User can recover notes and highlights after relaunch.
 - Product scales to premium v1 multi-document work without rewriting the core model.
+- Annotation anchors survive exact-match drift through resolved, ambiguous, page-only, and unresolved fallback states instead of silent breakage.
 
 ---
 
@@ -226,36 +247,36 @@ Wave 0 (Discovery + product foundations, 4 parallel):
 - T4 current shell/workspace seam audit
 
 Wave 1 (Core architecture, 5 parallel):
-- T5 document domain model
-- T6 locator/annotation anchor hardening
-- T7 main-pane workspace shell design
-- T8 side-panel cockpit role design
-- T9 ingestion/import pipeline design
+- [x] T5 document domain model
+- [x] T6 locator/annotation anchor hardening
+- [x] T7 main-pane workspace shell design
+- [x] T8 side-panel cockpit role design
+- [x] T9 ingestion/import pipeline design
 
 Wave 2 (Reader primitives, 5 parallel):
-- T10 viewer integration plan
-- T11 search/find-in-document plan
-- T12 selection/highlight/note interactions
-- T13 citation/provenance interaction model
-- T14 reading-state persistence and degraded recovery
+- [x] T10 viewer integration plan
+- [x] T11 search/find-in-document plan
+- [x] T12 selection/highlight/note interactions
+- [x] T13 citation/provenance interaction model
+- [x] T14 reading-state persistence and degraded recovery
 
 Wave 3 (Agent/research workflows, 4 parallel):
-- T15 ask-this-document / ask-selection workflows
-- T16 artifact generation and quote-bank flows
-- T17 project library + cross-doc roadmap
-- T18 accessibility + performance + offline plans
+- [x] T15 ask-this-document / ask-selection workflows
+- [x] T16 artifact generation and quote-bank flows
+- [x] T17 project library + cross-doc roadmap
+- [x] T18 accessibility + performance + offline plans
 
 Wave 4 (Hardening + rollout, 4 parallel):
-- T19 edge-case matrix
-- T20 QA/evidence plan
-- T21 migration path from current stub/studio preview
-- T22 rollout flags / staged launch / telemetry
+- [x] T19 edge-case matrix
+- [x] T20 QA/evidence plan
+- [x] T21 migration path from current stub/studio preview
+- [x] T22 rollout flags / staged launch / telemetry
 
 Wave FINAL (After all tasks — 4 parallel reviews):
-- F1 plan compliance audit
-- F2 code/architecture quality review readiness
-- F3 full QA scenario coverage audit
-- F4 scope fidelity + creep check
+- [x] F1 plan compliance audit
+- [x] F2 code/architecture quality review readiness
+- [x] F3 full QA scenario coverage audit
+- [x] F4 scope fidelity + creep check
 
 Critical Path: T1 -> T5 -> T6 -> T7 -> T10 -> T12 -> T13 -> T15 -> T20 -> F1-F4
 Max Concurrent: 5
@@ -296,7 +317,7 @@ Max Concurrent: 5
 
 ## TODOs <!-- oc:id=sec_ba -->
 
-- [ ] 1. Viewer/library decision
+- [x] 1. Viewer/library decision
 
   **What to do**:
   - Compare strongest React/Electron-friendly PDF stacks.
@@ -352,7 +373,7 @@ Max Concurrent: 5
 
   **Commit**: NO
 
-- [ ] 2. Product scope + persona lock
+- [x] 2. Product scope + persona lock
 
   **What to do**:
   - Lock MVP, premium v1, and later phases.
@@ -407,7 +428,7 @@ Max Concurrent: 5
 
   **Commit**: NO
 
-- [ ] 3. Durability/privacy/storage contract
+- [x] 3. Durability/privacy/storage contract
 
   **What to do**:
   - Define document, note, annotation, citation, artifact, and project storage scopes.
@@ -463,7 +484,7 @@ Max Concurrent: 5
 
   **Commit**: NO
 
-- [ ] 4. Current shell/workspace seam audit
+- [x] 4. Current shell/workspace seam audit
 
   **What to do**:
   - Map where full-route/main-pane PDF workspace should plug in.
@@ -517,35 +538,33 @@ Max Concurrent: 5
 
   **Commit**: NO
 
----
+## Final Verification Wave <!-- oc:id=sec_be -->
 
-## Final Verification Wave
-
-- [ ] F1. **Plan Compliance Audit** — `deep`
+- [x] F1. **Plan Compliance Audit** — `deep`
   Verify PRD covers personas, architecture, phases, guardrails, and concrete repo seams.
 
-- [ ] F2. **Code/Architecture Readiness Review** — `unspecified-high`
+- [x] F2. **Code/Architecture Readiness Review** — `unspecified-high`
   Verify proposed execution plan matches existing renderer/preload/main boundaries and does not smuggle implementation assumptions.
 
-- [ ] F3. **QA Coverage Audit** — `visual-engineering`
+- [x] F3. **QA Coverage Audit** — `visual-engineering`
   Verify every major subsystem has happy-path and degraded-path verification scenarios.
 
-- [ ] F4. **Scope Fidelity Check** — `deep`
+- [x] F4. **Scope Fidelity Check** — `deep`
   Verify MVP, premium v1, and later phases remain cleanly separated.
 
 ---
 
-## Commit Strategy <!-- oc:id=sec_bb -->
+## Commit Strategy 
 
 - Planning artifact only. No code commit required unless user asks to ship planning docs.
 
-## Success Criteria <!-- oc:id=sec_bc -->
+## Success Criteria 
 
-### Final Checklist <!-- oc:id=sec_bd -->
-- [ ] Main-pane workspace requirement explicit
-- [ ] Side-panel cockpit role explicit
-- [ ] Viewer/library recommendation explicit
-- [ ] Durable storage/privacy defaults explicit
-- [ ] Annotation/citation/search workflows explicit
-- [ ] MVP vs premium v1 boundaries explicit
-- [ ] Edge cases and degraded behavior explicit
+### Final Checklist 
+- [x] Main-pane workspace requirement explicit
+- [x] Side-panel cockpit role explicit
+- [x] Viewer/library recommendation explicit
+- [x] Durable storage/privacy defaults explicit
+- [x] Annotation/citation/search workflows explicit
+- [x] MVP vs premium v1 boundaries explicit
+- [x] Edge cases and degraded behavior explicit
