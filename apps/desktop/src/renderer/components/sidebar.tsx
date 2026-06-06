@@ -29,8 +29,8 @@ import {
 	AlertCircleIcon,
 	BotIcon,
 	BlocksIcon,
-	CheckCircle2Icon,
 	ChevronDownIcon,
+
 	ChevronRightIcon,
 	CircleDotIcon,
 	CommandIcon,
@@ -72,23 +72,19 @@ const RECENT_COUNT = 5
 const STATUS_ICON: Record<AgentStatus, typeof Loader2Icon> = {
 	running: Loader2Icon,
 	waiting: TimerIcon,
-	paused: CircleDotIcon,
-	completed: CheckCircle2Icon,
-	failed: AlertCircleIcon,
+	degraded: AlertCircleIcon,
 	idle: CircleDotIcon,
 }
 
 const STATUS_COLOR: Record<AgentStatus, string> = {
 	running: "text-green-500",
 	waiting: "text-yellow-500",
-	paused: "text-muted-foreground",
-	completed: "text-muted-foreground",
-	failed: "text-red-500",
+	degraded: "text-red-500",
 	idle: "text-muted-foreground",
 }
 
-function isSidebarActiveAgent(agent: Agent): boolean {
-	return agent.status === "running" || agent.status === "waiting" || agent.status === "failed"
+function isActiveSurfaceAgent(agent: Agent): boolean {
+	return agent.visibilityReason === "visible" && agent.status !== "idle"
 }
 
 function renderAgentMeta(agent: Agent): string | undefined {
@@ -181,8 +177,8 @@ export function AppSidebarContent({
 	const activeSessions = useMemo(
 		() =>
 			agents
-				.filter((a) => !a.parentId && !isProjectManagerSession(a) && isSidebarActiveAgent(a))
-				.sort((a, b) => b.createdAt - a.createdAt),
+				.filter((a) => !a.parentId && !isProjectManagerSession(a) && isActiveSurfaceAgent(a))
+				.sort((a, b) => b.lastActiveAt - a.lastActiveAt),
 		[agents, isProjectManagerSession],
 	)
 
@@ -191,8 +187,8 @@ export function AppSidebarContent({
 	const pinnedSidebarSessions = useMemo(
 		() =>
 			agents
-				.filter((a) => !a.parentId && !isProjectManagerSession(a) && pinnedIds.has(a.id))
-				.sort((a, b) => (pinnedSessions[b.id] ?? 0) - (pinnedSessions[a.id] ?? 0)),
+				.filter((a) => !a.parentId && !isProjectManagerSession(a) && pinnedIds.has(a.sessionId))
+				.sort((a, b) => (pinnedSessions[b.sessionId] ?? 0) - (pinnedSessions[a.sessionId] ?? 0)),
 		[agents, isProjectManagerSession, pinnedIds, pinnedSessions],
 	)
 
@@ -205,7 +201,7 @@ export function AppSidebarContent({
 					(a) =>
 						!a.parentId &&
 						!activeIds.has(a.id) &&
-						!pinnedIds.has(a.id) &&
+						!pinnedIds.has(a.sessionId) &&
 						!isProjectManagerSession(a),
 				)
 				.sort((a, b) => b.lastActiveAt - a.lastActiveAt)
@@ -680,9 +676,8 @@ const ProjectFolder = memo(function ProjectFolder({
 			if (agent) agents.push(agent)
 		}
 		return agents.sort((a, b) => {
-			// Active sessions float to top
-			const aActive = isSidebarActiveAgent(a)
-			const bActive = isSidebarActiveAgent(b)
+			const aActive = isActiveSurfaceAgent(a)
+			const bActive = isActiveSurfaceAgent(b)
 			if (aActive !== bActive) return aActive ? -1 : 1
 			// Within same group, sort by lastActiveAt (matches server's time_updated DESC)
 			return b.lastActiveAt - a.lastActiveAt
@@ -829,7 +824,7 @@ const SessionItem = memo(function SessionItem({
 	const showAttachedPulse = agent.isAttached && agent.status === "idle"
 	const pinnedSessions = useAtomValue(pinnedSessionsAtom)
 	const meta = renderAgentMeta(agent)
-	const isPinned = agent.id in pinnedSessions
+	const isPinned = agent.sessionId in pinnedSessions
 
 	const [isEditing, setIsEditing] = useState(false)
 	const [editValue, setEditValue] = useState(agent.name)
@@ -871,6 +866,11 @@ const SessionItem = memo(function SessionItem({
 
 	const tooltipLabel = showProject ? agent.project : agent.name
 	const title = isPinned ? `${agent.name} (Pinned)` : agent.name
+	const showDebug = import.meta.env.DEV
+	const debugLabel =
+		agent.visibilityReason === "visible" && agent.driftFlags.length === 0
+			? undefined
+			: [agent.visibilityReason, ...agent.driftFlags].join(" · ")
 
 	const btn = (
 		<SidebarMenuItem>
@@ -910,15 +910,21 @@ const SessionItem = memo(function SessionItem({
 							{title}
 						</span>
 
-						{agent.status === "waiting" && agent.currentActivity ? (
-							<span className="block truncate text-[11px] leading-tight text-yellow-500">
-								{agent.currentActivity}
-							</span>
-						) : meta ? (
-							<span className="block truncate text-[11px] leading-tight text-muted-foreground/70">
-								{meta}
-							</span>
-						) : null}
+				{agent.status === "waiting" && agent.currentActivity ? (
+					<span className="block truncate text-[11px] leading-tight text-yellow-500">
+						{agent.currentActivity}
+					</span>
+				) : meta ? (
+					<span className="block truncate text-[11px] leading-tight text-muted-foreground/70">
+						{meta}
+					</span>
+				) : null}
+				{showDebug && debugLabel ? (
+					<span className="block truncate text-[10px] leading-tight text-red-400/80">
+						{debugLabel}
+					</span>
+				) : null}
+
 					</div>
 				)}
 
@@ -934,26 +940,26 @@ const SessionItem = memo(function SessionItem({
 			<ContextMenuTrigger render={btn} />
 			<ContextMenuContent>
 				{onRename && (
-					<ContextMenuItem onSelect={startEditing}>
+					<ContextMenuItem onClick={startEditing}>
 						<PencilIcon className="size-4" />
 						Rename
 					</ContextMenuItem>
 				)}
 				{onTogglePinned && (
-					<ContextMenuItem onSelect={() => onTogglePinned(agent, !isPinned)}>
+					<ContextMenuItem onClick={() => onTogglePinned(agent, !isPinned)}>
 						{isPinned ? <PinOffIcon className="size-4" /> : <PinIcon className="size-4" />}
 						{isPinned ? "Unpin" : "Pin"}
 					</ContextMenuItem>
 				)}
 				{onFork && (
-					<ContextMenuItem onSelect={() => onFork(agent)}>
+					<ContextMenuItem onClick={() => onFork(agent)}>
 						<GitForkIcon className="size-4" />
 						Fork
 					</ContextMenuItem>
 				)}
 				{(onRename || onTogglePinned || onFork) && onDelete && <ContextMenuSeparator />}
 				{onDelete && (
-					<ContextMenuItem variant="destructive" onSelect={() => onDelete(agent)}>
+					<ContextMenuItem variant="destructive" onClick={() => onDelete(agent)}>
 						<TrashIcon className="size-4" />
 						Delete
 					</ContextMenuItem>
