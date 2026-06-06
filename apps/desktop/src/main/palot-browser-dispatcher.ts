@@ -1,25 +1,17 @@
 import type { BrowserActionEvent, BrowserLaneTabActionResult } from "../preload/api"
+import type { DispatchBrowserToolInput } from "../shared/palot-bridge-schemas"
+import { dispatchBrowserToolInputSchema } from "../shared/palot-bridge-schemas"
 import {
 	activateBrowserLaneTab,
+	clickBrowserLane,
 	closeBrowserLaneTab,
 	createBrowserLaneTab,
 	navigateBrowserLane,
+	scrollBrowserLane,
+	typeBrowserLane,
 } from "./browser-lane-manager"
 import { publishBrowserAction } from "./palot-browser-ipc"
 import { resolvePalotSessionBinding } from "./palot-resolver"
-
-export interface DispatchBrowserToolInput {
-	sessionId: string
-	toolName:
-		| "palot_browser_status"
-		| "palot_browser_open"
-		| "palot_browser_navigate"
-		| "palot_browser_tabs"
-		| "palot_browser_click"
-		| "palot_browser_type"
-		| "palot_browser_scroll"
-	args: Record<string, unknown>
-}
 
 function buildToolRequestEvent(input: DispatchBrowserToolInput): BrowserActionEvent {
 	return {
@@ -86,23 +78,52 @@ async function dispatchTabsAction(
 }
 
 export async function dispatchBrowserTool(input: DispatchBrowserToolInput): Promise<{ status: string; resultSummary: string }> {
-	const resolved = resolvePalotSessionBinding(input.sessionId)
+	const parsedInput = dispatchBrowserToolInputSchema.parse(input)
+	const resolved = resolvePalotSessionBinding(parsedInput.sessionId)
 	if (!resolved.binding?.browserLaneId) {
 		return {
 			status: "failed",
 			resultSummary: "unbound_session",
 		}
 	}
-	await publishBrowserAction({ event: buildToolRequestEvent(input) })
+	await publishBrowserAction({ event: buildToolRequestEvent(parsedInput) })
 	let resultSummary = "queued"
-	if (input.toolName === "palot_browser_navigate" || input.toolName === "palot_browser_open") {
-		const result = await navigateBrowserLane(resolved.binding.browserLaneId, String(input.args.url ?? "about:blank"))
+	if (parsedInput.toolName === "palot_browser_navigate" || parsedInput.toolName === "palot_browser_open") {
+		const result = await navigateBrowserLane(
+			resolved.binding.browserLaneId,
+			String(parsedInput.args.url ?? "about:blank"),
+		)
 		resultSummary = JSON.stringify(result)
-	} else if (input.toolName === "palot_browser_tabs") {
-		const result = await dispatchTabsAction(resolved.binding.browserLaneId, input.args)
+	} else if (parsedInput.toolName === "palot_browser_tabs") {
+		const result = await dispatchTabsAction(resolved.binding.browserLaneId, parsedInput.args)
 		resultSummary = JSON.stringify(result)
+	} else if (parsedInput.toolName === "palot_browser_click") {
+		await clickBrowserLane(resolved.binding.browserLaneId, {
+			x: Number(parsedInput.args.x ?? 0),
+			y: Number(parsedInput.args.y ?? 0),
+			button: parsedInput.args.button as "left" | "middle" | "right" | undefined,
+			clickCount: parsedInput.args.clickCount as number | undefined,
+		})
+		resultSummary = JSON.stringify({ status: "completed", action: "click" })
+	} else if (parsedInput.toolName === "palot_browser_type") {
+		await typeBrowserLane(resolved.binding.browserLaneId, {
+			text: String(parsedInput.args.text ?? ""),
+			submit: parsedInput.args.submit as boolean | undefined,
+		})
+		resultSummary = JSON.stringify({ status: "completed", action: "type" })
+	} else if (parsedInput.toolName === "palot_browser_scroll") {
+		await scrollBrowserLane(resolved.binding.browserLaneId, {
+			deltaX: parsedInput.args.deltaX as number | undefined,
+			deltaY:
+				typeof parsedInput.args.deltaY === "number"
+					? parsedInput.args.deltaY
+					: parsedInput.args.direction === "up"
+						? -Math.abs(Number(parsedInput.args.amount ?? 400))
+						: Math.abs(Number(parsedInput.args.amount ?? 400)),
+		})
+		resultSummary = JSON.stringify({ status: "completed", action: "scroll" })
 	}
-	await publishBrowserAction({ event: buildToolResultEvent(input, resultSummary) })
+	await publishBrowserAction({ event: buildToolResultEvent(parsedInput, resultSummary) })
 	return {
 		status: "queued",
 		resultSummary,

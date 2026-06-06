@@ -5,8 +5,12 @@ import type {
 	SessionBindingAuthority,
 	SessionBindingRecord,
 	SessionBindingStatus,
-	SessionBindingStoreFile,
 } from "../preload/api"
+import {
+	sessionBindingRecordSchema,
+	sessionBindingStoreFileSchema,
+	type SessionBindingStoreFile,
+} from "../shared/palot-bridge-schemas"
 import { getConfigDir } from "./automation/paths"
 import { createLogger } from "./logger"
 
@@ -31,11 +35,16 @@ function readStoreFile(): SessionBindingStoreFile {
 	if (!fs.existsSync(STORE_FILE)) {
 		return { version: 1, bindings: [] }
 	}
-	const raw = JSON.parse(fs.readFileSync(STORE_FILE, "utf-8")) as SessionBindingStoreFile
-	if (!Array.isArray(raw.bindings)) {
+	try {
+		const raw = JSON.parse(fs.readFileSync(STORE_FILE, "utf-8"))
+		return sessionBindingStoreFileSchema.parse(raw)
+	} catch (error) {
+		log.warn("Session binding store invalid, resetting", {
+			storeFile: STORE_FILE,
+			error: error instanceof Error ? error.message : String(error),
+		})
 		return { version: 1, bindings: [] }
 	}
-	return { version: 1, bindings: raw.bindings }
 }
 
 function writeStoreFile(store: SessionBindingStoreFile): void {
@@ -94,11 +103,11 @@ export function listSessionBindings(): SessionBinding[] {
 
 export function upsertSessionBinding(binding: SessionBinding): SessionBinding {
 	const store = readStoreFile()
-	const nextRecord: SessionBindingRecord = {
+	const nextRecord: SessionBindingRecord = sessionBindingRecordSchema.parse({
 		...binding,
 		updatedAt: Date.now(),
 		releasedAt: binding.status === "released" ? (binding.releasedAt ?? Date.now()) : null,
-	}
+	})
 	const index = store.bindings.findIndex((entry) => entry.openCodeSessionId === binding.openCodeSessionId)
 	if (index === -1) {
 		store.bindings.push(nextRecord)

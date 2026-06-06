@@ -36,6 +36,23 @@ export interface BrowserLaneNavigateResult {
 	url: string
 }
 
+export interface BrowserLaneClickInput {
+	x: number
+	y: number
+	button?: "left" | "middle" | "right"
+	clickCount?: number
+}
+
+export interface BrowserLaneTypeInput {
+	text: string
+	submit?: boolean
+}
+
+export interface BrowserLaneScrollInput {
+	deltaX?: number
+	deltaY?: number
+}
+
 const CDP_TIMEOUT_MS = 5000
 
 export async function listBrowserLaneCdpTabs(
@@ -88,6 +105,72 @@ export async function navigateBrowserLaneCdp(
 	}
 	await sendCdpCommand(target.webSocketDebuggerUrl, "Page.navigate", { url })
 	return { targetId: target.id, url }
+}
+
+export async function clickBrowserLaneCdp(
+	cdpEndpoint: string,
+	input: BrowserLaneClickInput,
+	tabId?: string | null,
+): Promise<void> {
+	const target = await resolvePageTarget(cdpEndpoint, tabId)
+	await sendCdpCommand(target.webSocketDebuggerUrl!, "Input.dispatchMouseEvent", {
+		type: "mousePressed",
+		x: input.x,
+		y: input.y,
+		button: input.button ?? "left",
+		clickCount: input.clickCount ?? 1,
+	})
+	await sendCdpCommand(target.webSocketDebuggerUrl!, "Input.dispatchMouseEvent", {
+		type: "mouseReleased",
+		x: input.x,
+		y: input.y,
+		button: input.button ?? "left",
+		clickCount: input.clickCount ?? 1,
+	})
+}
+
+export async function typeBrowserLaneCdp(
+	cdpEndpoint: string,
+	input: BrowserLaneTypeInput,
+	tabId?: string | null,
+): Promise<void> {
+	const target = await resolvePageTarget(cdpEndpoint, tabId)
+	await sendCdpCommand(target.webSocketDebuggerUrl!, "Input.insertText", {
+		text: input.text,
+	})
+	if (input.submit) {
+		await sendCdpCommand(target.webSocketDebuggerUrl!, "Input.dispatchKeyEvent", {
+			type: "keyDown",
+			key: "Enter",
+			code: "Enter",
+			windowsVirtualKeyCode: 13,
+			nativeVirtualKeyCode: 13,
+			unmodifiedText: "\r",
+			text: "\r",
+		})
+		await sendCdpCommand(target.webSocketDebuggerUrl!, "Input.dispatchKeyEvent", {
+			type: "keyUp",
+			key: "Enter",
+			code: "Enter",
+			windowsVirtualKeyCode: 13,
+			nativeVirtualKeyCode: 13,
+		})
+	}
+}
+
+export async function scrollBrowserLaneCdp(
+	cdpEndpoint: string,
+	input: BrowserLaneScrollInput,
+	tabId?: string | null,
+): Promise<void> {
+	const target = await resolvePageTarget(cdpEndpoint, tabId)
+	await sendCdpCommand(target.webSocketDebuggerUrl!, "Input.dispatchMouseEvent", {
+		type: "mouseWheel",
+		x: 0,
+		y: 0,
+		deltaX: input.deltaX ?? 0,
+		deltaY: input.deltaY ?? 0,
+	})
 }
 
 async function fetchCdpHttp(
@@ -169,9 +252,7 @@ async function sendCdpCommand(
 			clearTimeout(timeout)
 			try {
 				ws.close()
-			} catch {
-				// Ignore close errors during cleanup.
-			}
+			} catch {}
 			if (error) reject(error)
 			else resolve(result)
 		}

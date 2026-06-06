@@ -1,4 +1,4 @@
-import { execFile, type ChildProcess, spawn } from "node:child_process"
+import { type ChildProcess, spawn } from "node:child_process"
 import fs from "node:fs"
 import { homedir } from "node:os"
 import path from "node:path"
@@ -9,6 +9,8 @@ import type {
 	ActiveOpenCodeSessionsSnapshot,
 	LocalServerConfig,
 } from "../preload/api"
+import type { Session } from "@opencode-ai/sdk/v2/client"
+import { createOpencodeClient } from "@opencode-ai/sdk/v2/client"
 import { getCredential } from "./credential-store"
 import { loadPalotPluginModule } from "./palot-opencode-plugin-shim"
 import { findFreePort } from "./find-free-port"
@@ -18,8 +20,6 @@ import { getListeningProcessOwner, isCurrentUser, isProcessAlive } from "./proce
 import { readLockfile, removeLockfile, writeLockfile } from "./server-lockfile"
 import { getSettings } from "./settings-store"
 import { waitForEnv } from "./shell-env"
-import type { Session } from "@opencode-ai/sdk/v2/client"
-import { createOpencodeClient } from "@opencode-ai/sdk/v2/client"
 
 const log = createLogger("opencode-manager")
 const ACTIVE_SESSION_STREAM_POLL_MS = 1000

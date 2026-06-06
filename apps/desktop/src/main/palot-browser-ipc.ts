@@ -7,6 +7,12 @@ import type {
 	SidePanelTabId,
 } from "../preload/api"
 import {
+	browserStateSnapshotSchema,
+	palotUiStateSnapshotSchema,
+	publishBrowserActionInputSchema,
+	sessionBindingSchema,
+} from "../shared/palot-bridge-schemas"
+import {
 	getSessionBindingByOpenCodeSession,
 	releaseSessionBinding,
 	upsertSessionBinding,
@@ -116,7 +122,7 @@ export function setBrowserLaneSnapshot(input: {
 export function getBrowserStateSnapshot(sessionId: string): BrowserStateSnapshot {
 	const binding = getSessionBindingByOpenCodeSession(sessionId)
 	const laneSnapshot = binding?.browserLaneId ? laneSnapshots.get(binding.browserLaneId) : null
-	return {
+	return browserStateSnapshotSchema.parse({
 		sessionId,
 		activeLaneId: binding?.browserLaneId ?? null,
 		magicBrowserSessionId: binding?.magicBrowserSessionId ?? null,
@@ -132,11 +138,12 @@ export function getBrowserStateSnapshot(sessionId: string): BrowserStateSnapshot
 				viewportHeight: laneSnapshot.viewportHeight,
 			}
 			: null,
-	}
+	})
 }
 
 export async function publishBrowserAction(input: PublishBrowserActionInput): Promise<BrowserActionEvent> {
-	const event = normalizePublishedEvent(input.event)
+	const parsedInput = publishBrowserActionInputSchema.parse(input)
+	const event = normalizePublishedEvent(parsedInput.event)
 	const duplicate = actionEvents.find(
 		(entry) => entry.sessionId === event.sessionId && entry.sequence === event.sequence,
 	)
@@ -152,17 +159,18 @@ export async function publishBrowserAction(input: PublishBrowserActionInput): Pr
 }
 
 export function getSessionBinding(sessionId: string): SessionBinding | null {
-	return getSessionBindingByOpenCodeSession(sessionId)
+	const binding = getSessionBindingByOpenCodeSession(sessionId)
+	return binding ? sessionBindingSchema.parse(binding) : null
 }
 
 export function getUiStateSnapshot(): PalotUiStateSnapshot {
-	return {
+	return palotUiStateSnapshotSchema.parse({
 		sidePanel: {
 			open: uiStateSnapshot.sidePanel.open,
 			activeTab: uiStateSnapshot.sidePanel.activeTab,
 			availableTabs: [...uiStateSnapshot.sidePanel.availableTabs],
 		},
-	}
+	})
 }
 
 export function setUiStateSnapshot(input: {
@@ -184,7 +192,7 @@ export function setUiStateSnapshot(input: {
 }
 
 export function setSessionBinding(binding: SessionBinding): SessionBinding {
-	return upsertSessionBinding(binding)
+	return upsertSessionBinding(sessionBindingSchema.parse(binding))
 }
 
 export function releaseSessionBindingBySessionId(sessionId: string): SessionBinding | null {

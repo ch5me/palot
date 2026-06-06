@@ -88,7 +88,7 @@ describe("palot bridge plugin", () => {
 		)
 		const parsed = JSON.parse(result)
 		expect(parsed.status).toBe("queued")
-		expect(parsed.toolName).toBe("palot_browser_navigate")
+		expect(parsed.resultSummary).toContain("https://example.com")
 	})
 
 	test("tool returns typed unbound error", async () => {
@@ -120,6 +120,17 @@ describe("palot bridge plugin", () => {
 		)
 		expect(JSON.parse(geometry).errorCode).toBe("geometry_low_confidence")
 		expect(JSON.parse(takeover).errorCode).toBe("human_in_control")
+	})
+
+	test("tool schemas reject malformed browser args", async () => {
+		const plugin = createPalotPlugin({ resolve: boundResolver })
+		const hooks = await plugin()
+		await expect(
+			hooks.tool.palot_browser_navigate.execute({}, { sessionID: "ses_bound" }),
+		).rejects.toThrow()
+		await expect(
+			hooks.tool.palot_open_side_panel.execute({ tab: "nope" }, { sessionID: "ses_bound" }),
+		).rejects.toThrow()
 	})
 
 	test("side panel tools expose current ui state and open valid tabs", async () => {
