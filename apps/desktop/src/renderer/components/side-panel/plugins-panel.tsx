@@ -10,6 +10,7 @@ import {
 import { useMemo } from "react"
 import type { Agent } from "../../lib/types"
 import { getProjectClient } from "../../services/connection-manager"
+import { listMcpConnectionRecords } from "../../services/backend"
 
 interface PluginsPanelProps {
 	agent: Agent
@@ -47,29 +48,53 @@ function useCommands(directory: string) {
 	})
 }
 
-function useMcpProviders(directory: string) {
+function useMcpRecords() {
 	return useQuery({
-		queryKey: ["plugins-surface-mcp", directory],
+		queryKey: ["plugins-surface-mcp-records"],
 		queryFn: async () => {
-			const client = getProjectClient(directory)
-			if (!client) return null
-			try {
-				const result = await client.config.providers()
-				return (result.data ?? null) as Record<string, unknown> | null
-			} catch {
-				return null
-			}
+			return await listMcpConnectionRecords()
 		},
 	})
 }
 
-function extractMcpServers(providers: Record<string, unknown> | null): Array<{ name: string; status: string }> {
-	if (!providers) return []
-	const mcp = (providers.mcp as Record<string, unknown> | undefined) ?? {}
-	return Object.entries(mcp).map(([name, value]) => {
-		const entry = (value ?? {}) as Record<string, unknown>
-		const enabled = entry.enabled !== false
-		return { name, status: enabled ? "enabled" : "disabled" }
+function extractMcpServers(
+	records: Array<{
+		name: string
+		transport: string
+		authState?: string
+		testState?: string
+		status?: string
+		runtimeState?: string
+		lastHealthyAt?: string | null
+		canonicalStore?: string
+		ownershipMode?: string
+	}>,
+): Array<{
+	name: string
+	status: string
+	posture: string
+	hydrated: string
+	canonicalStore: string
+	ownershipMode: string
+}> {
+	return records.map((record) => {
+		const status =
+			record.status ??
+			(record.testState === "failing" ? "degraded" : record.authState === "failed" ? "needs_auth" : "ready")
+		const hydrated =
+			record.runtimeState === "active" || record.lastHealthyAt
+				? "active"
+				: record.runtimeState === "projected"
+					? "projected"
+					: "inactive"
+		return {
+			name: record.name,
+			status,
+			posture: record.authState === "authenticated" ? "connected" : "configured",
+			hydrated,
+			canonicalStore: record.canonicalStore ?? "local",
+			ownershipMode: record.ownershipMode ?? "local-only",
+		}
 	})
 }
 
@@ -77,28 +102,29 @@ export function PluginsPanel({ agent, className }: PluginsPanelProps) {
 	const queryClient = useQueryClient()
 	const skills = useSkills(agent.directory)
 	const commands = useCommands(agent.directory)
-	const mcpQuery = useMcpProviders(agent.directory)
+	const mcpQuery = useMcpRecords()
 	const clientReachable = Boolean(getProjectClient(agent.directory))
 
 	const refresh = () => {
 		void queryClient.invalidateQueries({ queryKey: ["plugins-surface-skills", agent.directory] })
 		void queryClient.invalidateQueries({ queryKey: ["plugins-surface-commands", agent.directory] })
-		void queryClient.invalidateQueries({ queryKey: ["plugins-surface-mcp", agent.directory] })
+		void queryClient.invalidateQueries({ queryKey: ["plugins-surface-mcp-records"] })
 	}
 
-	const mcpServers = useMemo(
-		() => extractMcpServers(mcpQuery.data ?? null),
-		[mcpQuery.data],
-	)
+	const mcpServers = useMemo(() => extractMcpServers(mcpQuery.data ?? []), [mcpQuery.data])
 
 	const summary = useMemo(() => {
+		const activeCount = mcpServers.filter((server) => server.hydrated === "active").length
+		const gatewayCount = mcpServers.filter((server) => server.canonicalStore === "gateway").length
 		return [
 			`${skills.data?.length ?? 0} skills`,
 			`${commands.data?.length ?? 0} commands`,
 			`${mcpServers.length} MCP servers`,
+			`${activeCount} active`,
+			`${gatewayCount} gateway-owned`,
 			clientReachable ? "opencode reachable" : "opencode not reachable",
 		].join(" · ")
-	}, [skills.data?.length, commands.data?.length, mcpServers.length, clientReachable])
+	}, [skills.data?.length, commands.data?.length, mcpServers, clientReachable])
 
 	return (
 		<div className={`flex h-full min-h-0 flex-col bg-background ${className ?? ""}`}>
@@ -205,16 +231,29 @@ export function PluginsPanel({ agent, className }: PluginsPanelProps) {
 									key={server.name}
 									className="flex items-center justify-between gap-2 rounded-md border border-border bg-muted/10 px-3 py-2"
 								>
-									<span className="font-mono text-xs text-foreground">{server.name}</span>
-									<span
-										className={
-											server.status === "enabled"
-												? "rounded-full bg-emerald-500/15 px-2 py-0.5 text-[10px] uppercase tracking-wide text-emerald-700 dark:text-emerald-300"
-												: "rounded-full bg-amber-500/15 px-2 py-0.5 text-[10px] uppercase tracking-wide text-amber-700 dark:text-amber-300"
-										}
-									>
-										{server.status}
-									</span>
+									<div className="space-y-1">
+										<span className="font-mono text-xs text-foreground">{server.name}</span>
+										<div className="flex items-center gap-2 text-[10px] uppercase tracking-wide text-muted-foreground">
+											<span>{server.posture}</span>
+											<span>•</span>
+											<span>{server.hydrated}</span>
+											<span>•</span>
+											<span>{server.ownershipMode}</span>
+											<span>•</span>
+											<span>{server.canonicalStore}</span>
+										</div>
+									</div>
+									<div className="flex items-center gap-2">
+										<span
+											className={
+												server.status === "connected"
+													? "rounded-full bg-emerald-500/15 px-2 py-0.5 text-[10px] uppercase tracking-wide text-emerald-700 dark:text-emerald-300"
+													: "rounded-full bg-amber-500/15 px-2 py-0.5 text-[10px] uppercase tracking-wide text-amber-700 dark:text-amber-300"
+											}
+										>
+											{server.status}
+										</span>
+									</div>
 								</div>
 							))}
 						</div>

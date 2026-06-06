@@ -233,6 +233,29 @@ export async function fetchPalotSessionBinding(sessionId: string): Promise<Sessi
 	return null
 }
 
+export async function fetchPalotUiStateSnapshot(): Promise<import("../../preload/api").PalotUiStateSnapshot | null> {
+	if (isElectron) {
+		return window.elf.palot.getUiStateSnapshot()
+	}
+	return null
+}
+
+export async function openPalotSidePanel(tab: import("../../preload/api").SidePanelTabId): Promise<import("../../preload/api").PalotUiStateSnapshot | null> {
+	if (isElectron) {
+		return window.elf.palot.openSidePanel(tab)
+	}
+	return null
+}
+
+export function subscribeToPalotOpenSidePanel(
+	callback: (payload: { tab: import("../../preload/api").SidePanelTabId }) => void,
+): () => void {
+	if (isElectron) {
+		return window.elf.palot.onOpenSidePanel(callback)
+	}
+	return () => {}
+}
+
 export function subscribeToBrowserActions(callback: (event: BrowserActionEvent) => void): () => void {
 	if (isElectron) {
 		return window.elf.palot.onBrowserActions(callback)
@@ -532,6 +555,58 @@ export async function fetchKnownProjects(rootDirectory?: string): Promise<Projec
 		return window.elf.listProjects(rootDirectory) as Promise<ProjectInfo[]>
 	}
 	throw new Error("Project listing is only available in Electron mode")
+}
+
+export async function browseMcpCatalog(input: import("../../preload/api").McpCatalogBrowseInput) {
+	if (isElectron) {
+		return window.elf.mcpConnections.browseCatalog(input)
+	}
+	throw new Error("MCP catalog browse is only available in Electron mode")
+}
+
+export async function searchMcpCatalog(input: import("../../preload/api").McpCatalogSearchInput) {
+	if (isElectron) {
+		return window.elf.mcpConnections.searchCatalog(input)
+	}
+	throw new Error("MCP catalog search is only available in Electron mode")
+}
+
+export async function registerMcpConnection(input: {
+	name: string
+	transport: "remote-http" | "remote-sse" | "local-stdio"
+	target: string
+	ownershipMode?: "local-only" | "cloud-only" | "handoff-derived"
+	canonicalStore?: "local" | "gateway"
+	restorePolicy?: "none" | "reproject_on_boot" | "reproject_and_reauth_if_needed"
+	source?: "registry" | "curated" | "imported" | "manual"
+	scope?: "home" | "project"
+	metadata?: Record<string, unknown>
+}) {
+	if (isElectron) {
+		return window.elf.mcpConnections.register(input)
+	}
+	throw new Error("MCP connection registration is only available in Electron mode")
+}
+
+export async function loginMcpConnection(name: string) {
+	if (isElectron) {
+		return window.elf.mcpConnections.login(name)
+	}
+	throw new Error("MCP connection login is only available in Electron mode")
+}
+
+export async function testMcpConnection(name: string) {
+	if (isElectron) {
+		return window.elf.mcpConnections.test(name)
+	}
+	throw new Error("MCP connection test is only available in Electron mode")
+}
+
+export async function listMcpConnectionRecords() {
+	if (isElectron) {
+		return window.elf.mcpConnections.listRecords()
+	}
+	throw new Error("MCP connection records are only available in Electron mode")
 }
 
 export async function readFileContents(filePath: string): Promise<FileReadResult> {

@@ -156,7 +156,7 @@ On first launch, Elf offers a guided migration wizard that detects your existing
 
 ### Configuration
 
-Elf is a GUI layer on top of OpenCode, so core configuration like model providers, MCP servers, custom tools, and agent behavior is managed through OpenCode's own config files. Refer to the [OpenCode documentation](https://opencode.ai/docs) for setup instructions.
+Elf is a GUI layer on top of OpenCode, so core configuration like model providers, MCP servers, custom tools, and agent behavior is still grounded in OpenCode config. MCP setup is now surfaced in Settings through a first-class Connections flow for discovery, auth, posture, and migration visibility. Refer to the [OpenCode documentation](https://opencode.ai/docs) for lower-level provider and server details.
 
 ### From source
 

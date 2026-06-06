@@ -1,0 +1,24 @@
+Task 9 MCPorter adapter proof
+
+CLI/runtime inspection on this machine:
+- `npx -y mcporter config --help`
+- `npx -y mcporter auth --help`
+- `npx -y mcporter vault --help`
+- `npx -y mcporter list --help`
+
+Official entry points confirmed:
+- config add
+- config login
+- auth
+- config logout
+- vault set
+- list --status
+
+Adapter contract recorded in `apps/desktop/src/renderer/lib/mcp-connections.ts` as `McporterAdapterContract`.
+Expected UI flow mapping:
+1. config add
+2. config login or auth
+3. list --status for safe probe
+4. config logout for disconnect
+
+No handcrafted vault schema required.

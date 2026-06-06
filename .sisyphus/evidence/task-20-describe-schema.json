@@ -1,0 +1,1 @@
+{"serverId":"github","toolName":"issues.search","schema":{"type":"object","properties":{"query":{"type":"string"},"state":{"type":"string"}},"required":["query"]},"hydration":"selected-tool-only"}

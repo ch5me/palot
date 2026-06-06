@@ -16,6 +16,7 @@ import { NotFoundPage } from "./components/not-found-page"
 import { RootLayout } from "./components/root-layout"
 import { SessionRoute } from "./components/session-route"
 import { AboutSettings } from "./components/settings/about-settings"
+import { ConnectionsSettings } from "./components/settings/connections-settings"
 import { GeneralSettings } from "./components/settings/general-settings"
 import { NotificationSettings } from "./components/settings/notification-settings"
 import { ProfileSettings } from "./components/settings/profile-settings"
@@ -109,6 +110,12 @@ const settingsProvidersRoute = createRoute({
 	component: ProviderSettings,
 })
 
+const settingsConnectionsRoute = createRoute({
+	getParentRoute: () => settingsRoute,
+	path: "connections",
+	component: ConnectionsSettings,
+})
+
 const settingsProfilesRoute = createRoute({
 	getParentRoute: () => settingsRoute,
 	path: "profiles",
@@ -178,6 +185,7 @@ const routeTree = rootRoute.addChildren([
 			settingsServersRoute,
 			settingsNotificationsRoute,
 			settingsProvidersRoute,
+			settingsConnectionsRoute,
 			settingsProfilesRoute,
 			settingsWorktreesRoute,
 			settingsSetupRoute,

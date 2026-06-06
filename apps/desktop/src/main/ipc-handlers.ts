@@ -114,9 +114,11 @@ import {
 import {
 	getBrowserStateSnapshot,
 	getSessionBinding,
+	getUiStateSnapshot,
 	publishBrowserAction,
 	releaseSessionBindingBySessionId,
 	setSessionBinding,
+	setUiStateSnapshot,
 } from "./palot-browser-ipc"
 import { getOpaqueWindows, getSettings, onSettingsChanged, updateSettings } from "./settings-store"
 import {
@@ -126,6 +128,14 @@ import {
 	installUpdate,
 	openReleasePage,
 } from "./updater"
+import { removeMcpConnectionConfig, upsertMcpConnectionConfig } from "./mcp-connections-config"
+import { browseCatalog, searchCatalog } from "./mcp-catalog-service"
+import {
+	listMcpConnectionRecords,
+	loginMcpConnection,
+	registerMcpConnection,
+	testMcpConnection,
+} from "./mcp-connections-runtime"
 
 const log = createLogger("ipc")
 const ptyController = createPtyController({
@@ -413,6 +423,25 @@ export function registerIpcHandlers(): void {
 		withLogging("palot:binding-release", async (_, sessionId: string) =>
 			releaseSessionBindingBySessionId(sessionId),
 		),
+	)
+	ipcMain.handle(
+		"palot:ui-state-snapshot",
+		withLogging("palot:ui-state-snapshot", async () => getUiStateSnapshot()),
+	)
+	ipcMain.handle(
+		"palot:open-side-panel",
+		withLogging("palot:open-side-panel", async (_, tab: import("../preload/api").SidePanelTabId) => {
+			const snapshot = setUiStateSnapshot({
+				sidePanel: {
+					open: true,
+					activeTab: tab,
+				},
+			})
+			for (const win of BrowserWindow.getAllWindows()) {
+				win.webContents.send("palot:open-side-panel", { tab })
+			}
+			return snapshot
+		}),
 	)
 
 	// --- Model state ---
@@ -821,6 +850,70 @@ export function registerIpcHandlers(): void {
 	ipcMain.handle("settings:get", () => getSettings())
 
 	ipcMain.handle("settings:update", (_, partial) => updateSettings(partial))
+
+	ipcMain.handle(
+		"mcp-connections:config-upsert",
+		withLogging(
+			"mcp-connections:config-upsert",
+			(_, input: import("../preload/api").McpConnectionConfigMutationInput) =>
+				upsertMcpConnectionConfig(input),
+		),
+	)
+
+	ipcMain.handle(
+		"mcp-connections:config-remove",
+		withLogging("mcp-connections:config-remove", (_, name: string) => removeMcpConnectionConfig(name)),
+	)
+
+	ipcMain.handle(
+		"mcp-connections:catalog-browse",
+		withLogging(
+			"mcp-connections:catalog-browse",
+			(_, input: import("../preload/api").McpCatalogBrowseInput) => browseCatalog(input),
+		),
+	)
+
+	ipcMain.handle(
+		"mcp-connections:catalog-search",
+		withLogging(
+			"mcp-connections:catalog-search",
+			(_, input: import("../preload/api").McpCatalogSearchInput) => searchCatalog(input),
+		),
+	)
+
+	ipcMain.handle(
+		"mcp-connections:register",
+		withLogging(
+			"mcp-connections:register",
+			(
+				_,
+				input: {
+					name: string
+					transport: "remote-http" | "remote-sse" | "local-stdio"
+					target: string
+					ownershipMode?: "local-only" | "cloud-only" | "handoff-derived"
+					canonicalStore?: "local" | "gateway"
+					restorePolicy?: "none" | "reproject_on_boot" | "reproject_and_reauth_if_needed"
+					source?: "registry" | "curated" | "imported" | "manual"
+					scope?: "home" | "project"
+					metadata?: Record<string, unknown>
+				},
+
+			) => registerMcpConnection(input),
+		),
+	)
+
+	ipcMain.handle(
+		"mcp-connections:login",
+		withLogging("mcp-connections:login", (_, name: string) => loginMcpConnection(name)),
+	)
+
+	ipcMain.handle(
+		"mcp-connections:test",
+		withLogging("mcp-connections:test", (_, name: string) => testMcpConnection(name)),
+	)
+
+	ipcMain.handle("mcp-connections:records-list", withLogging("mcp-connections:records-list", () => listMcpConnectionRecords()))
 
 	// --- Credential storage (safeStorage-backed) ---
 

@@ -1,0 +1,8 @@
+Task 21 local validation proof
+
+`mcp_call` now validates args locally before queueing execution:
+- requires `query` as non-empty string
+- returns `validation_error` when malformed
+- includes `remoteCalled: false` on validation failure
+
+This prevents remote execution on malformed payloads.

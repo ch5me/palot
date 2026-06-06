@@ -23,11 +23,7 @@ export function GenUiArtifactWidget({ agent, placement }: GenUiArtifactWidgetPro
 	)
 
 	if (visibleArtifacts.length === 0) {
-		return (
-			<div className="rounded-xl border border-dashed border-border/60 bg-muted/10 px-3 py-4 text-center text-xs text-muted-foreground">
-				Pin a GenUI artifact to keep it visible here.
-			</div>
-		)
+		return null
 	}
 
 	return (

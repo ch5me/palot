@@ -11,6 +11,12 @@ import { installLiquidGlass, resolveWindowChrome } from "./liquid-glass"
 import { createLogger } from "./logger"
 import { startMdnsScanner, stopMdnsScanner } from "./mdns-scanner"
 import { initBrowserLaneManager, shutdownBrowserLaneManager } from "./browser-lane-manager"
+import {
+	handleNotchCommandArgv,
+	hasNotchCommandArgv,
+	initNotchCommandFileWatcher,
+	shutdownNotchCommandFileWatcher,
+} from "./notch-companion"
 import { stopServer } from "./opencode-manager"
 import { initSettingsStore } from "./settings-store"
 import { startEnvResolution } from "./shell-env"
@@ -135,6 +141,7 @@ if (disabledFeatures.length > 0) {
 }
 
 const isDev = !app.isPackaged
+let mainWindow: BrowserWindow | null = null
 
 // Enable Chrome DevTools Protocol (CDP) in dev mode so external tools
 // (agent-browser, Playwright, etc.) can connect for visual testing.
@@ -151,7 +158,9 @@ if (isDev) {
 	app.setPath("userData", path.join(app.getPath("appData"), "Elf Dev"))
 }
 
-async function createWindow(): Promise<BrowserWindow> {
+async function createWindow(options: { showOnReady?: boolean } = {}): Promise<BrowserWindow> {
+	if (mainWindow && !mainWindow.isDestroyed()) return mainWindow
+
 	const title = isDev ? "Elf (Dev)" : "Elf"
 
 	const isMac = process.platform === "darwin"
@@ -198,11 +207,15 @@ async function createWindow(): Promise<BrowserWindow> {
 			v8CacheOptions: "bypassHeatCheckAndEagerCompile",
 		},
 	})
+	mainWindow = win
+	win.on("closed", () => {
+		if (mainWindow === win) mainWindow = null
+	})
 
 	// Show the window once the renderer has painted — avoids a flash of
 	// transparent/blank content while the page loads.
 	win.once("ready-to-show", () => {
-		win.show()
+		if (options.showOnReady !== false) win.show()
 	})
 
 	// Install liquid glass effect after window creation (tier 1 only)
@@ -258,15 +271,22 @@ const gotLock = app.requestSingleInstanceLock()
 if (!gotLock) {
 	app.quit()
 } else {
-	app.on("second-instance", () => {
-		const win = BrowserWindow.getAllWindows()[0]
+	app.on("second-instance", (_event, argv) => {
+		if (hasNotchCommandArgv(argv)) {
+			handleNotchCommandArgv(argv).catch((err) => log.error("Failed to handle notch command", err))
+			return
+		}
+
+		const win = mainWindow
 		if (win) {
 			if (win.isMinimized()) win.restore()
+			win.show()
 			win.focus()
 		}
 	})
 
 	app.whenReady().then(() => {
+		const notchLaunch = hasNotchCommandArgv(process.argv)
 		// Bypass Chromium's Private Network Access checks for OpenCode server requests.
 		// Chromium (134+/Electron 40+) blocks renderer fetch() to private network addresses
 		// (127.0.0.1) with ERR_ALPN_NEGOTIATION_FAILED when the PNA preflight response
@@ -292,13 +312,17 @@ if (!gotLock) {
 		registerIpcHandlers()
 		initBrowserLaneManager().catch(console.error)
 		initAutomations().catch(console.error)
+		initNotchCommandFileWatcher()
 		startMdnsScanner().catch((err) => log.warn("mDNS scanner failed to start", err))
-		createWindow()
-		createTray(() => BrowserWindow.getAllWindows()[0])
+		createWindow({ showOnReady: !notchLaunch })
+		createTray(() => mainWindow ?? undefined)
 		initAutoUpdater().catch(console.error)
+		if (notchLaunch) {
+			handleNotchCommandArgv(process.argv).catch((err) => log.error("Failed to handle notch command", err))
+		}
 
 		app.on("activate", () => {
-			if (BrowserWindow.getAllWindows().length === 0) createWindow()
+			if (!mainWindow) createWindow()
 		})
 	})
 
@@ -314,6 +338,7 @@ if (!gotLock) {
 	// source of truth for teardown -- stopServer() etc. are idempotent.
 	app.on("before-quit", () => {
 		destroyTray()
+		shutdownNotchCommandFileWatcher()
 		shutdownAutomations()
 		shutdownBrowserLaneManager().catch(console.error)
 		stopMdnsScanner()

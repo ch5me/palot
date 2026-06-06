@@ -1,0 +1,1 @@
+Placeholder evidence note: Connection detail dialog now exposes transport, auth, health, ownership, tool count, and read/write summary in `apps/desktop/src/renderer/components/settings/connections-settings.tsx`.

@@ -59,6 +59,11 @@ test("event adapter maps session events into binding lifecycle", async () => {
 			properties: { sessionID: "ses_evt" },
 		} as never)
 		assert.equal(idle?.status, "attached")
+		const statusIdle = store.applyBindingLifecycleEvent({
+			type: "session.status",
+			properties: { sessionID: "ses_evt", status: { type: "idle" } },
+		} as never)
+		assert.equal(statusIdle?.status, "attached")
 		const deleted = store.applyBindingLifecycleEvent({
 			type: "session.deleted",
 			properties: { info: { id: "ses_evt" } },

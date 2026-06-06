@@ -30,7 +30,9 @@ Plan a full product/system for making MCP setup dead simple in Palot/Elf: users 
 - Token/context efficiency matters: tools should be injected lazily and selectively.
 - Need support for both cloud-hosted OpenCode and laptop-local OpenCode.
 - Local mode must work even if no gateway exists.
-- Cloud mode may still store credentials near runtime if needed, but architecture must account for portability and safety.
+- Local desktop/electron mode should keep MCP secrets fully local to the user's machine.
+- Cloud-hosted disposable `sprite.dev` containers should persist connection state and auth durability through a gateway-side vault/proxy model.
+- When a cloud container shuts down, connection record plus auth state should survive and restore automatically on next boot.
 
 **Research Findings**:
 - Provider settings UI already exists with searchable catalog, connect dialogs, API key entry, OAuth launch/polling, and hot refresh via `client.global.dispose()`.
@@ -55,6 +57,30 @@ Plan a full product/system for making MCP setup dead simple in Palot/Elf: users 
 ### Core Objective <!-- oc:id=sec_ad -->
 Design and land a full-stack Connections system that turns MCP setup into a guided product experience while preserving MCPorter as the durable execution/auth control plane and keeping agent context lean through catalog-first selective hydration.
 
+### Canonical Ownership Model
+- **Gateway connection store** is the canonical source of truth for cloud-hosted disposable-container connections.
+  - Stores: connection record, auth durability state, curated metadata joins, last test result, ownership mode, restore policy.
+  - Does **not** become the default store for pure local/electron secrets.
+- **Local machine state** is the canonical source of truth for pure local/electron mode.
+  - Stores: local MCPorter config/auth state and any local OS-backed secret storage used by desktop flows.
+  - Never mirrors to gateway unless the user performs an explicit handoff/import action.
+- **MCPorter** is the canonical control plane for connector registration, auth, health probing, schema discovery, and direct execution semantics.
+- **OpenCode runtime config** is a projection target, not the canonical connection registry.
+  - It receives materialized MCP entries needed for the current runtime/server.
+- **Renderer/UI state** is derived from the canonical connection store plus runtime posture probes.
+
+### Projection Rules
+- **Local/electron mode**:
+  1. Read local connection state from local machine surfaces.
+  1. Register/project into local MCPorter + local OpenCode runtime.
+  1. Derive UI state from local canonical store + runtime status.
+- **Cloud disposable-container mode**:
+  1. Read connection records from gateway canonical store.
+  1. Materialize runtime projection into cloud MCPorter/OpenCode surfaces on boot.
+  1. Validate auth state / refresh viability.
+  1. Mark degraded or re-auth-needed if projection succeeds but tokens are no longer usable.
+  1. Derive UI state from gateway canonical store + live runtime posture.
+
 ### Concrete Deliverables <!-- oc:id=sec_ae -->
 - New settings tab and route for `Connections`
 - Connection discovery dialog with curated top picks + registry search + pagination
@@ -63,7 +89,44 @@ Design and land a full-stack Connections system that turns MCP setup into a guid
 - Auth/status model supporting OAuth, device/manual flows, env-required flows, and degraded states
 - Runtime `mcp.search` / `mcp.describe` / `mcp.call` / `mcp.status` contract and integration design
 - Dual-mode credential storage and portability design for cloud + laptop-local
+- Explicit local-secrets-only desktop mode plus gateway-vault-backed cloud restore mode for disposable containers
 - Verification/evidence plan for UX, auth flows, runtime tool availability, and failure recovery
+
+### Connection Record Schema
+- `id`: stable connection id
+- `serverId`: canonical MCP server identifier
+- `source`: `registry` | `curated` | `imported` | `manual`
+- `transport`: `remote-http` | `remote-sse` | `local-stdio`
+- `ownershipMode`: `local-only` | `cloud-only` | `handoff-derived`
+- `canonicalStore`: `local` | `gateway`
+- `installState`: `not_installed` | `installing` | `installed`
+- `authState`: `unknown` | `not_required` | `needs_auth` | `authenticated` | `expired` | `failed`
+- `runtimeState`: `not_projected` | `projected` | `active` | `degraded` | `offline`
+- `testState`: `untested` | `passing` | `failing`
+- `provenance`: import/manual/curated metadata
+- `restorePolicy`: `none` | `reproject_on_boot` | `reproject_and_reauth_if_needed`
+- `lastTestAt`, `lastError`, `lastHealthyAt`
+
+### Curated Metadata Schema
+- `serverId`
+- `rank`
+- `category`
+- `whyRecommended`
+- `authComplexity`: `one_click` | `oauth` | `device_code` | `env_manual` | `local_command`
+- `requiresGateway`: boolean
+- `readToolHint`
+- `writeRisk`: `read_only` | `mixed` | `write_heavy`
+- `iconRef`
+- `docsUrl`
+- `manualOnly`: boolean
+
+### Status Precedence Rules
+- `offline` wins when projected runtime cannot be reached at all.
+- `needs_auth` wins over `projected` when config exists but auth cannot complete.
+- `missing_env` wins for required local/env setup gaps before auth attempts.
+- `degraded` wins when projected runtime exists but health/test fails non-fatally.
+- `active` requires projected runtime plus passing test or equivalent proven healthy state.
+- `configured`/`installed` must never be shown as `active` without a successful runtime projection.
 
 ### Definition of Done <!-- oc:id=sec_af -->
 - [ ] User can open a dedicated Connections surface and browse curated + registry MCP entries.
@@ -72,6 +135,8 @@ Design and land a full-stack Connections system that turns MCP setup into a guid
 - [ ] A successful connect flow updates runtime posture without requiring app restart or manual refresh.
 - [ ] Runtime agent contract uses compact MCP meta-tools instead of globally injecting all server schemas.
 - [ ] Plan includes explicit architecture for both gateway/cloud and laptop-local runtime modes.
+- [ ] Plan makes local desktop/electron mode local-secrets-only by default.
+- [ ] Plan makes cloud disposable-container mode restore connection record + auth state through durable gateway-side persistence.
 - [ ] Plan includes explicit non-goals and risks around token sync/refresh rotation.
 
 ### Must Have <!-- oc:id=sec_ag -->
@@ -87,6 +152,10 @@ Design and land a full-stack Connections system that turns MCP setup into a guid
 - No global dump of every connected MCP tool/schema into initial agent context.
 - No plan that assumes cloud-only or gateway-required operation.
 - No plan that relies on unsafe live bidirectional refresh-token sync between local and cloud surfaces.
+- No plan that moves local desktop secrets into gateway by default when user is operating purely local/electron mode.
+- No plan that leaves cloud disposable-container connections unable to restore after container churn.
+- No ambiguous canonical store between gateway, MCPorter, OpenCode config, and UI caches.
+- No duplicate source-of-truth registry split between MCPorter and OpenCode runtime without explicit projection rules.
 - No hardcoding of recommendation popularity as the only ranking source; recommendations are downstream metadata.
 - No product promise that every MCP can be one-click OAuth; env/manual/device-code flows must remain first-class.
 - No dependency on generated per-server TS clients as the default runtime path.
@@ -110,6 +179,7 @@ Every task below includes concrete scenarios with evidence paths under `.sisyphu
 - **Desktop/Electron IPC**: use bounded commands + logs + renderer-visible behavior
 - **Backend/runtime**: use MCPorter/OpenCode commands and API queries
 - **Catalog/ranking**: use saved JSON samples and deterministic assertions
+- **Pure logic/state**: add small focused tests for normalization, ranking, projection, and status precedence utilities even though broad UI automation coverage is light today
 
 ---
 
@@ -194,12 +264,17 @@ Wave FINAL (After all implementation tasks):
 
 ## TODOs
 
-- [ ] 1. Define end-to-end product architecture and connection state model
+- [x] 1. Define end-to-end product architecture and connection state model
+
+  **Decision locked during planning**:
+  - Gateway canonical store for cloud-disposable mode; local canonical store for pure electron/local mode.
+  - OpenCode config is a projection target, not the canonical registry.
 
   **What to do**:
-  - Define the canonical domain model for MCP connections: source, transport, auth mode, install state, runtime state, ownership mode, and test state.
+  - Define the canonical domain model for MCP connections: source, transport, auth mode, install state, runtime state, ownership mode, canonical store, and test state.
   - Separate provider-model concepts from MCP-server concepts so UI/data layers stay clean.
   - Define stable IDs and where user-curated metadata lives versus upstream registry metadata.
+  - Define explicit projection rules from canonical store into MCPorter and OpenCode runtime.
 
   **Must NOT do**:
   - Do not overload existing provider types with MCP-only semantics.
@@ -224,11 +299,13 @@ Wave FINAL (After all implementation tasks):
   - `apps/desktop/src/renderer/components/settings/provider-settings.tsx:117` - existing connection-like list structure and connection state presentation.
   - `apps/desktop/src/renderer/components/settings/connect-provider-dialog.tsx:242` - existing multi-step connect wizard baseline.
   - `apps/desktop/src/renderer/components/side-panel/plugins-panel.tsx:50` - current MCP posture surface showing what exists today.
+  - `apps/desktop/src/renderer/router.tsx:22` - current settings route registration seam.
   - `/Users/hassoncs/.config/skillshare/skills/mcp-worker-bindings/SKILL.md:14` - company policy for MCP control plane and lazy hydration.
 
   **Acceptance Criteria**:
   - [ ] Canonical state model documented in implementation surfaces.
   - [ ] UI, registry, MCPorter, and runtime concepts separated cleanly.
+  - [ ] Canonical store and projection targets are explicit and unambiguous.
 
   **QA Scenarios**:
   ```
@@ -255,12 +332,17 @@ Wave FINAL (After all implementation tasks):
 
   **Commit**: NO
 
-- [ ] 2. Define MCPorter control-plane contract and wrapper surface
+- [x] 2. Define MCPorter control-plane contract and wrapper surface
+
+  **Decision locked during planning**:
+  - MCPorter owns connector registration, auth, health probing, schema discovery, and call semantics.
+  - OpenCode runtime consumes projected MCP entries for active server/runtime use.
 
   **What to do**:
   - Define how Palot talks to MCPorter: register/list/get/login/logout/test/call/status.
   - Lock in tiny runtime meta-tool surface: `mcp.search`, `mcp.describe`, `mcp.call`, optional `mcp.status`.
   - Define CLI fallback versus long-lived runtime/daemon path.
+  - Define explicit ownership split between MCPorter control plane and OpenCode runtime projection.
 
   **Must NOT do**:
   - Do not plan full global schema injection.
@@ -314,10 +396,16 @@ Wave FINAL (After all implementation tasks):
 
   **Commit**: NO
 
-- [ ] 3. Define dual-mode credential and OAuth architecture for cloud + local
+- [x] 3. Define dual-mode credential and OAuth architecture for cloud + local
+
+  **Decision locked during planning**:
+  - Laptop-local desktop/electron mode keeps MCP secrets fully local to the user's machine by default.
+  - Cloud-hosted disposable `sprite.dev` mode persists connection record + auth state through a durable gateway-side vault/proxy model so container churn does not lose the connection.
 
   **What to do**:
   - Define supported credential modes: laptop-local, cloud-hosted, hybrid handoff.
+  - Lock laptop-local desktop/electron mode to local-secrets-only by default.
+  - Lock cloud-hosted disposable-container mode to durable gateway-side persistence for connection record + auth state.
   - Model callback ownership, device-code/OOB fallback, token storage, refresh rotation risks, and safe portability.
   - Decide allowed and forbidden sync/vending patterns.
 
@@ -346,6 +434,8 @@ Wave FINAL (After all implementation tasks):
 
   **Acceptance Criteria**:
   - [ ] Plan explicitly supports both no-gateway local mode and cloud mode.
+  - [ ] Plan explicitly keeps local desktop/electron secrets on-device by default.
+  - [ ] Plan explicitly restores cloud disposable-container connections from durable gateway-side persistence.
   - [ ] Plan explicitly forbids unsafe live refresh-token sync.
   - [ ] Plan includes callback alternatives for vendors without simple localhost/cloud parity.
 
@@ -372,7 +462,7 @@ Wave FINAL (After all implementation tasks):
 
   **Commit**: NO
 
-- [ ] 4. Define upstream registry ingestion and downstream curated metadata contract
+- [x] 4. Define upstream registry ingestion and downstream curated metadata contract
 
   **What to do**:
   - Define official MCP Registry ingestion shape, pagination, cache strategy, refresh cadence, and failure fallback.
@@ -429,7 +519,7 @@ Wave FINAL (After all implementation tasks):
 
   **Commit**: NO
 
-- [ ] 5. Add settings/navigation plan for first-class Connections surface
+- [x] 5. Add settings/navigation plan for first-class Connections surface
 
   **What to do**:
   - Add a new settings-level tab/route for `Connections` and define how it coexists with `Providers`, `Servers`, and plugin posture surfaces.
@@ -483,7 +573,7 @@ Wave FINAL (After all implementation tasks):
 
   **Commit**: NO
 
-- [ ] 6. Build seam inventory and proof helpers for MCP planning work
+- [x] 6. Build seam inventory and proof helpers for MCP planning work
 
   **What to do**:
   - Inventory exact repo seams that future implementation touches: settings routes, provider dialogs, plugin panel, onboarding/migration, configconv, backend services, preload/IPC, and any config mutation paths.
@@ -539,7 +629,7 @@ Wave FINAL (After all implementation tasks):
 
 ---
 
-- [ ] 7. Design and implement catalog ingestion/cache backend
+- [x] 7. Design and implement catalog ingestion/cache backend
 
   **What to do**:
   - Build local service/store that fetches official MCP Registry pages, normalizes entries, caches them, and exposes query/search primitives to renderer.
@@ -590,10 +680,16 @@ Wave FINAL (After all implementation tasks):
 
   **Commit**: NO
 
-- [ ] 8. Build backend config-mutation path for MCP registration in OpenCode
+- [x] 8. Build backend config-mutation path for MCP registration in OpenCode
+
+  **Decision required inside implementation task (must not be guessed)**:
+  - First prove whether OpenCode SDK supports MCP config mutation directly for this surface.
+  - If yes, use official SDK mutation path.
+  - If no, implement a main-process managed filesystem/config writer seam and document why.
 
   **What to do**:
   - Define and implement backend operations that write/update/remove MCP entries in the right OpenCode config scope.
+  - First run a spike to prove the exact mutation seam: SDK config mutation vs managed config file write.
   - Support remote vs local MCP transport definitions, enable/disable, and per-entry metadata needed for runtime.
   - Trigger runtime refresh/dispose so new connections surface without manual restart.
 
@@ -619,6 +715,7 @@ Wave FINAL (After all implementation tasks):
 
   **Acceptance Criteria**:
   - [ ] MCP config entries can be created/updated/removed through backend API.
+  - [ ] Exact mutation seam is proven and documented before broad implementation continues.
   - [ ] Runtime refresh path is explicit and tested.
 
   **QA Scenarios**:
@@ -645,7 +742,7 @@ Wave FINAL (After all implementation tasks):
 
   **Commit**: NO
 
-- [ ] 9. Build MCPorter registration/auth adapter layer
+- [x] 9. Build MCPorter registration/auth adapter layer
 
   **What to do**:
   - Translate UI install intents into MCPorter config add/login/logout/test flows.
@@ -698,7 +795,7 @@ Wave FINAL (After all implementation tasks):
 
   **Commit**: NO
 
-- [ ] 10. Normalize connection health and auth/setup state model
+- [x] 10. Normalize connection health and auth/setup state model
 
   **What to do**:
   - Create unified runtime status mapping: installed, configured, authenticated, reachable, healthy, degraded, offline, action-required.
@@ -747,11 +844,16 @@ Wave FINAL (After all implementation tasks):
 
   **Commit**: NO
 
-- [ ] 11. Build recommendation and ranking policy for top MCP picks
+- [x] 11. Build recommendation and ranking policy for top MCP picks
+
+  **Decision locked during planning**:
+  - Curated recommendations may differ from registry ordering.
+  - If a recommended connector is not present in upstream registry, it must be labeled curated/manual rather than implied as registry-backed.
 
   **What to do**:
   - Define curated top list and ranking logic independent of raw registry order.
   - Include rationale fields, category tags, beginner-safe ordering, and future telemetry hooks.
+  - Verify which recommended connectors are actually present in upstream registry.
   - Initial recommended top 10 should include practical mainstream picks such as GitHub, Notion, Google Drive/Workspace, Slack, Linear, Sentry, Context7, Postgres, Supabase, Stripe unless evidence during implementation changes exact list.
 
   **Must NOT do**:
@@ -774,6 +876,7 @@ Wave FINAL (After all implementation tasks):
   **Acceptance Criteria**:
   - [ ] Recommendation list is versioned/curated, not entangled with registry source.
   - [ ] Each recommendation has rationale/tags.
+  - [ ] Any curated connector absent from upstream registry is labeled manual/curated explicitly.
 
   **QA Scenarios**:
   ```
@@ -798,11 +901,14 @@ Wave FINAL (After all implementation tasks):
 
   **Commit**: NO
 
-- [ ] 12. Design local/cloud ownership and credential portability workflow
+- [x] 12. Design local/cloud ownership and credential portability workflow
+
+  **Decision locked during planning**:
+  - Cloud restore priority is not just config persistence; it must restore the visible connection record and reusable auth state after container churn.
 
   **What to do**:
-  - Specify exact workflows for: local-only auth, cloud-only auth, one-shot local-to-cloud handoff, and no-gateway mode.
-  - Define how Hush targets, MCPorter vault seeding, and callback methods interact.
+  - Specify exact workflows for: local-only auth, cloud-only auth, one-shot local-to-cloud handoff, no-gateway mode, and cloud container restore after shutdown.
+  - Define how Hush targets, MCPorter vault seeding, gateway-side persistence, and callback methods interact.
 
   **Must NOT do**:
   - Do not imply simultaneous dual ownership of one refresh chain.
@@ -822,6 +928,8 @@ Wave FINAL (After all implementation tasks):
 
   **Acceptance Criteria**:
   - [ ] Portability workflows are explicit and safe.
+  - [ ] Local-only mode never requires uploading secrets to gateway by default.
+  - [ ] Cloud container restore brings back connection record + auth-ready state automatically where provider semantics allow.
   - [ ] Unsupported live sync pattern explicitly rejected.
 
   **QA Scenarios**:
@@ -849,7 +957,12 @@ Wave FINAL (After all implementation tasks):
 
 ---
 
-- [ ] 13. Implement Connections settings page and list surface
+- [x] 13. Implement Connections settings page and list surface
+
+  **Likely file targets (confirm before coding)**:
+  - `apps/desktop/src/renderer/components/settings/connections-settings.tsx`
+  - `apps/desktop/src/renderer/components/settings/settings-page.tsx`
+  - `apps/desktop/src/renderer/router.tsx`
 
   **What to do**:
   - Add new Settings route/tab and initial list surface showing connected, recommended, and actionable setup states.
@@ -900,7 +1013,7 @@ Wave FINAL (After all implementation tasks):
 
   **Commit**: NO
 
-- [ ] 14. Implement connections catalog dialog with curated picks, search, and pagination
+- [x] 14. Implement connections catalog dialog with curated picks, search, and pagination
 
   **What to do**:
   - Build plus-button/catalog dialog that shows curated recommendations first, registry search, and paginated browse results.
@@ -951,7 +1064,7 @@ Wave FINAL (After all implementation tasks):
 
   **Commit**: NO
 
-- [ ] 15. Implement connection detail cards/drawer with status, transport, tools, and trust metadata
+- [x] 15. Implement connection detail cards/drawer with status, transport, tools, and trust metadata
 
   **What to do**:
   - Show server-level details: transport, auth type, tool counts, read/write counts, health, ownership mode, and recommendation/trust notes.
@@ -1000,7 +1113,7 @@ Wave FINAL (After all implementation tasks):
 
   **Commit**: NO
 
-- [ ] 16. Implement install/auth/setup wizard flows across OAuth, device/manual, env, and stdio modes
+- [x] 16. Implement install/auth/setup wizard flows across OAuth, device/manual, env, and stdio modes
 
   **What to do**:
   - Build multi-step connection wizard reusing provider-dialog patterns for MCP installs.
@@ -1054,7 +1167,7 @@ Wave FINAL (After all implementation tasks):
 
   **Commit**: NO
 
-- [ ] 17. Implement hot activation, success animation, and immediate runtime refresh behavior
+- [x] 17. Implement hot activation, success animation, and immediate runtime refresh behavior
 
   **What to do**:
   - On successful connect, show strong success feedback and refresh relevant runtime/config surfaces immediately.
@@ -1105,7 +1218,7 @@ Wave FINAL (After all implementation tasks):
 
   **Commit**: NO
 
-- [ ] 18. Implement safe test-call UX and evidence capture for each connection
+- [x] 18. Implement safe test-call UX and evidence capture for each connection
 
   **What to do**:
   - Add “Test connection” or equivalent that executes a safe read operation or MCPorter probe.
@@ -1157,7 +1270,7 @@ Wave FINAL (After all implementation tasks):
 
 ---
 
-- [ ] 19. Implement compact MCP runtime meta-tools and catalog search path
+- [x] 19. Implement compact MCP runtime meta-tools and catalog search path
 
   **What to do**:
   - Add runtime support for `mcp.search`, `mcp.describe`, `mcp.call`, optional `mcp.status`.
@@ -1205,7 +1318,7 @@ Wave FINAL (After all implementation tasks):
 
   **Commit**: NO
 
-- [ ] 20. Implement schema describe path and selective hydration flow
+- [x] 20. Implement schema describe path and selective hydration flow
 
   **What to do**:
   - Ensure exact tool schemas only materialize when a specific server/tool is requested.
@@ -1254,7 +1367,7 @@ Wave FINAL (After all implementation tasks):
 
   **Commit**: NO
 
-- [ ] 21. Implement approval-aware MCP call execution with mutability metadata
+- [x] 21. Implement approval-aware MCP call execution with mutability metadata
 
   **What to do**:
   - Validate args against schema before execution.
@@ -1303,7 +1416,12 @@ Wave FINAL (After all implementation tasks):
 
   **Commit**: NO
 
-- [ ] 22. Integrate Connections with plugins/runtime posture and active session surfaces
+- [x] 22. Integrate Connections with plugins/runtime posture and active session surfaces
+
+  **Likely file targets (confirm before coding)**:
+  - `apps/desktop/src/renderer/components/side-panel/plugins-panel.tsx`
+  - `apps/desktop/src/renderer/components/side-panel/side-panel-tabs.tsx`
+  - any session-side-panel or session-widget surface chosen during implementation
 
   **What to do**:
   - Update side-panel/plugin posture or related surfaces so they reflect connected MCPs, active runtime readiness, and test status.
@@ -1353,11 +1471,16 @@ Wave FINAL (After all implementation tasks):
 
   **Commit**: NO
 
-- [ ] 23. Integrate Connections system with onboarding and config migration surfaces
+- [x] 23. Integrate Connections system with onboarding and config migration surfaces
+
+  **Decision required inside implementation task (must not be guessed)**:
+  - Imported MCP entries must follow one explicit model: read-only provenance view, copy-on-write into managed local layer, or managed in-place.
+  - Default recommendation: copy-on-write into managed local layer while preserving provenance label.
 
   **What to do**:
   - Ensure imported/migrated MCP definitions from Cursor/Claude/OpenCode become visible and manageable in Connections.
   - Define provenance labels for imported versus locally added entries.
+  - Define exact edit behavior for imported entries and avoid making junior dev guess edit-in-place semantics.
 
   **Must NOT do**:
   - Do not strand migrated MCPs in hidden config-only state.
@@ -1379,6 +1502,7 @@ Wave FINAL (After all implementation tasks):
 
   **Acceptance Criteria**:
   - [ ] Imported MCPs appear in Connections with provenance labels.
+  - [ ] Imported-entry edit behavior is explicit and tested.
 
   **QA Scenarios**:
   ```
@@ -1403,7 +1527,7 @@ Wave FINAL (After all implementation tasks):
 
   **Commit**: NO
 
-- [ ] 24. Update docs, runbooks, and durable policy surfaces for MCP connections system
+- [x] 24. Update docs, runbooks, and durable policy surfaces for MCP connections system
 
   **What to do**:
   - Update repo docs/wiki/AGENTS-adjacent durable surfaces with new Connections architecture, MCPorter policy, credential modes, and support/recovery workflows.
@@ -1502,6 +1626,9 @@ bun run svc:status
 - [ ] Successful connect updates runtime posture immediately.
 - [ ] Compact MCP meta-tools replace full global schema injection.
 - [ ] Mutating tools carry approval metadata.
+- [ ] Canonical store and projection rules are explicit and implemented consistently.
 - [ ] Local-only and cloud-hosted modes are both supported in architecture and UX.
+- [ ] Local desktop/electron mode keeps secrets on-device by default.
+- [ ] Cloud disposable-container mode restores connection record + auth state after shutdown.
 - [ ] Imported/migrated MCP definitions are visible and manageable.
 - [ ] Durable docs/runbooks cover recovery and ownership modes.

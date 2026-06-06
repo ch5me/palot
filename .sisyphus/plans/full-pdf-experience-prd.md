@@ -60,11 +60,11 @@ Design a best-in-class PDF research and review experience for Elf/Palot that sup
 - Explicit defaults for stack, privacy posture, and first-scope boundary.
 
 ### Definition of Done <!-- oc:id=sec_af -->
-- [ ] PRD defines product shape, personas, in-scope subsystems, guardrails, and phase boundaries.
-- [ ] Work plan maps product requirements to concrete Elf/Palot files and insertion points.
-- [ ] Viewer/library recommendation is explicit with trade-offs.
-- [ ] Architecture clearly separates preview, cockpit, and full workspace modes.
-- [ ] Acceptance criteria include happy-path and degraded-path behavior for real-world PDFs.
+- [x] PRD defines product shape, personas, in-scope subsystems, guardrails, and phase boundaries.
+- [x] Work plan maps product requirements to concrete Elf/Palot files and insertion points.
+- [x] Viewer/library recommendation is explicit with trade-offs.
+- [x] Architecture clearly separates preview, cockpit, and full workspace modes.
+- [x] Acceptance criteria include happy-path and degraded-path behavior for real-world PDFs.
 
 ### Must Have <!-- oc:id=sec_ag -->
 - Dedicated main-pane PDF workspace.
@@ -345,10 +345,11 @@ Max Concurrent: 5
   - External comparison research from librarian lane.
 
   **Acceptance Criteria**:
-  - [ ] One recommended stack named with rationale.
-  - [ ] License/commercial constraints documented.
-  - [ ] Annotation/search/text-layer fit documented.
-  - [ ] Fallback option named.
+- [x] One recommended stack named with rationale.
+- [x] License/commercial constraints documented.
+- [x] Annotation/search/text-layer fit documented.
+- [x] Fallback option named.
+
 
   **QA Scenarios**:
   ```
@@ -401,9 +402,10 @@ Max Concurrent: 5
   - Metis persona/edge-case concerns.
 
   **Acceptance Criteria**:
-  - [ ] Personas explicit.
-  - [ ] MVP/premium/later boundaries explicit.
-  - [ ] Scope creep traps documented.
+- [x] Personas explicit.
+- [x] MVP/premium/later boundaries explicit.
+- [x] Scope creep traps documented.
+
 
   **QA Scenarios**:
   ```
@@ -456,10 +458,11 @@ Max Concurrent: 5
   - Oracle + Metis guidance on privacy and durability.
 
   **Acceptance Criteria**:
-  - [ ] Source-of-truth defined per entity.
-  - [ ] Local-first policy explicit.
-  - [ ] Remote call/embedding policy explicit.
-  - [ ] Migration path from session-scoped precedents noted.
+- [x] Source-of-truth defined per entity.
+- [x] Local-first policy explicit.
+- [x] Remote call/embedding policy explicit.
+- [x] Migration path from session-scoped precedents noted.
+
 
   **QA Scenarios**:
   ```
@@ -511,9 +514,10 @@ Max Concurrent: 5
   - `docs/firefly-surface-playbook.md`
 
   **Acceptance Criteria**:
-  - [ ] Exact workspace insertion points listed.
-  - [ ] Side-panel/main-pane interplay documented.
-  - [ ] Restore/focus/flag implications listed.
+- [x] Exact workspace insertion points listed.
+- [x] Side-panel/main-pane interplay documented.
+- [x] Restore/focus/flag implications listed.
+
 
   **QA Scenarios**:
   ```

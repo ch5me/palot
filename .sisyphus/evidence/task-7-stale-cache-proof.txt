@@ -1,0 +1,19 @@
+Task 7 stale cache proof contract
+
+Live backend now exists in `apps/desktop/src/main/mcp-catalog-service.ts`.
+
+Cache policy declares:
+- refresh TTL
+- stale TTL
+- negative TTL
+- fallback mode: serve_stale_on_fetch_failure
+
+Service methods exposed through Electron IPC:
+- browseCatalog
+- searchCatalog
+
+Result expectation:
+- seed cache once from registry `/v0/servers`
+- on registry failure, service returns `freshness = stale` or `offline_cache`
+- cache envelope still includes query key, storedAt, expiresAt, staleAt, and cursor metadata
+- joined curated metadata remains additive and does not mutate cached upstream entries

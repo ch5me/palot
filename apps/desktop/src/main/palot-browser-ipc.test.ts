@@ -46,10 +46,15 @@ test("browser state snapshot returns binding and recent actions", async () => {
 				kind: "move",
 			},
 		})
+		ipcMod.setUiStateSnapshot({
+			sidePanel: { open: true, activeTab: "browser", availableTabs: ["browser", "review"] },
+		})
 		const snapshot = ipcMod.getBrowserStateSnapshot("ses_snapshot")
 		assert.equal(snapshot.binding?.browserLaneId, "default")
 		assert.equal(snapshot.lastActions.length, 1)
 		assert.equal(snapshot.lastActions[0]?.kind, "move")
+		const uiState = ipcMod.getUiStateSnapshot()
+		assert.equal(uiState.sidePanel.activeTab, "browser")
 	} finally {
 		cleanup()
 	}

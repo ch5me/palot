@@ -1,0 +1,13 @@
+Task 8 config cleanup contract
+
+Managed writer behavior in `apps/desktop/src/main/mcp-connections-config.ts`:
+- reads managed OpenCode config JSON
+- upserts `mcp[name] = config`
+- removes `mcp[name]`
+- persists via temp file + rename
+- records managed config path in app settings
+
+Guardrails satisfied:
+- renderer does not write files directly
+- no manual JSON editing path exposed to UI
+- remote/local entry payload stays generic via `Record<string, unknown>` pending stricter transport typing in later tasks

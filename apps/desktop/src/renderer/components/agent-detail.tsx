@@ -63,7 +63,13 @@ import type {
 import { useServerConnection } from "../hooks/use-server"
 import type { ChatTurn } from "../hooks/use-session-chat"
 import type { Agent, FileAttachment, QuestionAnswer } from "../lib/types"
-import { fetchOpenInTargets, isElectron, openInTarget } from "../services/backend"
+import {
+	fetchOpenInTargets,
+	fetchPalotUiStateSnapshot,
+	isElectron,
+	openInTarget,
+	subscribeToPalotOpenSidePanel,
+} from "../services/backend"
 import { useSetAppBarContent } from "./app-bar-context"
 import { ChatView } from "./chat"
 import { SessionSidePanel } from "./side-panel/session-side-panel"
@@ -285,6 +291,26 @@ export function AgentDetail({
 	useEffect(() => {
 		setAvailableSidePanelTabs(availableSidePanelTabs.map((tab) => tab.id))
 	}, [availableSidePanelTabs, setAvailableSidePanelTabs])
+
+	useEffect(() => {
+		const unsubscribe = subscribeToPalotOpenSidePanel(({ tab }) => {
+			if (!availableSidePanelTabs.some((candidate) => candidate.id === tab)) return
+			setSidePanelOpen(true)
+			setAvailableSidePanelTabs(availableSidePanelTabs.map((candidate) => candidate.id))
+			void window.elf?.palot.openSidePanel(tab).catch(() => undefined)
+		})
+		return unsubscribe
+	}, [availableSidePanelTabs, setAvailableSidePanelTabs, setSidePanelOpen])
+
+	useEffect(() => {
+		void fetchPalotUiStateSnapshot().then((snapshot) => {
+			if (!snapshot) return
+			const tab = snapshot.sidePanel.activeTab
+			if (!snapshot.sidePanel.open || !tab) return
+			if (!availableSidePanelTabs.some((candidate) => candidate.id === tab)) return
+			setSidePanelOpen(true)
+		})
+	}, [availableSidePanelTabs, setSidePanelOpen])
 
 	useEffect(() => {
 		setAppBarContent(

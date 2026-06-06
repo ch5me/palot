@@ -50,6 +50,8 @@ generic knowledge.
 
 - GenUI and artifact architecture is documented in `docs/genui-artifact-architecture.md`. Read it before changing the GenUI registry, renderer, artifact atoms, session widget surfaces, side-panel artifact surface, or prompt-context injection.
 - Session debugging runbook lives in `docs/session-debugging.md`. Use it when Palette/OpenCode sessions look stuck or DB/UI state disagrees.
+- `bun run debug:sessions -- <session-id>` now compares SQLite history with live active-session presence and `session.status()` truth. Use it first for hidden active sessions, stale recency, and child divergence.
+- Palot/OpenCode plugin/runtime seam is documented in `docs/palot-opencode-plugin-bridge.md`. Read it before changing plugin loading, tool registration, resolver payloads, browser action dispatch, or side-panel UI command bridges.
 
 ## Commands
 

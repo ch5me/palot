@@ -1,9 +1,10 @@
 import type {
 	BrowserActionEvent,
-	BrowserActionSource,
 	BrowserLaneHealth,
 	BrowserStateSnapshot,
+	PalotUiStateSnapshot,
 	SessionBinding,
+	SidePanelTabId,
 } from "../preload/api"
 import {
 	getSessionBindingByOpenCodeSession,
@@ -68,6 +69,13 @@ const actionEvents: BrowserActionEvent[] = []
 const MAX_ACTION_EVENTS = 50
 const sequenceBySession = new Map<string, number>()
 let humanTakeoverPaused = false
+let uiStateSnapshot: PalotUiStateSnapshot = {
+	sidePanel: {
+		open: false,
+		activeTab: null,
+		availableTabs: [],
+	},
+}
 const laneSnapshots = new Map<
 	string,
 	{
@@ -145,6 +153,34 @@ export async function publishBrowserAction(input: PublishBrowserActionInput): Pr
 
 export function getSessionBinding(sessionId: string): SessionBinding | null {
 	return getSessionBindingByOpenCodeSession(sessionId)
+}
+
+export function getUiStateSnapshot(): PalotUiStateSnapshot {
+	return {
+		sidePanel: {
+			open: uiStateSnapshot.sidePanel.open,
+			activeTab: uiStateSnapshot.sidePanel.activeTab,
+			availableTabs: [...uiStateSnapshot.sidePanel.availableTabs],
+		},
+	}
+}
+
+export function setUiStateSnapshot(input: {
+	sidePanel?: {
+		open?: boolean
+		activeTab?: SidePanelTabId | null
+		availableTabs?: SidePanelTabId[]
+	}
+}): PalotUiStateSnapshot {
+	uiStateSnapshot = {
+		sidePanel: {
+			open: input.sidePanel?.open ?? uiStateSnapshot.sidePanel.open,
+			activeTab: input.sidePanel?.activeTab ?? uiStateSnapshot.sidePanel.activeTab,
+			availableTabs:
+				input.sidePanel?.availableTabs ? [...input.sidePanel.availableTabs] : [...uiStateSnapshot.sidePanel.availableTabs],
+		},
+	}
+	return getUiStateSnapshot()
 }
 
 export function setSessionBinding(binding: SessionBinding): SessionBinding {

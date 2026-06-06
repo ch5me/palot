@@ -1,0 +1,1 @@
+Placeholder evidence note: completing the MCP connection wizard now sets a success activation banner in `apps/desktop/src/renderer/components/settings/connections-settings.tsx` without requiring restart copy.

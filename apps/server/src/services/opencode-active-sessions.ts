@@ -136,9 +136,13 @@ async function listRecentRootSessions(
 	directory: string,
 	limit: number,
 ): Promise<Session[]> {
-	const client = createOpencodeClient({ baseUrl: serverUrl, directory })
-	const result = await client.session.list({ roots: true, limit })
-	return (result.data as Session[]) ?? []
+	try {
+		const client = createOpencodeClient({ baseUrl: serverUrl, directory })
+		const result = await client.session.list({ roots: true, limit })
+		return (result.data as Session[]) ?? []
+	} catch {
+		return []
+	}
 }
 
 export async function getActiveOpenCodeSessions(

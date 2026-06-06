@@ -1,0 +1,1 @@
+Placeholder evidence note: Connections page now renders an `Imported` section with migrated MCP entries labeled by provenance and copy-on-write adoption path in `apps/desktop/src/renderer/components/settings/connections-settings.tsx`.

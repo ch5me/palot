@@ -8,15 +8,71 @@
 # Usage:
 #   elf              Open Elf (or focus existing window)
 #   elf /path/to/dir Open Elf with a specific project directory
+#   elf notch say "Tests are green" --mood busy --for 4s
+#   elf notch say "Build passed" --effect spark
+#   elf notch effects
+#   elf notch demo
 
 set -euo pipefail
+
+print_notch_effects() {
+	cat <<'EOF'
+Notch effects:
+  spark  particle crackle + ignition ring
+  prism  rainbow shader line + light fan
+  rift   scanline distortion + chromatic tear
+  bloom  soft glow swell + halo
+  metal  liquid metal thread + chrome sweep
+
+Examples:
+  elf notch say "Done" --effect spark --for 3s
+  elf notch say "Thinking" --effect rift --for 3s
+  elf notch demo
+EOF
+}
+
+write_notch_command() {
+	local command_dir="${XDG_DATA_HOME:-$HOME/.local/share}/elf"
+	local command_file="$command_dir/notch-command.args"
+	local tmp_file="$command_file.$$"
+
+	mkdir -p "$command_dir"
+	{
+		printf 'elf-notch-v1\n'
+		printf 'id=%s-%s\n' "$(date +%s)" "$$"
+		for arg in "$@"; do
+			local encoded
+			encoded="$(printf '%s' "$arg" | base64 | tr -d '\n')"
+			printf 'arg=%s\n' "$encoded"
+		done
+	} > "$tmp_file"
+	mv "$tmp_file" "$command_file"
+}
 
 case "$(uname -s)" in
 	Darwin)
 		# Resolve the .app bundle — this script lives at
 		# Elfapp/Contents/Resources/bin/elf
 		SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
-		APP_BUNDLE="$(cd "$SCRIPT_DIR/../.." && pwd)"
+		APP_BUNDLE="$(cd "$SCRIPT_DIR/../../.." && pwd)"
+		if [ ! -d "$APP_BUNDLE/Contents" ]; then
+			APP_BUNDLE="$(cd "$SCRIPT_DIR/../.." && pwd)"
+		fi
+
+		if [ "${1:-}" = "notch" ]; then
+			shift
+			if [ "${1:-}" = "effects" ] || [ "${1:-}" = "help" ] || [ "${1:-}" = "--help" ]; then
+				print_notch_effects
+				exit 0
+			fi
+			write_notch_command "$@"
+			if [ -x "$APP_BUNDLE/Contents/MacOS/Elf" ] || [ -x "$APP_BUNDLE/Contents/MacOS/Electron" ]; then
+				open -g -a "$APP_BUNDLE" --args --elf-notch-queued
+			else
+				echo "Queued notch command. Launch Elf to show it." >&2
+			fi
+			exit 0
+		fi
 
 		if [ $# -gt 0 ]; then
 			open -a "$APP_BUNDLE" --args "$@"

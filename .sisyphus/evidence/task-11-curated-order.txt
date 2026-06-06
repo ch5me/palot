@@ -1,0 +1,21 @@
+Task 11 curated order policy
+
+Curated top list is independent from upstream registry ordering.
+Recommended initial order:
+1. GitHub
+2. Notion
+3. Google Workspace
+4. Slack
+5. Linear
+6. Sentry
+7. Context7
+8. Postgres
+9. Supabase
+10. Stripe
+
+Registry-backed verification status from lightweight search evidence:
+- GitHub: likely registry-backed (registry search surfaces GitHub-linked results)
+- Notion: not directly confirmed by simple registry search; treat as curated/manual until direct API proof exists
+- Linear: not directly confirmed by simple registry search; treat as curated/manual until direct API proof exists
+
+Policy: shuffled upstream registry order must not change this curated ranking.

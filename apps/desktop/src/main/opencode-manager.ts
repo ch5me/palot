@@ -1,14 +1,17 @@
 import { execFile, type ChildProcess, spawn } from "node:child_process"
+import fs from "node:fs"
 import { homedir } from "node:os"
 import path from "node:path"
 import { setTimeout as sleep } from "node:timers/promises"
 import { promisify } from "node:util"
 import { BrowserWindow, dialog } from "electron"
 import type {
+	ActiveOpenCodeSessionPresence,
 	ActiveOpenCodeSessionsSnapshot,
 	LocalServerConfig,
 } from "../preload/api"
 import { getCredential } from "./credential-store"
+import { loadPalotPluginModule } from "./palot-opencode-plugin-shim"
 import { findFreePort } from "./find-free-port"
 import { createLogger } from "./logger"
 import { startNotificationWatcher, stopNotificationWatcher } from "./notification-watcher"
@@ -16,6 +19,7 @@ import { getListeningProcessOwner, isCurrentUser, isProcessAlive } from "./proce
 import { readLockfile, removeLockfile, writeLockfile } from "./server-lockfile"
 import { getSettings } from "./settings-store"
 import { waitForEnv } from "./shell-env"
+import { getActiveOpenCodeSessions as getInferredActiveOpenCodeSessions } from "../../server/src/services/opencode-active-sessions"
 
 const log = createLogger("opencode-manager")
 const execFileAsync = promisify(execFile)
@@ -51,6 +55,7 @@ let lastActiveSessionSnapshotKey: string | null = null
 
 const DEFAULT_PORT = Number(process.env.OPENCODE_PORT) || 4096
 const DEFAULT_HOSTNAME = process.env.OPENCODE_HOSTNAME || "127.0.0.1"
+const PALOT_PLUGIN_PATH = path.join(homedir(), "src", "ch5", "palot", "apps", "desktop", ".opencode", "plugins", "palot-bridge.js")
 
 // ============================================================
 // Public API
@@ -336,45 +341,19 @@ function buildActiveSessionSnapshotKey(snapshot: ActiveOpenCodeSessionsSnapshot)
 	})
 }
 
-async function listClientProcesses(serverUrl: string): Promise<ActiveOpenCodeSessionsSnapshot["sessions"]> {
-	const { stdout } = await execFileAsync("ps", ["-axo", "pid=,command=", "-ww"])
-	const target = new URL(serverUrl)
-	const targetOrigin = `${target.protocol}//${target.hostname}:${target.port}`
-	const sessions: ActiveOpenCodeSessionsSnapshot["sessions"] = []
-
-	for (const line of stdout.split("\n")) {
-		const match = line.match(/^\s*(\d+)\s+(.*)$/)
-		if (!match) continue
-		const pid = Number(match[1])
-		const command = match[2]
-		if (!command.includes("opencode")) continue
-		if (!command.includes(" attach ")) continue
-		if (!command.includes(targetOrigin)) continue
-		const sessionMatch = command.match(/--session(?:=|\s+)(\S+)/)
-		const dirMatch = command.match(/--dir(?:=|\s+)(\S+)/)
-		if (!sessionMatch || !dirMatch) continue
-		sessions.push({
-			sessionId: sessionMatch[1],
-			directory: dirMatch[1],
-			pid,
-			source: "attach",
-			command,
-		})
-	}
-
-	return sessions
+function normalizeActiveSessionPresence(
+	sessions: ActiveOpenCodeSessionPresence[],
+): ActiveOpenCodeSessionPresence[] {
+	return [...sessions].sort((a, b) => a.sessionId.localeCompare(b.sessionId))
 }
 
 async function buildActiveOpenCodeSessionsSnapshot(
 	serverUrl: string,
 ): Promise<ActiveOpenCodeSessionsSnapshot> {
-	const sessions = await listClientProcesses(serverUrl)
+	const snapshot = await getInferredActiveOpenCodeSessions(serverUrl)
 	return {
-		serverUrl,
-		clientCount: sessions.length,
-		sessionCount: sessions.length,
-		sessions,
-		refreshedAt: Date.now(),
+		...snapshot,
+		sessions: normalizeActiveSessionPresence(snapshot.sessions),
 	}
 }
 
@@ -408,6 +387,17 @@ function startActiveSessionBroadcast(serverUrl: string): void {
 	}, ACTIVE_SESSION_STREAM_POLL_MS)
 }
 
+function appendPalotPlugin(env: NodeJS.ProcessEnv & { OPENCODE_PLUGIN?: string }): void {
+	if (!fs.existsSync(PALOT_PLUGIN_PATH)) {
+		log.warn("Palot bridge plugin file missing", { pluginPath: PALOT_PLUGIN_PATH })
+		return
+	}
+	void loadPalotPluginModule(PALOT_PLUGIN_PATH).catch((err) => {
+		log.warn("Palot bridge plugin validation failed", err)
+	})
+	env.OPENCODE_PLUGIN = [env.OPENCODE_PLUGIN, PALOT_PLUGIN_PATH].filter(Boolean).join(",")
+}
+
 async function spawnServer(
 	hostname: string,
 	port: number,
@@ -437,18 +427,25 @@ async function spawnServer(
 		}
 	}
 
+	const spawnEnv: NodeJS.ProcessEnv & { OPENCODE_PLUGIN?: string } = {
+		...process.env,
+		PATH: augmentedPath,
+	}
+	appendPalotPlugin(spawnEnv)
+
 	log.info("Spawning opencode server", {
 		hostname,
 		port,
 		hasPassword: !!config.hasPassword,
 		mdns: !!config.mdns,
 		binDir: opencodeBinDir,
+		hasPalotPlugin: Boolean(spawnEnv.OPENCODE_PLUGIN),
 	})
 
 	const proc = spawn("opencode", args, {
 		cwd: homedir(),
 		stdio: "pipe",
-		env: { ...process.env, PATH: augmentedPath },
+		env: spawnEnv,
 	})
 
 	const url = `http://${hostname}:${port}`

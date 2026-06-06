@@ -1,41 +1,6 @@
-Tasks [21/21 compliant] | Contamination [CLEAN] | Unaccounted [CLEAN] | VERDICT PASS
+Tasks [24/24 compliant] | Contamination [NOT CLEAN/1 issue] | Unaccounted [NOT CLEAN/placeholder evidence] | VERDICT: NONCOMPLIANT
 
-## Scope fidelity <!-- oc:id=sec_aa -->
-- desktop-plus-contracts scope held: yes
-- no native/mobile implementation sprawl added: yes
-- work stayed at plan/evidence/contracts plus small shell/type fixes: yes
-- no duplicate notes/artifact/panel subsystem introduced: yes
-
-## Clean-room guard <!-- oc:id=sec_ab -->
-- no OpenPaper source copied
-- no AGPL structure/prompts/protocol dump introduced
-- design remains behavioral/spec-level and repo-native
-
-## Accounted changes <!-- oc:id=sec_ac -->
-### Evidence/notepad/plan surfaces <!-- oc:id=sec_ad -->
-- `.sisyphus/evidence/task-*`
-- `.sisyphus/evidence/f1-plan-compliance.md`
-- `.sisyphus/evidence/f2-code-quality.md`
-- `.sisyphus/evidence/final-qa/f3-runtime-blocker.md`
-- `.sisyphus/notepads/pdf-review-side-panel/continuation-notes.md`
-- `.sisyphus/plans/pdf-review-side-panel.md`
-
-### Small code fixes within planned scope <!-- oc:id=sec_ae -->
-- `apps/desktop/src/renderer/atoms/ui.ts`: `pdf-review` tab type already part of shell scope
-- `apps/desktop/src/renderer/atoms/feature-flags.ts`: feature-flag scope aligned with shell registration plan
-- `apps/desktop/src/renderer/firefly-surface-registry.tsx`: registry-path compliance
-- `apps/desktop/src/renderer/components/agent-detail.tsx`: surface availability plumbing
-- `apps/desktop/src/renderer/components/command-palette.tsx`: discoverability/toggle plumbing
-- `apps/desktop/src/renderer/atoms/preferences.ts`: widened persisted tab union to match shell scope
-- `apps/desktop/src/renderer/components/genui/genui-artifact-card.tsx`: pin fallback type safety only
-- `apps/desktop/src/main/ipc-handlers.ts`: stale unused type cleanup only
-
-## No contamination findings <!-- oc:id=sec_af -->
-- no renderer-only geometry leaked into shared contract docs
-- no second artifact model proposed
-- no second notes model proposed
-- no bespoke panel route outside Firefly registry path
-- no OCR/collaboration/native implementation added beyond contract notes
-
-## Remaining risk <!-- oc:id=sec_ag -->
-- F3 runtime QA blocked by external port conflicts, so shipped runtime behavior remains unproven despite scope fidelity pass.
+1. Contamination into generic provider marketplace work is limited; most work stays MCP-scoped in `apps/desktop/src/renderer/lib/mcp-connections.ts` and `apps/desktop/src/renderer/components/settings/connections-settings.tsx`. <!-- oc:id=item_aa -->
+1. Full generated-client architecture is still absent, which matches plan guardrails. `apps/desktop/.opencode/plugins/palot-bridge.js:170` <!-- oc:id=item_ab -->
+1. Unsafe token-sync designs remain rejected in architecture contracts. `apps/desktop/src/renderer/lib/mcp-connections.ts:259` <!-- oc:id=item_ac -->
+1. Main noncompliance is not scope creep but placeholder implementation/evidence replacing real backend/runtime integration. This leaves unaccounted proof artifacts and synthetic behavior across runtime/catalog/import surfaces. `apps/desktop/src/renderer/components/settings/connections-settings.tsx:26`, `.sisyphus/evidence/task-15-detail-card.png:1` <!-- oc:id=item_ad -->

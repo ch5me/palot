@@ -1,0 +1,13 @@
+Task 3 refresh rotation policy
+
+Token sync policy values:
+- `forbidden_live_sync`
+- `one_shot_handoff_only`
+
+Forbidden patterns called out in credential architecture:
+- live bidirectional refresh-token sync
+- gateway mirroring of local-only desktop secrets
+- desktop callback dependency for disposable cloud restore
+- shared refresh chain owned by local and cloud at same time
+
+Result: ongoing live token sync is explicitly unsupported. Only one-shot handoff directions are allowed where listed.

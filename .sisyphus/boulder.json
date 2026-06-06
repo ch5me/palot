@@ -1,34 +1,10 @@
 {
-  "active_plan": "/Users/hassoncs/src/ch5/palot/.sisyphus/plans/full-pdf-experience-prd.md",
-  "started_at": "2026-06-06T03:49:42.137Z",
+  "active_plan": "/Users/hassoncs/src/ch5/palot/.sisyphus/plans/palot-opencode-plugin-bridge-completion.md",
+  "started_at": "2026-06-06T17:50:14.920Z",
   "session_ids": [
-    "ses_164f30743ffeOCGVDbK2ujBYjf",
-    "ses_164f1e5e1ffeKleXEJ32Ntt9oA",
-    "ses_164f1f211ffeiLdvM5QQhiUKvS",
-    "ses_164edf936ffeta4DsccxWPeBEA",
-    "ses_164eded26ffeMZUHiiD90mgSwX",
-    "ses_164ee1106ffezJN6x9zDQEjpmO",
-    "ses_164ec1c4bffel0dIMYMoMSzVub",
-    "ses_164e098deffeVFGe7gEqXqJzrR",
-    "ses_164e07463ffeOs2wQDxlLhtra6",
-    "ses_164e0808bffeGI47FrWGNBuIJu",
-    "ses_164bdc278ffeFQzyjpcdTKpWp5",
-    "ses_164be129cffeZ04XLgWP530WQq",
-    "ses_164be3b72ffeOqBQuz714coAvc",
-    "ses_1648b393cffe0tCEJ9iLPkkwN0",
-    "ses_1648adf45ffei1L1dvO7uklhgl",
-    "ses_1648ab54bffezoR6a3Ug836Rm0"
+    "ses_161f19b9affeHjAuurajLYvvOl"
   ],
-  "plan_name": "full-pdf-experience-prd",
+  "plan_name": "palot-opencode-plugin-bridge-completion",
   "agent": "atlas",
-  "task_sessions": {
-    "todo:1": {
-      "task_key": "todo:1",
-      "task_label": "1",
-      "task_title": "Viewer/library decision",
-      "session_id": "ses_164f30743ffeOCGVDbK2ujBYjf",
-      "updated_at": "2026-06-06T06:26:39.962Z",
-      "no_progress_resume_count": 0
-    }
-  }
+  "task_sessions": {}
 }

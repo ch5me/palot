@@ -1,0 +1,1 @@
+Updated evidence note: Plugins panel should be switched next from config-derived posture to persisted connection-record + probe-state posture. Current live mcporter status proof exists and shows mixed ok/auth states, but panel still reads `config.providers()` only.

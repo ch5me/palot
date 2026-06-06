@@ -1,0 +1,1 @@
+Placeholder evidence note: Connection wizard now includes env-required guidance and local stdio command setup states in `apps/desktop/src/renderer/components/settings/connections-settings.tsx`.

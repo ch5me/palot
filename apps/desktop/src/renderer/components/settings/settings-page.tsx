@@ -30,6 +30,7 @@ type SettingsTab =
 	| "servers"
 	| "notifications"
 	| "providers"
+	| "connections"
 	| "profiles"
 	| "worktrees"
 	| "setup"
@@ -40,6 +41,7 @@ const tabs: { id: SettingsTab; label: string; icon: typeof SettingsIcon }[] = [
 	{ id: "servers", label: "Servers", icon: ServerIcon },
 	{ id: "notifications", label: "Notifications", icon: BellIcon },
 	{ id: "providers", label: "Providers", icon: PlugIcon },
+	{ id: "connections", label: "Connections", icon: PlugIcon },
 	{ id: "profiles", label: "Profiles", icon: UserIcon },
 	{ id: "worktrees", label: "Worktrees", icon: GitForkIcon },
 	{ id: "setup", label: "Setup", icon: WrenchIcon },

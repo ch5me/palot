@@ -1,0 +1,31 @@
+# Learnings <!-- oc:id=sec_aa -->
+
+- Task 2 contract work fits best in `apps/desktop/src/renderer/lib/mcp-connections.ts` beside task 1 domain model.
+- Useful split: canonical connection record stays product/domain layer; control-plane and runtime meta-tool contracts layer on top without polluting provider hooks.
+- Acceptance proof wants explicit evidence files per task, not only code changes.
+- Reused subagent session kept aborting, so direct verification/readback was necessary to confirm actual file state.
+- Task 4 catalog contract also belongs in `mcp-connections.ts`; keeping upstream registry, cache, and curated join types together makes later backend/service work easier.
+- Registry docs fetched from `https://registry.modelcontextprotocol.io/` only expose API base shell from landing page, so follow-up implementation likely needs direct API probing rather than homepage scraping.
+- Task 5 IA decision: keep setup in Settings as primary surface, use Plugins only for posture. This prevents installation/auth flows from leaking into session-side read-only panels.
+- Task 6 seams show clean layering: renderer settings/posture surfaces, preload bridge, main IPC/services, and configconv migration path. Future work should route through those seams instead of bypassing them.
+- Task 7 backend location should follow existing TanStack Query pattern: renderer hook -> typed backend helper -> main-process service/IPC. Registry fetches should never live in dialog components.
+- Task 7 service contract should return both normalized upstream page/search payloads and additive curated joins, so renderer can render one response without mutating cached upstream entries.
+- Task 8 mutation spike suggests read-only SDK surface for config (`client.config.get`) and no documented write API, so MCP config mutation should use main-process managed config writer + runtime dispose refresh.
+- Task 8 implementation follows existing settings/credential pattern well: preload typed bridge -> ipc handler -> small main-process writer module.
+- Task 9 machine proof: `mcporter` binary absent globally, but `npx -y mcporter` exposes the exact official flows needed (`config add/login/logout`, `auth`, `vault set`, `list --status`). Adapter should prefer installed binary when present, then fall back to npx.
+- Task 10 status precedence works better with offline ahead of testing, so hard runtime unreachability does not get hidden behind probe failure. Missing env and needs auth also need separate remediation actions, not one generic warning.
+- Task 11 recommendation policy needs explicit `registryBacked` and `sourceLabel` fields so curated/manual picks are never misrepresented as upstream-registry facts.
+- Task 12 portability is cleanest when represented as allowed one-shot directions plus gateway-persistence requirement. Local desktop should stay `hushTargets = [none]` and `gatewayPersistence = not_required`; cloud/handoff modes can reference split runtime targets.
+- Task 13 can reuse provider settings structure well, but copy must stay MCP-native: servers, connections, runtime actions, status. Avoid any provider/model wording bleed.
+- Task 14 dialog can reuse provider catalog rhythm, but needs two distinct zones: curated picks grid first, then searchable paginated browse list. Keep search tied to server/category/tag fields, not huge raw metadata blobs.
+- Task 15 detail surface should emphasize trust/setup metadata over schema volume. Showing a compact drawer/dialog with transport, auth, health, ownership, tool count, and read/write summary is enough; schemas should wait behind a later describe interaction.
+- Task 16 wizard can stay lightweight if it mirrors provider-flow structure but swaps provider auth jargon for MCP setup paths: choose path, ownership, OAuth, device code, env guidance, stdio command, success.
+- Task 17 hot activation can be represented in UI first with a clear success banner and no-restart messaging, even before deeper runtime posture plumbing is fully connected.
+- Task 18 safe probe UX can start as deterministic read-only status feedback. Success/failure messages should classify env/config issues separately from generic probe failure and never imply a mutating tool was run.
+- Task 19 runtime meta-tools can live in the existing Palot OpenCode plugin as compact placeholders first. This proves boot surface shape before deeper schema hydration/call validation work lands in tasks 20-21.
+- Task 20 describe flow should return an exact schema only for the requested tool and include an explicit hydration marker. Search results should remain summary-only.
+- Task 21 call path can enforce local validation with the same selected-tool schema contract used by describe. On validation failure, emit `remoteCalled: false`; on success, attach approval, mutability, and provenance before execution.
+- Task 22 runtime posture can be layered onto the existing Plugins panel cheaply by adding posture + hydrated labels and an active count before any deeper session-tab redesign.
+- Task 23 imported MCPs should default to copy-on-write in the UI. Showing a dedicated Imported section plus provenance fields is enough to make migrated state visible without pretending it is already locally managed.
+- Task 24 docs should live in a dedicated runbook plus README alignment, not spread as comments. Cover architecture, MCPorter control plane, credential modes, registry outage, auth recovery, handoff, and safe reprobe in one operator doc.
+- Registry backend is now materially closer to plan once main-process service talks to `/v0/servers` and exposes browse/search over IPC. Remaining gaps are wiring UI/runtime to that live service and replacing fixtures.

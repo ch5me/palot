@@ -1,8 +1,9 @@
 import { describe, expect, test } from "bun:test"
 import { renderToStaticMarkup } from "react-dom/server"
+import type { BrowserActionClickEvent, BrowserActionMoveEvent, BrowserActionTypeEvent } from "../../../preload/api"
 import { BrowserCursorOverlay } from "./browser-cursor-overlay"
 
-const baseEvent = {
+const baseEvent: BrowserActionMoveEvent = {
 	id: "evt-1",
 	sessionId: "ses_overlay",
 	laneId: "lane_overlay",
@@ -32,8 +33,10 @@ describe("browser cursor overlay", () => {
 					frozen: true,
 					showBestEffortBadge: true,
 					showHumanControlBadge: true,
+					showDriftBadge: false,
 					lastEvent: baseEvent,
 				}}
+				sessionId="ses_overlay"
 			/>,
 		)
 		expect(html).toContain("Best-effort overlay")
@@ -41,7 +44,7 @@ describe("browser cursor overlay", () => {
 	})
 
 	test("renders type label, click ripple, and drift badge when events indicate them", () => {
-		const typeEvent = {
+		const typeEvent: BrowserActionTypeEvent = {
 			...baseEvent,
 			id: "evt-2",
 			kind: "type",
@@ -49,7 +52,7 @@ describe("browser cursor overlay", () => {
 			caretConfidence: "low",
 			viewportCoords: { x: 100, y: 120 },
 		}
-		const clickEvent = {
+		const clickEvent: BrowserActionClickEvent = {
 			...baseEvent,
 			id: "evt-3",
 			sequence: 3,
@@ -66,8 +69,10 @@ describe("browser cursor overlay", () => {
 					frozen: false,
 					showBestEffortBadge: true,
 					showHumanControlBadge: false,
+					showDriftBadge: false,
 					lastEvent: clickEvent,
 				}}
+				sessionId="ses_overlay"
 			/>,
 		)
 		expect(html).toContain("Drift detected")

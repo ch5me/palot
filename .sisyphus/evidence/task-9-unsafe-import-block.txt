@@ -1,0 +1,11 @@
+Task 9 unsafe import block
+
+Policy:
+- `unsafeTokenImportPolicy = gated`
+- live sync and malformed token import remain blocked
+- only explicit seeding through `mcporter vault set` is allowed when operator intentionally provides tokens file/stdin
+
+Blocked paths:
+- live bidirectional refresh-token sync
+- handwritten vault JSON writes
+- malformed token payloads outside mcporter vault commands

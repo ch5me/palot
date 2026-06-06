@@ -124,11 +124,13 @@ export interface BrowserLaneCapabilityReport {
 	remediation: string | null
 }
 
+export type ActiveOpenCodeSessionPresenceSource = "attach" | "inferred"
+
 export interface ActiveOpenCodeSessionPresence {
 	sessionId: string
 	directory: string
 	pid: number
-	source: "attach" | "inferred"
+	source: ActiveOpenCodeSessionPresenceSource
 	command: string
 }
 
@@ -187,6 +189,26 @@ export interface SessionBindingStoreFile {
 	bindings: SessionBindingRecord[]
 }
 
+export type SidePanelTabId =
+	| "review"
+	| "browser"
+	| "notes"
+	| "pulse"
+	| "memory"
+	| "files"
+	| "terminal"
+	| "editor"
+	| "plugins"
+	| "bridges"
+	| "crm"
+	| "studio"
+	| "voice"
+	| "oracle"
+	| "claude"
+	| "ch5pm"
+	| "artifacts"
+	| "pdf-review"
+
 export interface BrowserViewportSnapshot {
 	currentUrl: string | null
 	streamUrl: string | null
@@ -203,6 +225,16 @@ export interface BrowserStateSnapshot {
 	health: BrowserLaneHealth | null
 	lastActions: BrowserActionEvent[]
 	viewport: BrowserViewportSnapshot | null
+}
+
+export interface PalotSidePanelSnapshot {
+	open: boolean
+	activeTab: SidePanelTabId | null
+	availableTabs: SidePanelTabId[]
+}
+
+export interface PalotUiStateSnapshot {
+	sidePanel: PalotSidePanelSnapshot
 }
 
 export type BrowserActionSource =
@@ -779,12 +811,54 @@ export interface NotificationSettings {
 	dockBadge: boolean
 }
 
+export interface ConnectionsSettings {
+	catalogCachePath?: string
+	managedConfigPath?: string
+	connectionRecordsPath?: string
+}
+
+export interface McpConnectionConfigMutationInput {
+	name: string
+	config: Record<string, unknown>
+}
+
+export interface McpCatalogBrowseInput {
+	cursor?: { value: string; source: "registry" | "cache" } | null
+	limit: number
+}
+
+export interface McpCatalogSearchInput {
+	query: string
+	limit: number
+}
+
+export interface McpConnectionRecordSnapshot {
+	name: string
+	transport: string
+	target: string
+	scope: string
+	ownershipMode?: string
+	authState?: string
+	canonicalStore?: string
+	restorePolicy?: string
+	testState?: string
+	status?: string
+	runtimeState?: string
+	credentialMode?: string
+	projectedOpenCode?: Record<string, unknown> | null
+	metadata?: Record<string, unknown>
+	lastTestAt?: string | null
+	lastHealthyAt?: string | null
+	lastError?: string | null
+}
+
 export interface AppSettings {
 	notifications: NotificationSettings
 	/** Whether the user prefers opaque (solid) windows. Read at window creation time. */
 	opaqueWindows: boolean
 	/** Server connection configuration. */
 	servers: ServerSettings
+	connections?: ConnectionsSettings
 }
 
 // ============================================================
@@ -1022,6 +1096,9 @@ export interface ElfAPI {
 		getBinding: (sessionId: string) => Promise<SessionBinding | null>
 		setBinding: (binding: SessionBinding) => Promise<SessionBinding>
 		releaseBinding: (sessionId: string) => Promise<SessionBinding | null>
+		getUiStateSnapshot: () => Promise<PalotUiStateSnapshot>
+		openSidePanel: (tab: SidePanelTabId) => Promise<PalotUiStateSnapshot>
+		onOpenSidePanel: (callback: (payload: { tab: SidePanelTabId }) => void) => () => void
 		onBrowserActions: (callback: (event: BrowserActionEvent) => void) => () => void
 	}
 	onActiveOpenCodeSessionsChanged: (
@@ -1194,6 +1271,26 @@ export interface ElfAPI {
 	getSettings: () => Promise<AppSettings>
 	/** Update settings with a partial object (deep-merged). Returns the updated settings. */
 	updateSettings: (partial: Record<string, unknown>) => Promise<AppSettings>
+	mcpConnections: {
+		upsertConfig: (input: McpConnectionConfigMutationInput) => Promise<AppSettings>
+		removeConfig: (name: string) => Promise<AppSettings>
+		browseCatalog: (input: McpCatalogBrowseInput) => Promise<Record<string, unknown>>
+		searchCatalog: (input: McpCatalogSearchInput) => Promise<Record<string, unknown>>
+		register: (input: {
+			name: string
+			transport: "remote-http" | "remote-sse" | "local-stdio"
+			target: string
+			ownershipMode?: "local-only" | "cloud-only" | "handoff-derived"
+			canonicalStore?: "local" | "gateway"
+			restorePolicy?: "none" | "reproject_on_boot" | "reproject_and_reauth_if_needed"
+			source?: "registry" | "curated" | "imported" | "manual"
+			scope?: "home" | "project"
+			metadata?: Record<string, unknown>
+		}) => Promise<{ ok: true }>
+		login: (name: string) => Promise<{ ok: true }>
+		test: (name: string) => Promise<{ ok: boolean; output: string }>
+		listRecords: () => Promise<McpConnectionRecordSnapshot[]>
+	}
 	/** Subscribe to settings changes pushed from the main process. */
 	onSettingsChanged: (callback: (settings: AppSettings) => void) => () => void
 

@@ -1,0 +1,1 @@
+Placeholder evidence note: Connection wizard now includes OAuth path with ownership-mode step and success state in `apps/desktop/src/renderer/components/settings/connections-settings.tsx`.

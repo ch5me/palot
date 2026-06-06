@@ -78,6 +78,16 @@ contextBridge.exposeInMainWorld("elf", {
 		setBinding: (binding: import("./api").SessionBinding) =>
 			ipcRenderer.invoke("palot:binding-set", binding),
 		releaseBinding: (sessionId: string) => ipcRenderer.invoke("palot:binding-release", sessionId),
+		getUiStateSnapshot: () => ipcRenderer.invoke("palot:ui-state-snapshot"),
+		openSidePanel: (tab: import("./api").SidePanelTabId) =>
+			ipcRenderer.invoke("palot:open-side-panel", tab),
+		onOpenSidePanel: (callback: (payload: { tab: import("./api").SidePanelTabId }) => void) => {
+			const listener = (_event: unknown, payload: { tab: import("./api").SidePanelTabId }) => callback(payload)
+			ipcRenderer.on("palot:open-side-panel", listener)
+			return () => {
+				ipcRenderer.removeListener("palot:open-side-panel", listener)
+			}
+		},
 		onBrowserActions: (callback: (event: import("./api").BrowserActionEvent) => void) => {
 			const listener = (_event: unknown, event: import("./api").BrowserActionEvent) => callback(event)
 			ipcRenderer.on("palot:browser-actions", listener)
@@ -88,35 +98,11 @@ contextBridge.exposeInMainWorld("elf", {
 	},
 
 	onActiveOpenCodeSessionsChanged: (
-		callback: (snapshot: {
-			serverUrl: string
-			clientCount: number
-			sessionCount: number
-			sessions: Array<{
-				sessionId: string
-				directory: string
-				pid: number
-				source: "attach" | "inferred"
-				command: string
-			}>
-			refreshedAt: number
-		}) => void,
+		callback: (snapshot: import("./api").ActiveOpenCodeSessionsSnapshot) => void,
 	) => {
 		const listener = (
 			_event: unknown,
-			snapshot: {
-				serverUrl: string
-				clientCount: number
-				sessionCount: number
-				sessions: Array<{
-					sessionId: string
-					directory: string
-					pid: number
-					source: "attach" | "inferred"
-					command: string
-				}>
-				refreshedAt: number
-			},
+			snapshot: import("./api").ActiveOpenCodeSessionsSnapshot,
 		) => callback(snapshot)
 		ipcRenderer.on("opencode:active-sessions", listener)
 		return () => {
@@ -386,6 +372,29 @@ contextBridge.exposeInMainWorld("elf", {
 	/** Update settings with a partial object (deep-merged). */
 	updateSettings: (partial: Record<string, unknown>) =>
 		ipcRenderer.invoke("settings:update", partial),
+	mcpConnections: {
+		upsertConfig: (input: import("./api").McpConnectionConfigMutationInput) =>
+			ipcRenderer.invoke("mcp-connections:config-upsert", input),
+		removeConfig: (name: string) => ipcRenderer.invoke("mcp-connections:config-remove", name),
+		browseCatalog: (input: import("./api").McpCatalogBrowseInput) =>
+			ipcRenderer.invoke("mcp-connections:catalog-browse", input),
+		searchCatalog: (input: import("./api").McpCatalogSearchInput) =>
+			ipcRenderer.invoke("mcp-connections:catalog-search", input),
+		register: (input: {
+			name: string
+			transport: "remote-http" | "remote-sse" | "local-stdio"
+			target: string
+			ownershipMode?: "local-only" | "cloud-only" | "handoff-derived"
+			canonicalStore?: "local" | "gateway"
+			restorePolicy?: "none" | "reproject_on_boot" | "reproject_and_reauth_if_needed"
+			source?: "registry" | "curated" | "imported" | "manual"
+			scope?: "home" | "project"
+			metadata?: Record<string, unknown>
+		}) => ipcRenderer.invoke("mcp-connections:register", input),
+		login: (name: string) => ipcRenderer.invoke("mcp-connections:login", name),
+		test: (name: string) => ipcRenderer.invoke("mcp-connections:test", name),
+		listRecords: () => ipcRenderer.invoke("mcp-connections:records-list"),
+	},
 
 	/** Subscribe to settings changes pushed from the main process. */
 	onSettingsChanged: (callback: (settings: unknown) => void) => {

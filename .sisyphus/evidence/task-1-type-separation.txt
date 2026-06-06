@@ -1,0 +1,16 @@
+Task 1 separation proof
+
+Provider types remain in `apps/desktop/src/renderer/hooks/use-opencode-data.ts`:
+- `CatalogProvider`
+- `AllProvidersData`
+- `ConnectedProviderInfo`
+
+MCP-specific types live in `apps/desktop/src/renderer/lib/mcp-connections.ts`:
+- `McpConnectionRecord`
+- `McpCatalogRegistryEntry`
+- `McpCuratedMetadata`
+- `McpProjectionTarget`
+- MCP enums for source/transport/store/ownership/install/auth/runtime/test/status
+
+No MCP-specific fields were added to provider catalog or connected-provider interfaces.
+No provider-only source strings were reused for MCP connection records.

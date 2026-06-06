@@ -1,0 +1,12 @@
+Task 8 runtime refresh path
+
+Implemented mutation path:
+- preload bridge methods: `mcpConnections.upsertConfig`, `mcpConnections.removeConfig`
+- main-process handlers: `mcp-connections:config-upsert`, `mcp-connections:config-remove`
+- managed writer: `apps/desktop/src/main/mcp-connections-config.ts`
+
+Runtime refresh proof contract:
+- Task 8 seam proof records runtime refresh as `client.global.dispose`
+- Existing reload path lives in `apps/desktop/src/renderer/services/connection-manager.ts` via `reloadConfig()` -> `disposeAllInstances(connection.baseClient)`
+
+Result: mutation seam is explicit and refresh path is documented for follow-up wiring.

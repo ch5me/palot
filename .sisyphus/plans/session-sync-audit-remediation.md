@@ -67,6 +67,10 @@ Make PALOT session state trustworthy by ensuring the renderer always converges o
 - [ ] SSE reconnect and startup perform deterministic reconciliation that converges the client store to current server truth.
 - [ ] Child-session/task status cannot silently diverge from actual child session liveness without emitting diagnostics.
 - [ ] Operator tooling can explain why a given session is or is not visible/active in PALOT.
+- [ ] Unknown live events (`session.status`, `permission.asked`, `question.asked`, message activity) never disappear silently because the session row was not pre-hydrated.
+- [ ] `session.idle` and `session.status idle` paths both converge the renderer to the same final flushed state.
+- [ ] Sandbox/worktree session grouping stays correct after runtime changes, not only initial discovery.
+- [ ] Electron and browser runtimes use equivalent active-session discovery semantics.
 
 ### Must Have <!-- oc:id=sec_ag -->
 - Canonical invariants for visibility, activity, attachment, freshness, and hierarchy.
@@ -175,7 +179,29 @@ Wave FINAL:
 
 ## TODOs
 
-- [ ] 1. Define canonical session sync invariants and scope boundaries
+> **Junior Executor Rules**
+> 1. Do tasks in order unless a task explicitly says it can run in parallel.
+> 2. For every task, create the named artifact or code change first, then run the listed QA scenarios before marking it done.
+> 3. Never change two layers at once without first writing down the invariant you are protecting.
+> 4. If a live event arrives for a session that is missing from the store, treat that as a bug immediately — do not "wait and see."
+> 5. If Electron mode and browser/server mode disagree on active sessions, stop and fix parity before adding more heuristics.
+> 6. If a timestamp or active/recent list looks wrong, compare against message/part activity, not only `session.time.updated`.
+> 7. Any reconnect fix is incomplete until you prove post-disconnect reconciliation with evidence.
+> 8. Any child-task fix is incomplete until you prove parent and child state stay aligned under timeout, waiting, and recovery cases.
+
+> **Implementation Order Cheat Sheet**
+> - First fix the contract: Tasks 1-4
+> - Then fix operator visibility: Task 5
+> - Then fix hydration/presence/reconnect core: Tasks 6-10
+> - Then fix renderer and UI derivation: Tasks 11-15
+> - Then add proof, rollout, and docs: Tasks 16-20
+
+- [x] 1. Define canonical session sync invariants and scope boundaries
+
+  **Junior summary**:
+  - Write down the rules first.
+  - Decide what PALOT must always get right before touching code.
+  - If this step is vague, every later step will be messy.
 
   **What to do**:
   - Write the explicit invariants PALOT must maintain: visibility, freshness, active-state, child-session linkage, attachment, and reconciliation guarantees.
@@ -233,10 +259,12 @@ Wave FINAL:
 
   **Commit**: NO
 
-- [ ] 2. Map every session-state source and freshness signal
+- [x] 2. Map every session-state source and freshness signal
 
   **What to do**:
-  - Enumerate all session state inputs: project/session list APIs, `session.status`, `session.updated`, `message.updated`, `message.part.updated`, process presence, attach streams, and any child-task metadata.
+  - Enumerate all session state inputs: project/session list APIs, `session.status`, `session.idle`, `session.updated`, `message.updated`, `message.part.updated`, `message.part.delta`, process presence, attach streams, and any child-task metadata.
+  - Explicitly call out which events can arrive before a session row exists, and which current code paths drop them.
+  - Explicitly map sandbox/worktree freshness inputs and how they refresh after initial discovery.
   - Build an end-to-end source map with exact owners, update cadence, and known blind spots.
   - Mark whether each source is authoritative, advisory, or debug-only.
 
@@ -290,7 +318,7 @@ Wave FINAL:
 
   **Commit**: NO
 
-- [ ] 3. Design timestamp/activity model replacing stale `session.time.updated` reliance
+- [x] 3. Design timestamp/activity model replacing stale `session.time.updated` reliance
 
   **What to do**:
   - Define a canonical `lastActivityAt` model derived from the freshest reliable session signal.
@@ -346,7 +374,7 @@ Wave FINAL:
 
   **Commit**: NO
 
-- [ ] 4. Add sync diagnostics model and drift vocabulary
+- [x] 4. Add sync diagnostics model and drift vocabulary
 
   **What to do**:
   - Define the explicit drift classes PALOT must detect: invisible-running, stale-recency, missing-child, dropped-reconnect, pending-tool-vs-dead-child, attached-but-unhydrated.
@@ -461,6 +489,11 @@ Wave FINAL:
 
 - [ ] 6. Redesign startup/discovery hydration so active sessions cannot be skipped by preload limits
 
+  **Junior summary**:
+  - Startup must always load sessions that are actively running, even if their projects were not in the top preload set.
+  - Do not solve this by "load more stuff" blindly.
+  - Build an explicit bootstrap list of sessions/projects that must be hydrated.
+
   **What to do**:
   - Replace or augment focused-project preload so active/running sessions are always hydrated, even outside the top-N recent projects.
   - Define an explicit “session graph bootstrap” that unions focused projects, active local sessions, currently attached sessions, and directly requested sessions.
@@ -521,6 +554,7 @@ Wave FINAL:
 
   **What to do**:
   - Audit all ways a session can be locally running even without a matching `opencode attach` process.
+  - Unify Electron and browser/server active-session discovery semantics so the same local runtime produces the same PALOT-visible active sessions in both modes.
   - Add broader local presence signals or server-side active-session enumeration that does not depend only on attach-client process scanning.
   - Define how presence confidence and source attribution are represented.
 
@@ -576,9 +610,15 @@ Wave FINAL:
 
 - [ ] 8. Add full reconciliation pass after SSE connect/reconnect/server switch
 
+  **Junior summary**:
+  - Reconnect is not "stream reopened = done."
+  - After every connect/reconnect/server switch, pull fresh truth and repair the store.
+  - Unknown live sessions must get placeholder entries immediately, then be filled in.
+
   **What to do**:
   - Design a deterministic reconciliation pass that re-pulls authoritative session/status data after SSE opens or reopens.
   - Include session list, statuses, visible active sessions, and targeted session hydration for open/attached sessions.
+  - Ensure any live event for an unknown session can materialize a minimal placeholder session entry immediately, to be backfilled later by reconciliation.
   - Define how reconciliation avoids reintroducing stale-server state after a server switch.
 
   **Must NOT do**:
@@ -637,62 +677,7 @@ Wave FINAL:
 
   **What to do**:
   - Audit and redesign how streaming and non-streaming parts flush on `session.status`, `session.idle`, reconnect boundaries, and stale-loop disposal.
-  - Ensure buffered content cannot be silently lost when loops restart.
-  - Define whether flush behavior is per-session or global and how it avoids cross-session interference.
-
-  **Must NOT do**:
-  - Do not keep flush semantics that depend on one narrow event form when related state may arrive differently.
-
-  **Recommended Agent Profile**:
-  - **Category**: `unspecified-high`
-    - Reason: State batching logic is tricky and failure-prone.
-  - **Skills**: []
-  - **Skills Evaluated but Omitted**:
-    - `opencode-plugin-tools`: wrong layer.
-
-  **Parallelization**:
-  - **Can Run In Parallel**: YES
-  - **Parallel Group**: Wave 2
-  - **Blocks**: 11, 17
-  - **Blocked By**: 2, 8
-
-  **References**:
-  - `apps/desktop/src/renderer/services/connection-manager.ts:584` - event batcher core.
-  - `apps/desktop/src/renderer/services/connection-manager.ts:665` - idle-triggered flush.
-  - `apps/desktop/src/renderer/services/connection-manager.ts:690` - stale disposal behavior.
-
-  **Acceptance Criteria**:
-  - [ ] Flush semantics are defined for `session.status idle`, `session.idle`, reconnect, and disconnect cases.
-  - [ ] No known buffered part path can be lost silently.
-
-  **QA Scenarios**:
-  ```text
-  Scenario: session.idle path still flushes
-    Tool: Bash
-    Preconditions: Event fixture or simulated event path exists.
-    Steps:
-      1. Feed a case where streaming content completes and only idle-style completion path is exercised.
-      2. Verify final parts land in the main store.
-    Expected Result: Completed content is never stranded in buffer.
-    Evidence: .sisyphus/evidence/session-sync/task-9-idle-flush.md
-
-  Scenario: Stale-loop disposal does not destroy unreconciled truth
-    Tool: Bash
-    Preconditions: Simulated reconnect/server-switch path.
-    Steps:
-      1. Queue buffered events.
-      2. Trigger loop staleness.
-      3. Verify reconciliation preserves truth instead of losing it permanently.
-    Expected Result: Event loss window is closed by design.
-    Evidence: .sisyphus/evidence/session-sync/task-9-stale-loop.md
-  ```
-
-  **Commit**: NO
-
-- [ ] 10. Define child-session/task reconciliation contract
-
-  **What to do**:
-  - Audit and redesign how streaming and non-streaming parts flush on `session.status`, `session.idle`, reconnect boundaries, and stale-loop disposal.
+  - Remove ambiguity between `session.idle` and `session.status idle` so both converge renderer state identically.
   - Ensure buffered content cannot be silently lost when loops restart.
   - Define whether flush behavior is per-session or global and how it avoids cross-session interference.
 
@@ -800,6 +785,588 @@ Wave FINAL:
   ```
 
   **Commit**: NO
+
+- [ ] 11. Refactor renderer session store around reconciled freshness fields
+
+  **Junior summary**:
+  - Put the truth in one place.
+  - Sidebar, tray, command palette, and chat should not each guess freshness differently.
+  - Add explicit fields for canonical activity time, visibility reason, and presence source.
+
+  **What to do**:
+  - Replace or augment current `SessionEntry` / derived agent data so canonical freshness and visibility reasons are stored explicitly.
+  - Ensure the store can represent authoritative session truth, local presence, reconciled activity time, child linkage, and diagnostic drift flags.
+  - Reduce duplicate derivation logic across renderer consumers.
+
+  **Must NOT do**:
+  - Do not scatter freshness logic independently across multiple components.
+
+  **Recommended Agent Profile**:
+  - **Category**: `deep`
+    - Reason: This is the core renderer state-model refactor.
+  - **Skills**: [`opencode-session-internals`]
+    - `opencode-session-internals`: keeps the store aligned with OpenCode semantics.
+  - **Skills Evaluated but Omitted**:
+    - `brainstorm-ideas-existing`: not needed for code-shape work.
+
+  **Parallelization**:
+  - **Can Run In Parallel**: NO
+  - **Parallel Group**: Wave 3
+  - **Blocks**: 12, 13, 14, 16, 17, 18
+  - **Blocked By**: 2, 3, 6, 7, 8, 9, 10
+
+  **References**:
+  - `apps/desktop/src/renderer/atoms/sessions.ts:39` - current `SessionEntry` model.
+  - `apps/desktop/src/renderer/atoms/derived/agents.ts:323` - current per-session agent derivation.
+  - `apps/desktop/src/renderer/lib/types.ts:182` - public `Agent` shape.
+
+  **Acceptance Criteria**:
+  - [ ] Reconciled freshness and visibility fields exist in one canonical renderer state path.
+  - [ ] Multiple UI consumers no longer need to infer core sync truth differently.
+
+  **QA Scenarios**:
+  ```text
+  Scenario: Renderer store exposes canonical freshness
+    Tool: Bash
+    Preconditions: State refactor implemented
+    Steps:
+      1. Inspect store/debug output for a sample session.
+      2. Verify canonical activity time, visibility reason, and presence source are explicit fields.
+    Expected Result: UI state no longer depends on hidden derivation magic.
+    Evidence: .sisyphus/evidence/session-sync/task-11-store-shape.md
+
+  Scenario: Hidden active session becomes explainable in-store
+    Tool: Bash
+    Preconditions: Session previously missed by UI available for repro.
+    Steps:
+      1. Hydrate the session.
+      2. Inspect store/debug output.
+      3. Verify it carries explicit fields explaining active state and surfacing eligibility.
+    Expected Result: Store contains enough data to render or debug the session correctly.
+    Evidence: .sisyphus/evidence/session-sync/task-11-hidden-store.md
+  ```
+
+  **Commit**: NO
+
+- [ ] 12. Refactor sidebar Active/Recent/PM derivation to use canonical session graph
+
+  **What to do**:
+  - Rebuild sidebar section derivation so it uses reconciled freshness, visibility rules, and explicit scope decisions.
+  - Align “Active Now,” “Recent,” pinned, and PM session logic with the new canonical session graph.
+  - Remove ordering logic that depends on stale `createdAt`/`lastActiveAt` shortcuts when those conflict with actual activity semantics.
+
+  **Must NOT do**:
+  - Do not keep multiple competing definitions of “active” or “recent.”
+
+  **Recommended Agent Profile**:
+  - **Category**: `visual-engineering`
+    - Reason: This is user-facing renderer derivation and list behavior work.
+  - **Skills**: []
+  - **Skills Evaluated but Omitted**:
+    - `react-best-practices`: may help implementation, but plan does not require it as a core dependency.
+
+  **Parallelization**:
+  - **Can Run In Parallel**: YES
+  - **Parallel Group**: Wave 3
+  - **Blocks**: 16, 19
+  - **Blocked By**: 2, 3, 6, 7, 11
+
+  **References**:
+  - `apps/desktop/src/renderer/components/sidebar.tsx:181` - current Active/Recent derivation.
+  - `apps/desktop/src/renderer/components/sidebar-layout.tsx:132` - sidebar wiring.
+  - `apps/desktop/src/renderer/atoms/derived/agents.ts:432` - agents list derivation.
+
+  **Acceptance Criteria**:
+  - [ ] Sidebar sections are driven by one canonical activity/visibility contract.
+  - [ ] A session cannot be active locally yet absent from all intended sidebar sections without diagnostics saying why.
+
+  **QA Scenarios**:
+  ```text
+  Scenario: Active local session appears in Active Now
+    Tool: Bash
+    Preconditions: Local running session exists.
+    Steps:
+      1. Launch PALOT with the session active.
+      2. Capture sidebar state.
+      3. Verify the session lands in Active Now or explicit excluded bucket with a reason.
+    Expected Result: No silent disappearance.
+    Evidence: .sisyphus/evidence/session-sync/task-12-active-sidebar.md
+
+  Scenario: Recent ordering follows canonical activity
+    Tool: Bash
+    Preconditions: Sessions with stale `session.time.updated` but fresh message/part activity.
+    Steps:
+      1. Capture sidebar ordering.
+      2. Compare against canonical activity values.
+    Expected Result: Ordering matches actual activity.
+    Evidence: .sisyphus/evidence/session-sync/task-12-recent-order.md
+  ```
+
+  **Commit**: NO
+
+- [ ] 13. Refactor command palette and tray session surfacing to share the same model
+
+  **What to do**:
+  - Ensure command palette, tray, and any secondary session surface use the same canonical session graph and freshness semantics as the sidebar.
+  - Remove duplicate sorting/filtering logic that can drift from sidebar rules.
+  - Define how non-focused but active sessions show up consistently across these surfaces.
+
+  **Must NOT do**:
+  - Do not let tray or command palette keep bespoke session-recency logic.
+
+  **Recommended Agent Profile**:
+  - **Category**: `unspecified-high`
+    - Reason: Cross-surface consistency with shared state and menu logic.
+  - **Skills**: []
+  - **Skills Evaluated but Omitted**:
+    - `release-notes`: not relevant.
+
+  **Parallelization**:
+  - **Can Run In Parallel**: YES
+  - **Parallel Group**: Wave 3
+  - **Blocks**: 16, 19
+  - **Blocked By**: 2, 3, 6, 7, 11
+
+  **References**:
+  - `apps/desktop/src/renderer/components/command-palette.tsx:217` - active session list in command palette.
+  - `apps/desktop/src/main/tray.ts:369` - tray recent/live session derivation.
+  - `apps/desktop/src/renderer/components/sidebar.tsx:201` - baseline sidebar derivation to match.
+
+  **Acceptance Criteria**:
+  - [ ] Sidebar, command palette, and tray agree on which sessions are active and recent.
+  - [ ] Cross-surface ordering and exclusion rules come from one shared model.
+
+  **QA Scenarios**:
+  ```text
+  Scenario: Cross-surface active session consistency
+    Tool: Bash
+    Preconditions: Multiple local and non-local sessions exist.
+    Steps:
+      1. Capture sidebar, command palette, and tray session views.
+      2. Compare active/recent membership.
+    Expected Result: Surfaces agree except for intentional UI-specific truncation.
+    Evidence: .sisyphus/evidence/session-sync/task-13-cross-surface.md
+
+  Scenario: Hidden session does not vanish from tray only
+    Tool: Bash
+    Preconditions: Repro for previously hidden active session.
+    Steps:
+      1. Inspect all surfaces after hydration.
+      2. Verify the session is consistently shown or consistently explained as excluded.
+    Expected Result: No one-off tray/command-palette drift.
+    Evidence: .sisyphus/evidence/session-sync/task-13-hidden-surface.md
+  ```
+
+  **Commit**: NO
+
+- [ ] 14. Add explicit session visibility reasons and stale-state indicators in debug surfaces
+
+  **What to do**:
+  - Surface why a session is visible, hidden, stale, attached-only, child-divergent, or excluded.
+  - Add lightweight debug-facing UI/state indicators for sync health.
+  - Ensure diagnostics match the structured drift vocabulary.
+
+  **Must NOT do**:
+  - Do not add user-facing noise to normal product flows without debug gating.
+
+  **Recommended Agent Profile**:
+  - **Category**: `visual-engineering`
+    - Reason: Requires thoughtful exposure of sync state without cluttering main UX.
+  - **Skills**: []
+  - **Skills Evaluated but Omitted**:
+    - `vision-proof-review`: not needed for audit/debug surfaces.
+
+  **Parallelization**:
+  - **Can Run In Parallel**: YES
+  - **Parallel Group**: Wave 3
+  - **Blocks**: 18, 20
+  - **Blocked By**: 4, 10, 11
+
+  **References**:
+  - `docs/session-debugging.md` - runbook language to mirror.
+  - `apps/desktop/src/renderer/components/chat/sub-agent-card.tsx:125` - current child waiting/running cues.
+  - `apps/desktop/src/renderer/components/sidebar.tsx` - likely surface for debug-aware section reasoning.
+
+  **Acceptance Criteria**:
+  - [ ] Debug surfaces can explain visibility and drift state for a session.
+  - [ ] Indicators are gated appropriately and do not pollute normal usage.
+
+  **QA Scenarios**:
+  ```text
+  Scenario: Stale-state indicator appears on drifted session
+    Tool: Bash
+    Preconditions: Session with known freshness drift.
+    Steps:
+      1. Open debug surface or enabled debug mode.
+      2. Inspect the drifted session.
+    Expected Result: Surface explains stale-state condition clearly.
+    Evidence: .sisyphus/evidence/session-sync/task-14-stale-indicator.md
+
+  Scenario: Hidden-session reason is visible in debug mode
+    Tool: Bash
+    Preconditions: Session intentionally or unintentionally excluded from main lists.
+    Steps:
+      1. Enable debug surface.
+      2. Inspect the session.
+    Expected Result: Visibility reason is explicit.
+    Evidence: .sisyphus/evidence/session-sync/task-14-visibility-reason.md
+  ```
+
+  **Commit**: NO
+
+- [ ] 15. Add resilience for HMR/base-client/project-client recovery paths
+
+  **What to do**:
+  - Audit HMR and client recreation paths so session state survives reconnects and module resets safely.
+  - Ensure base-client/project-client recovery triggers proper reconciliation rather than merely restarting SSE.
+  - Define safe clearing/repopulation order for server switches.
+  - Ensure recovery also refreshes sandbox/worktree mappings and any open child-session context, not just root session streams.
+
+  **Must NOT do**:
+  - Do not treat HMR recovery as “best effort” if it can wedge session state.
+
+  **Recommended Agent Profile**:
+  - **Category**: `quick`
+    - Reason: Focused runtime recovery seam, but bounded.
+  - **Skills**: []
+  - **Skills Evaluated but Omitted**:
+    - `opencode-plugin-tools`: wrong layer again.
+
+  **Parallelization**:
+  - **Can Run In Parallel**: YES
+  - **Parallel Group**: Wave 3
+  - **Blocks**: 17, 19
+  - **Blocked By**: 6, 8
+
+  **References**:
+  - `apps/desktop/src/renderer/services/connection-manager.ts:413` - project-client HMR recovery.
+  - `apps/desktop/src/renderer/services/connection-manager.ts:499` - base-client recovery.
+  - `apps/desktop/src/renderer/services/connection-manager.ts:550` - disconnect/server switch behavior.
+
+  **Acceptance Criteria**:
+  - [ ] HMR or client recreation paths converge back to correct session truth.
+  - [ ] Recovery paths are explicitly tested or script-verified.
+
+  **QA Scenarios**:
+  ```text
+  Scenario: HMR recovery preserves session truth
+    Tool: Bash
+    Preconditions: Dev environment with HMR and active sessions.
+    Steps:
+      1. Trigger module reload/client recreation.
+      2. Verify sessions remain visible and accurate after recovery.
+    Expected Result: No missing or phantom sessions after HMR.
+    Evidence: .sisyphus/evidence/session-sync/task-15-hmr.md
+
+  Scenario: Project-client recreation triggers reconciliation
+    Tool: Bash
+    Preconditions: Force project-client loss while session state continues on server.
+    Steps:
+      1. Recreate the client path.
+      2. Verify session/status state is reconciled, not just re-streamed opportunistically.
+    Expected Result: Recovery closes gaps deterministically.
+    Evidence: .sisyphus/evidence/session-sync/task-15-project-client.md
+  ```
+
+  **Commit**: NO
+
+- [ ] 16. Add regression tests and scripted fixtures for missed active sessions
+
+  **Junior summary**:
+  - If you cannot reproduce the old bug automatically, the fix is not safe.
+  - Build fixtures for the exact bad cases, then prove they stay fixed.
+
+  **What to do**:
+  - Create reproducible fixtures/scenarios for active local sessions outside preload/focus assumptions.
+  - Add regression tests or harnesses proving these sessions surface correctly.
+  - Cover root sessions and any intentional exclusion cases.
+
+  **Must NOT do**:
+  - Do not rely only on ad hoc manual repro.
+
+  **Recommended Agent Profile**:
+  - **Category**: `unspecified-high`
+    - Reason: Needs fixture design plus automated proof.
+  - **Skills**: []
+  - **Skills Evaluated but Omitted**:
+    - `review-work`: not a review task.
+
+  **Parallelization**:
+  - **Can Run In Parallel**: YES
+  - **Parallel Group**: Wave 4
+  - **Blocks**: F1-F4
+  - **Blocked By**: 3, 5, 7, 11, 12, 13
+
+  **References**:
+  - `scripts/debug-sessions.ts` - helper can seed proof workflows.
+  - `apps/desktop/src/renderer/hooks/use-discovery.ts:197` - preload path under test.
+  - `apps/desktop/src/main/opencode-manager.ts:339` - presence path under test.
+
+  **Acceptance Criteria**:
+  - [ ] Automated fixture exists for a missed-active-session scenario.
+  - [ ] Tests/harness prove the session becomes visible after remediation.
+
+  **QA Scenarios**:
+  ```text
+  Scenario: Fixture proves active session visibility
+    Tool: Bash
+    Preconditions: Regression harness implemented.
+    Steps:
+      1. Run the harness.
+      2. Verify expected active session is present in PALOT-facing output.
+    Expected Result: Previously missed session is now surfaced.
+    Evidence: .sisyphus/evidence/session-sync/task-16-fixture.md
+
+  Scenario: Intentional exclusions remain excluded
+    Tool: Bash
+    Preconditions: Noise/scratch/test session fixtures available.
+    Steps:
+      1. Run the harness.
+      2. Verify excluded sessions stay excluded with explicit reasons.
+    Expected Result: Fixes do not flood the UI with junk.
+    Evidence: .sisyphus/evidence/session-sync/task-16-exclusions.md
+  ```
+
+  **Commit**: NO
+
+- [ ] 17. Add regression tests and scripted fixtures for reconnect/event-loss drift
+
+  **What to do**:
+  - Build reproducible reconnect and event-loss scenarios.
+  - Prove client reconciliation restores accurate state without depending on fresh spontaneous events.
+  - Cover stale timestamp, dropped buffered parts, server-switch drift, and unknown-session-first event ordering.
+
+  **Must NOT do**:
+  - Do not declare reconnect fixed without deterministic repro coverage.
+
+  **Recommended Agent Profile**:
+  - **Category**: `unspecified-high`
+    - Reason: Needs controlled failure simulation and proof.
+  - **Skills**: []
+  - **Skills Evaluated but Omitted**:
+    - `brainstorm-ideas-existing`: too loose for verification work.
+
+  **Parallelization**:
+  - **Can Run In Parallel**: YES
+  - **Parallel Group**: Wave 4
+  - **Blocks**: F1-F4
+  - **Blocked By**: 3, 5, 8, 9, 11, 15
+
+  **References**:
+  - `apps/desktop/src/renderer/services/connection-manager.ts:714` - SSE loop under test.
+  - `apps/desktop/src/renderer/services/connection-manager.ts:665` - flush behavior under test.
+  - `docs/session-debugging.md` - operator audit targets.
+
+  **Acceptance Criteria**:
+  - [ ] Reconnect/event-loss fixtures exist.
+  - [ ] Automated proof shows drift is corrected after remediation.
+
+  **QA Scenarios**:
+  ```text
+  Scenario: Reconnect fixture restores stale state
+    Tool: Bash
+    Preconditions: Reconnect harness implemented.
+    Steps:
+      1. Run harness with server changes during disconnect.
+      2. Verify reconciled client matches server truth after reconnect.
+    Expected Result: No stale state remains.
+    Evidence: .sisyphus/evidence/session-sync/task-17-reconnect-fixture.md
+
+  Scenario: Buffered-part loss fixture is closed
+    Tool: Bash
+    Preconditions: Streaming/event-loss harness implemented.
+    Steps:
+      1. Simulate buffered content plus reconnect/stale-loop transition.
+      2. Verify final parts and timestamps are correct.
+    Expected Result: Buffered content survives via flush/reconciliation.
+    Evidence: .sisyphus/evidence/session-sync/task-17-buffered-parts.md
+  ```
+
+  **Commit**: NO
+
+- [ ] 18. Add regression tests and scripted fixtures for child/session timeout divergence
+
+  **What to do**:
+  - Build reproducible cases where task tool status diverges from child-session liveness.
+  - Add verification for degraded-state surfacing and child freshness propagation.
+  - Cover child permission/question waiting cases too.
+
+  **Must NOT do**:
+  - Do not treat child divergence as a rare edge case without automation.
+
+  **Recommended Agent Profile**:
+  - **Category**: `deep`
+    - Reason: Complex cross-session behavior plus verification.
+  - **Skills**: [`opencode-session-internals`]
+    - `opencode-session-internals`: useful for correct child-session semantics.
+  - **Skills Evaluated but Omitted**:
+    - `summarize-meeting`: irrelevant.
+
+  **Parallelization**:
+  - **Can Run In Parallel**: YES
+  - **Parallel Group**: Wave 4
+  - **Blocks**: F1-F4
+  - **Blocked By**: 5, 10, 11, 14
+
+  **References**:
+  - `apps/desktop/src/renderer/components/chat/sub-agent-card.tsx:125` - task/child card behavior.
+  - `apps/desktop/src/renderer/atoms/derived/session-requests.ts:121` - child-blocked state.
+  - `apps/desktop/src/renderer/atoms/derived/agents.ts:340` - descendant linkage.
+
+  **Acceptance Criteria**:
+  - [ ] Fixture exists for timed-out parent vs live child case.
+  - [ ] Automated proof shows corrected degraded-state handling.
+
+  **QA Scenarios**:
+  ```text
+  Scenario: Parent timeout with live child is flagged correctly
+    Tool: Bash
+    Preconditions: Divergence harness implemented.
+    Steps:
+      1. Run the harness.
+      2. Inspect parent and child outputs.
+    Expected Result: Parent does not lie about final failure while child remains live.
+    Evidence: .sisyphus/evidence/session-sync/task-18-parent-child.md
+
+  Scenario: Child waiting state remains coherent
+    Tool: Bash
+    Preconditions: Child interactive-block fixture implemented.
+    Steps:
+      1. Trigger child permission/question path.
+      2. Verify parent and child surfaces agree on waiting state.
+    Expected Result: Waiting semantics remain synchronized.
+    Evidence: .sisyphus/evidence/session-sync/task-18-waiting.md
+  ```
+
+  **Commit**: NO
+
+- [ ] 19. Rollout plan, migration safeguards, and failure fallback behavior
+
+  **What to do**:
+  - Define staged rollout, safe defaults, fallbacks, and escape hatches for sync changes.
+  - Plan how to compare old vs new surfacing during rollout if dual-read/diagnostic mode is needed.
+  - Define what PALOT should do when reconciliation itself fails.
+
+  **Must NOT do**:
+  - Do not ship a state-model rewrite without guarded rollout.
+
+  **Recommended Agent Profile**:
+  - **Category**: `writing`
+    - Reason: This is deployment strategy and operational safety design.
+  - **Skills**: []
+  - **Skills Evaluated but Omitted**:
+    - `release-notes`: user-facing output comes later, not now.
+
+  **Parallelization**:
+  - **Can Run In Parallel**: YES
+  - **Parallel Group**: Wave 4
+  - **Blocks**: F1-F4
+  - **Blocked By**: 4, 12, 13, 15
+
+  **References**:
+  - `apps/desktop/src/renderer/hooks/use-discovery.ts` - startup/discovery critical path.
+  - `apps/desktop/src/renderer/services/connection-manager.ts` - reconnect and disconnect critical path.
+  - `docs/session-debugging.md` - fallback operator workflow baseline.
+
+  **Acceptance Criteria**:
+  - [ ] Rollout plan exists with guardrails and rollback triggers.
+  - [ ] Failure fallback behavior is defined for reconciliation errors.
+
+  **QA Scenarios**:
+  ```text
+  Scenario: Rollout guardrails are testable
+    Tool: Bash
+    Preconditions: Rollout strategy documented.
+    Steps:
+      1. Inspect the strategy.
+      2. Verify it names safe enablement order, rollback criteria, and fallback operation mode.
+    Expected Result: Rollout is operationally credible.
+    Evidence: .sisyphus/evidence/session-sync/task-19-rollout.md
+
+  Scenario: Reconciliation failure fallback is explicit
+    Tool: Bash
+    Preconditions: Strategy documented.
+    Steps:
+      1. Inspect failure-mode section.
+      2. Verify it defines what the client does and what diagnostics are emitted.
+    Expected Result: Failure path is defined, not improvised.
+    Evidence: .sisyphus/evidence/session-sync/task-19-fallback.md
+  ```
+
+  **Commit**: NO
+
+- [ ] 20. Documentation, runbook updates, and team debugging workflow hardening
+
+  **What to do**:
+  - Update durable docs so future debugging of sync drift is fast and standardized.
+  - Document the new state model, invariants, drift classes, helper commands, and verification flows.
+  - Add team/operator guidance for triage order and evidence capture.
+  - Document parity expectations between Electron and browser/server modes so future regressions are obvious.
+
+  **Must NOT do**:
+  - Do not leave the new sync model tribal-knowledge only.
+
+  **Recommended Agent Profile**:
+  - **Category**: `writing`
+    - Reason: Durable documentation and workflow hardening.
+  - **Skills**: []
+  - **Skills Evaluated but Omitted**:
+    - `summarize-meeting`: insufficiently operational for runbook work.
+
+  **Parallelization**:
+  - **Can Run In Parallel**: YES
+  - **Parallel Group**: Wave 4
+  - **Blocks**: F1-F4
+  - **Blocked By**: 4, 5, 14
+
+  **References**:
+  - `docs/session-debugging.md` - current runbook to expand.
+  - `AGENTS.md` - durable agent guidance surface.
+  - `scripts/debug-sessions.ts` - tooling to document.
+
+  **Acceptance Criteria**:
+  - [ ] Updated docs fully describe the new sync model and audit path.
+  - [ ] A future agent can diagnose hidden/stale sessions without rediscovery.
+
+  **QA Scenarios**:
+  ```text
+  Scenario: Runbook supports end-to-end triage
+    Tool: Bash
+    Preconditions: Docs updated.
+    Steps:
+      1. Follow the runbook for a known sync issue.
+      2. Verify it leads to the right helper commands and interpretation points.
+    Expected Result: Runbook is executable, not aspirational.
+    Evidence: .sisyphus/evidence/session-sync/task-20-runbook.md
+
+  Scenario: Agent guidance points to the right tools
+    Tool: Bash
+    Preconditions: AGENTS/docs updated.
+    Steps:
+      1. Search for session-debug instructions.
+      2. Verify guidance points to the canonical helpers/runbooks.
+    Expected Result: Future agents find the right workflow quickly.
+    Evidence: .sisyphus/evidence/session-sync/task-20-guidance.md
+  ```
+
+  **Commit**: YES
+  - Message: `docs(session-sync): add sync debugging workflow`
+  - Files: `docs/`, `AGENTS.md`, helper docs
+  - Pre-commit: `bun run lint`
+
+---
+
+## Final Verification Wave
+
+> **Junior exit rule**
+> Do not mark work complete because the UI "looks better."
+> Only mark complete when:
+> - a hidden-running-session repro is fixed,
+> - a reconnect-drift repro is fixed,
+> - a child-divergence repro is fixed,
+> - Electron/browser parity is proven,
+> - and docs/helpers explain the new truth model.
+ <!-- oc:id=sec_am -->
 
 - [ ] F1. **Plan Compliance Audit** — `deep`
   Verify every planned deliverable exists across architecture docs, code paths, diagnostics, helpers, and tests. Check all “must have / must not have” constraints.

@@ -1,0 +1,17 @@
+Task 10 status fixtures
+
+Fixture A: missing env
+- metadata.missingEnv = true
+- authState = unknown
+- runtimeState = projected
+Expected normalized status: missing_env
+Expected action: open_env_setup
+
+Fixture B: auth required
+- metadata.missingEnv = false
+- authState = needs_auth
+- runtimeState = projected
+Expected normalized status: needs_auth
+Expected action: retry_auth
+
+Result: env-missing and auth-required map to distinct states and remediation actions.

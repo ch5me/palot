@@ -87,6 +87,11 @@ export function applyBindingLifecycleEvent(event: Event): SessionBinding | null 
 			const sessionId = event.properties.sessionID
 			return markSessionBindingAttached(sessionId)
 		}
+		case "session.status": {
+			if (event.properties.status.type !== "idle") return null
+			const sessionId = event.properties.sessionID
+			return markSessionBindingAttached(sessionId)
+		}
 		case "session.deleted": {
 			const sessionId = event.properties.info.id
 			return releaseBindingForSession(sessionId)

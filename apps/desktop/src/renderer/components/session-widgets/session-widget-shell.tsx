@@ -168,7 +168,9 @@ export function SessionWidgetZone({ agent, zoneId, showDropHint }: SessionWidget
 		data: { zoneId },
 	})
 	const isInlineRight = zoneId === "chat-inline-right"
-	const shouldRender = widgetIds.length > 0 || showDropHint
+	const hasWidgets = widgetIds.length > 0
+	const shouldRender = hasWidgets || showDropHint
+	const showDropState = showDropHint && !hasWidgets
 
 	if (!shouldRender) {
 		return null
@@ -180,11 +182,17 @@ export function SessionWidgetZone({ agent, zoneId, showDropHint }: SessionWidget
 			className={cn(
 				"transition-colors duration-200",
 				isInlineRight ? "h-full min-h-[160px] rounded-xl" : "mb-2",
-				showDropHint && widgetIds.length === 0 ? "border border-dashed border-border/60 bg-muted/10" : undefined,
+				showDropState ? "border border-dashed border-border/60 bg-muted/10" : undefined,
 				isOver ? "border border-emerald-400/60 bg-emerald-500/10" : undefined,
 			)}
 		>
-			{widgetIds.length === 0 ? (
+			{hasWidgets ? (
+				<div className={cn("space-y-2", isInlineRight ? "h-full" : undefined)}>
+					{widgetIds.map((widgetId) => (
+						<SessionWidgetCard key={`${zoneId}:${widgetId}`} agent={agent} widgetId={widgetId} zoneId={zoneId} />
+					))}
+				</div>
+			) : showDropState ? (
 				<div
 					className={cn(
 						"flex h-full min-h-[120px] items-center justify-center rounded-xl px-4 py-6 text-center text-xs text-muted-foreground",
@@ -193,13 +201,7 @@ export function SessionWidgetZone({ agent, zoneId, showDropHint }: SessionWidget
 				>
 					Drop widget here
 				</div>
-			) : (
-				<div className={cn("space-y-2", isInlineRight ? "h-full" : undefined)}>
-					{widgetIds.map((widgetId) => (
-						<SessionWidgetCard key={`${zoneId}:${widgetId}`} agent={agent} widgetId={widgetId} zoneId={zoneId} />
-					))}
-				</div>
-			)}
+			) : null}
 		</div>
 	)
 }

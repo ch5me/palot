@@ -23,6 +23,7 @@ const DEFAULT_SETTINGS: AppSettings = {
 	},
 	opaqueWindows: false,
 	servers: DEFAULT_SERVER_SETTINGS,
+	connections: {},
 }
 
 // ============================================================
