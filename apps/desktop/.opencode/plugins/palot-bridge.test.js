@@ -63,6 +63,10 @@ describe("palot bridge plugin", () => {
 		const plugin = createPalotPlugin({ resolve: boundResolver })
 		const hooks = await plugin()
 		expect(Object.keys(hooks.tool).sort()).toEqual([
+			"mcp_call",
+			"mcp_describe",
+			"mcp_search",
+			"mcp_status",
 			"palot_browser_click",
 			"palot_browser_navigate",
 			"palot_browser_open",

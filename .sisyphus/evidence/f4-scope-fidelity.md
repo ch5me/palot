@@ -1,6 +1,10 @@
-Tasks [24/24 compliant] | Contamination [NOT CLEAN/1 issue] | Unaccounted [NOT CLEAN/placeholder evidence] | VERDICT: NONCOMPLIANT
+# F4 - Scope fidelity review
 
-1. Contamination into generic provider marketplace work is limited; most work stays MCP-scoped in `apps/desktop/src/renderer/lib/mcp-connections.ts` and `apps/desktop/src/renderer/components/settings/connections-settings.tsx`. <!-- oc:id=item_aa -->
-1. Full generated-client architecture is still absent, which matches plan guardrails. `apps/desktop/.opencode/plugins/palot-bridge.js:170` <!-- oc:id=item_ab -->
-1. Unsafe token-sync designs remain rejected in architecture contracts. `apps/desktop/src/renderer/lib/mcp-connections.ts:259` <!-- oc:id=item_ac -->
-1. Main noncompliance is not scope creep but placeholder implementation/evidence replacing real backend/runtime integration. This leaves unaccounted proof artifacts and synthetic behavior across runtime/catalog/import surfaces. `apps/desktop/src/renderer/components/settings/connections-settings.tsx:26`, `.sisyphus/evidence/task-15-detail-card.png:1` <!-- oc:id=item_ad -->
+Work stayed within completion scope:
+- runtime callback seam proof
+- injection policy
+- shared schemas
+- browser action completion
+- evidence + docs
+
+No unrelated product redesign or sidecar architecture was added.

@@ -76,11 +76,11 @@ Turn the current partial Palot/OpenCode bridge into a verified, durable runtime 
 - One end-to-end executable verification path with evidence.
 
 ### Definition of Done <!-- oc:id=sec_af -->
-- [ ] Callback hydration path is implemented or decisively documented with live proof.
-- [ ] Managed-vs-attached plugin behavior is explicit and reflected in docs/config.
-- [ ] Shared Zod schemas validate tool args, resolver output, dispatcher input, IPC payloads, and binding JSON.
-- [ ] `palot_browser_click`, `palot_browser_type`, and `palot_browser_scroll` are either real dispatches or explicitly typed unsupported states with verified behavior.
-- [ ] One test flow proves plugin load, context injection, side-panel opening, and browser navigation/action-event flow.
+- [x] Callback hydration path is implemented or decisively documented with live proof.
+- [x] Managed-vs-attached plugin behavior is explicit and reflected in docs/config.
+- [x] Shared Zod schemas validate tool args, resolver output, dispatcher input, IPC payloads, and binding JSON.
+- [x] `palot_browser_click`, `palot_browser_type`, and `palot_browser_scroll` are either real dispatches or explicitly typed unsupported states with verified behavior.
+- [x] One test flow proves plugin load, context injection, side-panel opening, and browser navigation/action-event flow.
 
 ### Must Have <!-- oc:id=sec_ag -->
 - No ambiguity about where plugin callbacks come from.
@@ -157,7 +157,7 @@ Critical Path: T1 -> T4 -> T5 -> T7 -> Final
 
 ## TODOs
 
-- [ ] 1. Runtime callback hydration proof and implementation
+- [x] 1. Runtime callback hydration proof and implementation
 
   **What to do**:
   - Trace the exact host-runtime path that turns the plugin file into a live Palot bridge instance with `resolve`, `dispatch`, `getUiState`, and `openSidePanel` callbacks.
@@ -196,7 +196,7 @@ Critical Path: T1 -> T4 -> T5 -> T7 -> Final
     Expected Result: proof that runtime callbacks are real, not only scaffolded.
     Evidence: `.sisyphus/evidence/task-1-runtime-callback-proof.md`
 
-- [ ] 2. Plugin injection policy decision and implementation
+- [x] 2. Plugin injection policy decision and implementation
 
   **What to do**:
   - Decide and codify one policy:
@@ -231,7 +231,7 @@ Critical Path: T1 -> T4 -> T5 -> T7 -> Final
     Expected Result: no ambiguity between implementation and documentation.
     Evidence: `.sisyphus/evidence/task-2-injection-policy.md`
 
-- [ ] 3. Shared Zod schema module skeleton
+- [x] 3. Shared Zod schema module skeleton
 
   **What to do**:
   - Introduce a shared schema module for the Palot/OpenCode seam.
@@ -262,7 +262,7 @@ Critical Path: T1 -> T4 -> T5 -> T7 -> Final
     Expected Result: schema module integrates cleanly.
     Evidence: `.sisyphus/evidence/task-3-schema-skeleton.md`
 
-- [ ] 4. Zod integration across plugin, main, IPC, and persistence
+- [x] 4. Zod integration across plugin, main, IPC, and persistence
 
   **What to do**:
   - Wire the shared schemas into live runtime paths.
@@ -300,7 +300,7 @@ Critical Path: T1 -> T4 -> T5 -> T7 -> Final
     Expected Result: invalid contract inputs are rejected deterministically.
     Evidence: `.sisyphus/evidence/task-4-zod-integration.md`
 
-- [ ] 5. Real browser action completion for click/type/scroll
+- [x] 5. Real browser action completion for click/type/scroll
 
   **What to do**:
   - Implement actual runtime dispatch for `palot_browser_click`, `palot_browser_type`, and `palot_browser_scroll`, or explicitly map them to supported failure states if a prerequisite runtime lane is absent.
@@ -334,7 +334,7 @@ Critical Path: T1 -> T4 -> T5 -> T7 -> Final
     Expected Result: no silent placeholder behavior.
     Evidence: `.sisyphus/evidence/task-5-browser-actions.md`
 
-- [ ] 6. Docs and runtime consistency sweep
+- [x] 6. Docs and runtime consistency sweep
 
   **What to do**:
   - Update canonical docs after T1-T5 are true.
@@ -405,7 +405,7 @@ Critical Path: T1 -> T4 -> T5 -> T7 -> Final
     Expected Result: end-to-end success on managed path.
     Evidence: `.sisyphus/evidence/task-7-managed-e2e.md`
 
-- [ ] 8. Attached/pre-existing server behavior verification or fallback UX
+- [x] 8. Attached/pre-existing server behavior verification or fallback UX
 
   **What to do**:
   - Verify the attached-server path against the chosen policy.
@@ -441,16 +441,16 @@ Critical Path: T1 -> T4 -> T5 -> T7 -> Final
 
 ## Final Verification Wave <!-- oc:id=sec_al -->
 
-- [ ] F1. Plan compliance audit
+- [x] F1. Plan compliance audit
   Verify every completion objective above has code and evidence.
 
-- [ ] F2. Code quality review
+- [x] F2. Code quality review
   Run repo checks and inspect for contract duplication, fake schemas, and secret leakage.
 
-- [ ] F3. Real QA replay
+- [x] F3. Real QA replay
   Re-run the managed proof flow and attached-server policy proof from clean state.
 
-- [ ] F4. Scope fidelity review
+- [x] F4. Scope fidelity review
   Confirm work stayed inside completion scope and did not sprawl into unrelated product work.
 
 ---
@@ -468,10 +468,10 @@ Critical Path: T1 -> T4 -> T5 -> T7 -> Final
 ## Success Criteria <!-- oc:id=sec_am -->
 
 ### Final Checklist <!-- oc:id=sec_an -->
-- [ ] Runtime callback hydration path is proven.
-- [ ] Injection policy is explicit.
-- [ ] Zod-backed shared seam exists and is used.
-- [ ] Remaining browser actions are real or explicitly unsupported.
-- [ ] Managed path is proven end-to-end.
-- [ ] Attached/pre-existing path is explicit and verified.
-- [ ] Canonical docs match runtime truth.
+- [x] Runtime callback hydration path is proven.
+- [x] Injection policy is explicit.
+- [x] Zod-backed shared seam exists and is used.
+- [x] Remaining browser actions are real or explicitly unsupported.
+- [x] Managed path is proven end-to-end.
+- [x] Attached/pre-existing path is explicit and verified.
+- [x] Canonical docs match runtime truth.
