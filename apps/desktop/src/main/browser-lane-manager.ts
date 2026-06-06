@@ -10,10 +10,13 @@ import {
 import type { BrowserLane } from "../renderer/lib/types"
 import {
 	activateBrowserLaneCdpTab,
+	clickBrowserLaneCdp,
 	closeBrowserLaneCdpTab,
 	createBrowserLaneCdpTab,
 	listBrowserLaneCdpTabs,
 	navigateBrowserLaneCdp,
+	scrollBrowserLaneCdp,
+	typeBrowserLaneCdp,
 } from "./browser-lane-cdp"
 import { getBrowserLaneDesktopUrl } from "./browser-lane-protocol"
 import type {
@@ -642,6 +645,33 @@ export async function navigateBrowserLane(id: string, url: string): Promise<Brow
 		nextTabsState,
 		nextTabsState.tabs.find((entry) => entry.id === result.targetId) ?? null,
 	)
+}
+
+export async function clickBrowserLane(
+	id: string,
+	input: { x: number; y: number; button?: "left" | "middle" | "right"; clickCount?: number },
+): Promise<void> {
+	await initBrowserLaneManager()
+	const cdpEndpoint = await getBrowserLaneCdpEndpoint(id)
+	await clickBrowserLaneCdp(cdpEndpoint, input, getLaneState(id).activeTabId)
+}
+
+export async function typeBrowserLane(
+	id: string,
+	input: { text: string; submit?: boolean },
+): Promise<void> {
+	await initBrowserLaneManager()
+	const cdpEndpoint = await getBrowserLaneCdpEndpoint(id)
+	await typeBrowserLaneCdp(cdpEndpoint, input, getLaneState(id).activeTabId)
+}
+
+export async function scrollBrowserLane(
+	id: string,
+	input: { deltaX?: number; deltaY?: number },
+): Promise<void> {
+	await initBrowserLaneManager()
+	const cdpEndpoint = await getBrowserLaneCdpEndpoint(id)
+	await scrollBrowserLaneCdp(cdpEndpoint, input, getLaneState(id).activeTabId)
 }
 
 export async function refreshBrowserLaneHealth(id: string): Promise<BrowserLaneHealth> {

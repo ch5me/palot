@@ -1,5 +1,5 @@
 import assert from "node:assert/strict"
-import { mkdtempSync, rmSync } from "node:fs"
+import { mkdtempSync, rmSync, writeFileSync } from "node:fs"
 import { tmpdir } from "node:os"
 import path from "node:path"
 import test from "node:test"
@@ -71,6 +71,17 @@ test("authority contract keeps lane as transport and magic browser as browser au
 		assert.equal(authority.browserLaneId, "lane-1")
 		assert.equal(authority.magicBrowserSessionId, "mb-1")
 		assert.equal(mod.SESSION_BINDING_AUTHORITY_CONTRACT.agentAuthority, "OpenCode session id")
+	} finally {
+		cleanup()
+	}
+})
+
+test("invalid persisted binding store resets safely", async () => {
+	const cleanup = setupTempXdg()
+	try {
+		const mod = await import("./palot-session-binding")
+		writeFileSync(mod.getSessionBindingStorePath(), JSON.stringify({ version: 1, bindings: [42] }), "utf-8")
+		assert.deepEqual(mod.listSessionBindings(), [])
 	} finally {
 		cleanup()
 	}

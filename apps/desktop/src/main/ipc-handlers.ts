@@ -48,6 +48,11 @@ import { bridgeActivity, listBridges } from "./bridges"
 import { deleteContact, loadCrmStore, saveContact } from "./crm"
 import { customerThread, listCustomers, sendMessage as sendInboxMessage } from "./inbox"
 import type { InboxChannel } from "../preload/api"
+import {
+	palotOpenSidePanelInputSchema,
+	publishBrowserActionInputSchema,
+	sessionBindingSchema,
+} from "../shared/palot-bridge-schemas"
 import { createPtyController } from "./pty"
 import {
 	deletePath as deleteProjectPath,
@@ -404,7 +409,7 @@ export function registerIpcHandlers(): void {
 	ipcMain.handle(
 		"palot:browser-action",
 		withLogging("palot:browser-action", async (_, input: { event: import("../preload/api").BrowserActionEvent }) =>
-			publishBrowserAction(input),
+			publishBrowserAction(publishBrowserActionInputSchema.parse(input)),
 		),
 	)
 	ipcMain.handle(
@@ -415,7 +420,8 @@ export function registerIpcHandlers(): void {
 		"palot:binding-set",
 		withLogging(
 			"palot:binding-set",
-			async (_, binding: import("../preload/api").SessionBinding) => setSessionBinding(binding),
+			async (_, binding: import("../preload/api").SessionBinding) =>
+				setSessionBinding(sessionBindingSchema.parse(binding)),
 		),
 	)
 	ipcMain.handle(
@@ -431,14 +437,15 @@ export function registerIpcHandlers(): void {
 	ipcMain.handle(
 		"palot:open-side-panel",
 		withLogging("palot:open-side-panel", async (_, tab: import("../preload/api").SidePanelTabId) => {
+			const parsedTab = palotOpenSidePanelInputSchema.parse(tab)
 			const snapshot = setUiStateSnapshot({
 				sidePanel: {
 					open: true,
-					activeTab: tab,
+					activeTab: parsedTab,
 				},
 			})
 			for (const win of BrowserWindow.getAllWindows()) {
-				win.webContents.send("palot:open-side-panel", { tab })
+				win.webContents.send("palot:open-side-panel", { tab: parsedTab })
 			}
 			return snapshot
 		}),

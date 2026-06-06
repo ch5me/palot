@@ -1,10 +1,14 @@
-Must Have [5/7] | Must NOT Have [8/10] | Tasks [16/24] | VERDICT FAIL
+# F1 - Plan compliance audit
 
-1. Ownership/cloud-local mode is still not honored by live backend registration; UI choice is not passed and runtime persists `ownershipMode: "local-only"`. `apps/desktop/src/renderer/components/settings/connections-settings.tsx:668`, `apps/desktop/src/main/mcp-connections-runtime.ts:102` <!-- oc:id=item_aa -->
-1. Cloud restore/gateway canonical store still does not exist beyond docs/types. `docs/mcp-connections-runbook.md:38`, `apps/desktop/src/renderer/lib/mcp-connections.ts:261` <!-- oc:id=item_ab -->
-1. Recommendation/ranking layer remains too thin and hardcoded; no real top-10 curated policy is rendered from live backend data. `apps/desktop/src/renderer/components/settings/connections-settings.tsx:105`, `apps/desktop/src/main/mcp-catalog-service.ts:129` <!-- oc:id=item_ac -->
-1. Runtime meta-tools remain stubbed and misnamed (`mcp_search`, `mcp_describe`, `mcp_call`, `mcp_status`) rather than exact `mcp.search` contract and live-backed behavior. `apps/desktop/.opencode/plugins/palot-bridge.js:170` <!-- oc:id=item_ad -->
-1. Describe/call/search meta-tools still use fixed/hardcoded payloads instead of live connected catalog/schema/executor paths. `apps/desktop/.opencode/plugins/palot-bridge.js:176`, `apps/desktop/.opencode/plugins/palot-bridge.js:182`, `apps/desktop/.opencode/plugins/palot-bridge.js:200` <!-- oc:id=item_ae -->
-1. Plugins posture still infers active/hydrated from OpenCode config only, not persisted connection records or probe health. `apps/desktop/src/renderer/components/side-panel/plugins-panel.tsx:50`, `apps/desktop/src/renderer/components/side-panel/plugins-panel.tsx:66` <!-- oc:id=item_af -->
-1. Imported MCP visibility is still partially fixture-driven in Connections UI instead of onboarding/configconv-backed data. `apps/desktop/src/renderer/components/settings/connections-settings.tsx:73` <!-- oc:id=item_ag -->
-1. Safe probe results remain ephemeral UI state; probe/test outcomes are not persisted back into canonical records with last-test/health fields. `apps/desktop/src/renderer/components/settings/connections-settings.tsx:201`, `apps/desktop/src/main/mcp-connections-runtime.ts:132` <!-- oc:id=item_ah -->
+## Completed against plan
+
+- callback hydration path audited and documented as absent
+- managed-vs-attached injection policy made explicit
+- shared Zod seam added and integrated
+- click/type/scroll implemented over CDP runtime path
+- docs aligned with runtime truth
+- attached/pre-existing path verified against policy
+
+## Incomplete by blocker
+
+- managed end-to-end live proof remains blocked by devmux/server startup failure in this worktree

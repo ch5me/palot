@@ -1,15 +1,15 @@
-import { execFile, type ChildProcess, spawn } from "node:child_process"
+import { type ChildProcess, spawn } from "node:child_process"
 import fs from "node:fs"
 import { homedir } from "node:os"
 import path from "node:path"
 import { setTimeout as sleep } from "node:timers/promises"
-import { promisify } from "node:util"
 import { BrowserWindow, dialog } from "electron"
 import type {
 	ActiveOpenCodeSessionPresence,
 	ActiveOpenCodeSessionsSnapshot,
 	LocalServerConfig,
 } from "../preload/api"
+import { createOpencodeClient } from "@opencode-ai/sdk/v2/client"
 import { getCredential } from "./credential-store"
 import { loadPalotPluginModule } from "./palot-opencode-plugin-shim"
 import { findFreePort } from "./find-free-port"
@@ -19,10 +19,8 @@ import { getListeningProcessOwner, isCurrentUser, isProcessAlive } from "./proce
 import { readLockfile, removeLockfile, writeLockfile } from "./server-lockfile"
 import { getSettings } from "./settings-store"
 import { waitForEnv } from "./shell-env"
-import { getActiveOpenCodeSessions as getInferredActiveOpenCodeSessions } from "../../server/src/services/opencode-active-sessions"
 
 const log = createLogger("opencode-manager")
-const execFileAsync = promisify(execFile)
 const ACTIVE_SESSION_STREAM_POLL_MS = 1000
 
 // ============================================================
@@ -350,10 +348,24 @@ function normalizeActiveSessionPresence(
 async function buildActiveOpenCodeSessionsSnapshot(
 	serverUrl: string,
 ): Promise<ActiveOpenCodeSessionsSnapshot> {
-	const snapshot = await getInferredActiveOpenCodeSessions(serverUrl)
+	const client = createOpencodeClient({ baseUrl: serverUrl })
+	const sessionsResponse = await client.session.list()
+	const sessions = sessionsResponse.data ?? []
+	const presence = sessions
+		.map((session: { id: string; directory: string }) => ({
+			sessionId: session.id,
+			directory: session.directory,
+			pid: 0,
+			source: "inferred" as const,
+			command: "opencode session.list",
+		}))
+		.filter((session) => typeof session.directory === "string" && session.directory.length > 0)
 	return {
-		...snapshot,
-		sessions: normalizeActiveSessionPresence(snapshot.sessions),
+		serverUrl,
+		clientCount: 0,
+		sessionCount: presence.length,
+		sessions: normalizeActiveSessionPresence(presence),
+		refreshedAt: Date.now(),
 	}
 }
 

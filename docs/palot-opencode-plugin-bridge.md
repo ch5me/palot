@@ -83,7 +83,7 @@ When Palot detects an already-running same-user server, it attaches to it instea
 Current limitation:
 - no code path edits the environment of an already-running server process
 - no code path writes plugin config into a global OpenCode config file for out-of-process reuse
-- therefore plugin availability is not guaranteed when Palot attaches to some preexisting server
+- attached/pre-existing OpenCode servers are therefore intentionally unsupported for Palot bridge features today
 
 This is the most important operational caveat in the current design.
 
@@ -202,10 +202,11 @@ Inside the plugin:
 
 Important truth:
 - this repo documents the callback seam clearly
-- but the exact runtime site where OpenCode passes these callbacks into `createPalotPlugin(...)` is not yet visible as a completed host-side bridge in this repo
-- the spawn path injects the plugin file into OpenCode, but the host-side callback hydration path is still the critical seam to verify during runtime integration
+- managed spawn injects the plugin file through `OPENCODE_PLUGIN`, but the exported module still instantiates `server` as `createPalotPlugin()` with no injected callbacks
+- `apps/desktop/src/main/palot-opencode-plugin-shim.ts` validates only `{ id, server }` and does not hydrate callback functions
+- official OpenCode plugin docs describe plugin context, hooks, and tool execution APIs, but no host-side API in this repo currently passes Palot-owned callbacks into `createPalotPlugin(...)`
 
-This is the main architecture gap to keep in mind.
+This means callback hydration is not implemented today. The callback-friendly factory remains a local scaffold/test seam unless a future explicit transport or documented host integration path is added.
 
 ## Resolver contract <!-- oc:id=sec_ap -->
 
@@ -291,15 +292,15 @@ Dispatch algorithm:
 1. return `{ status, resultSummary }` <!-- oc:id=item_at -->
 
 Actual live operations today:
-- `palot_browser_open` / `palot_browser_navigate` -> `navigateBrowserLane(...)`: `apps/desktop/src/main/palot-browser-dispatcher.ts:98`
-- `palot_browser_tabs` -> tab create/activate/close/list shim: `apps/desktop/src/main/palot-browser-dispatcher.ts:72`
+- `palot_browser_open` / `palot_browser_navigate` -> `navigateBrowserLane(...)`: `apps/desktop/src/main/palot-browser-dispatcher.ts:91`
+- `palot_browser_tabs` -> tab create/activate/close/list shim: `apps/desktop/src/main/palot-browser-dispatcher.ts:61`
+- `palot_browser_click` -> `clickBrowserLane(...)`: `apps/desktop/src/main/palot-browser-dispatcher.ts:100`
+- `palot_browser_type` -> `typeBrowserLane(...)`: `apps/desktop/src/main/palot-browser-dispatcher.ts:108`
+- `palot_browser_scroll` -> `scrollBrowserLane(...)`: `apps/desktop/src/main/palot-browser-dispatcher.ts:114`
 
-Still partial today:
-- `click`
-- `type`
-- `scroll`
-
-Those tool names exist in the plugin, but dispatcher implementation is still minimal for them.
+Implementation note:
+- click/type/scroll now ride the existing browser lane CDP websocket path through `apps/desktop/src/main/browser-lane-cdp.ts`
+- request/result action events still publish through the main-owned action bus
 
 ## Magic Browser seam <!-- oc:id=sec_at -->
 
@@ -409,19 +410,19 @@ This is the visible UI manipulation seam.
 
 ### Current state <!-- oc:id=sec_bg -->
 
-Today the seam is mostly TypeScript-typed, not Zod-backed.
+The seam now uses shared Zod schemas at the main runtime boundaries.
 
-Examples:
-- plugin args are placeholder schemas like `{ type: "navigate" }`: `apps/desktop/.opencode/plugins/palot-bridge.js:1`
-- browser dispatch input is TypeScript-only: `apps/desktop/src/main/palot-browser-dispatcher.ts:11`
-- IPC payloads are TypeScript-only through preload types in `apps/desktop/src/preload/api.d.ts`
-- binding JSON persistence uses structural JSON parsing only: `apps/desktop/src/main/palot-session-binding.ts:29`
+Current coverage:
+- shared schema module: `apps/desktop/src/shared/palot-bridge-schemas.ts`
+- plugin tool args parse before execution: `apps/desktop/.opencode/plugins/palot-bridge.js:87`
+- resolver payload parses through shared schema: `apps/desktop/src/main/palot-resolver.ts:5`
+- browser dispatcher input parses before routing: `apps/desktop/src/main/palot-browser-dispatcher.ts:80`
+- IPC payloads parse in main handlers: `apps/desktop/src/main/ipc-handlers.ts:409`
+- binding JSON persistence validates on read/write: `apps/desktop/src/main/palot-session-binding.ts:33`
 
 Repo evidence for Zod:
-- `packages/configconv` depends on `zod`: `packages/configconv/package.json`
-- `packages/ui` depends on `zod`: `packages/ui/package.json`
-
-But this Palot/OpenCode seam does not currently use Zod.
+- desktop app now depends on `zod`: `apps/desktop/package.json`
+- shared runtime seam imports it directly: `apps/desktop/src/shared/palot-bridge-schemas.ts:1`
 
 ### Recommended clean seam <!-- oc:id=sec_bh -->
 
@@ -453,15 +454,16 @@ These are the important known gaps to document honestly:
 
 1. Plugin injection is not global <!-- oc:id=item_az -->
 - only guaranteed for Palot-spawned managed servers
-- not guaranteed when attaching to pre-existing OpenCode servers
+- attached/pre-existing OpenCode servers are intentionally unsupported for Palot bridge features today
 
-1. Callback hydration path remains the key seam to verify <!-- oc:id=item_ba -->
+1. Callback hydration path is documented as absent <!-- oc:id=item_ba -->
 - plugin code expects `resolve` / `dispatch` / `getUiState` / `openSidePanel`
-- spawn path loads the plugin file, but this repo does not yet show a single obvious host-runtime site that instantiates the plugin with those callbacks inside OpenCode
+- spawn path loads the plugin file, but this repo still does not expose a host-runtime site that instantiates the plugin with those callbacks inside OpenCode
+- current truth is documentation plus proof of absence, not a hidden implementation
 
-1. Browser action tools are partially implemented <!-- oc:id=item_bb -->
+1. Browser action tools are live over CDP <!-- oc:id=item_bb -->
 - navigate/open/tabs are real
-- click/type/scroll are still architectural placeholders
+- click/type/scroll now dispatch through existing browser lane CDP websocket helpers
 
 1. Renderer mirrors UI state but does not own authority <!-- oc:id=item_bc -->
 - main owns the mirrored UI snapshot for plugin reads
@@ -496,10 +498,10 @@ If you are talking about "the Palot/OpenCode seam", use these questions:
 
 ## Next hardening steps <!-- oc:id=sec_bl -->
 
-1. Add shared Zod schemas for tool args, resolver output, and IPC payloads. <!-- oc:id=item_be -->
-1. Document and verify the actual host-runtime callback injection path into `createPalotPlugin(...)`. <!-- oc:id=item_bf -->
-1. Make plugin auto-install/global config strategy explicit if Palot must support attaching to long-lived preexisting OpenCode servers. <!-- oc:id=item_bg -->
-1. Finish real implementations for click/type/scroll dispatch. <!-- oc:id=item_bh -->
+1. Keep shared Zod schemas as the single bridge contract source of truth. <!-- oc:id=item_be -->
+1. If OpenCode later exposes a supported host injection seam, replace the current callback-proof-of-absence with a real runtime bridge. <!-- oc:id=item_bf -->
+1. Keep attached-server behavior explicit unless a durable plugin install/config path exists. <!-- oc:id=item_bg -->
+1. Extend browser action verification from targeted tests to managed-path live proof. <!-- oc:id=item_bh -->
 1. Add one end-to-end verification path that proves: <!-- oc:id=item_bi -->
 - plugin loaded
 - `experimental.chat.system.transform` injected context

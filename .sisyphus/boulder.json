@@ -6,5 +6,6 @@
   ],
   "plan_name": "palot-opencode-plugin-bridge-completion",
   "agent": "atlas",
-  "task_sessions": {}
+  "task_sessions": {},
+  "worktree_path": "/Users/hassoncs/src/ch5/palot/.worktrees/palot-opencode-plugin-bridge-completion"
 }

@@ -2,7 +2,7 @@ import assert from "node:assert/strict"
 import { mkdtempSync, rmSync } from "node:fs"
 import { tmpdir } from "node:os"
 import path from "node:path"
-import test from "node:test"
+import { mock, test } from "bun:test"
 
 function setupTempXdg() {
 	const root = mkdtempSync(path.join(tmpdir(), "elf-dispatcher-"))
@@ -51,6 +51,78 @@ test("dispatcher publishes request and result for bound tabs list action", async
 		const events = busMod.getBrowserActionEvents("ses_bound")
 		assert.ok(events.some((event) => event.kind === "toolRequest"))
 		assert.ok(events.some((event) => event.kind === "toolResult"))
+	} finally {
+		cleanup()
+	}
+})
+
+test("dispatcher returns queued result for navigate payloads before per-tool arg validation lands", async () => {
+	const cleanup = setupTempXdg()
+	try {
+		const dispatcher = await import("./palot-browser-dispatcher")
+		const result = await dispatcher.dispatchBrowserTool({
+			sessionId: "ses_bad",
+			toolName: "palot_browser_navigate",
+			args: { url: "" },
+		})
+		assert.equal(result.status, "failed")
+		assert.equal(result.resultSummary, "unbound_session")
+	} finally {
+		cleanup()
+	}
+})
+
+const clickBrowserLane = mock(async () => undefined)
+const typeBrowserLane = mock(async () => undefined)
+const scrollBrowserLane = mock(async () => undefined)
+
+mock.module("./browser-lane-manager", () => ({
+	activateBrowserLaneTab: async () => ({ status: "queued" }),
+	clickBrowserLane,
+	closeBrowserLaneTab: async () => ({ status: "queued" }),
+	createBrowserLaneTab: async () => ({ status: "queued" }),
+	navigateBrowserLane: async () => ({ status: "queued" }),
+	scrollBrowserLane,
+	typeBrowserLane,
+}))
+
+test("dispatcher routes click type and scroll through lane helpers", async () => {
+	const cleanup = setupTempXdg()
+	try {
+		clickBrowserLane.mockReset()
+		typeBrowserLane.mockReset()
+		scrollBrowserLane.mockReset()
+		const bindingMod = await import("./palot-session-binding")
+		const busMod = await import("./palot-browser-ipc")
+		const dispatcher = await import("./palot-browser-dispatcher")
+		bindingMod.upsertSessionBinding(
+			bindingMod.createSessionBinding({
+				openCodeSessionId: "ses_lane_actions",
+				browserLaneId: "lane_actions",
+				status: "attached",
+			}),
+		)
+		await dispatcher.dispatchBrowserTool({
+			sessionId: "ses_lane_actions",
+			toolName: "palot_browser_click",
+			args: { x: 10, y: 20 },
+		})
+		await dispatcher.dispatchBrowserTool({
+			sessionId: "ses_lane_actions",
+			toolName: "palot_browser_type",
+			args: { text: "hello" },
+		})
+		await dispatcher.dispatchBrowserTool({
+			sessionId: "ses_lane_actions",
+			toolName: "palot_browser_scroll",
+			args: { deltaY: 300 },
+		})
+		assert.equal(clickBrowserLane.mock.calls.length, 1)
+		assert.equal(typeBrowserLane.mock.calls.length, 1)
+		assert.equal(scrollBrowserLane.mock.calls.length, 1)
+		const events = busMod.getBrowserActionEvents("ses_lane_actions")
+		assert.equal(events.filter((event) => event.kind === "toolRequest").length, 3)
+		assert.equal(events.filter((event) => event.kind === "toolResult").length, 3)
 	} finally {
 		cleanup()
 	}

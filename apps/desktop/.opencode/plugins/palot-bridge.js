@@ -1,4 +1,19 @@
-const createSchema = (kind) => ({ type: kind })
+import { z } from "zod"
+import {
+	palotBrowserClickArgsSchema,
+	palotBrowserNavigateArgsSchema,
+	palotBrowserOpenArgsSchema,
+	palotBrowserScrollArgsSchema,
+	palotBrowserStatusArgsSchema,
+	palotBrowserTabsArgsSchema,
+	palotBrowserTypeArgsSchema,
+	palotOpenSidePanelArgsSchema,
+	palotResolverResultSchema,
+	palotToolArgsSchemas,
+	palotUiStateArgsSchema,
+} from "../../src/shared/palot-bridge-schemas"
+
+const createSchema = (schema) => schema
 
 const createQueuedResponse = ({ toolName, requestId, resultSummary = null }) => ({
 	status: "queued",
@@ -36,7 +51,8 @@ const buildPalotContextBlock = (resolved) => {
 const createResolver = ({ resolve }) => {
 	return (sessionID) => {
 		if (typeof resolve !== "function") return null
-		return resolve(sessionID)
+		const resolved = resolve(sessionID)
+		return resolved ? palotResolverResultSchema.parse(resolved) : null
 	}
 }
 
@@ -68,8 +84,9 @@ const createUiStateError = (toolName, message) =>
 		message,
 	})
 
-const buildBrowserToolHandler = ({ toolName, resolveBinding, dispatch }) => {
+const buildBrowserToolHandler = ({ toolName, resolveBinding, dispatch, schema }) => {
 	return async (args, context = {}) => {
+		const parsedArgs = schema.parse(args ?? {})
 		const resolved = resolveBinding(context.sessionID)
 		if (!resolved?.binding) {
 			return JSON.stringify(
@@ -80,7 +97,7 @@ const buildBrowserToolHandler = ({ toolName, resolveBinding, dispatch }) => {
 				}),
 			)
 		}
-		if (args?.selector === "__geometry_low_confidence__") {
+		if (parsedArgs?.selector === "__geometry_low_confidence__") {
 			return JSON.stringify(
 				createTypedError({
 					toolName,
@@ -89,7 +106,7 @@ const buildBrowserToolHandler = ({ toolName, resolveBinding, dispatch }) => {
 				}),
 			)
 		}
-		if (args?.selector === "__human_in_control__") {
+		if (parsedArgs?.selector === "__human_in_control__") {
 			return JSON.stringify(
 				createTypedError({
 					toolName,
@@ -102,7 +119,7 @@ const buildBrowserToolHandler = ({ toolName, resolveBinding, dispatch }) => {
 			const result = await dispatch({
 				sessionId: context.sessionID,
 				toolName,
-				args: args ?? {},
+				args: parsedArgs,
 			})
 			return JSON.stringify(result)
 		}
@@ -110,7 +127,7 @@ const buildBrowserToolHandler = ({ toolName, resolveBinding, dispatch }) => {
 			createQueuedResponse({
 				toolName,
 				requestId: `${toolName}:${context.sessionID ?? "unknown"}`,
-				resultSummary: JSON.stringify(args ?? {}),
+				resultSummary: JSON.stringify(parsedArgs),
 			}),
 		)
 	}
@@ -118,7 +135,8 @@ const buildBrowserToolHandler = ({ toolName, resolveBinding, dispatch }) => {
 
 const buildOpenSidePanelHandler = ({ getUiState, openSidePanel }) => {
 	return async (args = {}) => {
-		const tab = args?.tab
+		const parsedArgs = palotOpenSidePanelArgsSchema.parse(args)
+		const tab = parsedArgs.tab
 		if (!VALID_SIDE_PANEL_TABS.includes(tab)) {
 			return JSON.stringify(
 				createUiStateError(
@@ -142,7 +160,8 @@ const buildOpenSidePanelHandler = ({ getUiState, openSidePanel }) => {
 }
 
 const buildUiStateHandler = ({ getUiState }) => {
-	return async () => {
+	return async (args = {}) => {
+		palotUiStateArgsSchema.parse(args)
 		if (typeof getUiState !== "function") {
 			return JSON.stringify({ sidePanel: null })
 		}
@@ -169,7 +188,7 @@ const createPalotPlugin = ({ resolve, dispatch, getUiState, openSidePanel } = {}
 		tool: {
 			mcp_search: {
 				description: "Search connected MCP catalog entries without hydrating every tool schema",
-				args: createSchema("mcp-search"),
+				args: z.object({ query: z.string().optional() }).passthrough(),
 				execute: async (args = {}) =>
 					JSON.stringify({
 						query: args.query ?? "",
@@ -181,7 +200,7 @@ const createPalotPlugin = ({ resolve, dispatch, getUiState, openSidePanel } = {}
 			},
 			mcp_describe: {
 				description: "Describe one MCP server or tool on demand",
-				args: createSchema("mcp-describe"),
+				args: z.object({ serverId: z.string().optional(), toolName: z.string().optional() }).passthrough(),
 				execute: async (args = {}) =>
 					JSON.stringify({
 						serverId: args.serverId ?? "github",
@@ -199,7 +218,14 @@ const createPalotPlugin = ({ resolve, dispatch, getUiState, openSidePanel } = {}
 			},
 			mcp_call: {
 				description: "Execute one selected MCP tool through compact runtime path",
-				args: createSchema("mcp-call"),
+				args: z
+					.object({
+						query: z.string().trim().min(1),
+						serverId: z.string().optional(),
+						toolName: z.string().optional(),
+						state: z.string().optional(),
+					})
+					.passthrough(),
 				execute: async (args = {}) => {
 					const schema = {
 						type: "object",
@@ -234,7 +260,7 @@ const createPalotPlugin = ({ resolve, dispatch, getUiState, openSidePanel } = {}
 			},
 			mcp_status: {
 				description: "Report MCP connection readiness without loading every schema",
-				args: createSchema("mcp-status"),
+				args: z.object({ serverId: z.string().optional() }).passthrough(),
 				execute: async (args = {}) =>
 					JSON.stringify({
 						serverId: args.serverId ?? null,
@@ -243,47 +269,82 @@ const createPalotPlugin = ({ resolve, dispatch, getUiState, openSidePanel } = {}
 			},
 			palot_browser_status: {
 				description: "Get Palot browser status for the current OpenCode session",
-				args: createSchema("status"),
-				execute: buildBrowserToolHandler({ toolName: "palot_browser_status", resolveBinding, dispatch }),
+				args: palotBrowserStatusArgsSchema,
+				execute: buildBrowserToolHandler({
+					toolName: "palot_browser_status",
+					resolveBinding,
+					dispatch,
+					schema: palotToolArgsSchemas.palot_browser_status,
+				}),
 			},
 			palot_browser_open: {
 				description: "Open a browser lane URL",
-				args: createSchema("open"),
-				execute: buildBrowserToolHandler({ toolName: "palot_browser_open", resolveBinding, dispatch }),
+				args: palotBrowserOpenArgsSchema,
+				execute: buildBrowserToolHandler({
+					toolName: "palot_browser_open",
+					resolveBinding,
+					dispatch,
+					schema: palotToolArgsSchemas.palot_browser_open,
+				}),
 			},
 			palot_browser_navigate: {
 				description: "Navigate the current browser lane",
-				args: createSchema("navigate"),
-				execute: buildBrowserToolHandler({ toolName: "palot_browser_navigate", resolveBinding, dispatch }),
+				args: palotBrowserNavigateArgsSchema,
+				execute: buildBrowserToolHandler({
+					toolName: "palot_browser_navigate",
+					resolveBinding,
+					dispatch,
+					schema: palotToolArgsSchemas.palot_browser_navigate,
+				}),
 			},
 			palot_browser_tabs: {
 				description: "List or manage browser lane tabs",
-				args: createSchema("tabs"),
-				execute: buildBrowserToolHandler({ toolName: "palot_browser_tabs", resolveBinding, dispatch }),
+				args: palotBrowserTabsArgsSchema,
+				execute: buildBrowserToolHandler({
+					toolName: "palot_browser_tabs",
+					resolveBinding,
+					dispatch,
+					schema: palotToolArgsSchemas.palot_browser_tabs,
+				}),
 			},
 			palot_browser_click: {
 				description: "Click in the current browser lane",
-				args: createSchema("click"),
-				execute: buildBrowserToolHandler({ toolName: "palot_browser_click", resolveBinding, dispatch }),
+				args: palotBrowserClickArgsSchema,
+				execute: buildBrowserToolHandler({
+					toolName: "palot_browser_click",
+					resolveBinding,
+					dispatch,
+					schema: palotToolArgsSchemas.palot_browser_click,
+				}),
 			},
 			palot_browser_type: {
 				description: "Type into the current browser lane",
-				args: createSchema("type"),
-				execute: buildBrowserToolHandler({ toolName: "palot_browser_type", resolveBinding, dispatch }),
+				args: palotBrowserTypeArgsSchema,
+				execute: buildBrowserToolHandler({
+					toolName: "palot_browser_type",
+					resolveBinding,
+					dispatch,
+					schema: palotToolArgsSchemas.palot_browser_type,
+				}),
 			},
 			palot_browser_scroll: {
 				description: "Scroll the current browser lane",
-				args: createSchema("scroll"),
-				execute: buildBrowserToolHandler({ toolName: "palot_browser_scroll", resolveBinding, dispatch }),
+				args: palotBrowserScrollArgsSchema,
+				execute: buildBrowserToolHandler({
+					toolName: "palot_browser_scroll",
+					resolveBinding,
+					dispatch,
+					schema: palotToolArgsSchemas.palot_browser_scroll,
+				}),
 			},
 			palot_open_side_panel: {
 				description: "Open a Palot side panel tab in the desktop UI",
-				args: createSchema("side-panel"),
+				args: palotOpenSidePanelArgsSchema,
 				execute: buildOpenSidePanelHandler({ getUiState, openSidePanel }),
 			},
 			palot_ui_state: {
 				description: "Get the current Palot UI side panel state",
-				args: createSchema("ui-state"),
+				args: palotUiStateArgsSchema,
 				execute: buildUiStateHandler({ getUiState }),
 			},
 		},
