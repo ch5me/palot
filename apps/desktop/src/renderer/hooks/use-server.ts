@@ -1,6 +1,7 @@
-import { useAtomValue } from "jotai"
+import { useAtomValue, useSetAtom } from "jotai"
 import { useCallback } from "react"
 import { connectionAtom } from "../atoms/connection"
+import { pinnedSessionsAtom } from "../atoms/preferences"
 import { upsertMessageAtom } from "../atoms/messages"
 import { upsertPartAtom } from "../atoms/parts"
 import { sessionFamily, upsertSessionAtom } from "../atoms/sessions"
@@ -34,6 +35,7 @@ export function useServerConnection() {
  * Hook for agent actions (stop, approve, deny, etc.).
  */
 export function useAgentActions() {
+	const setPinnedSessions = useSetAtom(pinnedSessionsAtom)
 	const abort = useCallback(async (directory: string, sessionId: string) => {
 		const client = getProjectClient(directory)
 		if (!client) throw new Error("Not connected to OpenCode server")
@@ -202,11 +204,17 @@ export function useAgentActions() {
 		log.debug("deleteSession", { sessionId })
 		try {
 			await client.session.delete({ sessionID: sessionId })
+			setPinnedSessions((current) => {
+				if (!(sessionId in current)) return current
+				const next = { ...current }
+				delete next[sessionId]
+				return next
+			})
 		} catch (err) {
 			log.error("deleteSession failed", { sessionId }, err)
 			throw err
 		}
-	}, [])
+	}, [setPinnedSessions])
 
 	const respondToPermission = useCallback(
 		async (
@@ -334,6 +342,18 @@ export function useAgentActions() {
 		[],
 	)
 
+	const togglePinnedSession = useCallback((sessionId: string, pinned: boolean) => {
+		setPinnedSessions((current) => {
+			if (pinned) {
+				return { ...current, [sessionId]: Date.now() }
+			}
+			if (!(sessionId in current)) return current
+			const next = { ...current }
+			delete next[sessionId]
+			return next
+		})
+	}, [setPinnedSessions])
+
 	const forkSession = useCallback(
 		async (directory: string, sessionId: string, messageId?: string): Promise<Session> => {
 			const client = getProjectClient(directory)
@@ -372,6 +392,7 @@ export function useAgentActions() {
 		unrevert,
 		executeCommand,
 		summarize,
+		togglePinnedSession,
 		forkSession,
 	}
 }

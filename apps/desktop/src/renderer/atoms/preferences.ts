@@ -167,6 +167,8 @@ export const pinnedFactsAtom = atomWithStorage<Record<string, PinnedFact[]>>(
 	{},
 )
 
+export const pinnedSessionsAtom = atomWithStorage<Record<string, number>>("elf:pinnedSessions", {})
+
 export const fireflyProfilePreferencesAtom = atomWithStorage<FireflyProfilePreferences>(
 	"elf:fireflyProfilePreferences",
 	{

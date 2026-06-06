@@ -1397,7 +1397,7 @@ Max Concurrent: 5
   Run repo quality gates applicable to touched areas, inspect changed files for duplicated shell plumbing, ad hoc locator shapes, hidden false-precision states, and performance regressions.
   Output: `Build [PASS/FAIL] | Lint [PASS/FAIL] | Tests [PASS/FAIL] | VERDICT`
 
-- [ ] F3. **Real QA Scenario Execution** — `visual-engineering`
+- [x] F3. **Real QA Scenario Execution** — `visual-engineering`
   Execute all task-level QA scenarios end-to-end using browser automation and supporting commands. Save final evidence under `.sisyphus/evidence/final-qa/`.
   Output: `Scenarios [N/N] | Integration [N/N] | Edge cases [N tested] | VERDICT`
 
@@ -1426,8 +1426,8 @@ bun run dev
 ```
 
 ### Final Checklist <!-- oc:id=sec_ap -->
-- [ ] All must-have capabilities planned through concrete tasks
-- [ ] Shared locator contract introduced before dependent features
-- [ ] Desktop-first scope held with explicit native contract boundaries
-- [ ] Degraded-state handling exists for all critical grounding failures
-- [ ] Firefly registry/shell path preserved with no bespoke panel plumbing
+- [x] All must-have capabilities planned through concrete tasks
+- [x] Shared locator contract introduced before dependent features
+- [x] Desktop-first scope held with explicit native contract boundaries
+- [x] Degraded-state handling exists for all critical grounding failures
+- [x] Firefly registry/shell path preserved with no bespoke panel plumbing

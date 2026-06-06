@@ -1,4 +1,8 @@
-import { Collapsible, CollapsibleContent } from "@ch5me/elf-ui/components/collapsible"
+import {
+	Collapsible,
+	CollapsibleContent,
+	CollapsibleTrigger,
+} from "@ch5me/elf-ui/components/collapsible"
 import {
 	ContextMenu,
 	ContextMenuContent,
@@ -20,7 +24,7 @@ import {
 } from "@ch5me/elf-ui/components/sidebar"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@ch5me/elf-ui/components/tooltip"
 import { useNavigate, useParams } from "@tanstack/react-router"
-import { useAtomValue } from "jotai"
+import { useAtom, useAtomValue } from "jotai"
 import {
 	AlertCircleIcon,
 	BotIcon,
@@ -33,6 +37,8 @@ import {
 	GitForkIcon,
 	Loader2Icon,
 	PencilIcon,
+	PinIcon,
+	PinOffIcon,
 	PlusIcon,
 	SearchIcon,
 	SettingsIcon,
@@ -44,11 +50,13 @@ import { memo, useCallback, useEffect, useMemo, useRef, useState, useTransition 
 import { activeServerConfigAtom } from "../atoms/connection"
 import { agentFamily, projectSessionIdsFamily, sandboxMappingsAtom } from "../atoms/derived/agents"
 import { automationsEnabledAtom } from "../atoms/feature-flags"
+import { pinnedSessionsAtom } from "../atoms/preferences"
 import {
 	isTaggedProjectManagerSession,
 	projectManagerSessionTagsAtom,
 } from "../atoms/project-manager"
 import { projectPaginationFamily } from "../atoms/sessions"
+import { sidebarSectionOpenAtom, type SidebarSectionId } from "../atoms/ui"
 import { appStore } from "../atoms/store"
 import type { Agent, AgentStatus, SidebarProject } from "../lib/types"
 import { loadMoreProjectSessions, loadProjectSessions } from "../services/connection-manager"
@@ -99,6 +107,7 @@ interface AppSidebarContentProps {
 	onAddProject?: () => void
 	onRenameSession?: (agent: Agent, title: string) => Promise<void>
 	onDeleteSession?: (agent: Agent) => Promise<void>
+	onTogglePinnedSession?: (agent: Agent, pinned: boolean) => Promise<void>
 	onForkSession?: (agent: Agent) => Promise<void>
 	serverConnected: boolean
 }
@@ -118,6 +127,7 @@ export function AppSidebarContent({
 	onAddProject,
 	onRenameSession,
 	onDeleteSession,
+	onTogglePinnedSession,
 	onForkSession,
 	serverConnected,
 }: AppSidebarContentProps) {
@@ -125,6 +135,8 @@ export function AppSidebarContent({
 	const routeParams = useParams({ strict: false }) as { sessionId?: string }
 	const selectedSessionId = routeParams.sessionId ?? null
 	const automationsEnabled = useAtomValue(automationsEnabledAtom)
+	const [sidebarSectionsOpen, setSidebarSectionsOpen] = useAtom(sidebarSectionOpenAtom)
+	const pinnedSessions = useAtomValue(pinnedSessionsAtom)
 	const pmSessionTags = useAtomValue(projectManagerSessionTagsAtom)
 	const activeServer = useAtomValue(activeServerConfigAtom)
 	const isLocalServer = activeServer.type === "local"
@@ -174,15 +186,31 @@ export function AppSidebarContent({
 		[agents, isProjectManagerSession],
 	)
 
+	const pinnedIds = useMemo(() => new Set(Object.keys(pinnedSessions)), [pinnedSessions])
+
+	const pinnedSidebarSessions = useMemo(
+		() =>
+			agents
+				.filter((a) => !a.parentId && !isProjectManagerSession(a) && pinnedIds.has(a.id))
+				.sort((a, b) => (pinnedSessions[b.id] ?? 0) - (pinnedSessions[a.id] ?? 0)),
+		[agents, isProjectManagerSession, pinnedIds, pinnedSessions],
+	)
+
 	const activeIds = useMemo(() => new Set(activeSessions.map((a) => a.id)), [activeSessions])
 
 	const recentSessions = useMemo(
 		() =>
 			agents
-				.filter((a) => !a.parentId && !activeIds.has(a.id) && !isProjectManagerSession(a))
+				.filter(
+					(a) =>
+						!a.parentId &&
+						!activeIds.has(a.id) &&
+						!pinnedIds.has(a.id) &&
+						!isProjectManagerSession(a),
+				)
 				.sort((a, b) => b.lastActiveAt - a.lastActiveAt)
 				.slice(0, RECENT_COUNT),
-		[agents, activeIds, isProjectManagerSession],
+		[agents, activeIds, pinnedIds, isProjectManagerSession],
 	)
 
 	const pmSessions = useMemo(
@@ -195,6 +223,16 @@ export function AppSidebarContent({
 
 	const hasContent = agents.length > 0 || projects.length > 0
 	const showEmptyState = !hasContent
+
+	const setSectionOpen = useCallback(
+		(section: SidebarSectionId, open: boolean) => {
+			setSidebarSectionsOpen((current) => ({
+				...current,
+				[section]: open,
+			}))
+		},
+		[setSidebarSectionsOpen],
+	)
 
 	return (
 		<>
@@ -261,12 +299,15 @@ export function AppSidebarContent({
 				</SidebarGroupContent>
 			</SidebarGroup>
 
-				{/* Active Now */}
+					{/* Active Now */}
 				{activeSessions.length > 0 && (
-					<SidebarGroup>
-						<SidebarGroupLabel>Active Now</SidebarGroupLabel>
-						<SidebarGroupContent>
-							<SidebarMenu>
+					<SessionSection
+						id="active"
+						label="Active Now"
+						open={sidebarSectionsOpen.active}
+						onOpenChange={setSectionOpen}
+					>
+						<SidebarMenu>
 							{activeSessions.map((agent) => (
 								<SessionItem
 									key={agent.id}
@@ -274,21 +315,48 @@ export function AppSidebarContent({
 									isSelected={agent.id === selectedSessionId}
 									onRename={onRenameSession}
 									onDelete={onDeleteSession}
+									onTogglePinned={onTogglePinnedSession}
 									onFork={onForkSession}
 									showProject
 								/>
 							))}
-							</SidebarMenu>
-						</SidebarGroupContent>
-					</SidebarGroup>
+						</SidebarMenu>
+					</SessionSection>
+				)}
+
+				{pinnedSidebarSessions.length > 0 && (
+					<SessionSection
+						id="pinned"
+						label="Pinned"
+						open={sidebarSectionsOpen.pinned}
+						onOpenChange={setSectionOpen}
+					>
+						<SidebarMenu>
+							{pinnedSidebarSessions.map((agent) => (
+								<SessionItem
+									key={agent.id}
+									agent={agent}
+									isSelected={agent.id === selectedSessionId}
+									onRename={onRenameSession}
+									onDelete={onDeleteSession}
+									onTogglePinned={onTogglePinnedSession}
+									onFork={onForkSession}
+									showProject
+								/>
+							))}
+						</SidebarMenu>
+					</SessionSection>
 				)}
 
 				{/* Recent */}
 				{recentSessions.length > 0 && (
-					<SidebarGroup>
-						<SidebarGroupLabel>Recent</SidebarGroupLabel>
-						<SidebarGroupContent>
-							<SidebarMenu>
+					<SessionSection
+						id="recent"
+						label="Recent"
+						open={sidebarSectionsOpen.recent}
+						onOpenChange={setSectionOpen}
+					>
+						<SidebarMenu>
 							{recentSessions.map((agent) => (
 								<SessionItem
 									key={agent.id}
@@ -296,143 +364,176 @@ export function AppSidebarContent({
 									isSelected={agent.id === selectedSessionId}
 									onRename={onRenameSession}
 									onDelete={onDeleteSession}
+									onTogglePinned={onTogglePinnedSession}
 									onFork={onForkSession}
 									showProject
 								/>
 							))}
-							</SidebarMenu>
-						</SidebarGroupContent>
-					</SidebarGroup>
+						</SidebarMenu>
+					</SessionSection>
 				)}
 
 				{pmSessions.length > 0 && (
-					<SidebarGroup>
-						<SidebarGroupLabel>PM Sessions</SidebarGroupLabel>
-						<SidebarGroupContent>
-							<SidebarMenu>
-								{pmSessions.map((agent) => (
-									<SessionItem
-										key={agent.id}
-										agent={agent}
-										isSelected={agent.id === selectedSessionId}
-										onRename={onRenameSession}
-										onDelete={onDeleteSession}
-										onFork={onForkSession}
-										showProject
-									/>
-								))}
-							</SidebarMenu>
-						</SidebarGroupContent>
-					</SidebarGroup>
+					<SessionSection
+						id="pm"
+						label="PM Sessions"
+						open={sidebarSectionsOpen.pm}
+						onOpenChange={setSectionOpen}
+					>
+						<SidebarMenu>
+							{pmSessions.map((agent) => (
+								<SessionItem
+									key={agent.id}
+									agent={agent}
+									isSelected={agent.id === selectedSessionId}
+									onRename={onRenameSession}
+									onDelete={onDeleteSession}
+									onTogglePinned={onTogglePinnedSession}
+									onFork={onForkSession}
+									showProject
+								/>
+							))}
+						</SidebarMenu>
+					</SessionSection>
 				)}
 
 				{/* Projects */}
-				{hasContent && (activeSessions.length > 0 || recentSessions.length > 0 || pmSessions.length > 0) && (
-					<SidebarSeparator className="bg-sidebar-border/5" />
-				)}
+				{hasContent &&
+					(activeSessions.length > 0 ||
+						pinnedSidebarSessions.length > 0 ||
+						recentSessions.length > 0 ||
+						pmSessions.length > 0) && <SidebarSeparator className="bg-sidebar-border/5" />}
 				{hasContent && (
 					<SidebarGroup>
-						<div className="flex items-center justify-between gap-2 px-2 pb-1">
-							<SidebarGroupLabel className="h-auto p-0">Projects</SidebarGroupLabel>
-							<div className="flex shrink-0 items-center gap-0.5">
-								<Tooltip>
-									<TooltipTrigger
-										render={
-											<button
-												type="button"
-												onClick={toggleProjectSearch}
-												className={`text-sidebar-foreground ring-sidebar-ring hover:bg-sidebar-accent hover:text-sidebar-accent-foreground flex aspect-square w-5 items-center justify-center rounded-md p-0 transition-colors ${
-													projectSearchActive
-														? "bg-sidebar-accent text-sidebar-accent-foreground"
-														: ""
-												}`}
-											/>
-										}
-									>
-										{projectSearchActive ? (
-											<XIcon className="size-4 shrink-0" />
-										) : (
-											<SearchIcon className="size-4 shrink-0" />
-										)}
-										<span className="sr-only">Search projects</span>
-									</TooltipTrigger>
-									<TooltipContent side="bottom">
-										{projectSearchActive ? "Close search" : "Search projects"}
-									</TooltipContent>
-								</Tooltip>
-								<Tooltip>
-									<TooltipTrigger
-										render={
-											<button
-												type="button"
-												onClick={onOpenCommandPalette}
-												className="text-sidebar-foreground ring-sidebar-ring hover:bg-sidebar-accent hover:text-sidebar-accent-foreground flex aspect-square w-5 shrink-0 items-center justify-center rounded-md p-0 transition-colors"
-											/>
-										}
-									>
-										<CommandIcon className="size-4 shrink-0" />
-										<span className="sr-only">Command palette</span>
-									</TooltipTrigger>
-									<TooltipContent side="bottom">Command palette (&#8984;K)</TooltipContent>
-								</Tooltip>
-								{onAddProject && (
+						<Collapsible
+							open={sidebarSectionsOpen.projects}
+							onOpenChange={(open) => setSectionOpen("projects", open)}
+						>
+							<div className="flex items-center justify-between gap-2 px-2 pb-1">
+								<CollapsibleTrigger className="flex min-w-0 flex-1 items-center gap-1.5 text-left outline-hidden">
+									<ChevronRightIcon
+										className="size-3 shrink-0 text-muted-foreground transition-transform duration-200 ease-out"
+										style={{
+											transform: sidebarSectionsOpen.projects ? "rotate(90deg)" : "rotate(0deg)",
+										}}
+									/>
+									<SidebarGroupLabel className="h-auto min-w-0 p-0">Projects</SidebarGroupLabel>
+								</CollapsibleTrigger>
+								<div className="flex shrink-0 items-center gap-0.5">
 									<Tooltip>
 										<TooltipTrigger
 											render={
 												<button
 													type="button"
-													onClick={onAddProject}
+													onClick={(event) => {
+														event.stopPropagation()
+														toggleProjectSearch()
+													}}
+													className={`text-sidebar-foreground ring-sidebar-ring hover:bg-sidebar-accent hover:text-sidebar-accent-foreground flex aspect-square w-5 items-center justify-center rounded-md p-0 transition-colors ${
+														projectSearchActive
+															? "bg-sidebar-accent text-sidebar-accent-foreground"
+															: ""
+													}`}
+												/>
+										}
+										>
+											{projectSearchActive ? (
+												<XIcon className="size-4 shrink-0" />
+											) : (
+												<SearchIcon className="size-4 shrink-0" />
+											)}
+											<span className="sr-only">Search projects</span>
+										</TooltipTrigger>
+										<TooltipContent side="bottom">
+											{projectSearchActive ? "Close search" : "Search projects"}
+										</TooltipContent>
+									</Tooltip>
+									<Tooltip>
+										<TooltipTrigger
+											render={
+												<button
+													type="button"
+													onClick={(event) => {
+														event.stopPropagation()
+														onOpenCommandPalette()
+													}}
 													className="text-sidebar-foreground ring-sidebar-ring hover:bg-sidebar-accent hover:text-sidebar-accent-foreground flex aspect-square w-5 shrink-0 items-center justify-center rounded-md p-0 transition-colors"
 												/>
-											}
-										>
-											<PlusIcon className="size-4 shrink-0" />
-											<span className="sr-only">Add Project</span>
-										</TooltipTrigger>
-										<TooltipContent side="bottom">Add project</TooltipContent>
-									</Tooltip>
-								)}
-							</div>
-						</div>
-
-						{/* Inline project search */}
-						{projectSearchActive && (
-							<div className="px-2 pb-1">
-								<Input
-									ref={projectSearchRef}
-									value={projectSearch}
-									onChange={(e) => setProjectSearch(e.target.value)}
-									onKeyDown={(e) => {
-										if (e.key === "Escape") {
-											toggleProjectSearch()
 										}
-									}}
-									placeholder="Filter projects..."
-									className="h-7 text-xs"
-								/>
+										>
+											<CommandIcon className="size-4 shrink-0" />
+											<span className="sr-only">Command palette</span>
+										</TooltipTrigger>
+										<TooltipContent side="bottom">Command palette (&#8984;K)</TooltipContent>
+									</Tooltip>
+									{onAddProject && (
+										<Tooltip>
+											<TooltipTrigger
+												render={
+													<button
+														type="button"
+														onClick={(event) => {
+															event.stopPropagation()
+															onAddProject()
+														}}
+														className="text-sidebar-foreground ring-sidebar-ring hover:bg-sidebar-accent hover:text-sidebar-accent-foreground flex aspect-square w-5 shrink-0 items-center justify-center rounded-md p-0 transition-colors"
+													/>
+												}
+											>
+												<PlusIcon className="size-4 shrink-0" />
+												<span className="sr-only">Add Project</span>
+											</TooltipTrigger>
+											<TooltipContent side="bottom">Add project</TooltipContent>
+										</Tooltip>
+									)}
+								</div>
 							</div>
-						)}
 
-						<SidebarGroupContent>
-							<SidebarMenu>
-							{filteredProjects.map((project) => (
-								<ProjectFolder
-									key={project.id}
-									project={project}
-									selectedSessionId={selectedSessionId}
-									onRename={onRenameSession}
-									onDelete={onDeleteSession}
-									onFork={onForkSession}
-								/>
-							))}
-								{projectSearch && filteredProjects.length === 0 && (
-									<p className="px-2 py-1.5 text-xs text-muted-foreground/60">
-										No projects match &ldquo;{projectSearch}&rdquo;
-									</p>
+							<CollapsibleContent
+								keepMounted
+								className="flex h-[var(--collapsible-panel-height)] flex-col overflow-hidden transition-[height] duration-200 ease-out data-[ending-style]:h-0 data-[starting-style]:h-0 [&[hidden]:not([hidden='until-found'])]:hidden"
+							>
+								{projectSearchActive && (
+									<div className="px-2 pb-1">
+										<Input
+											ref={projectSearchRef}
+											value={projectSearch}
+											onChange={(e) => setProjectSearch(e.target.value)}
+											onKeyDown={(e) => {
+												if (e.key === "Escape") {
+													toggleProjectSearch()
+												}
+											}}
+											placeholder="Filter projects..."
+											className="h-7 text-xs"
+										/>
+									</div>
 								)}
-							</SidebarMenu>
-						</SidebarGroupContent>
+
+								<SidebarGroupContent>
+									<SidebarMenu>
+										{filteredProjects.map((project) => (
+											<ProjectFolder
+												key={project.id}
+												project={project}
+												selectedSessionId={selectedSessionId}
+												onRename={onRenameSession}
+												onDelete={onDeleteSession}
+												onTogglePinned={onTogglePinnedSession}
+												onFork={onForkSession}
+											/>
+										))}
+										{projectSearch && filteredProjects.length === 0 && (
+											<p className="px-2 py-1.5 text-xs text-muted-foreground/60">
+												No projects match &ldquo;{projectSearch}&rdquo;
+											</p>
+										)}
+									</SidebarMenu>
+								</SidebarGroupContent>
+							</CollapsibleContent>
+						</Collapsible>
 					</SidebarGroup>
+
 				)}
 			</SidebarContent>
 			<SidebarFooter className="space-y-0 p-2">
@@ -468,12 +569,14 @@ const ProjectSessionItem = memo(function ProjectSessionItem({
 	selectedSessionId,
 	onRename,
 	onDelete,
+	onTogglePinned,
 	onFork,
 }: {
 	sessionId: string
 	selectedSessionId: string | null
 	onRename?: (agent: Agent, title: string) => Promise<void>
 	onDelete?: (agent: Agent) => Promise<void>
+	onTogglePinned?: (agent: Agent, pinned: boolean) => Promise<void>
 	onFork?: (agent: Agent) => Promise<void>
 }) {
 	const agent = useAtomValue(agentFamily(sessionId))
@@ -484,9 +587,44 @@ const ProjectSessionItem = memo(function ProjectSessionItem({
 			isSelected={agent.id === selectedSessionId}
 			onRename={onRename}
 			onDelete={onDelete}
+			onTogglePinned={onTogglePinned}
 			onFork={onFork}
 			compact
 		/>
+	)
+})
+
+const SessionSection = memo(function SessionSection({
+	id,
+	label,
+	open,
+	onOpenChange,
+	children,
+}: {
+	id: SidebarSectionId
+	label: string
+	open: boolean
+	onOpenChange: (section: SidebarSectionId, open: boolean) => void
+	children: React.ReactNode
+}) {
+	return (
+		<SidebarGroup>
+			<Collapsible open={open} onOpenChange={(nextOpen) => onOpenChange(id, nextOpen)}>
+				<CollapsibleTrigger className="flex w-full items-center gap-1.5 px-2 text-left outline-hidden">
+					<ChevronRightIcon
+						className="size-3 shrink-0 text-muted-foreground transition-transform duration-200 ease-out"
+						style={{ transform: open ? "rotate(90deg)" : "rotate(0deg)" }}
+					/>
+					<SidebarGroupLabel className="h-8 min-w-0 p-0">{label}</SidebarGroupLabel>
+				</CollapsibleTrigger>
+				<CollapsibleContent
+					keepMounted
+					className="flex h-[var(--collapsible-panel-height)] flex-col overflow-hidden transition-[height] duration-200 ease-out data-[ending-style]:h-0 data-[starting-style]:h-0 [&[hidden]:not([hidden='until-found'])]:hidden"
+				>
+					<SidebarGroupContent>{children}</SidebarGroupContent>
+				</CollapsibleContent>
+			</Collapsible>
+		</SidebarGroup>
 	)
 })
 
@@ -500,12 +638,14 @@ const ProjectFolder = memo(function ProjectFolder({
 	selectedSessionId,
 	onRename,
 	onDelete,
+	onTogglePinned,
 	onFork,
 }: {
 	project: SidebarProject
 	selectedSessionId: string | null
 	onRename?: (agent: Agent, title: string) => Promise<void>
 	onDelete?: (agent: Agent) => Promise<void>
+	onTogglePinned?: (agent: Agent, pinned: boolean) => Promise<void>
 	onFork?: (agent: Agent) => Promise<void>
 }) {
 	const navigate = useNavigate()
@@ -598,6 +738,7 @@ const ProjectFolder = memo(function ProjectFolder({
 									selectedSessionId={selectedSessionId}
 									onRename={onRename}
 									onDelete={onDelete}
+									onTogglePinned={onTogglePinned}
 									onFork={onFork}
 								/>
 							))}
@@ -664,6 +805,7 @@ const SessionItem = memo(function SessionItem({
 	isSelected,
 	onRename,
 	onDelete,
+	onTogglePinned,
 	onFork,
 	showProject = false,
 	compact = false,
@@ -672,6 +814,7 @@ const SessionItem = memo(function SessionItem({
 	isSelected: boolean
 	onRename?: (agent: Agent, title: string) => Promise<void>
 	onDelete?: (agent: Agent) => Promise<void>
+	onTogglePinned?: (agent: Agent, pinned: boolean) => Promise<void>
 	onFork?: (agent: Agent) => Promise<void>
 	showProject?: boolean
 	compact?: boolean
@@ -684,7 +827,9 @@ const SessionItem = memo(function SessionItem({
 	const lastActive = useLiveLastActive(agent)
 	const showSpinner = agent.status === "running"
 	const showAttachedPulse = agent.isAttached && agent.status === "idle"
+	const pinnedSessions = useAtomValue(pinnedSessionsAtom)
 	const meta = renderAgentMeta(agent)
+	const isPinned = agent.id in pinnedSessions
 
 	const [isEditing, setIsEditing] = useState(false)
 	const [editValue, setEditValue] = useState(agent.name)
@@ -725,6 +870,7 @@ const SessionItem = memo(function SessionItem({
 	}, [isEditing])
 
 	const tooltipLabel = showProject ? agent.project : agent.name
+	const title = isPinned ? `${agent.name} (Pinned)` : agent.name
 
 	const btn = (
 		<SidebarMenuItem>
@@ -761,7 +907,7 @@ const SessionItem = memo(function SessionItem({
 				) : (
 					<div className="min-w-0 flex-1">
 						<span className={`block truncate leading-tight ${compact ? "text-xs" : "text-[13px]"}`}>
-							{agent.name}
+							{title}
 						</span>
 
 						{agent.status === "waiting" && agent.currentActivity ? (
@@ -793,13 +939,19 @@ const SessionItem = memo(function SessionItem({
 						Rename
 					</ContextMenuItem>
 				)}
+				{onTogglePinned && (
+					<ContextMenuItem onSelect={() => onTogglePinned(agent, !isPinned)}>
+						{isPinned ? <PinOffIcon className="size-4" /> : <PinIcon className="size-4" />}
+						{isPinned ? "Unpin" : "Pin"}
+					</ContextMenuItem>
+				)}
 				{onFork && (
 					<ContextMenuItem onSelect={() => onFork(agent)}>
 						<GitForkIcon className="size-4" />
 						Fork
 					</ContextMenuItem>
 				)}
-				{(onRename || onFork) && onDelete && <ContextMenuSeparator />}
+				{(onRename || onTogglePinned || onFork) && onDelete && <ContextMenuSeparator />}
 				{onDelete && (
 					<ContextMenuItem variant="destructive" onSelect={() => onDelete(agent)}>
 						<TrashIcon className="size-4" />

@@ -49,7 +49,7 @@ export function SidebarLayout() {
 	const agents = useAgents()
 	const projects = useProjectList()
 	const setCommandPaletteOpen = useSetCommandPaletteOpen()
-	const { renameSession, deleteSession, forkSession } = useAgentActions()
+	const { renameSession, deleteSession, togglePinnedSession, forkSession } = useAgentActions()
 	const serverConnected = useAtomValue(serverConnectedAtom)
 	const visibleAgents = agents
 	const activeServer = useAtomValue(activeServerConfigAtom)
@@ -67,6 +67,13 @@ export function SidebarLayout() {
 			await deleteSession(agent.directory, agent.sessionId)
 		},
 		[deleteSession],
+	)
+
+	const handleTogglePinnedSession = useCallback(
+		async (agent: Agent, pinned: boolean) => {
+			togglePinnedSession(agent.sessionId, pinned)
+		},
+		[togglePinnedSession],
 	)
 
 	const handleForkSession = useCallback(
@@ -130,6 +137,7 @@ export function SidebarLayout() {
 			onAddProject={handleAddProject}
 			onRenameSession={handleRenameSession}
 			onDeleteSession={handleDeleteSession}
+			onTogglePinnedSession={handleTogglePinnedSession}
 			onForkSession={handleForkSession}
 			serverConnected={serverConnected}
 		/>

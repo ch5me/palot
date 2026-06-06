@@ -8,7 +8,7 @@
 - T5 locator contract: one shared versioned locator with `documentId`, selector bag, and explicit degraded states.
 
 ## Active next task <!-- oc:id=sec_ac -->
-- No remaining design/planning task. Runtime QA still blocked on devmux port conflicts (`30206`, `20883`).
+- No remaining plan task. Runtime activation/render proof for `pdf-review` now exists under automation; remaining gaps are scenario-depth only.
 
 ## Resolver direction <!-- oc:id=sec_ad -->
 - Order: structure -> page+position -> quote+context fuzzy -> page fallback.
@@ -116,9 +116,11 @@
 - `ipc-handlers.ts` carried stale unused oracle/pty types; safe cleanup unblocked typecheck.
 
 ## F3 blocker notes <!-- oc:id=sec_au -->
-- `bun run svc:status` shows `server` and `web` blocked by unrelated Chrome helper owning ports `30206` and `20883`.
-- Repo policy forbids unmanaged foreground service starts; without devmux health, runtime QA is blocked.
-- Safe continuation path: free conflicting ports, restore devmux services, then run browser/Electron QA.
+- Original devmux port conflict is repaired; `server`, `web`, and `desktop` now start through devmux.
+- Added initial QA hooks to `pdf-review-panel.tsx`: `pdf-review-panel`, `pdf-review-header`, `pdf-review-locator-preview`, `pdf-review-next-slices`.
+- `pane-bus.ts` crash from missing `event.properties.sessionID` is fixed by guarding absent properties.
+- Playwright MCP reaches the real `palot` session, enumerates side-panel tabs, clicks `PDF Review`, and confirms `pdf-review-panel` renders.
+- Remaining runtime defect is repeated active-session stream `ERR_INCOMPLETE_CHUNKED_ENCODING`, but it no longer blocks proof of surface activation/render.
 
 ## F4 notes <!-- oc:id=sec_av -->
 - Scope stayed inside desktop shell notes, shared grounding contracts, degraded/perf/native-boundary docs, and tiny follow-up type fixes.

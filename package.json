@@ -25,6 +25,7 @@
 		"svc:status": "bunx devmux status",
 		"svc:attach": "bunx devmux attach",
 		"svc:stop": "bunx devmux stop",
+		"debug:sessions": "bun scripts/debug-sessions.ts",
 		"lint": "biome check .",
 		"lint:fix": "biome check --write .",
 		"format": "biome format --write .",

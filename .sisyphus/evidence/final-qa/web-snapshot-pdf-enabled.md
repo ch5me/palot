@@ -1,0 +1,87 @@
+- generic [ref=e3] [box=0,0,1449,1243]:
+  - generic [ref=e4] [box=0,0,1449,1243]:
+    - generic [ref=e6] [box=0,0,1449,46]:
+      - generic [ref=e7] [box=24,9,102,28]:
+        - generic [ref=e8] [box=24,14,26,17]: elf
+        - button [ref=e9] [box=64,9,28,28]:
+          - img [box=71,16,14,14]
+        - button [ref=e10] [box=98,9,28,28]:
+          - img [box=105,16,14,14]
+      - generic [ref=e12] [box=138,2,580,42]:
+        - generic [ref=e14] [box=150,2,231,42]:
+          - generic [ref=e15] [box=150,2,231,24]:
+            - generic [ref=e16] [box=150,3,199,22]: Smoke test reply verification
+            - button [ref=e17] [box=357,2,24,24]:
+              - img [box=362,7,14,14]
+          - generic [ref=e18] [box=150,26,231,18]: oh-my-opencode
+        - generic [ref=e19] [box=393,9,313,28]:
+          - button "Close side panel" [ref=e20] [box=393,9,28,28]:
+            - img [box=400,16,14,14]
+          - button [ref=e21] [box=429,9,28,28]:
+            - img [box=436,16,14,14]
+          - generic [ref=e22] [box=465,11,82,24]:
+            - generic [ref=e23] [box=465,14,54,18]:
+              - img [ref=e24] [box=465,17,12,12]
+              - text: 1m 4s
+            - generic [ref=e27] [box=525,11,4,24]: ·
+            - button [ref=e28] [box=535,17,12,12]:
+              - img [ref=e29] [box=535,17,12,12]
+          - generic [ref=e31] [box=555,9,125,28]: Surface · browser
+          - img [ref=e33] [box=688,16,14,14]
+    - group [ref=e36] [box=0,46,1449,1197]:
+      - generic [ref=e40] [box=0,46,319,1197]:
+        - generic [ref=e42] [box=0,92,319,1063]:
+          - list [ref=e45] [box=8,100,303,104]:
+            - listitem [ref=e46] [box=8,100,303,32]:
+              - button "New Session" [ref=e47] [box=8,100,303,32]
+            - listitem [ref=e50] [box=8,136,303,32]:
+              - button "Project Manager" [ref=e51] [box=8,136,303,32]
+            - listitem [ref=e56] [box=8,172,303,32]:
+              - button "Automations" [ref=e57] [box=8,172,303,32]
+          - generic [ref=e62] [box=0,220,319,224]:
+            - generic [ref=e63] [box=8,228,303,32]: Recent
+            - list [ref=e65] [box=8,260,303,176]:
+              - listitem [ref=e66] [box=8,260,303,32]
+              - listitem [ref=e74] [box=8,296,303,32]
+              - listitem [ref=e82] [box=8,332,303,32]
+              - listitem [ref=e90] [box=8,368,303,32]
+              - listitem [ref=e401] [box=8,404,303,32]
+          - separator [ref=e106] [box=8,452,319,1]
+          - generic [ref=e107] [box=0,461,319,396]:
+            - generic [ref=e108] [box=8,469,303,24]:
+              - generic [ref=e109] [box=16,470,51,18]: Projects
+              - generic [ref=e110] [box=239,469,64,20]
+            - list [ref=e124] [box=8,493,303,356]:
+              - listitem [ref=e125] [box=8,493,303,32]
+              - listitem [ref=e131] [box=8,529,303,32]
+              - listitem [ref=e137] [box=8,565,303,32]
+              - listitem [ref=e173] [box=8,601,303,32]
+              - listitem [ref=e143] [box=8,637,303,32]
+              - listitem [ref=e149] [box=8,673,303,32]
+              - listitem [ref=e155] [box=8,709,303,32]
+              - listitem [ref=e161] [box=8,745,303,32]
+              - listitem [ref=e167] [box=8,781,303,32]
+              - listitem [ref=e179] [box=8,817,303,32]
+        - generic [ref=e185] [box=0,1155,319,88]:
+          - list [ref=e186] [box=8,1163,303,32]:
+            - listitem [ref=e187] [box=8,1163,303,32]:
+              - button "This Mac" [ref=e188] [box=8,1163,303,32]
+          - list [ref=e194] [box=8,1203,303,32]:
+            - listitem [ref=e195] [box=8,1203,303,32]:
+              - button "Settings" [ref=e196] [box=8,1203,303,32]
+      - separator "Resize side panel" [ref=e201] [box=320,46,6,1197]
+      - main [ref=e204] [box=326,46,1123,1197]:
+        - group [ref=e206] [box=326,46,1123,1197]:
+          - generic [ref=e212] [box=883,46,566,1197]:
+            - tabpanel [active] [ref=e214] [box=883,46,526,1197]:
+              - generic [ref=e215] [box=883,46,526,1197]
+            - generic [ref=e248] [box=1409,46,40,1197]:
+              - tablist [ref=e249] [box=1410,54,39,368]
+              - button [ref=e263] [box=1417,1209,26,26]
+          - separator "Resize side panel" [ref=e267] [box=876,46,6,1197]
+          - generic [ref=e271] [box=326,46,550,1197]:
+            - generic [ref=e273] [box=326,46,550,1197]:
+              - generic [ref=e275] [box=326,46,550,158]
+              - generic [ref=e304] [box=326,212,550,1031]
+            - status [ref=e400] [box=-1,-1,1,1]
+  - region "Notifications alt+T" [box=0,1243,1449,0]

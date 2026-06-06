@@ -14,6 +14,7 @@ import type {
 	AutomationRun,
 	BridgeActivityResult as BridgeActivityResultApi,
 	BridgesResult as BridgesResultApi,
+	BrowserActionEvent,
 	CrmContact,
 	CrmStore,
 	Customer,
@@ -55,6 +56,7 @@ import type {
 	ProjectInfo,
 	ProjectRun,
 	RepoPulse,
+	SessionBinding,
 	TmuxSessionInfo,
 	UpdateAutomationInput,
 } from "../../preload/api"
@@ -222,6 +224,41 @@ export async function createRemoteBrowserLane(input: CreateRemoteBrowserLaneInpu
 	}
 	const { createRemoteBrowserLane: httpCreate } = await import("./elf-server")
 	return (await httpCreate(input)) as BrowserLane
+}
+
+export async function fetchPalotSessionBinding(sessionId: string): Promise<SessionBinding | null> {
+	if (isElectron) {
+		return window.elf.palot.getBinding(sessionId)
+	}
+	return null
+}
+
+export function subscribeToBrowserActions(callback: (event: BrowserActionEvent) => void): () => void {
+	if (isElectron) {
+		return window.elf.palot.onBrowserActions(callback)
+	}
+	return () => {}
+}
+
+export async function readHostClipboardText(): Promise<string> {
+	if (isElectron) {
+		return window.elf.clipboard.readText()
+	}
+	if (typeof navigator === "undefined" || !navigator.clipboard?.readText) {
+		return ""
+	}
+	return await navigator.clipboard.readText()
+}
+
+export async function writeHostClipboardText(text: string): Promise<void> {
+	if (isElectron) {
+		await window.elf.clipboard.writeText(text)
+		return
+	}
+	if (typeof navigator === "undefined" || !navigator.clipboard?.writeText) {
+		return
+	}
+	await navigator.clipboard.writeText(text)
 }
 
 export async function ensureBrowserLane(laneId: string): Promise<BrowserLane> {

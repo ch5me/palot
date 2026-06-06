@@ -69,6 +69,23 @@ contextBridge.exposeInMainWorld("elf", {
 			input: import("./api").NavigateBrowserLaneTabInput,
 		) => ipcRenderer.invoke("browser-lanes:tabs:navigate", laneId, tabId, input),
 	},
+	palot: {
+		getBrowserStateSnapshot: (sessionId: string) =>
+			ipcRenderer.invoke("palot:browser-state-snapshot", sessionId),
+		publishBrowserAction: (input: { event: import("./api").BrowserActionEvent }) =>
+			ipcRenderer.invoke("palot:browser-action", input),
+		getBinding: (sessionId: string) => ipcRenderer.invoke("palot:binding-get", sessionId),
+		setBinding: (binding: import("./api").SessionBinding) =>
+			ipcRenderer.invoke("palot:binding-set", binding),
+		releaseBinding: (sessionId: string) => ipcRenderer.invoke("palot:binding-release", sessionId),
+		onBrowserActions: (callback: (event: import("./api").BrowserActionEvent) => void) => {
+			const listener = (_event: unknown, event: import("./api").BrowserActionEvent) => callback(event)
+			ipcRenderer.on("palot:browser-actions", listener)
+			return () => {
+				ipcRenderer.removeListener("palot:browser-actions", listener)
+			}
+		},
+	},
 
 	onActiveOpenCodeSessionsChanged: (
 		callback: (snapshot: {
@@ -225,6 +242,10 @@ contextBridge.exposeInMainWorld("elf", {
 	},
 
 	openExternal: (url: string) => ipcRenderer.invoke("browser:open-external", url),
+	clipboard: {
+		readText: () => ipcRenderer.invoke("clipboard:read-text"),
+		writeText: (text: string) => ipcRenderer.invoke("clipboard:write-text", text),
+	},
 
 	// --- Native theme (syncs macOS glass tint to app color scheme) ---
 

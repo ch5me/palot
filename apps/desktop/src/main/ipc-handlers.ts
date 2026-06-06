@@ -1,6 +1,7 @@
 import {
 	app,
 	BrowserWindow,
+	clipboard,
 	dialog,
 	ipcMain,
 	nativeTheme,
@@ -110,6 +111,13 @@ import {
 	startBrowserLane,
 	stopBrowserLane,
 } from "./browser-lane-manager"
+import {
+	getBrowserStateSnapshot,
+	getSessionBinding,
+	publishBrowserAction,
+	releaseSessionBindingBySessionId,
+	setSessionBinding,
+} from "./palot-browser-ipc"
 import { getOpaqueWindows, getSettings, onSettingsChanged, updateSettings } from "./settings-store"
 import {
 	checkForUpdates,
@@ -277,6 +285,14 @@ export function registerIpcHandlers(): void {
 		withLogging("opencode:active-sessions", async () => await getActiveOpenCodeSessions()),
 	)
 
+	ipcMain.handle("clipboard:read-text", withLogging("clipboard:read-text", async () => clipboard.readText()))
+	ipcMain.handle(
+		"clipboard:write-text",
+		withLogging("clipboard:write-text", async (_, text: string) => {
+			clipboard.writeText(text)
+		}),
+	)
+
 	ipcMain.handle(
 		"browser-lanes:list",
 		withLogging("browser-lanes:list", async () => await listBrowserLanes()),
@@ -367,6 +383,35 @@ export function registerIpcHandlers(): void {
 			"browser-lanes:tabs:navigate",
 			async (_, laneId: string, tabId: string, input: { url: string }) =>
 				await navigateBrowserLaneTab(laneId, tabId, input),
+		),
+	)
+	ipcMain.handle(
+		"palot:browser-state-snapshot",
+		withLogging("palot:browser-state-snapshot", async (_, sessionId: string) =>
+			getBrowserStateSnapshot(sessionId),
+		),
+	)
+	ipcMain.handle(
+		"palot:browser-action",
+		withLogging("palot:browser-action", async (_, input: { event: import("../preload/api").BrowserActionEvent }) =>
+			publishBrowserAction(input),
+		),
+	)
+	ipcMain.handle(
+		"palot:binding-get",
+		withLogging("palot:binding-get", async (_, sessionId: string) => getSessionBinding(sessionId)),
+	)
+	ipcMain.handle(
+		"palot:binding-set",
+		withLogging(
+			"palot:binding-set",
+			async (_, binding: import("../preload/api").SessionBinding) => setSessionBinding(binding),
+		),
+	)
+	ipcMain.handle(
+		"palot:binding-release",
+		withLogging("palot:binding-release", async (_, sessionId: string) =>
+			releaseSessionBindingBySessionId(sessionId),
 		),
 	)
 

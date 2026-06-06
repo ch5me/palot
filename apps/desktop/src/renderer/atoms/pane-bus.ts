@@ -105,7 +105,10 @@ export function paneBusScopeKey(scope: PaneBusScope): string {
 
 function collectScopeKeys(event: Event): string[] {
 	const keys = new Set<string>([paneBusScopeKey({ type: "global" })])
-	const properties = event.properties as Record<string, unknown>
+	const properties =
+		event && typeof event === "object" && "properties" in event && typeof event.properties === "object" && event.properties !== null
+			? (event.properties as Record<string, unknown>)
+			: {}
 	const sessionId =
 		typeof properties.sessionID === "string"
 			? properties.sessionID

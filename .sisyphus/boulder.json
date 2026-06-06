@@ -1,150 +1,33 @@
 {
-  "active_plan": "/Users/hassoncs/src/ch5/palot/.sisyphus/plans/pdf-review-side-panel.md",
-  "started_at": "2026-06-05T19:26:50.482Z",
+  "active_plan": "/Users/hassoncs/src/ch5/palot/.sisyphus/plans/full-pdf-experience-prd.md",
+  "started_at": "2026-06-06T03:49:42.137Z",
   "session_ids": [
-    "ses_166bf63b8ffeRc706MKXXgbYWh",
-    "ses_166a45b50ffeUPZ6b0rH1BiA6X",
-    "ses_166a387e3ffeVwacQU8K02nwso",
-    "ses_1669571f4ffe1MSr4cS3OYVGzn",
-    "ses_1662ae7e3ffem69kKHZGOe7aNw"
+    "ses_164f30743ffeOCGVDbK2ujBYjf",
+    "ses_164f1e5e1ffeKleXEJ32Ntt9oA",
+    "ses_164f1f211ffeiLdvM5QQhiUKvS",
+    "ses_164edf936ffeta4DsccxWPeBEA",
+    "ses_164eded26ffeMZUHiiD90mgSwX",
+    "ses_164ee1106ffezJN6x9zDQEjpmO",
+    "ses_164ec1c4bffel0dIMYMoMSzVub",
+    "ses_164e098deffeVFGe7gEqXqJzrR",
+    "ses_164e07463ffeOs2wQDxlLhtra6",
+    "ses_164e0808bffeGI47FrWGNBuIJu",
+    "ses_164bdc278ffeFQzyjpcdTKpWp5",
+    "ses_164be129cffeZ04XLgWP530WQq",
+    "ses_164be3b72ffeOqBQuz714coAvc",
+    "ses_1648b393cffe0tCEJ9iLPkkwN0",
+    "ses_1648adf45ffei1L1dvO7uklhgl",
+    "ses_1648ab54bffezoR6a3Ug836Rm0"
   ],
-  "plan_name": "pdf-review-side-panel",
+  "plan_name": "full-pdf-experience-prd",
   "agent": "atlas",
   "task_sessions": {
     "todo:1": {
       "task_key": "todo:1",
       "task_label": "1",
-      "task_title": "Viewer/runtime decision gate",
-      "session_id": "ses_166bf63b8ffeRc706MKXXgbYWh",
-      "updated_at": "2026-06-05T20:11:19.316Z",
-      "no_progress_resume_count": 0
-    },
-    "todo:8": {
-      "task_key": "todo:8",
-      "task_label": "8",
-      "task_title": "Document/annotation/project data model",
-      "session_id": "ses_166bf63b8ffeRc706MKXXgbYWh",
-      "updated_at": "2026-06-05T20:20:19.651Z",
-      "no_progress_resume_count": 0
-    },
-    "todo:9": {
-      "task_key": "todo:9",
-      "task_label": "9",
-      "task_title": "Desktop viewer integration",
-      "session_id": "ses_166bf63b8ffeRc706MKXXgbYWh",
-      "updated_at": "2026-06-05T20:24:27.836Z",
-      "no_progress_resume_count": 0
-    },
-    "todo:10": {
-      "task_key": "todo:10",
-      "task_label": "10",
-      "task_title": "Grounded citation streaming protocol",
-      "session_id": "ses_166bf63b8ffeRc706MKXXgbYWh",
-      "updated_at": "2026-06-05T20:29:03.290Z",
-      "no_progress_resume_count": 0
-    },
-    "todo:11": {
-      "task_key": "todo:11",
-      "task_label": "11",
-      "task_title": "Selection action menu",
-      "session_id": "ses_166bf63b8ffeRc706MKXXgbYWh",
-      "updated_at": "2026-06-05T20:32:56.952Z",
-      "no_progress_resume_count": 0
-    },
-    "todo:12": {
-      "task_key": "todo:12",
-      "task_label": "12",
-      "task_title": "Annotations + notes integration",
-      "session_id": "ses_166bf63b8ffeRc706MKXXgbYWh",
-      "updated_at": "2026-06-05T20:37:11.577Z",
-      "no_progress_resume_count": 0
-    },
-    "todo:13": {
-      "task_key": "todo:13",
-      "task_label": "13",
-      "task_title": "Upload ingest brief + starter questions",
-      "session_id": "ses_166bf63b8ffeRc706MKXXgbYWh",
-      "updated_at": "2026-06-05T20:41:53.829Z",
-      "no_progress_resume_count": 0
-    },
-    "todo:14": {
-      "task_key": "todo:14",
-      "task_label": "14",
-      "task_title": "Corpus search",
-      "session_id": "ses_166bf63b8ffeRc706MKXXgbYWh",
-      "updated_at": "2026-06-05T20:46:52.969Z",
-      "no_progress_resume_count": 0
-    },
-    "todo:15": {
-      "task_key": "todo:15",
-      "task_label": "15",
-      "task_title": "Projects + cross-document chat contract",
-      "session_id": "ses_166bf63b8ffeRc706MKXXgbYWh",
-      "updated_at": "2026-06-05T20:51:24.381Z",
-      "no_progress_resume_count": 0
-    },
-    "todo:16": {
-      "task_key": "todo:16",
-      "task_label": "16",
-      "task_title": "Artifact generation from sources",
-      "session_id": "ses_166bf63b8ffeRc706MKXXgbYWh",
-      "updated_at": "2026-06-05T20:56:45.959Z",
-      "no_progress_resume_count": 0
-    },
-    "todo:17": {
-      "task_key": "todo:17",
-      "task_label": "17",
-      "task_title": "Audio summary pipeline",
-      "session_id": "ses_166bf63b8ffeRc706MKXXgbYWh",
-      "updated_at": "2026-06-05T21:03:22.552Z",
-      "no_progress_resume_count": 0
-    },
-    "todo:18": {
-      "task_key": "todo:18",
-      "task_label": "18",
-      "task_title": "Grounded data tables",
-      "session_id": "ses_166bf63b8ffeRc706MKXXgbYWh",
-      "updated_at": "2026-06-05T21:13:13.274Z",
-      "no_progress_resume_count": 0
-    },
-    "todo:19": {
-      "task_key": "todo:19",
-      "task_label": "19",
-      "task_title": "Degraded-state and error-handling hardening",
-      "session_id": "ses_166bf63b8ffeRc706MKXXgbYWh",
-      "updated_at": "2026-06-05T21:22:39.471Z",
-      "no_progress_resume_count": 0
-    },
-    "todo:20": {
-      "task_key": "todo:20",
-      "task_label": "20",
-      "task_title": "Performance, virtualization, and caching hardening",
-      "session_id": "ses_166bf63b8ffeRc706MKXXgbYWh",
-      "updated_at": "2026-06-05T21:29:45.280Z",
-      "no_progress_resume_count": 1
-    },
-    "todo:21": {
-      "task_key": "todo:21",
-      "task_label": "21",
-      "task_title": "Native-contract boundary package-up",
-      "session_id": "ses_166bf63b8ffeRc706MKXXgbYWh",
-      "updated_at": "2026-06-05T21:37:25.866Z",
-      "no_progress_resume_count": 0
-    },
-    "final-wave:f2": {
-      "task_key": "final-wave:f2",
-      "task_label": "F2",
-      "task_title": "**Code Quality Review** — `unspecified-high`",
-      "session_id": "ses_166bf63b8ffeRc706MKXXgbYWh",
-      "updated_at": "2026-06-05T21:45:49.421Z",
-      "no_progress_resume_count": 0
-    },
-    "final-wave:f3": {
-      "task_key": "final-wave:f3",
-      "task_label": "F3",
-      "task_title": "**Real QA Scenario Execution** — `visual-engineering`",
-      "session_id": "ses_166bf63b8ffeRc706MKXXgbYWh",
-      "updated_at": "2026-06-05T22:18:51.991Z",
+      "task_title": "Viewer/library decision",
+      "session_id": "ses_164f30743ffeOCGVDbK2ujBYjf",
+      "updated_at": "2026-06-06T06:26:39.962Z",
       "no_progress_resume_count": 0
     }
   }

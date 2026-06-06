@@ -7,6 +7,19 @@ export const commandPaletteOpenAtom = atom(false)
 
 export const leftPanelOpenAtom = atom(true)
 
+export type SidebarSectionId = "active" | "pinned" | "recent" | "pm" | "projects"
+
+export const sidebarSectionOpenAtom = atomWithStorage<Record<SidebarSectionId, boolean>>(
+	"elf:sidebar-sections",
+	{
+		active: true,
+		pinned: true,
+		recent: true,
+		pm: true,
+		projects: true,
+	},
+)
+
 export const viewedSessionIdAtom = atom<string | null>(null)
 
 export type SidePanelTabId =

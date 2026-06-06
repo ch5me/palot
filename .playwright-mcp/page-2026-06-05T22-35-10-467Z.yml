@@ -1,0 +1,354 @@
+- generic [ref=e3]:
+  - generic [ref=e4]:
+    - generic [ref=e6]:
+      - generic [ref=e7]:
+        - generic [ref=e8]: elf
+        - button [ref=e9]:
+          - img
+        - button [ref=e10]:
+          - img
+      - generic [ref=e104]:
+        - generic [ref=e106]:
+          - generic [ref=e107]:
+            - generic [ref=e108]: Smoke test reply verification
+            - button [ref=e109]:
+              - img
+          - generic [ref=e110]: oh-my-opencode
+        - generic [ref=e111]:
+          - button "Open side panel" [active] [ref=e424]:
+            - img
+          - button [ref=e113]:
+            - img
+          - generic [ref=e115]:
+            - img [ref=e116]
+            - text: 2m 34s
+          - generic [ref=e119]: Surface closed
+          - img [ref=e121]
+    - group [ref=e13]:
+      - generic [ref=e17]:
+        - generic [ref=e19]:
+          - list [ref=e26]:
+            - listitem [ref=e27]:
+              - button "New Session" [ref=e28]:
+                - img [ref=e29]
+                - generic [ref=e30]: New Session
+            - listitem [ref=e31]:
+              - button "Project Manager" [ref=e32]:
+                - img [ref=e33]
+                - generic [ref=e36]: Project Manager
+            - listitem [ref=e37]:
+              - button "Automations" [ref=e38]:
+                - img [ref=e39]
+                - generic [ref=e42]: Automations
+          - generic [ref=e123]:
+            - generic [ref=e124]: Active Now
+            - list [ref=e126]:
+              - listitem [ref=e425]:
+                - button "New session - 2026-06-05T22:34:35.372Z now" [ref=e426]:
+                  - img [ref=e427]
+                  - generic [ref=e430]: New session - 2026-06-05T22:34:35.372Z
+                  - generic [ref=e431]: now
+              - listitem [ref=e127]:
+                - button "Smoke test reply verification agent-sisyphus now" [ref=e128]:
+                  - img [ref=e129]
+                  - generic [ref=e131]:
+                    - generic [ref=e132]: Smoke test reply verification
+                    - generic [ref=e133]: agent-sisyphus
+                  - generic [ref=e134]: now
+          - generic [ref=e135]:
+            - generic [ref=e136]: Recent
+            - list [ref=e138]:
+              - listitem [ref=e139]:
+                - button "Mesh browser React wrapper and Storybook spec 1m" [ref=e432]:
+                  - img [ref=e141]
+                  - generic [ref=e145]: Mesh browser React wrapper and Storybook spec
+                  - generic [ref=e146]: 1m
+              - listitem [ref=e147]:
+                - button "Data-driven model routing and shadow evals 2m" [ref=e433]:
+                  - img [ref=e149]
+                  - generic [ref=e153]: Data-driven model routing and shadow evals
+                  - generic [ref=e154]: 2m
+              - listitem [ref=e155]:
+                - button "New session - 2026-06-05T22:32:12.107Z 2m" [ref=e434]:
+                  - img [ref=e157]
+                  - generic [ref=e161]: New session - 2026-06-05T22:32:12.107Z
+                  - generic [ref=e162]: 2m
+              - listitem [ref=e163]:
+                - button "PDF review side panel work session 3m" [ref=e435]:
+                  - img [ref=e165]
+                  - generic [ref=e169]: PDF review side panel work session
+                  - generic [ref=e170]: 3m
+              - listitem [ref=e436]:
+                - button "Continuation architecture v2 plan progress 3m" [ref=e437]:
+                  - img [ref=e438]
+                  - generic [ref=e442]: Continuation architecture v2 plan progress
+                  - generic [ref=e443]: 3m
+          - separator [ref=e179]
+          - generic [ref=e180]:
+            - generic [ref=e181]:
+              - generic [ref=e182]: Projects
+              - generic [ref=e183]:
+                - button "Search projects" [ref=e184]:
+                  - img [ref=e185]
+                  - generic [ref=e188]: Search projects
+                - button "Command palette" [ref=e189]:
+                  - img [ref=e190]
+                  - generic [ref=e192]: Command palette
+                - button "Add Project" [ref=e193]:
+                  - img [ref=e194]
+                  - generic [ref=e195]: Add Project
+            - list [ref=e197]:
+              - listitem [ref=e198]:
+                - button "oh-my-opencode" [ref=e200]:
+                  - img [ref=e201]
+                  - generic [ref=e203]: oh-my-opencode
+              - listitem [ref=e204]:
+                - button "magic-browser" [ref=e206]:
+                  - img [ref=e207]
+                  - generic [ref=e209]: magic-browser
+              - listitem [ref=e210]:
+                - button "palot" [ref=e212]:
+                  - img [ref=e213]
+                  - generic [ref=e215]: palot
+              - listitem [ref=e216]:
+                - button "ch5-company" [ref=e218]:
+                  - img [ref=e219]
+                  - generic [ref=e221]: ch5-company
+              - listitem [ref=e222]:
+                - button "marionette" [ref=e224]:
+                  - img [ref=e225]
+                  - generic [ref=e227]: marionette
+              - listitem [ref=e228]:
+                - button "ch5-packages" [ref=e230]:
+                  - img [ref=e231]
+                  - generic [ref=e233]: ch5-packages
+              - listitem [ref=e234]:
+                - button "folio-db" [ref=e236]:
+                  - img [ref=e237]
+                  - generic [ref=e239]: folio-db
+              - listitem [ref=e240]:
+                - button "agent-orchestra" [ref=e242]:
+                  - img [ref=e243]
+                  - generic [ref=e245]: agent-orchestra
+              - listitem [ref=e246]:
+                - button "cloudflare-memory" [ref=e248]:
+                  - img [ref=e249]
+                  - generic [ref=e251]: cloudflare-memory
+              - listitem [ref=e252]:
+                - button "portable-opencode" [ref=e254]:
+                  - img [ref=e255]
+                  - generic [ref=e257]: portable-opencode
+        - generic [ref=e43]:
+          - list [ref=e44]:
+            - listitem [ref=e45]:
+              - button "This Mac" [ref=e258]:
+                - img [ref=e48]
+                - generic [ref=e51]: This Mac
+          - list [ref=e53]:
+            - listitem [ref=e54]:
+              - button "Settings" [ref=e55]:
+                - img [ref=e56]
+                - generic [ref=e59]: Settings
+      - separator "Resize side panel" [ref=e60]
+      - main [ref=e63]:
+        - group [ref=e259]:
+          - generic [ref=e265]:
+            - tabpanel [ref=e267]:
+              - generic [ref=e268]:
+                - generic [ref=e270]:
+                  - generic [ref=e271]:
+                    - heading "Inline Browser" [level=3] [ref=e272]
+                    - paragraph [ref=e273]: Browse oh-my-opencode docs, tools, and local references without leaving Elf.
+                  - button "Reset" [ref=e274]:
+                    - img
+                    - text: Reset
+                - generic [ref=e275]:
+                  - generic [ref=e276]:
+                    - button "Refresh" [ref=e277]:
+                      - img
+                    - button "Restart lane" [ref=e278]:
+                      - img
+                    - button "Reset profile" [ref=e279]
+                    - textbox "Enter URL (https://example.com)" [ref=e280]: https://example.com
+                    - button "Go" [ref=e281]
+                    - button "Open in browser" [ref=e282]:
+                      - img
+                      - text: Open in browser
+                  - generic [ref=e283]:
+                    - img [ref=e284]
+                    - generic [ref=e287]: https://example.com
+                  - generic [ref=e288]:
+                    - generic [ref=e289]: "Lane:"
+                    - combobox [ref=e290]:
+                      - option "Default" [selected]
+                    - generic [ref=e291]: running
+                    - button "New lane" [ref=e292]:
+                      - img
+                      - text: New lane
+                  - generic [ref=e293]:
+                    - generic [ref=e294]: Stream live
+                    - generic [ref=e295]: Stream and CDP ready
+                    - generic [ref=e296]:
+                      - generic [ref=e297]: "Stream: ready"
+                      - generic [ref=e298]: "CDP: ready"
+                  - iframe [ref=e300]:
+                    - generic [active] [ref=f1e1]:
+                      - searchbox [ref=f1e4]
+                      - generic:
+                        - generic:
+                          - generic "Open Dashboard" [ref=f1e5] [cursor=pointer]
+                          - generic [ref=f1e7]:
+                            - generic [ref=f1e8]:
+                              - link "Selkies Logo" [ref=f1e9] [cursor=pointer]:
+                                - /url: https://github.com/selkies-project/selkies
+                                - img "Selkies Logo" [ref=f1e10]
+                              - link "Selkies" [ref=f1e15] [cursor=pointer]:
+                                - /url: https://github.com/selkies-project/selkies
+                                - heading "Selkies" [level=2] [ref=f1e16]
+                              - generic [ref=f1e17]:
+                                - generic "Toggle Theme" [ref=f1e18] [cursor=pointer]:
+                                  - img [ref=f1e19]
+                                  - img [ref=f1e21]
+                                - button "Enter Fullscreen" [ref=f1e27] [cursor=pointer]:
+                                  - img [ref=f1e28]
+                                - button "Gaming Mode" [ref=f1e30] [cursor=pointer]:
+                                  - img [ref=f1e31]
+                            - generic [ref=f1e34]:
+                              - button "Disable Video Stream" [ref=f1e35] [cursor=pointer]:
+                                - img
+                              - button "Disable Audio Stream" [ref=f1e36] [cursor=pointer]:
+                                - img
+                              - button "Enable Microphone" [ref=f1e37] [cursor=pointer]:
+                                - img
+                              - button "Disable Gamepad Input" [ref=f1e38] [cursor=pointer]:
+                                - img
+                            - button "Video Settings" [ref=f1e40] [cursor=pointer]:
+                              - heading "Video Settings" [level=3] [ref=f1e41]
+                              - img [ref=f1e43]
+                            - button "Screen Settings" [ref=f1e46] [cursor=pointer]:
+                              - heading "Screen Settings" [level=3] [ref=f1e47]
+                              - img [ref=f1e49]
+                            - button "Audio Settings" [ref=f1e52] [cursor=pointer]:
+                              - heading "Audio Settings" [level=3] [ref=f1e53]
+                              - img [ref=f1e55]
+                            - button "Stats" [ref=f1e58] [cursor=pointer]:
+                              - heading "Stats" [level=3] [ref=f1e59]
+                              - img [ref=f1e61]
+                            - button "Clipboard" [ref=f1e64] [cursor=pointer]:
+                              - heading "Clipboard" [level=3] [ref=f1e65]
+                              - img [ref=f1e67]
+                            - button "Files" [ref=f1e70] [cursor=pointer]:
+                              - heading "Files" [level=3] [ref=f1e71]
+                              - img [ref=f1e73]
+                            - button "Apps" [ref=f1e76] [cursor=pointer]:
+                              - heading "Apps" [level=3] [ref=f1e77]
+                              - img [ref=f1e79]
+                            - button "Sharing" [ref=f1e82] [cursor=pointer]:
+                              - heading "Sharing" [level=3] [ref=f1e83]
+                              - img [ref=f1e85]
+                            - button "Gamepads" [ref=f1e88] [cursor=pointer]:
+                              - heading "Gamepads" [level=3] [ref=f1e89]
+                              - img [ref=f1e91]
+                      - searchbox [ref=f1e93]
+            - generic [ref=e301]:
+              - tablist [ref=e302]:
+                - tab "Browser" [selected] [ref=e303]:
+                  - img
+                - tab "Notes" [ref=e304]:
+                  - img
+                - tab "Files" [ref=e305]:
+                  - img
+                - tab "Terminal" [ref=e306]:
+                  - img
+                - tab "Editor" [ref=e307]:
+                  - img
+                - tab "Plugins" [ref=e308]:
+                  - img
+                - tab "Bridges" [ref=e309]:
+                  - img
+                - tab "Contacts / CRM" [ref=e310]:
+                  - img
+                - tab "Studio / Office" [ref=e311]:
+                  - img
+                - tab "Voice" [ref=e312]:
+                  - img
+                - tab "Oracle Roster" [ref=e313]:
+                  - img
+                - tab "Claude Code" [ref=e314]:
+                  - img
+              - button [ref=e315]:
+                - img [ref=e316]
+          - generic [ref=e323]:
+            - generic [ref=e325]:
+              - generic [ref=e327]:
+                - generic [ref=e329]:
+                  - button "Task list" [ref=e330]:
+                    - img [ref=e331]
+                  - paragraph [ref=e339]: Task list
+                - generic [ref=e341]:
+                  - generic [ref=e342]:
+                    - button "Artifacts" [ref=e343]:
+                      - img [ref=e344]
+                    - paragraph [ref=e352]: Artifacts
+                  - generic [ref=e354]: Pin a GenUI artifact to keep it visible here.
+              - generic [ref=e356]:
+                - log [ref=e358]:
+                  - generic [ref=e362]:
+                    - paragraph [ref=e365]: "\"reply with exactly SMOKE_OK and nothing else\""
+                    - generic [ref=e444]:
+                      - button "Thought for 1 seconds" [ref=e446]:
+                        - img [ref=e447]
+                        - paragraph [ref=e455]: Thought for 1 seconds
+                        - img [ref=e456]
+                      - paragraph [ref=e462]: SMOKE_OK
+                    - generic [ref=e463]:
+                      - button "Scroll to top" [ref=e464]:
+                        - img
+                        - generic [ref=e465]: Scroll to top
+                      - button "Copy response" [ref=e466]:
+                        - img
+                        - generic [ref=e467]: Copy response
+                - generic [ref=e372]:
+                  - group [ref=e375]:
+                    - textbox "Send a follow-up message..." [ref=e376]
+                    - group [ref=e377]:
+                      - generic [ref=e378]:
+                        - button [ref=e379]:
+                          - img
+                        - button "dictate (click to start, hold to talk)" [ref=e381]:
+                          - img [ref=e382]
+                        - generic [ref=e385]:
+                          - combobox [ref=e386]:
+                            - generic [ref=e389]: sisyphus
+                            - img: ▼
+                          - textbox [ref=e390]: sisyphus
+                          - separator [ref=e391]
+                          - button "agent-sisyphus" [ref=e392]:
+                            - img [ref=e393]
+                            - generic [ref=e394]: agent-sisyphus
+                            - img
+                          - separator [ref=e395]
+                          - button "Plan" [ref=e396]:
+                            - img [ref=e397]
+                            - generic [ref=e401]: Plan
+                      - button "Stop" [ref=e402]:
+                        - generic [ref=e403]:
+                          - img
+                          - text: 2m 34s
+                  - generic [ref=e404]:
+                    - generic [ref=e405]:
+                      - generic [ref=e406]:
+                        - img [ref=e407]
+                        - generic [ref=e409]: Local
+                      - generic [ref=e410]:
+                        - generic [ref=e411]: esc
+                        - generic [ref=e412]: interrupt
+                    - generic [ref=e413]:
+                      - button "Default" [ref=e414]:
+                        - img [ref=e415]
+                        - generic [ref=e416]: Default
+                      - generic [ref=e417]:
+                        - img [ref=e418]
+                        - generic [ref=e422]: alpha/isolated-upstream-sync-20260307
+            - status [ref=e423]
+  - region "Notifications alt+T"

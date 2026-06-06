@@ -46,8 +46,8 @@ export function SessionSidePanel({ agent: _agent, tabs, className }: SessionSide
 					onValueChange={(value) => setActiveTab(value as SidePanelTabId)}
 					className="flex h-full min-h-0"
 				>
-					<div className="flex h-full min-h-0">
-						<div className="flex-1 overflow-hidden">
+					<div className="flex h-full min-h-0 w-full">
+						<div className="min-w-0 flex-1 overflow-hidden">
 							{availableTabs.map((tab) => (
 								<TabsContent key={tab.id} value={tab.id} className="h-full overflow-hidden">
 									{tab.render()}
@@ -55,8 +55,8 @@ export function SessionSidePanel({ agent: _agent, tabs, className }: SessionSide
 							))}
 						</div>
 
-						<div className="flex w-10 shrink-0 flex-col items-center gap-1 border-l border-border py-2">
-							<TabsList variant="line" className="h-auto w-full flex-col gap-0.5">
+						<div className="ml-auto flex h-full w-10 shrink-0 flex-col items-center border-l border-border">
+							<TabsList variant="line" className="h-auto w-full flex-col gap-0.5 px-0 py-2">
 								{availableTabs.map((tab) => (
 									<TabsTrigger
 										key={tab.id}
@@ -71,7 +71,7 @@ export function SessionSidePanel({ agent: _agent, tabs, className }: SessionSide
 							<button
 								type="button"
 								onClick={handleClose}
-								className="mt-auto rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+								className="mt-auto mb-2 rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
 							>
 								<XIcon className="size-3.5" />
 							</button>

@@ -140,6 +140,262 @@ export interface ActiveOpenCodeSessionsSnapshot {
 	refreshedAt: number
 }
 
+export type SessionBindingStatus =
+	| "unbound"
+	| "attaching"
+	| "attached"
+	| "suspended"
+	| "restored"
+	| "released"
+
+export interface SessionBindingAuthority {
+	openCodeSessionId: string
+	browserLaneId: string | null
+	magicBrowserSessionId: string | null
+}
+
+export interface SessionBinding {
+	id: string
+	openCodeSessionId: string
+	browserLaneId: string | null
+	magicBrowserSessionId: string | null
+	status: SessionBindingStatus
+	createdAt: number
+	updatedAt: number
+	releasedAt: number | null
+}
+
+export interface SessionBindingRecord {
+	id: string
+	openCodeSessionId: string
+	browserLaneId: string | null
+	magicBrowserSessionId: string | null
+	status: SessionBindingStatus
+	createdAt: number
+	updatedAt: number
+	releasedAt: number | null
+}
+
+export interface SessionBindingSecretRecord {
+	bindingId: string
+	viewerAuthToken: string
+	updatedAt: number
+}
+
+export interface SessionBindingStoreFile {
+	version: 1
+	bindings: SessionBindingRecord[]
+}
+
+export interface BrowserViewportSnapshot {
+	currentUrl: string | null
+	streamUrl: string | null
+	viewportWidth: number | null
+	viewportHeight: number | null
+}
+
+export interface BrowserStateSnapshot {
+	sessionId: string
+	activeLaneId: string | null
+	magicBrowserSessionId: string | null
+	viewerUrl: string | null
+	binding: SessionBinding | null
+	health: BrowserLaneHealth | null
+	lastActions: BrowserActionEvent[]
+	viewport: BrowserViewportSnapshot | null
+}
+
+export type BrowserActionSource =
+	| "tool_request"
+	| "automation_runtime"
+	| "human_takeover"
+	| "system_reconcile"
+
+export type BrowserActionStatus =
+	| "queued"
+	| "dispatched"
+	| "runtime_ack"
+	| "completed"
+	| "failed"
+	| "cancelled"
+
+export type BrowserActionCaretConfidence = "none" | "low" | "high"
+
+export type BrowserActionErrorCode =
+	| "unbound_session"
+	| "lane_unavailable"
+	| "human_in_control"
+	| "magic_browser_unavailable"
+	| "geometry_low_confidence"
+	| "binding_in_flight"
+	| "permission_denied"
+
+export interface BrowserActionViewportCoords {
+	x: number
+	y: number
+}
+
+export interface BrowserActionTargetDescription {
+	selector: string | null
+	text: string | null
+	role: string | null
+}
+
+export interface DomRectSnapshot {
+	left: number
+	top: number
+	width: number
+	height: number
+}
+
+export interface StreamGeometrySnapshot {
+	viewportWidth: number
+	viewportHeight: number
+	scrollX: number
+	scrollY: number
+	panelWidth: number | null
+	panelHeight: number | null
+	zoom: number
+}
+
+export interface PanelGeometrySnapshot {
+	viewportWidth: number
+	viewportHeight: number
+	offsetLeft: number
+	offsetTop: number
+	scaleX: number
+	scaleY: number
+}
+
+export interface BrowserCoordinateTransformResult {
+	x: number
+	y: number
+	caretConfidence: BrowserActionCaretConfidence
+	fallbackLevel: 1 | 2 | 3
+	showBestEffortBadge: boolean
+}
+
+export interface BrowserGeometryFixture {
+	name: string
+	domRect: DomRectSnapshot
+	stream: StreamGeometrySnapshot
+	panel: PanelGeometrySnapshot
+	expected: BrowserCoordinateTransformResult
+}
+
+export interface BrowserActionEventBase {
+	id: string
+	sessionId: string
+	laneId: string | null
+	source: BrowserActionSource
+	sequence: number
+	requestId: string | null
+	causationId: string | null
+	toolCallId?: string | null
+	targetDescription: BrowserActionTargetDescription | null
+	viewportCoords: BrowserActionViewportCoords | null
+	streamGeometrySnapshot: StreamGeometrySnapshot | null
+	timestamp: number
+	durationMs: number | null
+	status: BrowserActionStatus
+	errorCode?: BrowserActionErrorCode | null
+	errorMessage?: string | null
+}
+
+export interface BrowserActionMoveEvent extends BrowserActionEventBase {
+	kind: "move"
+}
+
+export interface BrowserActionClickEvent extends BrowserActionEventBase {
+	kind: "click"
+	button: "left" | "middle" | "right"
+	clickCount: number
+}
+
+export interface BrowserActionTypeEvent extends BrowserActionEventBase {
+	kind: "type"
+	text: string
+	caretConfidence: BrowserActionCaretConfidence
+}
+
+export interface BrowserActionScrollEvent extends BrowserActionEventBase {
+	kind: "scroll"
+	deltaX: number
+	deltaY: number
+}
+
+export interface BrowserActionFocusEvent extends BrowserActionEventBase {
+	kind: "focus"
+}
+
+export interface BrowserActionHoverEvent extends BrowserActionEventBase {
+	kind: "hover"
+}
+
+export interface BrowserActionWaitForEvent extends BrowserActionEventBase {
+	kind: "waitFor"
+	waitFor: string
+}
+
+export interface BrowserActionNavigateEvent extends BrowserActionEventBase {
+	kind: "navigate"
+	url: string
+}
+
+export interface BrowserActionAttachSessionEvent extends BrowserActionEventBase {
+	kind: "attachSession"
+	magicBrowserSessionId: string | null
+}
+
+export interface BrowserActionDetachSessionEvent extends BrowserActionEventBase {
+	kind: "detachSession"
+	reason: string | null
+}
+
+export interface BrowserActionToolRequestEvent extends BrowserActionEventBase {
+	kind: "toolRequest"
+	toolName: string
+	argsSummary: string | null
+}
+
+export interface BrowserActionToolResultEvent extends BrowserActionEventBase {
+	kind: "toolResult"
+	toolName: string
+	resultSummary: string | null
+}
+
+export interface BrowserActionSystemReconcileEvent extends BrowserActionEventBase {
+	kind: "systemReconcile"
+	reason: string
+}
+
+export interface BrowserActionHumanTakeoverPausedEvent extends BrowserActionEventBase {
+	kind: "humanTakeoverPaused"
+	reason: string | null
+}
+
+export interface BrowserActionHumanTakeoverResumedEvent extends BrowserActionEventBase {
+	kind: "humanTakeoverResumed"
+	reason: string | null
+}
+
+export type BrowserActionEvent =
+	| BrowserActionMoveEvent
+	| BrowserActionClickEvent
+	| BrowserActionTypeEvent
+	| BrowserActionScrollEvent
+	| BrowserActionFocusEvent
+	| BrowserActionHoverEvent
+	| BrowserActionWaitForEvent
+	| BrowserActionNavigateEvent
+	| BrowserActionAttachSessionEvent
+	| BrowserActionDetachSessionEvent
+	| BrowserActionToolRequestEvent
+	| BrowserActionToolResultEvent
+	| BrowserActionSystemReconcileEvent
+	| BrowserActionHumanTakeoverPausedEvent
+	| BrowserActionHumanTakeoverResumedEvent
+
 export type BridgeStatus = "connected" | "disconnected" | "soon"
 
 export interface BridgeChannel {
@@ -760,6 +1016,14 @@ export interface ElfAPI {
 			input: NavigateBrowserLaneTabInput,
 		) => Promise<BrowserLaneTabActionResult>
 	}
+	palot: {
+		getBrowserStateSnapshot: (sessionId: string) => Promise<BrowserStateSnapshot>
+		publishBrowserAction: (input: { event: BrowserActionEvent }) => Promise<BrowserActionEvent>
+		getBinding: (sessionId: string) => Promise<SessionBinding | null>
+		setBinding: (binding: SessionBinding) => Promise<SessionBinding>
+		releaseBinding: (sessionId: string) => Promise<SessionBinding | null>
+		onBrowserActions: (callback: (event: BrowserActionEvent) => void) => () => void
+	}
 	onActiveOpenCodeSessionsChanged: (
 		callback: (snapshot: ActiveOpenCodeSessionsSnapshot) => void,
 	) => () => void
@@ -839,6 +1103,10 @@ export interface ElfAPI {
 		setPreferred: (targetId: string) => Promise<{ success: boolean }>
 	}
 	openExternal: (url: string) => Promise<void>
+	clipboard: {
+		readText: () => Promise<string>
+		writeText: (text: string) => Promise<void>
+	}
 
 	// Native theme (syncs macOS glass tint to app color scheme)
 	/** Set the native theme source ("light" | "dark" | "system") to control macOS glass tint. */

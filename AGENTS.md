@@ -49,6 +49,7 @@ generic knowledge.
 ## Docs / Wiki
 
 - GenUI and artifact architecture is documented in `docs/genui-artifact-architecture.md`. Read it before changing the GenUI registry, renderer, artifact atoms, session widget surfaces, side-panel artifact surface, or prompt-context injection.
+- Session debugging runbook lives in `docs/session-debugging.md`. Use it when Palette/OpenCode sessions look stuck or DB/UI state disagrees.
 
 ## Commands
 
@@ -60,6 +61,7 @@ generic knowledge.
 - **Electron dev**: use devmux service `desktop` / `desktop-wayland`; do not run `cd apps/desktop && bun run dev:electron-local` manually unless editing that service definition
 - **Browser-only dev**: devmux service `web` runs Vite on `20883`; do not run `cd apps/desktop && bun run dev:web` manually unless editing that service definition
 - **Backend server** (browser mode only): devmux service `server` runs Bun server on `30206`; do not run `cd apps/server && bun run dev` manually unless editing that service definition
+- **Session debug**: `bun run debug:sessions -- <session-id> [session-id...]`
 - **Lint check**: `bun run lint` (from root)
 - **Lint/format fix**: `bun run lint:fix` or `bunx biome check --write .` (from root)
 - **Type check all**: `bun run check-types` (from root, via Turborepo)

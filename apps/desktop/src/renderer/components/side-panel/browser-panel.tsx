@@ -1,15 +1,21 @@
 import { Button } from "@ch5me/elf-ui/components/button"
+import {
+	DropdownMenu,
+	DropdownMenuContent,
+	DropdownMenuItem,
+	DropdownMenuSeparator,
+	DropdownMenuTrigger,
+} from "@ch5me/elf-ui/components/dropdown-menu"
 import { Input } from "@ch5me/elf-ui/components/input"
 import {
 	AlertTriangleIcon,
+	EllipsisIcon,
 	ExternalLinkIcon,
 	GlobeIcon,
-	HistoryIcon,
 	LoaderCircleIcon,
 	PlusIcon,
 	RefreshCwIcon,
 	RotateCcwIcon,
-	XIcon,
 } from "lucide-react"
 import { useAtom } from "jotai"
 import React, { useEffect, useMemo, useState } from "react"
@@ -28,9 +34,11 @@ import {
 	fetchBrowserLanes,
 	isElectron,
 	navigateBrowserLane,
+	readHostClipboardText,
 	restartBrowserLane,
 	resetBrowserLaneProfile,
 	startBrowserLane,
+	writeHostClipboardText,
 } from "../../services/backend"
 import { summarizeBrowserLaneHealth } from "../../../shared/browser-lanes"
 import type { Agent, BrowserLane, BrowserLaneHealth } from "../../lib/types"
@@ -59,9 +67,9 @@ function isLikelyStreamUrl(url: string): boolean {
 	return false
 }
 
-export function BrowserPanel({ agent, className }: BrowserPanelProps) {
+export function BrowserPanel({ agent: _agent, className }: BrowserPanelProps) {
 	const [persistedUrl, setPersistedUrl] = useAtom(lastBrowserUrlAtom)
-	const [history, setHistory] = useAtom(browserHistoryAtom)
+	const [, setHistory] = useAtom(browserHistoryAtom)
 	const [activeLaneId, setActiveLaneId] = useAtom(activeBrowserLaneIdAtom)
 	const [inputValue, setInputValue] = useState(() => pickInitialUserUrl(persistedUrl))
 	const [currentUrl, setCurrentUrl] = useState(() => pickInitialUserUrl(persistedUrl))
@@ -379,6 +387,28 @@ export function BrowserPanel({ agent, className }: BrowserPanelProps) {
 		return true
 	}, [currentUrl])
 
+	useEffect(() => {
+		const handleMessage = (event: MessageEvent) => {
+			const data = event.data
+			if (!data || typeof data !== "object") return
+			if (data.type === "elf-browser-lane-clipboard-copy" && typeof data.text === "string") {
+				void writeHostClipboardText(data.text)
+			}
+		}
+		window.addEventListener("message", handleMessage)
+		return () => {
+			window.removeEventListener("message", handleMessage)
+		}
+	}, [])
+
+	const handlePasteFromHost = async () => {
+		const iframe = document.querySelector<HTMLIFrameElement>('iframe[title^="Browser lane "]')
+		if (!iframe?.contentWindow) return
+		const text = await readHostClipboardText()
+		if (!text) return
+		iframe.contentWindow.postMessage({ type: "elf-browser-lane-host-paste", text }, "*")
+	}
+
 	const handleCreateLane = async (event: React.FormEvent<HTMLFormElement>) => {
 		event.preventDefault()
 		setCreateError(null)
@@ -403,12 +433,13 @@ export function BrowserPanel({ agent, className }: BrowserPanelProps) {
 				host: createForm.host.trim() || null,
 				profilePath: createForm.profilePath.trim() || null,
 			})
-			setLaneList((current) => {
-				const filtered = current.filter((entry) => entry.id !== lane.id)
-				return [...filtered, lane]
-			})
-			setActiveLaneId(lane.id)
-			setIsCreateOpen(false)
+							setLaneList((current) => {
+								const filtered = current.filter((entry) => entry.id !== lane.id)
+								return [...filtered, lane]
+							})
+							setActiveLaneId(lane.id)
+							setIsCreateOpen(false)
+
 			setCreateForm({ id: "", label: "", streamBackendUrl: "", cdpEndpoint: "", host: "", profilePath: "" })
 		} catch (error) {
 			setCreateError(error instanceof Error ? error.message : String(error))
@@ -419,60 +450,24 @@ export function BrowserPanel({ agent, className }: BrowserPanelProps) {
 
 	return (
 		<div className={`flex h-full min-h-0 flex-col bg-background ${className ?? ""}`}>
-			<div className="border-b border-border px-4 py-3">
-				<div className="flex items-center justify-between gap-3">
-					<div>
-						<h3 className="text-sm font-medium text-foreground">Inline Browser</h3>
-						<p className="mt-1 text-xs text-muted-foreground">
-							Browse {agent.project} docs, tools, and local references without leaving Elf.
-						</p>
+			<div className="border-b border-border px-2 py-1.5">
+				<form className="flex items-center gap-1.5" onSubmit={handleSubmit}>
+					<div className="min-w-0 shrink-0 text-[10px] font-medium uppercase tracking-[0.18em] text-muted-foreground">
+						Browser
 					</div>
 					<Button
 						type="button"
-						variant="outline"
-						size="sm"
-						onClick={handleReset}
-						disabled={currentUrl === FALLBACK_URL}
-					>
-						<XIcon className="size-4" aria-hidden="true" />
-						Reset
-					</Button>
-				</div>
-			</div>
-			<div className="flex min-h-0 flex-1 flex-col gap-3 px-4 py-4">
-				<form className="flex flex-wrap items-center gap-2" onSubmit={handleSubmit}>
-					<Button
-						type="button"
-						variant="outline"
+						variant="ghost"
 						size="icon"
 						onClick={() => void handleRefresh()}
-						className="shrink-0"
+						className="size-7 shrink-0"
 						aria-label="Refresh"
 					>
 						{isLoading ? (
-							<LoaderCircleIcon className="size-4 animate-spin" aria-hidden="true" />
+							<LoaderCircleIcon className="size-3.5 animate-spin" aria-hidden="true" />
 						) : (
-							<RefreshCwIcon className="size-4" aria-hidden="true" />
+							<RefreshCwIcon className="size-3.5" aria-hidden="true" />
 						)}
-					</Button>
-					<Button
-						type="button"
-						variant="outline"
-						size="icon"
-						onClick={() => void handleRestart()}
-						className="shrink-0"
-						aria-label="Restart lane"
-					>
-						<RotateCcwIcon className="size-4" aria-hidden="true" />
-					</Button>
-					<Button
-						type="button"
-						variant="outline"
-						size="sm"
-						onClick={() => void handleResetProfile()}
-						className="shrink-0"
-					>
-						Reset profile
 					</Button>
 					<Input
 						value={inputValue}
@@ -480,71 +475,95 @@ export function BrowserPanel({ agent, className }: BrowserPanelProps) {
 							setInputValue(event.target.value)
 							if (inputError) setInputError(null)
 						}}
-						placeholder="Enter URL (https://example.com)"
-						className="h-9 min-w-0 flex-1 basis-52"
+						placeholder="Enter URL"
+						className="h-8 min-w-0 flex-1 border-0 bg-transparent px-2 shadow-none focus-visible:ring-1"
 						aria-invalid={inputError != null}
 						style={{
 							// @ts-expect-error -- vendor-prefixed CSS property
 							WebkitAppRegion: "no-drag",
 						}}
 					/>
-					<Button type="submit" variant="outline" className="shrink-0">
-						Go
-					</Button>
 					<Button
 						type="button"
-						variant="outline"
+						variant="ghost"
+						size="icon"
 						onClick={handleOpenExternal}
-						className="shrink-0"
+						className="size-7 shrink-0"
 						disabled={!canOpenExternal}
+						aria-label="Open in browser"
 					>
-						<ExternalLinkIcon className="size-4" aria-hidden="true" />
-						Open in browser
+						<ExternalLinkIcon className="size-3.5" aria-hidden="true" />
 					</Button>
+					<DropdownMenu>
+						<DropdownMenuTrigger
+							render={
+								<Button
+									type="button"
+									variant="ghost"
+									size="icon"
+									className="size-7 shrink-0"
+									aria-label="Browser menu"
+								/>
+							}
+						>
+							<EllipsisIcon className="size-3.5" aria-hidden="true" />
+						</DropdownMenuTrigger>
+						<DropdownMenuContent align="end" className="w-64">
+							<div className="px-2 py-1.5 text-[11px] text-muted-foreground">
+								<div className="truncate font-medium text-foreground">{activeLane?.label ?? "No lane"}</div>
+								<div className="truncate">{currentUrl || FALLBACK_URL}</div>
+								{laneHealth ? <div className="mt-1 truncate">{panelState.title}: {panelState.detail}</div> : null}
+							</div>
+							<DropdownMenuSeparator />
+							<div className="px-2 py-1.5">
+								<label className="mb-1 block text-[11px] text-muted-foreground">Lane</label>
+								<select
+									value={activeLane?.id ?? activeLaneId}
+									onChange={(event) => setActiveLaneId(event.target.value)}
+									className="h-8 w-full rounded-md border border-border bg-background px-2 text-xs text-foreground"
+								>
+									{laneList.map((lane) => (
+										<option key={lane.id} value={lane.id}>
+											{lane.label}
+										</option>
+									))}
+								</select>
+							</div>
+							<DropdownMenuItem onClick={() => void handleRestart()}>
+								<RotateCcwIcon className="size-3.5" aria-hidden="true" />
+								Restart lane
+							</DropdownMenuItem>
+							<DropdownMenuItem onClick={() => void handlePasteFromHost()}>
+								Paste host clipboard
+							</DropdownMenuItem>
+							<DropdownMenuItem onClick={() => {
+								setIsCreateOpen((value) => !value)
+								setCreateError(null)
+							}}>
+								<PlusIcon className="size-3.5" aria-hidden="true" />
+								{isCreateOpen ? "Hide new lane" : "New lane"}
+							</DropdownMenuItem>
+							<DropdownMenuItem onClick={handleReset} disabled={currentUrl === FALLBACK_URL}>
+								Reset URL
+							</DropdownMenuItem>
+							<DropdownMenuItem onClick={() => void handleResetProfile()}>
+								Reset profile
+							</DropdownMenuItem>
+						</DropdownMenuContent>
+					</DropdownMenu>
 				</form>
 				{inputError ? (
-					<div className="flex items-start gap-2 rounded-md border border-destructive/30 bg-destructive/5 px-3 py-2 text-xs text-destructive">
-						<AlertTriangleIcon className="mt-0.5 size-3.5 shrink-0" aria-hidden="true" />
+					<div className="mt-1 flex items-start gap-2 rounded-md border border-destructive/30 bg-destructive/5 px-2 py-1.5 text-[11px] text-destructive">
+						<AlertTriangleIcon className="mt-0.5 size-3 shrink-0" aria-hidden="true" />
 						<span>{inputError}</span>
 					</div>
 				) : null}
-				<div className="flex items-center gap-2 text-xs text-muted-foreground">
-					<GlobeIcon className="size-3.5" aria-hidden="true" />
-					<span className="truncate">{currentUrl || FALLBACK_URL}</span>
-				</div>
-				<div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
-					<span>Lane:</span>
-					<select
-						value={activeLane?.id ?? activeLaneId}
-						onChange={(event) => setActiveLaneId(event.target.value)}
-						className="h-8 rounded-md border border-border bg-background px-2 text-xs text-foreground"
-					>
-						{laneList.map((lane) => (
-							<option key={lane.id} value={lane.id}>
-								{lane.label}
-							</option>
-						))}
-					</select>
-					{laneHealth ? <span>{laneHealth.status}</span> : null}
-					<Button
-						type="button"
-						variant="outline"
-						size="sm"
-						onClick={() => {
-							setIsCreateOpen((value) => !value)
-							setCreateError(null)
-						}}
-						className="h-7 px-2"
-						aria-expanded={isCreateOpen}
-					>
-						<PlusIcon className="size-3.5" aria-hidden="true" />
-						New lane
-					</Button>
-				</div>
+			</div>
+			<div className="flex min-h-0 flex-1 flex-col gap-2 p-0">
 				{isCreateOpen ? (
 					<form
 						onSubmit={handleCreateLane}
-						className="flex flex-col gap-2 rounded-md border border-border/70 bg-muted/20 p-3 text-xs"
+						className="mx-2 mt-2 flex flex-col gap-2 rounded-md border border-border/70 bg-muted/20 p-3 text-xs"
 					>
 						<div className="font-medium text-foreground">Register remote browser lane</div>
 						<div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
@@ -636,41 +655,14 @@ export function BrowserPanel({ agent, className }: BrowserPanelProps) {
 						</div>
 					</form>
 				) : null}
-				{laneHealth ? (
-					<div className="rounded-md border border-border/70 bg-muted/30 px-3 py-2 text-xs text-muted-foreground">
-						<div className="font-medium text-foreground">{panelState.title}</div>
-						<div className="mt-1">{panelState.detail}</div>
-						<div className="mt-1 flex flex-wrap gap-3">
-							<span>Stream: {laneHealth.stream.state}</span>
-							<span>CDP: {laneHealth.cdp.state}</span>
-							{activeLane?.mode === "remote" ? <span>Mode: remote</span> : null}
-						</div>
-					</div>
-				) : null}
-				{history.length > 1 ? (
-					<div className="flex flex-wrap items-center gap-1.5 text-[11px] text-muted-foreground">
-						<HistoryIcon className="size-3" aria-hidden="true" />
-						<span>Recent:</span>
-						{history.slice(0, 5).map((entry) => (
-							<button
-								key={entry}
-								type="button"
-								className="rounded-md border border-border/60 px-2 py-0.5 transition-colors hover:bg-muted hover:text-foreground"
-								onClick={() => void navigateToUrl(entry)}
-							>
-								{entry}
-							</button>
-						))}
-					</div>
-				) : null}
 				{loadFailure ? (
-					<div className="rounded-md border border-destructive/30 bg-destructive/5 px-3 py-2 text-xs text-destructive">
+					<div className="mx-2 mt-2 rounded-md border border-destructive/30 bg-destructive/5 px-3 py-2 text-xs text-destructive">
 						<div className="font-medium">Lane failed: {loadFailure}</div>
 						<div className="mt-1 text-[11px] opacity-80">Use restart or refresh to recover stream state.</div>
 					</div>
 				) : null}
 				<div
-					className="min-h-0 flex-1 overflow-hidden rounded-lg border border-border bg-muted/20"
+					className="min-h-0 flex-1 overflow-hidden border-y border-border bg-muted/20"
 					style={{
 						// @ts-expect-error -- vendor-prefixed CSS property
 						WebkitAppRegion: "no-drag",

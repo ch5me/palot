@@ -1,0 +1,65 @@
+- generic [ref=e2]:
+  - generic [ref=e3]:
+    - generic [ref=e4]:
+      - generic [ref=e7]:
+        - generic [ref=e8]: elf
+        - button [ref=e9]:
+          - img
+        - button [ref=e10]:
+          - img
+      - group [ref=e13]:
+        - generic [ref=e17]:
+          - generic [ref=e19]:
+            - generic [ref=e21]:
+              - paragraph [ref=e22]: No projects yet
+              - paragraph [ref=e23]: Add a project to get started
+            - list [ref=e26]:
+              - listitem [ref=e27]:
+                - button "New Session" [ref=e28]:
+                  - img [ref=e29]
+                  - generic [ref=e30]: New Session
+              - listitem [ref=e31]:
+                - button "Project Manager" [ref=e32]:
+                  - img [ref=e33]
+                  - generic [ref=e36]: Project Manager
+              - listitem [ref=e37]:
+                - button "Automations" [ref=e38]:
+                  - img [ref=e39]
+                  - generic [ref=e42]: Automations
+          - generic [ref=e43]:
+            - list [ref=e44]:
+              - listitem [ref=e45]:
+                - button "This Mac" [ref=e46]:
+                  - img [ref=e48]
+                  - generic [ref=e51]: This Mac
+            - list [ref=e52]:
+              - listitem [ref=e53]:
+                - button "Settings" [ref=e54]:
+                  - img [ref=e55]
+                  - generic [ref=e58]: Settings
+        - separator "Resize side panel" [ref=e59]
+        - main [ref=e62]:
+          - generic [ref=e64]:
+            - generic [ref=e66]:
+              - generic [ref=e68]: elf
+              - generic [ref=e69]:
+                - heading "Build what's next" [level=1] [ref=e70]
+                - paragraph
+              - generic [ref=e71]:
+                - button "Build a new feature based on the existing patterns in this repo." [disabled] [ref=e72]:
+                  - img [ref=e73]
+                  - paragraph [ref=e76]: Build a new feature based on the existing patterns in this repo.
+                - button "Summarize the architecture and key design decisions." [disabled] [ref=e77]:
+                  - img [ref=e78]
+                  - paragraph [ref=e81]: Summarize the architecture and key design decisions.
+                - button "Review recent changes and suggest improvements." [disabled] [ref=e82]:
+                  - img [ref=e83]
+                  - paragraph [ref=e87]: Review recent changes and suggest improvements.
+            - generic [ref=e89]:
+              - group [ref=e92]:
+                - textbox "What should this session work on?" [disabled] [ref=e93]
+              - paragraph [ref=e94]: No projects found. Check that projects exist in ~/.local/share/opencode/storage/.
+    - region "Notifications alt+T"
+  - generic [ref=e95]:
+    - generic [ref=e96]: elf
+    - paragraph [ref=e102]: Loading projects...

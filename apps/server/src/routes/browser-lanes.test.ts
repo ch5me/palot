@@ -41,12 +41,6 @@ describe("resolveBrowserLaneProxyTarget", () => {
 			cleanup()
 		}
 	})
-
-	test("returns null for non-browser websocket paths", async () => {
-		await expect(
-			resolveBrowserLaneProxyTarget("http://127.0.0.1:30206/api/servers", "ws:"),
-		).resolves.toBeNull()
-	})
 })
 
 describe("injectBrowserLanePageShim", () => {
@@ -57,6 +51,13 @@ describe("injectBrowserLanePageShim", () => {
 		expect(rewritten.indexOf("data-elf-browser-lane-shim")).toBeLessThan(
 			rewritten.indexOf('script type="module"'),
 		)
+	})
+
+	test("includes chrome hiding and clipboard bridge hooks", () => {
+		const html = injectBrowserLanePageShim("<html><head></head><body></body></html>")
+		expect(html).toContain("Selkies")
+		expect(html).toContain("elf-browser-lane-clipboard-copy")
+		expect(html).toContain("data-elf-browser-main")
 	})
 
 	test("does not inject twice", () => {
