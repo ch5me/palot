@@ -834,6 +834,9 @@ Wave FINAL
   - [ ] Every contribution family has corresponding tool projection semantics.
   - [ ] Introspection tools and collision rules are explicit.
   - [ ] Tool cancel/timeout state machine locks every state transition, including terminal `cancelled` and `denied` semantics, and ties each terminal state to a canonical error code.
+  - [ ] Tool-call state machine lists all 9 states with allowed transitions.
+  - [ ] `cancelled` reachable from any non-terminal state.
+  - [ ] Default host timeout ceilings declared and overridable per plugin.
 
   **QA Scenarios**:
   ```text
@@ -857,6 +860,13 @@ Wave FINAL
       1. For each terminal state, assert canonical error code is present.
       1. For each non-terminal transition, assert reversibility is impossible.
     Expected Result: State machine has no ambiguous transitions and no missing error codes.
+    Evidence: .sisyphus/evidence/task-9-tool-state-machine.txt
+
+  Scenario: Tool-call state machine deterministic
+    Tool: Bash
+    Steps:
+      1. For each of the 9 states, assert transition row exists with allowed next states.
+    Expected Result: No state is unreachable or lacks transitions.
     Evidence: .sisyphus/evidence/task-9-tool-state-machine.txt
   ```
 
@@ -1228,6 +1238,9 @@ Wave FINAL
   - [ ] Theme contribution path and host precedence rules are explicit.
   - [ ] Import compatibility stance is bounded and realistic.
   - [ ] Theme precedence matrix locks the exact ordering across reset / user-pick / session-preview / imported-fallback / built-in default, with explicit fallback rules for uninstalled picked themes.
+  - [ ] Theme precedence matrix exists with explicit winner per row.
+  - [ ] User-picked theme always wins over plugin/imported/default.
+  - [ ] `plugin.theme.preview` never mutates applied theme.
 
   **QA Scenarios**:
   ```text
@@ -1250,6 +1263,13 @@ Wave FINAL
     Steps:
       1. For each layer in theme precedence matrix, assert the layer is reachable and order is locked.
     Expected Result: Every layer has deterministic precedence and a defined fallback for uninstall.
+    Evidence: .sisyphus/evidence/task-16-theme-precedence.txt
+
+  Scenario: Theme precedence matrix deterministic
+    Tool: Bash
+    Steps:
+      1. For each precedence row, assert the matrix has explicit winner and apply path.
+    Expected Result: No precedence row lacks a winner.
     Evidence: .sisyphus/evidence/task-16-theme-precedence.txt
   ```
 
