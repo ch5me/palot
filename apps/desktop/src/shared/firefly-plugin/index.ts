@@ -9,3 +9,4 @@
 
 export * from "./manifest"
 export * from "./descriptor"
+export * from "./capabilities"
