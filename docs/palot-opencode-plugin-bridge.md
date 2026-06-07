@@ -21,8 +21,9 @@ Important consequence:
 
 Primary code paths:
 - managed server spawn: `apps/desktop/src/main/opencode-manager.ts:414`
-- plugin implementation file: `apps/desktop/.opencode/plugins/palot-bridge.js`
+- canonical plugin implementation file: `apps/desktop/src/main/palot-plugin/plugin.js`
 - plugin entry file consumed by this repo: `apps/desktop/src/main/palot-plugin-entry.ts`
+- compatibility shim for legacy plugin paths: `apps/desktop/.opencode/plugins/palot-bridge.js`
 - plugin shape validator: `apps/desktop/src/main/palot-opencode-plugin-shim.ts:11`
 
 ## Runtime topology <!-- oc:id=sec_ac -->
@@ -113,11 +114,11 @@ Tests:
 
 Plugin factory:
 - repo-local entry re-export: `apps/desktop/src/main/palot-plugin-entry.ts`
-- `createPalotPlugin(...)`: `apps/desktop/.opencode/plugins/palot-bridge.js:153`
+- `createPalotPlugin(...)`: `apps/desktop/src/main/palot-plugin/plugin.js`
 
 Default export:
-- `id: "palot-bridge"`: `apps/desktop/.opencode/plugins/palot-bridge.js:303`
-- `server`: `apps/desktop/.opencode/plugins/palot-bridge.js:304`
+- `id: "palot-bridge"`: `apps/desktop/src/main/palot-plugin/plugin.js`
+- `server`: `apps/desktop/src/main/palot-plugin/plugin.js`
 
 The plugin exposes two main categories:
 - hooks
@@ -126,7 +127,7 @@ The plugin exposes two main categories:
 ### Hook: system prompt injection <!-- oc:id=sec_ai -->
 
 Hook name:
-- `experimental.chat.system.transform`: `apps/desktop/.opencode/plugins/palot-bridge.js:156`
+- `experimental.chat.system.transform`: `apps/desktop/src/main/palot-plugin/plugin.js`
 
 Behavior:
 1. OpenCode calls the hook with `input.sessionID` <!-- oc:id=item_ak -->
@@ -146,13 +147,13 @@ Context block fields today:
 - `side_panel_tabs`
 
 Implementation:
-- builder: `apps/desktop/.opencode/plugins/palot-bridge.js:17`
-- hook body: `apps/desktop/.opencode/plugins/palot-bridge.js:156`
+- builder: `apps/desktop/src/main/palot-plugin/plugin.js`
+- hook body: `apps/desktop/src/main/palot-plugin/plugin.js`
 
 ### Hook: event <!-- oc:id=sec_aj -->
 
 Hook name:
-- `event`: `apps/desktop/.opencode/plugins/palot-bridge.js:163`
+- `event`: `apps/desktop/src/main/palot-plugin/plugin.js`
 
 Current behavior:
 - listens only for `session.idle`
@@ -165,25 +166,25 @@ This is not a state sync transport by itself. It is only a lightweight refresh t
 The plugin currently exposes these tools:
 
 ### Connected app discovery tools <!-- oc:id=sec_al -->
-- `search_tools`: `apps/desktop/.opencode/plugins/palot-bridge.js:299`
-- `describe_tool`: `apps/desktop/.opencode/plugins/palot-bridge.js:311`
-- `call_tool`: `apps/desktop/.opencode/plugins/palot-bridge.js:329`
-- `tools_status`: `apps/desktop/.opencode/plugins/palot-bridge.js:371`
+- `search_tools`: `apps/desktop/src/main/palot-plugin/plugin.js`
+- `describe_tool`: `apps/desktop/src/main/palot-plugin/plugin.js`
+- `call_tool`: `apps/desktop/src/main/palot-plugin/plugin.js`
+- `tools_status`: `apps/desktop/src/main/palot-plugin/plugin.js`
 
 These discovery tools stay separate from browser and UI control, but the injected system context now surfaces connected app names and tells the model to use them by product/capability rather than low-level transport terms.
 
 ### Browser tools <!-- oc:id=sec_am -->
-- `browser_status`: `apps/desktop/.opencode/plugins/palot-bridge.js:380`
-- `browser_open`: `apps/desktop/.opencode/plugins/palot-bridge.js:391`
-- `browser_navigate`: `apps/desktop/.opencode/plugins/palot-bridge.js:402`
-- `browser_tabs`: `apps/desktop/.opencode/plugins/palot-bridge.js:413`
-- `browser_click`: `apps/desktop/.opencode/plugins/palot-bridge.js:424`
-- `browser_type`: `apps/desktop/.opencode/plugins/palot-bridge.js:435`
-- `browser_scroll`: `apps/desktop/.opencode/plugins/palot-bridge.js:446`
+- `browser_status`: `apps/desktop/src/main/palot-plugin/plugin.js`
+- `browser_open`: `apps/desktop/src/main/palot-plugin/plugin.js`
+- `browser_navigate`: `apps/desktop/src/main/palot-plugin/plugin.js`
+- `browser_tabs`: `apps/desktop/src/main/palot-plugin/plugin.js`
+- `browser_click`: `apps/desktop/src/main/palot-plugin/plugin.js`
+- `browser_type`: `apps/desktop/src/main/palot-plugin/plugin.js`
+- `browser_scroll`: `apps/desktop/src/main/palot-plugin/plugin.js`
 
 ### UI tools <!-- oc:id=sec_an -->
-- `open_side_panel`: `apps/desktop/.opencode/plugins/palot-bridge.js:457`
-- `ui_state`: `apps/desktop/.opencode/plugins/palot-bridge.js:462`
+- `open_side_panel`: `apps/desktop/src/main/palot-plugin/plugin.js`
+- `ui_state`: `apps/desktop/src/main/palot-plugin/plugin.js`
 
 ## Callback injection seam <!-- oc:id=sec_ao -->
 
@@ -195,13 +196,13 @@ The plugin is written to accept injected callbacks:
 - `openSidePanel`
 
 Factory signature:
-- `apps/desktop/.opencode/plugins/palot-bridge.js:153`
+- `apps/desktop/src/main/palot-plugin/plugin.js`
 
 Inside the plugin:
-- `resolve` -> `createResolver()`: `apps/desktop/.opencode/plugins/palot-bridge.js:36`
-- `dispatch` -> browser tool handler: `apps/desktop/.opencode/plugins/palot-bridge.js:71`
-- `getUiState` -> UI state tool: `apps/desktop/.opencode/plugins/palot-bridge.js:144`
-- `openSidePanel` -> UI command tool: `apps/desktop/.opencode/plugins/palot-bridge.js:119`
+- `resolve` -> `createResolver()`: `apps/desktop/src/main/palot-plugin/plugin.js`
+- `dispatch` -> browser tool handler: `apps/desktop/src/main/palot-plugin/plugin.js`
+- `getUiState` -> UI state tool: `apps/desktop/src/main/palot-plugin/plugin.js`
+- `openSidePanel` -> UI command tool: `apps/desktop/src/main/palot-plugin/plugin.js`
 
 Important truth:
 - managed spawn still injects plugin file through `OPENCODE_PLUGIN`
@@ -296,7 +297,7 @@ Live standalone transport now works like this:
 Primary files:
 - bridge server + route execution: `apps/desktop/src/main/palot-browser-ipc.ts`
 - spawn env injection: `apps/desktop/src/main/opencode-manager.ts`
-- plugin fallback client: `apps/desktop/.opencode/plugins/palot-bridge.js`
+- plugin fallback client: `apps/desktop/src/main/palot-plugin/plugin.js`
 
 ## Browser tool dispatch seam <!-- oc:id=sec_as -->
 
@@ -434,7 +435,7 @@ The seam now uses shared Zod schemas at the main runtime boundaries.
 
 Current coverage:
 - shared schema module: `apps/desktop/src/shared/palot-bridge-schemas.ts`
-- plugin tool args parse before execution: `apps/desktop/.opencode/plugins/palot-bridge.js:87`
+- plugin tool args parse before execution: `apps/desktop/src/main/palot-plugin/plugin.js`
 - resolver payload parses through shared schema: `apps/desktop/src/main/palot-resolver.ts:5`
 - browser dispatcher input parses before routing: `apps/desktop/src/main/palot-browser-dispatcher.ts:80`
 - IPC payloads parse in main handlers: `apps/desktop/src/main/ipc-handlers.ts:409`
@@ -497,7 +498,8 @@ These are the important known gaps to document honestly:
 
 Primary tests:
 - plugin shim: `apps/desktop/src/main/palot-opencode-plugin-shim.test.ts`
-- plugin behavior: `apps/desktop/.opencode/plugins/palot-bridge.test.js`
+- canonical plugin behavior tests: `apps/desktop/.opencode/plugins/palot-bridge.test.js`
+- canonical implementation behavior test: `apps/desktop/.opencode/plugins/palot-bridge.test.js`
 - resolver: `apps/desktop/src/main/palot-resolver.test.ts`
 - browser IPC snapshot: `apps/desktop/src/main/palot-browser-ipc.test.ts`
 - browser dispatcher: `apps/desktop/src/main/palot-browser-dispatcher.test.ts`

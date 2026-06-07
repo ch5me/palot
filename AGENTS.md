@@ -52,6 +52,7 @@ generic knowledge.
 - Session debugging runbook lives in `docs/session-debugging.md`. Use it when Palette/OpenCode sessions look stuck or DB/UI state disagrees.
 - `bun run debug:sessions -- <session-id>` now compares SQLite history with live active-session presence and `session.status()` truth. Use it first for hidden active sessions, stale recency, and child divergence.
 - Palot/OpenCode plugin/runtime seam is documented in `docs/palot-opencode-plugin-bridge.md`. Read it before changing plugin loading, tool registration, resolver payloads, browser action dispatch, or side-panel UI command bridges.
+- For this repo, do not treat unrelated dirty worktrees as an automatic blocker. Assume parallel agents are active, commit your scoped work frequently, and move forward unless a direct file-level conflict makes the current edit unsafe.
 
 ## Commands
 
@@ -72,6 +73,8 @@ generic knowledge.
 - **Run all tests**: `cd packages/configconv && bun test`
 - **Run single test file**: `cd packages/configconv && bun test test/converter/config.test.ts`
 - **Run tests by name**: `cd packages/configconv && bun test --grep "converts model"`
+- **MCP connections proof**: `bun run generate:mcp-verification-fixture -- --scenario mixed --output /tmp/palot-mcp-mixed.json` then `bun test apps/desktop/src/main/mcp-connections-runtime.test.ts apps/desktop/src/renderer/lib/mcp-connections-verification.test.ts apps/desktop/src/renderer/lib/mcp-connections-verification-fixtures.test.ts apps/desktop/src/renderer/lib/mcp-connections-e2e.test.ts apps/desktop/.opencode/plugins/palot-bridge.test.js` then `bun run verify:mcp-connections -- --file /tmp/palot-mcp-mixed.json --require-gateway --require-cloud-restore` and `bun run verify:mcp-connections:e2e -- --file /tmp/palot-mcp-mixed.json`
+- **Palot plugin implementation**: canonical source is `apps/desktop/src/main/palot-plugin/plugin.js`; `apps/desktop/.opencode/plugins/palot-bridge.js` is only a compatibility shim.
 - **Rebuild server types**: `cd apps/server && bun run build:types` (required after adding server routes)
 - **Add UI component**: `cd packages/ui && bunx shadcn@latest add <component>`
 - **Package**: `cd apps/desktop && bun run package` (or `package:linux`, `package:mac`, `package:win`, `package:all`)
