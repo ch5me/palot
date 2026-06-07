@@ -791,6 +791,26 @@ Wave FINAL
   - Define how contributions project into agent-facing tools.
   - Cover declarative `contributes.tools`, optional imperative dynamic tools, session scope, naming/collision rules, introspection tools, timeout/cancel, and error semantics.
   - Ensure every plugin surface can expose inspect/query/control tools.
+  - Add a concrete tool-call state machine that pins the lifecycle of a single tool call. The standard tool result envelope already lists `status: completed | failed | denied | unavailable | queued | cancelled`; this state machine pins how a call moves between those states.
+
+  | State | Trigger to enter | Allowed transitions out | Terminal? | User-observable indicator |
+  |---|---|---|---|---|
+  | `queued` | host accepts tool call, awaits plugin worker dispatch | `dispatching` (worker ready) / `denied` (capability missing) / `cancelled` (agent cancels) | no | "queued" badge in tool card |
+  | `dispatching` | host hands call to plugin worker | `running` (worker begins execute) / `failed` (worker immediate error) / `cancelled` (agent or host cancels) / `unavailable` (worker offline) | no | "dispatching…" with no progress yet |
+  | `running` | worker execute starts | `completed` (success) / `failed` (thrown or non-retryable) / `cancelled` (agent or host cancels) / `timeout` (host timer exceeded) | no | progress bar / streaming token output |
+  | `timeout` | host timer fires while still in `running` | `failed` (timeout converted to failed) / `cancelled` (host cancels remaining) | no | "timed out" badge |
+  | `completed` | worker execute resolves successfully | (none) | yes | success badge, result rendered |
+  | `failed` | worker throws or non-retryable error | (none) | yes | error badge, error code/message |
+  | `denied` | capability broker rejects before dispatch | (none) | yes | "denied: <capability>" badge |
+  | `unavailable` | plugin worker or plugin disabled at dispatch time | (none) | yes | "plugin unavailable" badge |
+  | `cancelled` | agent or host cancels during `queued`/`dispatching`/`running`/`timeout` | (none) | yes | "cancelled" badge |
+
+  Default host timeout policy:
+  - `dispatching` -> `running` ceiling: 5 seconds, then `timeout`
+  - `running` ceiling: 60 seconds, then `timeout`
+  - both ceilings are host policy and overridable per plugin via manifest
+
+  - "Every non-terminal state is cancellable by host or agent. Every terminal state produces a final `errorCode` or successful `data` payload."
 
   **Must NOT do**:
   - Do not keep tools as ad hoc bridge-only glue.
@@ -813,6 +833,7 @@ Wave FINAL
   **Acceptance Criteria**:
   - [ ] Every contribution family has corresponding tool projection semantics.
   - [ ] Introspection tools and collision rules are explicit.
+  - [ ] Tool cancel/timeout state machine locks every state transition, including terminal `cancelled` and `denied` semantics, and ties each terminal state to a canonical error code.
 
   **QA Scenarios**:
   ```text
@@ -829,6 +850,14 @@ Wave FINAL
       1. Inspect tool projection section for scope, timeout, cancel, and validation failure semantics.
     Expected Result: Runtime semantics are explicit.
     Evidence: .sisyphus/evidence/task-9-runtime-semantics.txt
+
+  Scenario: Tool state machine deterministic
+    Tool: Bash
+    Steps:
+      1. For each terminal state, assert canonical error code is present.
+      1. For each non-terminal transition, assert reversibility is impossible.
+    Expected Result: State machine has no ambiguous transitions and no missing error codes.
+    Evidence: .sisyphus/evidence/task-9-tool-state-machine.txt
   ```
 
   **Commit**: NO
@@ -952,24 +981,34 @@ Wave FINAL
   - manifest task outputs
 
   **Acceptance Criteria**:
-  - [ ] Stable/proposed/internal policy covers host APIs and tool schemas.
-  - [ ] Manifest evolution and compatibility rules are explicit.
+  - [ ] Every contribution family has corresponding tool projection semantics.
+  - [ ] Introspection tools and collision rules are explicit.
+  - [ ] Tool-call state machine lists all 9 states with allowed transitions.
+  - [ ] `cancelled` reachable from any non-terminal state.
+  - [ ] Default host timeout ceilings declared and overridable per plugin.
 
   **QA Scenarios**:
   ```text
-  Scenario: API tiers cover all exposed plugin surfaces
+  Scenario: Surface-tool symmetry explicit
     Tool: Bash/checklist
     Steps:
-      1. Compare policy to manifest-exposed sections.
-    Expected Result: Every exposed API belongs to a tier.
-    Evidence: .sisyphus/evidence/task-12-api-tiers.txt
+      1. Compare family contracts to tool projection section.
+    Expected Result: Panels, widgets, commands, themes all have paired tool semantics.
+    Evidence: .sisyphus/evidence/task-9-symmetry.txt
 
-  Scenario: Compatibility rules explicit
+  Scenario: Session scope and error rules explicit
     Tool: Bash
     Steps:
-      1. Inspect version negotiation and deprecation section.
-    Expected Result: Compatibility expectations are concrete.
-    Evidence: .sisyphus/evidence/task-12-compatibility.txt
+      1. Inspect tool projection section for scope, timeout, cancel, and validation failure semantics.
+    Expected Result: Runtime semantics are explicit.
+    Evidence: .sisyphus/evidence/task-9-runtime-semantics.txt
+
+  Scenario: Tool-call state machine deterministic
+    Tool: Bash
+    Steps:
+      1. For each of the 9 states, assert transition row exists with allowed next states.
+    Expected Result: No state is unreachable or lacks transitions.
+    Evidence: .sisyphus/evidence/task-9-tool-state-machine.txt
   ```
 
   **Commit**: NO
@@ -1118,24 +1157,34 @@ Wave FINAL
   - `apps/desktop/src/main/automation/registry.ts` - host-owned durable registry pattern
 
   **Acceptance Criteria**:
-  - [ ] Session/project/global scope semantics are explicit.
-  - [ ] Disable/uninstall/hot-reload persistence behavior is defined.
+  - [ ] Theme contribution path and host precedence rules are explicit.
+  - [ ] Import compatibility stance is bounded and realistic.
+  - [ ] Theme precedence matrix exists with explicit winner per row.
+  - [ ] User-picked theme always wins over plugin/imported/default.
+  - [ ] `plugin.theme.preview` never mutates applied theme.
 
   **QA Scenarios**:
   ```text
-  Scenario: Scope model complete
+  Scenario: Theme precedence explicit
     Tool: Bash/checklist
     Steps:
-      1. Inspect section for session, project, and global scopes.
-    Expected Result: All major persistence scopes are defined.
-    Evidence: .sisyphus/evidence/task-15-scopes.txt
+      1. Inspect theme section for user preference vs plugin vs default precedence.
+    Expected Result: Deterministic precedence exists.
+    Evidence: .sisyphus/evidence/task-16-precedence.txt
 
-  Scenario: Durable-vs-cache split explicit
+  Scenario: Import scope bounded
     Tool: Bash
     Steps:
-      1. Inspect section for host storage vs worker cache ownership.
-    Expected Result: Durable state never depends on worker memory.
-    Evidence: .sisyphus/evidence/task-15-durable-cache-split.txt
+      1. Search for Open VSX/theme import references.
+    Expected Result: Compatibility path is present without token-studio scope creep.
+    Evidence: .sisyphus/evidence/task-16-import-scope.txt
+
+  Scenario: Theme precedence matrix deterministic
+    Tool: Bash
+    Steps:
+      1. For each precedence row, assert the matrix has explicit winner and apply path.
+    Expected Result: No precedence row lacks a winner.
+    Evidence: .sisyphus/evidence/task-16-theme-precedence.txt
   ```
 
   **Commit**: NO
@@ -1145,6 +1194,17 @@ Wave FINAL
   **What to do**:
   - Define how plugins contribute themes, how host validates/applies them, precedence vs user preferences, and rollback/reset behavior.
   - Include VS Code/Open VSX theme import compatibility stance and fallback-chain mapping concept.
+  - Add a concrete precedence matrix. Theme contributions are data-only; the host applies them. The matrix pins exactly which source wins for the host's currently applied theme.
+
+  | Precedence (highest wins) | Source | Apply path | User-observable result |
+  |---|---|---|---|
+  | 1 | explicit user pick persisted in `themeAtom` | host apply | theme wins regardless of plugin or import |
+  | 2 | active plugin-provided theme (when no user pick yet) | host apply | plugin theme shown |
+  | 3 | imported theme (VS Code / Open VSX converted) when no plugin/user pick | host apply | imported theme shown |
+  | 4 | bundled system default | host apply | default shown |
+  | fallback | preview-only request from agent `plugin.theme.preview` | host renders preview without changing applied theme | preview pane only; applied theme unchanged |
+
+  - "Plugins cannot set the applied theme directly. They declare theme data; the host picks and applies according to the matrix above."
 
   **Must NOT do**:
   - Do not drift into full token-studio scope.
@@ -1167,6 +1227,7 @@ Wave FINAL
   **Acceptance Criteria**:
   - [ ] Theme contribution path and host precedence rules are explicit.
   - [ ] Import compatibility stance is bounded and realistic.
+  - [ ] Theme precedence matrix locks the exact ordering across reset / user-pick / session-preview / imported-fallback / built-in default, with explicit fallback rules for uninstalled picked themes.
 
   **QA Scenarios**:
   ```text
@@ -1183,6 +1244,13 @@ Wave FINAL
       1. Search for Open VSX/theme import references.
     Expected Result: Compatibility path is present without token-studio scope creep.
     Evidence: .sisyphus/evidence/task-16-import-scope.txt
+
+  Scenario: Theme precedence deterministic
+    Tool: Bash
+    Steps:
+      1. For each layer in theme precedence matrix, assert the layer is reachable and order is locked.
+    Expected Result: Every layer has deterministic precedence and a defined fallback for uninstall.
+    Evidence: .sisyphus/evidence/task-16-theme-precedence.txt
   ```
 
   **Commit**: NO
