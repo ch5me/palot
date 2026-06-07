@@ -1,19 +1,22 @@
 import { z } from "zod"
 import {
-	palotBrowserClickArgsSchema,
-	palotBrowserNavigateArgsSchema,
-	palotBrowserOpenArgsSchema,
-	palotBrowserScrollArgsSchema,
-	palotBrowserStatusArgsSchema,
-	palotBrowserTabsArgsSchema,
-	palotBrowserTypeArgsSchema,
+	palotBrowserClickArgsShape,
+	palotBrowserNavigateArgsShape,
+	palotBrowserOpenArgsShape,
+	palotBrowserScrollArgsShape,
+	palotBrowserStatusArgsShape,
+	palotBrowserTabsArgsShape,
+	palotBrowserTypeArgsShape,
 	palotOpenSidePanelArgsSchema,
+	palotOpenSidePanelArgsShape,
 	palotResolverResultSchema,
 	palotToolArgsSchemas,
 	palotUiStateArgsSchema,
+	palotUiStateArgsShape,
 } from "../../src/shared/palot-bridge-schemas"
 
-const createSchema = (schema) => schema
+const BRIDGE_ENV_URL = "PALOT_BRIDGE_URL"
+const BRIDGE_ENV_TOKEN = "PALOT_BRIDGE_TOKEN"
 
 const createQueuedResponse = ({ toolName, requestId, resultSummary = null }) => ({
 	status: "queued",
@@ -29,30 +32,92 @@ const createTypedError = ({ toolName, code, message }) => ({
 	errorMessage: message,
 })
 
-const buildPalotContextBlock = (resolved) => {
-	if (!resolved?.binding || !resolved?.nonSecretSnapshot) return null
-	const snapshot = resolved.nonSecretSnapshot
-	const sidePanel = resolved.uiState?.sidePanel ?? null
+const CONNECTION_DISCOVERY_TOOLS = ["search_tools", "describe_tool", "call_tool", "tools_status"]
+const PRODUCT_CONTROL_TOOLS = [
+	"browser_status",
+	"browser_open",
+	"browser_navigate",
+	"browser_tabs",
+	"browser_click",
+	"browser_type",
+	"browser_scroll",
+	"open_side_panel",
+	"ui_state",
+]
+
+const formatConnectionSummary = (connection) => {
+	if (!connection || typeof connection.name !== "string") return null
+	const displayName =
+		typeof connection.displayName === "string" && connection.displayName.trim().length > 0
+			? connection.displayName.trim()
+			: connection.name
+	const status = typeof connection.status === "string" ? connection.status : "configured"
+	const notes = []
+	if (typeof connection.metadata?.whyRecommended === "string") {
+		notes.push(connection.metadata.whyRecommended.trim())
+	}
+	if (typeof connection.metadata?.readToolHint === "string") {
+		notes.push(`hint: ${connection.metadata.readToolHint.trim()}`)
+	}
+	return `${displayName} (${status})${notes.length > 0 ? ` — ${notes.join("; ")}` : ""}`
+}
+
+const buildConnectedAppsBlock = (connections) => {
+	const lines = (Array.isArray(connections) ? connections : [])
+		.map((connection) => formatConnectionSummary(connection))
+		.filter(Boolean)
+	if (lines.length === 0) return ["none"]
+	return lines
+}
+
+const buildProductContextBlock = (resolved) => {
+	const snapshot = resolved?.nonSecretSnapshot ?? null
+	const binding = resolved?.binding ?? null
+	const sidePanel = resolved?.uiState?.sidePanel ?? null
+	const connectedApps = buildConnectedAppsBlock(resolved?.connections)
+	if (!binding && !snapshot && connectedApps.length === 1 && connectedApps[0] === "none") {
+		return null
+	}
 	return [
-		"<palot-browser-context>",
-		`session_id: ${resolved.binding.openCodeSessionId}`,
-		`binding_status: ${resolved.binding.status}`,
-		`lane_id: ${resolved.binding.browserLaneId ?? "none"}`,
-		`magic_browser_session_id: ${resolved.binding.magicBrowserSessionId ?? "none"}`,
-		`viewer_url_hint: ${snapshot.viewerUrl ?? "none"}`,
-		`current_url: ${snapshot.viewport?.currentUrl ?? "none"}`,
+		"<elf-context>",
+		`session_id: ${binding?.openCodeSessionId ?? "none"}`,
+		`browser_binding_status: ${binding?.status ?? "unbound"}`,
+		`browser_lane_id: ${binding?.browserLaneId ?? "none"}`,
+		`browser_session_id: ${binding?.magicBrowserSessionId ?? "none"}`,
+		`browser_viewer_url: ${snapshot?.viewerUrl ?? "none"}`,
+		`browser_current_url: ${snapshot?.viewport?.currentUrl ?? "none"}`,
 		`side_panel_open: ${sidePanel?.open ? "yes" : "no"}`,
 		`side_panel_tab: ${sidePanel?.activeTab ?? "none"}`,
 		`side_panel_tabs: ${(sidePanel?.availableTabs ?? []).join(",") || "none"}`,
-		"</palot-browser-context>",
+		"connected_apps:",
+		...connectedApps.map((line) => `- ${line}`),
+		`connected_app_discovery_tools: ${CONNECTION_DISCOVERY_TOOLS.join(",")}`,
+		`product_control_tools: ${PRODUCT_CONTROL_TOOLS.join(",")}`,
+		"tool_routing_rule: If a user asks to use a connected app, inspect connected_apps first, then use the connected_app_discovery_tools to find the best matching capability before calling it.",
+		"tool_naming_rule: Refer to connected apps by product name and capability. Do not mention internal transport or setup details unless the user is debugging integrations.",
+		"tool_mapping_rule: If the user mentions MCP or MCP tools, treat that as referring to tools in this system.",
+		"</elf-context>",
 	].join("\n")
 }
 
-const createResolver = ({ resolve }) => {
-	return (sessionID) => {
-		if (typeof resolve !== "function") return null
-		const resolved = resolve(sessionID)
-		return resolved ? palotResolverResultSchema.parse(resolved) : null
+const createResolver = ({ resolve, bridgeRequest, listConnections }) => {
+	return async (sessionID) => {
+		let resolved = null
+		if (typeof resolve === "function") {
+			const candidate = await resolve(sessionID)
+			resolved = candidate ? palotResolverResultSchema.parse(candidate) : null
+		} else if (bridgeRequest && sessionID) {
+			const candidate = await bridgeRequest({ action: "resolve-binding", sessionId: sessionID })
+			resolved = candidate ? palotResolverResultSchema.parse(candidate) : null
+		}
+		const connections = typeof listConnections === "function" ? await listConnections() : []
+		return {
+			binding: resolved?.binding ?? null,
+			nonSecretSnapshot: resolved?.nonSecretSnapshot ?? null,
+			opaqueActionTarget: resolved?.opaqueActionTarget ?? null,
+			uiState: resolved?.uiState,
+			connections: Array.isArray(connections) ? connections : [],
+		}
 	}
 }
 
@@ -84,10 +149,34 @@ const createUiStateError = (toolName, message) =>
 		message,
 	})
 
-const buildBrowserToolHandler = ({ toolName, resolveBinding, dispatch, schema }) => {
+const createBridgeClient = ({ fetchImpl = globalThis.fetch, env = globalThis.process?.env ?? {} } = {}) => {
+	const bridgeUrl = env[BRIDGE_ENV_URL] ?? null
+	const bridgeToken = env[BRIDGE_ENV_TOKEN] ?? null
+	if (!bridgeUrl || !bridgeToken || typeof fetchImpl !== "function") {
+		return null
+	}
+	return async (payload) => {
+		const response = await fetchImpl(bridgeUrl, {
+			method: "POST",
+			headers: {
+				"content-type": "application/json",
+				"x-palot-bridge-key": bridgeToken,
+			},
+			body: JSON.stringify(payload),
+		})
+		const body = await response.json()
+		if (!response.ok || !body?.ok) {
+			const message = body?.error?.message ?? `Bridge request failed with status ${response.status}`
+			throw new Error(message)
+		}
+		return body.result ?? null
+	}
+}
+
+const buildBrowserToolHandler = ({ toolName, resolveBinding, dispatch, bridgeRequest, schema }) => {
 	return async (args, context = {}) => {
 		const parsedArgs = schema.parse(args ?? {})
-		const resolved = resolveBinding(context.sessionID)
+		const resolved = await resolveBinding(context.sessionID)
 		if (!resolved?.binding) {
 			return JSON.stringify(
 				createTypedError({
@@ -123,6 +212,15 @@ const buildBrowserToolHandler = ({ toolName, resolveBinding, dispatch, schema })
 			})
 			return JSON.stringify(result)
 		}
+		if (bridgeRequest) {
+			const result = await bridgeRequest({
+				action: "dispatch-browser-tool",
+				sessionId: context.sessionID,
+				toolName,
+				args: parsedArgs,
+			})
+			return JSON.stringify(result)
+		}
 		return JSON.stringify(
 			createQueuedResponse({
 				toolName,
@@ -133,62 +231,76 @@ const buildBrowserToolHandler = ({ toolName, resolveBinding, dispatch, schema })
 	}
 }
 
-const buildOpenSidePanelHandler = ({ getUiState, openSidePanel }) => {
+const buildOpenSidePanelHandler = ({ bridgeRequest, openSidePanel }) => {
 	return async (args = {}) => {
 		const parsedArgs = palotOpenSidePanelArgsSchema.parse(args)
 		const tab = parsedArgs.tab
 		if (!VALID_SIDE_PANEL_TABS.includes(tab)) {
 			return JSON.stringify(
 				createUiStateError(
-					"palot_open_side_panel",
+					"open_side_panel",
 					`Invalid side panel tab. Expected one of: ${VALID_SIDE_PANEL_TABS.join(", ")}`,
 				),
 			)
 		}
-		if (typeof openSidePanel !== "function") {
-			return JSON.stringify(
-				createUiStateError("palot_open_side_panel", "Palot side panel bridge is unavailable"),
-			)
+		if (typeof openSidePanel === "function") {
+			const snapshot = await openSidePanel(tab)
+			return JSON.stringify({
+				status: "completed",
+				toolName: "open_side_panel",
+				sidePanel: snapshot?.sidePanel ?? null,
+			})
 		}
-		const snapshot = await openSidePanel(tab)
-		return JSON.stringify({
-			status: "completed",
-			toolName: "palot_open_side_panel",
-			sidePanel: snapshot?.sidePanel ?? null,
-		})
+		if (bridgeRequest) {
+			const snapshot = await bridgeRequest({ action: "open-side-panel", tab })
+			return JSON.stringify({
+				status: "completed",
+				toolName: "open_side_panel",
+				sidePanel: snapshot?.sidePanel ?? null,
+			})
+		}
+		return JSON.stringify(
+			createUiStateError("open_side_panel", "Palot side panel bridge is unavailable"),
+		)
 	}
 }
 
-const buildUiStateHandler = ({ getUiState }) => {
+const buildUiStateHandler = ({ bridgeRequest, getUiState }) => {
 	return async (args = {}) => {
 		palotUiStateArgsSchema.parse(args)
-		if (typeof getUiState !== "function") {
-			return JSON.stringify({ sidePanel: null })
+		if (typeof getUiState === "function") {
+			return JSON.stringify(await getUiState())
 		}
-		return JSON.stringify(await getUiState())
+		if (bridgeRequest) {
+			return JSON.stringify(await bridgeRequest({ action: "get-ui-state" }))
+		}
+		return JSON.stringify({ sidePanel: null })
 	}
 }
 
-const createPalotPlugin = ({ resolve, dispatch, getUiState, openSidePanel } = {}) => {
-	const resolveBinding = createResolver({ resolve })
+const createPalotPlugin = (
+	{ resolve, dispatch, getUiState, openSidePanel, listConnections } = {},
+	{ bridgeRequest = createBridgeClient() } = {},
+) => {
+	const resolveBinding = createResolver({ resolve, bridgeRequest, listConnections })
 	return async () => ({
 		"experimental.chat.system.transform": async (input, output) => {
 			if (!input?.sessionID) return
-			const resolved = resolveBinding(input.sessionID)
-			const block = buildPalotContextBlock(resolved)
+			const resolved = await resolveBinding(input.sessionID)
+			const block = buildProductContextBlock(resolved)
 			if (!block) return
 			output.system.push(block)
 		},
 		event: async ({ event }) => {
 			if (!event || event.type !== "session.idle") return
 			if (event.properties?.sessionID) {
-				resolveBinding(event.properties.sessionID)
+				await resolveBinding(event.properties.sessionID)
 			}
 		},
 		tool: {
-			mcp_search: {
-				description: "Search connected MCP catalog entries without hydrating every tool schema",
-				args: z.object({ query: z.string().optional() }).passthrough(),
+			search_tools: {
+				description: "Search connected app capabilities without hydrating every tool schema",
+				args: { query: z.string().optional() },
 				execute: async (args = {}) =>
 					JSON.stringify({
 						query: args.query ?? "",
@@ -198,9 +310,9 @@ const createPalotPlugin = ({ resolve, dispatch, getUiState, openSidePanel } = {}
 						],
 					}),
 			},
-			mcp_describe: {
-				description: "Describe one MCP server or tool on demand",
-				args: z.object({ serverId: z.string().optional(), toolName: z.string().optional() }).passthrough(),
+			describe_tool: {
+				description: "Describe one connected app capability on demand",
+				args: { serverId: z.string().optional(), toolName: z.string().optional() },
 				execute: async (args = {}) =>
 					JSON.stringify({
 						serverId: args.serverId ?? "github",
@@ -216,16 +328,14 @@ const createPalotPlugin = ({ resolve, dispatch, getUiState, openSidePanel } = {}
 						hydration: "selected-tool-only",
 					}),
 			},
-			mcp_call: {
-				description: "Execute one selected MCP tool through compact runtime path",
-				args: z
-					.object({
-						query: z.string().trim().min(1),
-						serverId: z.string().optional(),
-						toolName: z.string().optional(),
-						state: z.string().optional(),
-					})
-					.passthrough(),
+			call_tool: {
+				description: "Execute one selected connected app capability through the compact runtime path",
+				args: {
+					query: z.string().trim().min(1),
+					serverId: z.string().optional(),
+					toolName: z.string().optional(),
+					state: z.string().optional(),
+				},
 				execute: async (args = {}) => {
 					const schema = {
 						type: "object",
@@ -258,94 +368,101 @@ const createPalotPlugin = ({ resolve, dispatch, getUiState, openSidePanel } = {}
 					})
 				},
 			},
-			mcp_status: {
-				description: "Report MCP connection readiness without loading every schema",
-				args: z.object({ serverId: z.string().optional() }).passthrough(),
+			tools_status: {
+				description: "Report connected app readiness without loading every schema",
+				args: { serverId: z.string().optional() },
 				execute: async (args = {}) =>
 					JSON.stringify({
 						serverId: args.serverId ?? null,
 						status: "ready",
 					}),
 			},
-			palot_browser_status: {
+			browser_status: {
 				description: "Get Palot browser status for the current OpenCode session",
-				args: palotBrowserStatusArgsSchema,
+				args: palotBrowserStatusArgsShape,
 				execute: buildBrowserToolHandler({
-					toolName: "palot_browser_status",
+					toolName: "browser_status",
 					resolveBinding,
 					dispatch,
-					schema: palotToolArgsSchemas.palot_browser_status,
+					bridgeRequest,
+					schema: palotToolArgsSchemas.browser_status,
 				}),
 			},
-			palot_browser_open: {
+			browser_open: {
 				description: "Open a browser lane URL",
-				args: palotBrowserOpenArgsSchema,
+				args: palotBrowserOpenArgsShape,
 				execute: buildBrowserToolHandler({
-					toolName: "palot_browser_open",
+					toolName: "browser_open",
 					resolveBinding,
 					dispatch,
-					schema: palotToolArgsSchemas.palot_browser_open,
+					bridgeRequest,
+					schema: palotToolArgsSchemas.browser_open,
 				}),
 			},
-			palot_browser_navigate: {
+			browser_navigate: {
 				description: "Navigate the current browser lane",
-				args: palotBrowserNavigateArgsSchema,
+				args: palotBrowserNavigateArgsShape,
 				execute: buildBrowserToolHandler({
-					toolName: "palot_browser_navigate",
+					toolName: "browser_navigate",
 					resolveBinding,
 					dispatch,
-					schema: palotToolArgsSchemas.palot_browser_navigate,
+					bridgeRequest,
+					schema: palotToolArgsSchemas.browser_navigate,
 				}),
 			},
-			palot_browser_tabs: {
+			browser_tabs: {
 				description: "List or manage browser lane tabs",
-				args: palotBrowserTabsArgsSchema,
+				args: palotBrowserTabsArgsShape,
 				execute: buildBrowserToolHandler({
-					toolName: "palot_browser_tabs",
+					toolName: "browser_tabs",
 					resolveBinding,
 					dispatch,
-					schema: palotToolArgsSchemas.palot_browser_tabs,
+					bridgeRequest,
+					schema: palotToolArgsSchemas.browser_tabs,
 				}),
 			},
-			palot_browser_click: {
+			browser_click: {
 				description: "Click in the current browser lane",
-				args: palotBrowserClickArgsSchema,
+				args: palotBrowserClickArgsShape,
 				execute: buildBrowserToolHandler({
-					toolName: "palot_browser_click",
+					toolName: "browser_click",
 					resolveBinding,
 					dispatch,
-					schema: palotToolArgsSchemas.palot_browser_click,
+					bridgeRequest,
+					schema: palotToolArgsSchemas.browser_click,
 				}),
 			},
-			palot_browser_type: {
+			browser_type: {
 				description: "Type into the current browser lane",
-				args: palotBrowserTypeArgsSchema,
+				args: palotBrowserTypeArgsShape,
 				execute: buildBrowserToolHandler({
-					toolName: "palot_browser_type",
+					toolName: "browser_type",
 					resolveBinding,
 					dispatch,
-					schema: palotToolArgsSchemas.palot_browser_type,
+					bridgeRequest,
+					schema: palotToolArgsSchemas.browser_type,
 				}),
 			},
-			palot_browser_scroll: {
+			browser_scroll: {
 				description: "Scroll the current browser lane",
-				args: palotBrowserScrollArgsSchema,
+				args: palotBrowserScrollArgsShape,
 				execute: buildBrowserToolHandler({
-					toolName: "palot_browser_scroll",
+					toolName: "browser_scroll",
 					resolveBinding,
 					dispatch,
-					schema: palotToolArgsSchemas.palot_browser_scroll,
+					bridgeRequest,
+					schema: palotToolArgsSchemas.browser_scroll,
 				}),
 			},
-			palot_open_side_panel: {
+			open_side_panel: {
 				description: "Open a Palot side panel tab in the desktop UI",
-				args: palotOpenSidePanelArgsSchema,
-				execute: buildOpenSidePanelHandler({ getUiState, openSidePanel }),
+				args: palotOpenSidePanelArgsShape,
+				execute: buildOpenSidePanelHandler({ bridgeRequest, getUiState, openSidePanel }),
 			},
-			palot_ui_state: {
+			ui_state: {
 				description: "Get the current Palot UI side panel state",
-				args: palotUiStateArgsSchema,
-				execute: buildUiStateHandler({ getUiState }),
+				args: palotUiStateArgsShape,
+				execute: buildUiStateHandler({ bridgeRequest, getUiState }),
 			},
 		},
 	})
@@ -355,13 +472,16 @@ const server = createPalotPlugin()
 
 export {
 	buildBrowserToolHandler,
+	buildConnectedAppsBlock,
 	buildOpenSidePanelHandler,
-	buildPalotContextBlock,
+	buildProductContextBlock,
 	buildUiStateHandler,
+	createBridgeClient,
 	createPalotPlugin,
 	createQueuedResponse,
 	createResolver,
 	createTypedError,
+	formatConnectionSummary,
 	server,
 }
 export default {

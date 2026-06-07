@@ -254,13 +254,13 @@ export const palotResolverResultSchema = z.object({
 })
 
 export const dispatchBrowserToolNameSchema = z.enum([
-	"palot_browser_status",
-	"palot_browser_open",
-	"palot_browser_navigate",
-	"palot_browser_tabs",
-	"palot_browser_click",
-	"palot_browser_type",
-	"palot_browser_scroll",
+	"browser_status",
+	"browser_open",
+	"browser_navigate",
+	"browser_tabs",
+	"browser_click",
+	"browser_type",
+	"browser_scroll",
 ])
 
 export const dispatchBrowserToolInputSchema = z.object({
@@ -275,62 +275,83 @@ export const publishBrowserActionInputSchema = z.object({
 
 export const palotOpenSidePanelInputSchema = sidePanelTabSchema
 
-const browserUrlSchema = z.object({
+// Raw shapes (z.ZodRawShape = Record<string, ZodType>) are the contract the
+// OpenCode plugin runtime expects for a tool's `args`. OpenCode does
+// `z.object(def.args)` then `z.toJSONSchema(...)` during tool registration, so
+// `args` MUST be the inner field map, never a constructed ZodObject. Passing a
+// whole ZodObject makes z.object() enumerate the ZodObject's internal props and
+// crashes toJSONSchema with `schema._zod.def is undefined`. The `*Schema`
+// exports below remain ZodObjects for runtime `.parse()` validation only.
+export const palotBrowserStatusArgsShape = {} satisfies z.ZodRawShape
+export const palotBrowserOpenArgsShape = {
 	url: z.string().trim().min(1),
-})
-
-export const palotBrowserStatusArgsSchema = z.object({}).passthrough()
-export const palotBrowserOpenArgsSchema = browserUrlSchema
-export const palotBrowserNavigateArgsSchema = browserUrlSchema
-export const palotBrowserTabsArgsSchema = z
-	.object({
-		action: z.enum(["list", "open", "close", "activate"]).optional(),
-		tabId: z.string().optional(),
-		url: z.string().optional(),
-	})
-	.passthrough()
-export const palotBrowserClickArgsSchema = z
-	.object({
-		selector: z.string().optional(),
-		text: z.string().optional(),
-		role: z.string().optional(),
-		x: z.number().optional(),
-		y: z.number().optional(),
-		button: z.enum(["left", "middle", "right"]).optional(),
-		clickCount: z.number().int().positive().optional(),
-	})
-	.passthrough()
-export const palotBrowserTypeArgsSchema = z
-	.object({
-		selector: z.string().optional(),
-		text: z.string(),
-		submit: z.boolean().optional(),
-	})
-	.passthrough()
-export const palotBrowserScrollArgsSchema = z
-	.object({
-		selector: z.string().optional(),
-		deltaX: z.number().optional(),
-		deltaY: z.number().optional(),
-		direction: z.enum(["up", "down"]).optional(),
-		amount: z.number().optional(),
-	})
-	.passthrough()
-export const palotOpenSidePanelArgsSchema = z.object({
+} satisfies z.ZodRawShape
+export const palotBrowserNavigateArgsShape = {
+	url: z.string().trim().min(1),
+} satisfies z.ZodRawShape
+export const palotBrowserTabsArgsShape = {
+	action: z.enum(["list", "open", "close", "activate"]).optional(),
+	tabId: z.string().optional(),
+	url: z.string().optional(),
+} satisfies z.ZodRawShape
+export const palotBrowserClickArgsShape = {
+	selector: z.string().optional(),
+	text: z.string().optional(),
+	role: z.string().optional(),
+	x: z.number().optional(),
+	y: z.number().optional(),
+	button: z.enum(["left", "middle", "right"]).optional(),
+	clickCount: z.number().int().positive().optional(),
+} satisfies z.ZodRawShape
+export const palotBrowserTypeArgsShape = {
+	selector: z.string().optional(),
+	text: z.string(),
+	submit: z.boolean().optional(),
+} satisfies z.ZodRawShape
+export const palotBrowserScrollArgsShape = {
+	selector: z.string().optional(),
+	deltaX: z.number().optional(),
+	deltaY: z.number().optional(),
+	direction: z.enum(["up", "down"]).optional(),
+	amount: z.number().optional(),
+} satisfies z.ZodRawShape
+export const palotOpenSidePanelArgsShape = {
 	tab: sidePanelTabSchema,
-})
-export const palotUiStateArgsSchema = z.object({}).passthrough()
+} satisfies z.ZodRawShape
+export const palotUiStateArgsShape = {} satisfies z.ZodRawShape
+
+export const palotBrowserStatusArgsSchema = z.object(palotBrowserStatusArgsShape).passthrough()
+export const palotBrowserOpenArgsSchema = z.object(palotBrowserOpenArgsShape)
+export const palotBrowserNavigateArgsSchema = z.object(palotBrowserNavigateArgsShape)
+export const palotBrowserTabsArgsSchema = z.object(palotBrowserTabsArgsShape).passthrough()
+export const palotBrowserClickArgsSchema = z.object(palotBrowserClickArgsShape).passthrough()
+export const palotBrowserTypeArgsSchema = z.object(palotBrowserTypeArgsShape).passthrough()
+export const palotBrowserScrollArgsSchema = z.object(palotBrowserScrollArgsShape).passthrough()
+export const palotOpenSidePanelArgsSchema = z.object(palotOpenSidePanelArgsShape)
+export const palotUiStateArgsSchema = z.object(palotUiStateArgsShape).passthrough()
 
 export const palotToolArgsSchemas = {
-	palot_browser_status: palotBrowserStatusArgsSchema,
-	palot_browser_open: palotBrowserOpenArgsSchema,
-	palot_browser_navigate: palotBrowserNavigateArgsSchema,
-	palot_browser_tabs: palotBrowserTabsArgsSchema,
-	palot_browser_click: palotBrowserClickArgsSchema,
-	palot_browser_type: palotBrowserTypeArgsSchema,
-	palot_browser_scroll: palotBrowserScrollArgsSchema,
-	palot_open_side_panel: palotOpenSidePanelArgsSchema,
-	palot_ui_state: palotUiStateArgsSchema,
+	browser_status: palotBrowserStatusArgsSchema,
+	browser_open: palotBrowserOpenArgsSchema,
+	browser_navigate: palotBrowserNavigateArgsSchema,
+	browser_tabs: palotBrowserTabsArgsSchema,
+	browser_click: palotBrowserClickArgsSchema,
+	browser_type: palotBrowserTypeArgsSchema,
+	browser_scroll: palotBrowserScrollArgsSchema,
+	open_side_panel: palotOpenSidePanelArgsSchema,
+	ui_state: palotUiStateArgsSchema,
+} as const
+
+export const palotToolArgsShapes = {
+	browser_status: palotBrowserStatusArgsShape,
+	browser_open: palotBrowserOpenArgsShape,
+	browser_navigate: palotBrowserNavigateArgsShape,
+	browser_tabs: palotBrowserTabsArgsShape,
+	browser_click: palotBrowserClickArgsShape,
+	browser_type: palotBrowserTypeArgsShape,
+	browser_scroll: palotBrowserScrollArgsShape,
+	open_side_panel: palotOpenSidePanelArgsShape,
+	ui_state: palotUiStateArgsShape,
 } as const
 
 export type DispatchBrowserToolInput = z.infer<typeof dispatchBrowserToolInputSchema>
