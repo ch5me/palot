@@ -21,7 +21,8 @@ Important consequence:
 
 Primary code paths:
 - managed server spawn: `apps/desktop/src/main/opencode-manager.ts:414`
-- plugin module file: `apps/desktop/.opencode/plugins/palot-bridge.js`
+- plugin implementation file: `apps/desktop/.opencode/plugins/palot-bridge.js`
+- plugin entry file consumed by this repo: `apps/desktop/src/main/palot-plugin-entry.ts`
 - plugin shape validator: `apps/desktop/src/main/palot-opencode-plugin-shim.ts:11`
 
 ## Runtime topology <!-- oc:id=sec_ac -->
@@ -57,16 +58,16 @@ There are five layers involved:
 ### Managed server path <!-- oc:id=sec_ae -->
 
 When Palot spawns `opencode serve`, it mutates the child env before spawn:
-- plugin path constant: `apps/desktop/src/main/opencode-manager.ts:56`
-- env mutation: `apps/desktop/src/main/opencode-manager.ts:414`
-- final spawn env includes `OPENCODE_PLUGIN`: `apps/desktop/src/main/opencode-manager.ts:454`
-- child process spawn: `apps/desktop/src/main/opencode-manager.ts:469`
+- plugin path resolver: `apps/desktop/src/main/opencode-manager.ts`
+- env mutation: `apps/desktop/src/main/opencode-manager.ts`
+- final spawn env includes `OPENCODE_PLUGIN`: `apps/desktop/src/main/opencode-manager.ts`
+- child process spawn: `apps/desktop/src/main/opencode-manager.ts`
 
 Behavior:
-1. Palot computes `PALOT_PLUGIN_PATH` <!-- oc:id=item_af -->
+1. Palot resolves repo-local plugin entry `apps/desktop/src/main/palot-plugin-entry.ts` from `process.cwd()` <!-- oc:id=item_af -->
 1. `appendPalotPlugin()` verifies the file exists <!-- oc:id=item_ag -->
 1. `appendPalotPlugin()` validates module shape with `loadPalotPluginModule()` <!-- oc:id=item_ah -->
-1. `appendPalotPlugin()` appends the file path into `env.OPENCODE_PLUGIN` <!-- oc:id=item_ai -->
+1. `appendPalotPlugin()` appends the resolved repo-local file path into `env.OPENCODE_PLUGIN` <!-- oc:id=item_ai -->
 1. the spawned `opencode serve` process receives that env var <!-- oc:id=item_aj -->
 
 Relevant refs:
@@ -111,6 +112,7 @@ Tests:
 ## What the plugin exports <!-- oc:id=sec_ah -->
 
 Plugin factory:
+- repo-local entry re-export: `apps/desktop/src/main/palot-plugin-entry.ts`
 - `createPalotPlugin(...)`: `apps/desktop/.opencode/plugins/palot-bridge.js:153`
 
 Default export:
@@ -162,26 +164,26 @@ This is not a state sync transport by itself. It is only a lightweight refresh t
 
 The plugin currently exposes these tools:
 
-### MCP compact runtime tools <!-- oc:id=sec_al -->
-- `mcp_search`: `apps/desktop/.opencode/plugins/palot-bridge.js:170`
-- `mcp_describe`: `apps/desktop/.opencode/plugins/palot-bridge.js:182`
-- `mcp_call`: `apps/desktop/.opencode/plugins/palot-bridge.js:200`
-- `mcp_status`: `apps/desktop/.opencode/plugins/palot-bridge.js:235`
+### Connected app discovery tools <!-- oc:id=sec_al -->
+- `search_tools`: `apps/desktop/.opencode/plugins/palot-bridge.js:299`
+- `describe_tool`: `apps/desktop/.opencode/plugins/palot-bridge.js:311`
+- `call_tool`: `apps/desktop/.opencode/plugins/palot-bridge.js:329`
+- `tools_status`: `apps/desktop/.opencode/plugins/palot-bridge.js:371`
 
-These are related but separate from Palot browser control.
+These discovery tools stay separate from browser and UI control, but the injected system context now surfaces connected app names and tells the model to use them by product/capability rather than low-level transport terms.
 
 ### Browser tools <!-- oc:id=sec_am -->
-- `palot_browser_status`: `apps/desktop/.opencode/plugins/palot-bridge.js:244`
-- `palot_browser_open`: `apps/desktop/.opencode/plugins/palot-bridge.js:249`
-- `palot_browser_navigate`: `apps/desktop/.opencode/plugins/palot-bridge.js:254`
-- `palot_browser_tabs`: `apps/desktop/.opencode/plugins/palot-bridge.js:259`
-- `palot_browser_click`: `apps/desktop/.opencode/plugins/palot-bridge.js:264`
-- `palot_browser_type`: `apps/desktop/.opencode/plugins/palot-bridge.js:269`
-- `palot_browser_scroll`: `apps/desktop/.opencode/plugins/palot-bridge.js:274`
+- `browser_status`: `apps/desktop/.opencode/plugins/palot-bridge.js:380`
+- `browser_open`: `apps/desktop/.opencode/plugins/palot-bridge.js:391`
+- `browser_navigate`: `apps/desktop/.opencode/plugins/palot-bridge.js:402`
+- `browser_tabs`: `apps/desktop/.opencode/plugins/palot-bridge.js:413`
+- `browser_click`: `apps/desktop/.opencode/plugins/palot-bridge.js:424`
+- `browser_type`: `apps/desktop/.opencode/plugins/palot-bridge.js:435`
+- `browser_scroll`: `apps/desktop/.opencode/plugins/palot-bridge.js:446`
 
 ### UI tools <!-- oc:id=sec_an -->
-- `palot_open_side_panel`: `apps/desktop/.opencode/plugins/palot-bridge.js:279`
-- `palot_ui_state`: `apps/desktop/.opencode/plugins/palot-bridge.js:284`
+- `open_side_panel`: `apps/desktop/.opencode/plugins/palot-bridge.js:457`
+- `ui_state`: `apps/desktop/.opencode/plugins/palot-bridge.js:462`
 
 ## Callback injection seam <!-- oc:id=sec_ao -->
 
@@ -189,6 +191,7 @@ The plugin is written to accept injected callbacks:
 - `resolve`
 - `dispatch`
 - `getUiState`
+- `listConnections`
 - `openSidePanel`
 
 Factory signature:
@@ -201,12 +204,13 @@ Inside the plugin:
 - `openSidePanel` -> UI command tool: `apps/desktop/.opencode/plugins/palot-bridge.js:119`
 
 Important truth:
-- this repo documents the callback seam clearly
-- managed spawn injects the plugin file through `OPENCODE_PLUGIN`, but the exported module still instantiates `server` as `createPalotPlugin()` with no injected callbacks
-- `apps/desktop/src/main/palot-opencode-plugin-shim.ts` validates only `{ id, server }` and does not hydrate callback functions
-- official OpenCode plugin docs describe plugin context, hooks, and tool execution APIs, but no host-side API in this repo currently passes Palot-owned callbacks into `createPalotPlugin(...)`
+- managed spawn still injects plugin file through `OPENCODE_PLUGIN`
+- standalone OpenCode plugin runtime still cannot import live Electron main callbacks directly
+- Palot now solves this with a localhost bridge started in Electron main and passed into spawned OpenCode env as `PALOT_BRIDGE_URL` + `PALOT_BRIDGE_TOKEN`
+- plugin first uses direct injected callbacks when present, else falls back to HTTP bridge transport
+- `apps/desktop/src/main/palot-opencode-plugin-shim.ts` still hydrates local test/runtime callbacks when factory seam is available, but live standalone authority now comes from bridge transport
 
-This means callback hydration is not implemented today. The callback-friendly factory remains a local scaffold/test seam unless a future explicit transport or documented host integration path is added.
+This means `ui_state`, `open_side_panel`, and `browser_*` no longer depend on undocumented host callback hydration inside OpenCode runtime.
 
 ## Resolver contract <!-- oc:id=sec_ap -->
 
@@ -217,7 +221,8 @@ resolve(opencodeSessionId) -> {
   binding,
   nonSecretSnapshot,
   opaqueActionTarget,
-  uiState?
+  uiState?,
+  connections[]
 }
 ```
 
@@ -266,17 +271,32 @@ Main-owned action bus and snapshot mirror:
 - `apps/desktop/src/main/palot-browser-ipc.ts`
 
 Responsibilities:
-- per-session sequence numbers: `apps/desktop/src/main/palot-browser-ipc.ts:19`
-- takeover rejection for tool requests: `apps/desktop/src/main/palot-browser-ipc.ts:25`
-- lane snapshot mirror: `apps/desktop/src/main/palot-browser-ipc.ts:98`
-- derived browser snapshot by OpenCode session: `apps/desktop/src/main/palot-browser-ipc.ts:116`
-- publish event and broadcast to renderer windows: `apps/desktop/src/main/palot-browser-ipc.ts:138`
-- mirrored UI snapshot: `apps/desktop/src/main/palot-browser-ipc.ts:158`
+- per-session sequence numbers: `apps/desktop/src/main/palot-browser-ipc.ts:41`
+- takeover rejection for tool requests: `apps/desktop/src/main/palot-browser-ipc.ts:47`
+- lane snapshot mirror: `apps/desktop/src/main/palot-browser-ipc.ts:114`
+- derived browser snapshot by OpenCode session: `apps/desktop/src/main/palot-browser-ipc.ts:132`
+- publish event and broadcast to renderer windows: `apps/desktop/src/main/palot-browser-ipc.ts:154`
+- mirrored UI snapshot: `apps/desktop/src/main/palot-browser-ipc.ts:176`
+- localhost bridge server for standalone plugin runtime authority: `apps/desktop/src/main/palot-browser-ipc.ts:271`
 
 Renderer receives only derived state:
 - not binding secrets
 - not SecretCache entries
 - not viewer auth tokens
+
+## Standalone bridge transport <!-- oc:id=sec_as0 -->
+
+Live standalone transport now works like this:
+1. Electron main starts localhost bridge server on `127.0.0.1` during app boot <!-- oc:id=item_an0 -->
+1. OpenCode managed spawn injects `PALOT_BRIDGE_URL` and `PALOT_BRIDGE_TOKEN` into child env <!-- oc:id=item_an1 -->
+1. plugin `createBridgeClient()` posts JSON requests back to main when direct callbacks are absent <!-- oc:id=item_an2 -->
+1. main bridge server routes `resolve-binding`, `dispatch-browser-tool`, `get-ui-state`, and `open-side-panel` to existing Palot authorities <!-- oc:id=item_an3 -->
+1. side-panel requests still fan back out to renderer windows over existing `palot:open-side-panel` event channel <!-- oc:id=item_an4 -->
+
+Primary files:
+- bridge server + route execution: `apps/desktop/src/main/palot-browser-ipc.ts`
+- spawn env injection: `apps/desktop/src/main/opencode-manager.ts`
+- plugin fallback client: `apps/desktop/.opencode/plugins/palot-bridge.js`
 
 ## Browser tool dispatch seam <!-- oc:id=sec_as -->
 
@@ -292,11 +312,11 @@ Dispatch algorithm:
 1. return `{ status, resultSummary }` <!-- oc:id=item_at -->
 
 Actual live operations today:
-- `palot_browser_open` / `palot_browser_navigate` -> `navigateBrowserLane(...)`: `apps/desktop/src/main/palot-browser-dispatcher.ts:91`
-- `palot_browser_tabs` -> tab create/activate/close/list shim: `apps/desktop/src/main/palot-browser-dispatcher.ts:61`
-- `palot_browser_click` -> `clickBrowserLane(...)`: `apps/desktop/src/main/palot-browser-dispatcher.ts:100`
-- `palot_browser_type` -> `typeBrowserLane(...)`: `apps/desktop/src/main/palot-browser-dispatcher.ts:108`
-- `palot_browser_scroll` -> `scrollBrowserLane(...)`: `apps/desktop/src/main/palot-browser-dispatcher.ts:114`
+- `browser_open` / `browser_navigate` -> `navigateBrowserLane(...)`: `apps/desktop/src/main/palot-browser-dispatcher.ts:91`
+- `browser_tabs` -> tab create/activate/close/list shim: `apps/desktop/src/main/palot-browser-dispatcher.ts:61`
+- `browser_click` -> `clickBrowserLane(...)`: `apps/desktop/src/main/palot-browser-dispatcher.ts:100`
+- `browser_type` -> `typeBrowserLane(...)`: `apps/desktop/src/main/palot-browser-dispatcher.ts:108`
+- `browser_scroll` -> `scrollBrowserLane(...)`: `apps/desktop/src/main/palot-browser-dispatcher.ts:114`
 
 Implementation note:
 - click/type/scroll now ride the existing browser lane CDP websocket path through `apps/desktop/src/main/browser-lane-cdp.ts`
@@ -499,11 +519,11 @@ If you are talking about "the Palot/OpenCode seam", use these questions:
 ## Next hardening steps <!-- oc:id=sec_bl -->
 
 1. Keep shared Zod schemas as the single bridge contract source of truth. <!-- oc:id=item_be -->
-1. If OpenCode later exposes a supported host injection seam, replace the current callback-proof-of-absence with a real runtime bridge. <!-- oc:id=item_bf -->
+1. If OpenCode later exposes a supported host injection seam, remove localhost bridge fallback and collapse back to direct callback hydration. <!-- oc:id=item_bf -->
 1. Keep attached-server behavior explicit unless a durable plugin install/config path exists. <!-- oc:id=item_bg -->
 1. Extend browser action verification from targeted tests to managed-path live proof. <!-- oc:id=item_bh -->
 1. Add one end-to-end verification path that proves: <!-- oc:id=item_bi -->
 - plugin loaded
 - `experimental.chat.system.transform` injected context
-- `palot_open_side_panel` visibly opened the tab
-- `palot_browser_navigate` emitted request/result events and navigated the lane
+- `open_side_panel` visibly opened the tab
+- `browser_navigate` emitted request/result events and navigated the lane

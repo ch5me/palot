@@ -6,6 +6,7 @@ import {
 	clickBrowserLane,
 	closeBrowserLaneTab,
 	createBrowserLaneTab,
+	listBrowserLaneTabs,
 	navigateBrowserLane,
 	scrollBrowserLane,
 	typeBrowserLane,
@@ -64,7 +65,7 @@ function buildToolResultEvent(input: DispatchBrowserToolInput, summary: string):
 async function dispatchTabsAction(
 	laneId: string,
 	args: Record<string, unknown>,
-): Promise<BrowserLaneTabActionResult | unknown> {
+): Promise<BrowserLaneTabActionResult | ReturnType<typeof listBrowserLaneTabs>> {
 	switch (args.action) {
 		case "open":
 			return await createBrowserLaneTab(laneId, { url: (args.url as string | undefined) ?? "about:blank" })
@@ -72,8 +73,11 @@ async function dispatchTabsAction(
 			return await closeBrowserLaneTab(laneId, String(args.tabId ?? ""))
 		case "activate":
 			return await activateBrowserLaneTab(laneId, String(args.tabId ?? ""))
+		case "list":
+		case undefined:
+			return await listBrowserLaneTabs(laneId)
 		default:
-			return { status: "queued", action: "list" }
+			return await listBrowserLaneTabs(laneId)
 	}
 }
 
@@ -88,16 +92,23 @@ export async function dispatchBrowserTool(input: DispatchBrowserToolInput): Prom
 	}
 	await publishBrowserAction({ event: buildToolRequestEvent(parsedInput) })
 	let resultSummary = "queued"
-	if (parsedInput.toolName === "palot_browser_navigate" || parsedInput.toolName === "palot_browser_open") {
+	if (parsedInput.toolName === "browser_status") {
+		const snapshot = resolvePalotSessionBinding(parsedInput.sessionId)
+		resultSummary = JSON.stringify({
+			status: snapshot.binding?.status ?? "unbound",
+			viewerUrl: snapshot.nonSecretSnapshot?.viewerUrl ?? null,
+			currentUrl: snapshot.nonSecretSnapshot?.viewport?.currentUrl ?? null,
+		})
+	} else if (parsedInput.toolName === "browser_navigate" || parsedInput.toolName === "browser_open") {
 		const result = await navigateBrowserLane(
 			resolved.binding.browserLaneId,
 			String(parsedInput.args.url ?? "about:blank"),
 		)
 		resultSummary = JSON.stringify(result)
-	} else if (parsedInput.toolName === "palot_browser_tabs") {
+	} else if (parsedInput.toolName === "browser_tabs") {
 		const result = await dispatchTabsAction(resolved.binding.browserLaneId, parsedInput.args)
 		resultSummary = JSON.stringify(result)
-	} else if (parsedInput.toolName === "palot_browser_click") {
+	} else if (parsedInput.toolName === "browser_click") {
 		await clickBrowserLane(resolved.binding.browserLaneId, {
 			x: Number(parsedInput.args.x ?? 0),
 			y: Number(parsedInput.args.y ?? 0),
@@ -105,13 +116,13 @@ export async function dispatchBrowserTool(input: DispatchBrowserToolInput): Prom
 			clickCount: parsedInput.args.clickCount as number | undefined,
 		})
 		resultSummary = JSON.stringify({ status: "completed", action: "click" })
-	} else if (parsedInput.toolName === "palot_browser_type") {
+	} else if (parsedInput.toolName === "browser_type") {
 		await typeBrowserLane(resolved.binding.browserLaneId, {
 			text: String(parsedInput.args.text ?? ""),
 			submit: parsedInput.args.submit as boolean | undefined,
 		})
 		resultSummary = JSON.stringify({ status: "completed", action: "type" })
-	} else if (parsedInput.toolName === "palot_browser_scroll") {
+	} else if (parsedInput.toolName === "browser_scroll") {
 		await scrollBrowserLane(resolved.binding.browserLaneId, {
 			deltaX: parsedInput.args.deltaX as number | undefined,
 			deltaY:

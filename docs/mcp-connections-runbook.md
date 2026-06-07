@@ -10,7 +10,8 @@ Connections is a first-class Settings surface for MCP servers.
 - renderer surface: `apps/desktop/src/renderer/components/settings/connections-settings.tsx`
 - main-process config mutation seam: `apps/desktop/src/main/mcp-connections-config.ts`
 - runtime posture panel: `apps/desktop/src/renderer/components/side-panel/plugins-panel.tsx`
-- compact runtime tools: `apps/desktop/.opencode/plugins/palot-bridge.js`
+- compact runtime entry: `apps/desktop/src/main/palot-plugin-entry.ts`
+- compact runtime implementation: `apps/desktop/.opencode/plugins/palot-bridge.js`
 
 ## Control plane <!-- oc:id=sec_ac -->
 

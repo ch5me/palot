@@ -18,11 +18,13 @@
 			"@ch5me/elf-ui/*": ["../../packages/ui/src/*"],
 			"@ch5me/elf-configconv": ["../../packages/configconv/src/index.ts"],
 			"@ch5me/elf-configconv/*": ["../../packages/configconv/src/*"],
-			"@ch5me/elf-server/client": ["../server/src/client.ts"]
+			"@ch5me/elf-server/client": ["../server/src/client.ts"],
+			"@ch5me/mcp-runtime-shared": ["../../packages/mcp-runtime-shared/src/index.ts"]
 		}
 	},
 	"include": [
 		"src/main/**/*.ts",
+		"src/main/**/*.d.ts",
 		"src/preload/**/*.ts",
 		"src/preload/**/*.d.ts",
 		"src/renderer/**/*.ts",

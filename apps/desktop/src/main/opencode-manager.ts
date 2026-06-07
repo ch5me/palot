@@ -1,9 +1,9 @@
-import { type ChildProcess, spawn } from "node:child_process"
+import { execFile, type ChildProcess, spawn } from "node:child_process"
 import fs from "node:fs"
 import { homedir } from "node:os"
 import path from "node:path"
 import { setTimeout as sleep } from "node:timers/promises"
-import { BrowserWindow, dialog } from "electron"
+import electron from "electron"
 import type {
 	ActiveOpenCodeSessionPresence,
 	ActiveOpenCodeSessionsSnapshot,
@@ -12,10 +12,13 @@ import type {
 import type { Session } from "@opencode-ai/sdk/v2/client"
 import { createOpencodeClient } from "@opencode-ai/sdk/v2/client"
 import { getCredential } from "./credential-store"
+import { ensurePalotBridgeServer } from "./palot-browser-ipc"
 import { loadPalotPluginModule } from "./palot-opencode-plugin-shim"
 import { findFreePort } from "./find-free-port"
 import { createLogger } from "./logger"
+import { ensurePalotPluginConfig } from "./mcp-connections-config"
 import { startNotificationWatcher, stopNotificationWatcher } from "./notification-watcher"
+import { PALOT_PLUGIN_ENTRY_RELATIVE_PATH } from "./palot-plugin-entry"
 import { getListeningProcessOwner, isCurrentUser, isProcessAlive } from "./process-owner"
 import { readLockfile, removeLockfile, writeLockfile } from "./server-lockfile"
 import { getSettings } from "./settings-store"
@@ -54,7 +57,10 @@ let lastActiveSessionSnapshotKey: string | null = null
 
 const DEFAULT_PORT = Number(process.env.OPENCODE_PORT) || 4096
 const DEFAULT_HOSTNAME = process.env.OPENCODE_HOSTNAME || "127.0.0.1"
-const PALOT_PLUGIN_PATH = path.join(homedir(), "src", "ch5", "palot", "apps", "desktop", ".opencode", "plugins", "palot-bridge.js")
+
+function resolvePalotPluginPath(): string {
+	return path.resolve(process.cwd(), PALOT_PLUGIN_ENTRY_RELATIVE_PATH)
+}
 
 interface ClientProcess {
 	pid: number
@@ -99,6 +105,7 @@ export async function ensureServer(): Promise<OpenCodeServer> {
 	// startEnvResolution() fires early in app startup; by the time the renderer
 	// triggers ensureServer() the promise is usually already resolved.
 	await waitForEnv()
+	ensurePalotPluginConfig()
 
 	const config = getLocalServerConfig()
 	const hostname = config.hostname || DEFAULT_HOSTNAME
@@ -287,7 +294,7 @@ async function handleConflict(
 			? `It appears to belong to a different user account (UID ${conflict.ownerUid}).`
 			: "Its owner could not be determined."
 
-	const { response } = await dialog.showMessageBox({
+	const { response } = await electron.dialog.showMessageBox({
 		type: "warning",
 		title: "Server Ownership Conflict",
 		message: "An OpenCode server is already running on the configured port.",
@@ -374,13 +381,17 @@ async function listClientProcesses(serverUrl: string): Promise<ClientProcess[]> 
 	}
 
 	const { stdout } = await new Promise<{ stdout: string }>((resolve, reject) => {
-		execFile("ps", ["-axo", "pid=,lstart=,command=", "-ww"], (err, stdout) => {
-			if (err) {
-				reject(err)
-				return
-			}
-			resolve({ stdout })
-		})
+		execFile(
+			"ps",
+			["-axo", "pid=,lstart=,command=", "-ww"],
+			(err: Error | null, stdout: string) => {
+				if (err) {
+					reject(err)
+					return
+				}
+				resolve({ stdout })
+			},
+		)
 	})
 	const processes: ClientProcess[] = []
 
@@ -565,7 +576,7 @@ async function broadcastActiveSessionSnapshot(serverUrl: string): Promise<void> 
 	const nextKey = buildActiveSessionSnapshotKey(snapshot)
 	if (nextKey === lastActiveSessionSnapshotKey) return
 	lastActiveSessionSnapshotKey = nextKey
-	for (const win of BrowserWindow.getAllWindows()) {
+	for (const win of electron.BrowserWindow.getAllWindows()) {
 		win.webContents.send("opencode:active-sessions", snapshot)
 	}
 }
@@ -590,15 +601,17 @@ function startActiveSessionBroadcast(serverUrl: string): void {
 	}, ACTIVE_SESSION_STREAM_POLL_MS)
 }
 
-function appendPalotPlugin(env: NodeJS.ProcessEnv & { OPENCODE_PLUGIN?: string }): void {
-	if (!fs.existsSync(PALOT_PLUGIN_PATH)) {
-		log.warn("Palot bridge plugin file missing", { pluginPath: PALOT_PLUGIN_PATH })
+async function appendPalotPlugin(env: NodeJS.ProcessEnv & { OPENCODE_PLUGIN?: string }): Promise<void> {
+	const pluginPath = resolvePalotPluginPath()
+	if (!fs.existsSync(pluginPath)) {
+		log.warn("Palot bridge plugin file missing", { pluginPath })
 		return
 	}
-	void loadPalotPluginModule(PALOT_PLUGIN_PATH).catch((err) => {
-		log.warn("Palot bridge plugin validation failed", err)
-	})
-	env.OPENCODE_PLUGIN = [env.OPENCODE_PLUGIN, PALOT_PLUGIN_PATH].filter(Boolean).join(",")
+	const bridgeServer = await ensurePalotBridgeServer()
+	await loadPalotPluginModule(pluginPath)
+	env.OPENCODE_PLUGIN = [env.OPENCODE_PLUGIN, pluginPath].filter(Boolean).join(",")
+	env.PALOT_BRIDGE_URL = `http://${bridgeServer.host}:${bridgeServer.port}${bridgeServer.path}`
+	env.PALOT_BRIDGE_TOKEN = bridgeServer.token
 }
 
 async function spawnServer(
@@ -634,7 +647,7 @@ async function spawnServer(
 		...process.env,
 		PATH: augmentedPath,
 	}
-	appendPalotPlugin(spawnEnv)
+	await appendPalotPlugin(spawnEnv)
 
 	log.info("Spawning opencode server", {
 		hostname,

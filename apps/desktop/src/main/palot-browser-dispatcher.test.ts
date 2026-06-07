@@ -19,7 +19,7 @@ test("dispatcher rejects unbound session", async () => {
 		const mod = await import("./palot-browser-dispatcher")
 		const result = await mod.dispatchBrowserTool({
 			sessionId: "ses_unbound",
-			toolName: "palot_browser_navigate",
+			toolName: "browser_navigate",
 			args: { url: "https://example.com" },
 		})
 		assert.equal(result.status, "failed")
@@ -32,6 +32,23 @@ test("dispatcher rejects unbound session", async () => {
 test("dispatcher publishes request and result for bound tabs list action", async () => {
 	const cleanup = setupTempXdg()
 	try {
+		listBrowserLaneTabs.mockReset()
+		listBrowserLaneTabs.mockImplementation(async () => ({
+			laneId: "lane_bound",
+			activeTabId: "tab_1",
+			tabs: [
+				{
+					id: "tab_1",
+					title: "Example",
+					url: "https://example.com",
+					type: "page",
+					active: true,
+					attached: false,
+					openerId: null,
+					faviconUrl: null,
+				},
+			],
+		}))
 		const bindingMod = await import("./palot-session-binding")
 		const busMod = await import("./palot-browser-ipc")
 		const dispatcher = await import("./palot-browser-dispatcher")
@@ -44,10 +61,14 @@ test("dispatcher publishes request and result for bound tabs list action", async
 		)
 		const result = await dispatcher.dispatchBrowserTool({
 			sessionId: "ses_bound",
-			toolName: "palot_browser_tabs",
+			toolName: "browser_tabs",
 			args: { action: "list" },
 		})
 		assert.equal(result.status, "queued")
+		const parsed = JSON.parse(result.resultSummary)
+		assert.equal(parsed.activeTabId, "tab_1")
+		assert.equal(parsed.tabs.length, 1)
+		assert.equal(listBrowserLaneTabs.mock.calls.length, 1)
 		const events = busMod.getBrowserActionEvents("ses_bound")
 		assert.ok(events.some((event) => event.kind === "toolRequest"))
 		assert.ok(events.some((event) => event.kind === "toolResult"))
@@ -62,7 +83,7 @@ test("dispatcher returns queued result for navigate payloads before per-tool arg
 		const dispatcher = await import("./palot-browser-dispatcher")
 		const result = await dispatcher.dispatchBrowserTool({
 			sessionId: "ses_bad",
-			toolName: "palot_browser_navigate",
+			toolName: "browser_navigate",
 			args: { url: "" },
 		})
 		assert.equal(result.status, "failed")
@@ -75,12 +96,18 @@ test("dispatcher returns queued result for navigate payloads before per-tool arg
 const clickBrowserLane = mock(async () => undefined)
 const typeBrowserLane = mock(async () => undefined)
 const scrollBrowserLane = mock(async () => undefined)
+const listBrowserLaneTabs = mock(async () => ({
+	laneId: "lane_bound",
+	activeTabId: "tab_1",
+	tabs: [{ id: "tab_1", title: "Example", url: "https://example.com", type: "page", active: true, attached: false, openerId: null, faviconUrl: null }],
+}))
 
 mock.module("./browser-lane-manager", () => ({
 	activateBrowserLaneTab: async () => ({ status: "queued" }),
 	clickBrowserLane,
 	closeBrowserLaneTab: async () => ({ status: "queued" }),
 	createBrowserLaneTab: async () => ({ status: "queued" }),
+	listBrowserLaneTabs,
 	navigateBrowserLane: async () => ({ status: "queued" }),
 	scrollBrowserLane,
 	typeBrowserLane,
@@ -92,6 +119,7 @@ test("dispatcher routes click type and scroll through lane helpers", async () =>
 		clickBrowserLane.mockReset()
 		typeBrowserLane.mockReset()
 		scrollBrowserLane.mockReset()
+		listBrowserLaneTabs.mockReset()
 		const bindingMod = await import("./palot-session-binding")
 		const busMod = await import("./palot-browser-ipc")
 		const dispatcher = await import("./palot-browser-dispatcher")
@@ -104,17 +132,17 @@ test("dispatcher routes click type and scroll through lane helpers", async () =>
 		)
 		await dispatcher.dispatchBrowserTool({
 			sessionId: "ses_lane_actions",
-			toolName: "palot_browser_click",
+			toolName: "browser_click",
 			args: { x: 10, y: 20 },
 		})
 		await dispatcher.dispatchBrowserTool({
 			sessionId: "ses_lane_actions",
-			toolName: "palot_browser_type",
+			toolName: "browser_type",
 			args: { text: "hello" },
 		})
 		await dispatcher.dispatchBrowserTool({
 			sessionId: "ses_lane_actions",
-			toolName: "palot_browser_scroll",
+			toolName: "browser_scroll",
 			args: { deltaY: 300 },
 		})
 		assert.equal(clickBrowserLane.mock.calls.length, 1)
