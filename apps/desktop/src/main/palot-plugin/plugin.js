@@ -470,7 +470,14 @@ export const createPalotPlugin = (
 
 const server = createPalotPlugin()
 
-export { createPalotPlugin, server }
+export {
+	buildConnectedAppsBlock,
+	createQueuedResponse,
+	createResolver,
+	createTypedError,
+	formatConnectionSummary,
+	server,
+}
 export default {
 	id: "palot-bridge",
 	server,
