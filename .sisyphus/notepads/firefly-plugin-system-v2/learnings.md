@@ -80,3 +80,13 @@ Key learnings:
 - Renderer projection needs a host-owned capability state snapshot baked into every availability reason so later UI migration can render gating without recomputing broker semantics.
 - Collision reporting belongs at catalog scope, not single-descriptor scope: per-plugin manifests already reject local duplicates, so cross-plugin collisions are the real renderer risk surface for panels/widgets/commands/themes.
 - Theme projection should stay a strict data envelope clone; no renderer registry types or host apply logic should leak into the shared contract layer.
+
+
+## 2026-06-08T03:15:00Z Task: bridge-projection
+Added `apps/desktop/src/shared/firefly-plugin/bridge-projection.ts` (+ test) and exported from `index.ts`.
+
+Key learnings:
+- OpenCode bridge projection should stay descriptor-pure: tool defs, system-context aggregation, hook subscription list, dispatch-path decision, and server-mode matrix all derive from `PluginDescriptor` without touching runtime modules.
+- V2 bridge tool args must preserve raw `ZodRawShape` and separately expose `z.object(args).passthrough()` wrapper. Shared contract needs both surfaces because OpenCode registration wants raw shape semantics while tests need deterministic parse behavior.
+- Initial rollout stance is source-level policy, not runtime folklore: managed server works; attached-no-install and attached-with-install both stay explicit `bridge_unsupported_server` rows until attached install path exists; offline/reconnect each map to their own canonical tool error codes.
+- Bridge dispatch projection should expose both coarse plugin-level binding flags and per-tool binding summaries. Downstream host code needs quick yes/no answers for session binding plus stable per-tool rows for inspection/UI without re-deriving policy.

@@ -1072,7 +1072,7 @@ Wave FINAL
 
   **Commit**: NO
 
-- [ ] 14. Define OpenCode bridge projection architecture
+- [x] 14. Define OpenCode bridge projection architecture
 
   **What to do**:
   - Design how the canonical plugin descriptor projects into OpenCode-visible hooks, tool definitions, system-context blocks, and dispatch pathways.
