@@ -1,27 +1,6 @@
-/**
- * Firefly Plugin System V2 — IPC surface
- *
- * Hosts the new `elf.plugins.*` IPC channels that the preload
- * script and renderer hook consume. The catalog authority itself
- * lives in `./authority.ts`; this file wires it to the existing
- * `ipcMain.handle` convention used throughout `apps/desktop/src/main`.
- *
- * The surface is intentionally narrow in slice 1: introspection only
- * (list/describe/state) plus a typed `plugins.tools` projection for
- * the OpenCode bridge. Tool execution and per-session bind/eval
- * land in slice 2 — they require the bridge transport to be
- * migrated to the V2 host, which is bigger than this commit.
- */
-
 import { BrowserWindow, ipcMain } from "electron"
 
-import {
-	pluginListArgsShape,
-	pluginDescribeArgsShape,
-	pluginStateArgsShape,
-	pluginToolsArgsShape,
-} from "../../shared/firefly-plugin/index"
-import { projectBridgeToolDefinitions } from "../../shared/firefly-plugin/bridge-projection"
+import { pluginListArgsShape } from "../../shared/firefly-plugin/index"
 
 import { createLogger } from "../logger"
 import {
@@ -36,6 +15,11 @@ import {
 	listPluginWidgets,
 	refreshPluginCatalog,
 } from "./authority"
+import {
+	invokePluginCommand,
+	listKnownCommands,
+} from "./dispatch"
+import { projectBridgeToolDefinitions } from "../../shared/firefly-plugin/bridge-projection"
 
 const log = createLogger("firefly-plugin-ipc")
 
@@ -49,12 +33,14 @@ export const FIREFLY_PLUGIN_IPC_CHANNELS = {
 	commands: "firefly-plugin:commands",
 	themes: "firefly-plugin:themes",
 	refresh: "firefly-plugin:refresh",
+	invoke: "firefly-plugin:invoke",
 } as const
 
 interface FireflyPluginListResult {
 	appVersion: string
 	plugins: ReturnType<typeof listPluginEntries>
 	summaries: ReturnType<typeof listPluginProjectionSummaries>
+	knownCommands: string[]
 }
 
 interface FireflyPluginToolsResult {
@@ -83,17 +69,18 @@ export function registerFireflyPluginIpc(): void {
 			appVersion: catalog.appVersion,
 			plugins: listPluginEntries(),
 			summaries: listPluginProjectionSummaries(),
+			knownCommands: listKnownCommands(),
 		}
 		return result
 	})
 
 	ipcMain.handle(FIREFLY_PLUGIN_IPC_CHANNELS.describe, (_event, rawArgs: unknown) => {
-		const args = pluginDescribeArgsShape.parse(coerceArgs(rawArgs))
+		const args = pluginListArgsShape.parse(coerceArgs(rawArgs))
 		return describePlugin(args.pluginId)
 	})
 
 	ipcMain.handle(FIREFLY_PLUGIN_IPC_CHANNELS.state, (_event, rawArgs: unknown) => {
-		const args = pluginStateArgsShape.parse(coerceArgs(rawArgs))
+		const args = pluginListArgsShape.parse(coerceArgs(rawArgs))
 		const caps = getPluginCapabilities(args.pluginId)
 		return {
 			found: caps.state.trust !== "built-in" || args.pluginId.length > 0,
@@ -103,12 +90,10 @@ export function registerFireflyPluginIpc(): void {
 		}
 	})
 
-	ipcMain.handle(FIREFLY_PLUGIN_IPC_CHANNELS.tools, (_event, rawArgs: unknown) => {
-		const args = pluginToolsArgsShape.parse(coerceArgs(rawArgs))
+	ipcMain.handle(FIREFLY_PLUGIN_IPC_CHANNELS.tools, () => {
 		const catalog = getPluginCatalog()
 		const tools: FireflyPluginToolsResult["tools"] = []
 		for (const descriptor of catalog.descriptors) {
-			if (args.pluginId && descriptor.normalizedId !== args.pluginId) continue
 			for (const projected of projectBridgeToolDefinitions(descriptor)) {
 				tools.push({
 					pluginId: projected.pluginId,
@@ -170,6 +155,23 @@ export function registerFireflyPluginIpc(): void {
 			pluginCount: catalog.descriptors.length,
 		}
 	})
+
+	ipcMain.handle(
+		FIREFLY_PLUGIN_IPC_CHANNELS.invoke,
+		async (
+			_event,
+			rawArgs: unknown,
+		) => {
+			const obj = (rawArgs ?? {}) as Record<string, unknown>
+			const pluginId = typeof obj.pluginId === "string" ? obj.pluginId : ""
+			const commandId = typeof obj.commandId === "string" ? obj.commandId : ""
+			const args = (obj.args && typeof obj.args === "object" ? obj.args : {}) as Record<
+				string,
+				unknown
+			>
+			return invokePluginCommand({ pluginId, commandId, args })
+		},
+	)
 
 	log.info("Registered V2 plugin IPC channels", {
 		channels: Object.values(FIREFLY_PLUGIN_IPC_CHANNELS),

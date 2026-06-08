@@ -7,31 +7,22 @@
  * the host never has a split view of the V2 plugin universe.
  */
 
-import { app } from "electron"
-
-import { createLogger } from "../logger"
-import {
-	buildPluginCatalog,
-	findDescriptor,
-	getCapabilityState,
-	summarizeProjection,
-	type PluginCatalog,
-	type PluginCatalogEntry,
-	type PluginProjectionSummary,
-} from "./catalog"
+import type { PluginCatalog, PluginCatalogEntry, PluginProjectionSummary } from "./catalog"
+import { buildPluginCatalog, findDescriptor, getCapabilityState, summarizeProjection } from "./catalog"
 import { decideCapability, type CapabilityDecision } from "./capability-broker"
-
-const log = createLogger("firefly-plugin-authority")
 
 let cached: PluginCatalog | null = null
 
 function resolveAppVersion(): string {
 	try {
-		return app.getVersion()
+		const electron = globalThis as { electron?: { app?: { getVersion?: () => string } } }
+		return electron.electron?.app?.getVersion?.() ?? "0.11.0"
 	} catch {
 		return "0.11.0"
 	}
 }
+
+export { decideCapability, type CapabilityDecision }
 
 export function getPluginCatalog(): PluginCatalog {
 	if (cached) return cached

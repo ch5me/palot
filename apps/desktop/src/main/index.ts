@@ -23,6 +23,7 @@ import { initSettingsStore } from "./settings-store"
 import { startEnvResolution } from "./shell-env"
 import { createTray, destroyTray } from "./tray"
 import { initAutoUpdater, stopAutoUpdater } from "./updater"
+import { registerBuiltInHostCommands } from "./firefly-plugin/dispatch"
 
 
 const log = createLogger("app")
@@ -312,6 +313,7 @@ if (!gotLock) {
 		initSettingsStore()
 		initCredentialStore()
 		registerIpcHandlers()
+		registerBuiltInHostCommands()
 		registerFireflyPluginIpc()
 		initBrowserLaneManager().catch(console.error)
 		initAutomations().catch(console.error)
