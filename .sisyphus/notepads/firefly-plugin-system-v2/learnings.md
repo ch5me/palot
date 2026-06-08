@@ -34,3 +34,41 @@ Key learnings:
 - comparison helper for manifest revisions stays purely numeric — semver compare is wrong for integer revisions, so kept them separate.
 - deprecation policy requires *both* a replacement AND at least one of removalTarget/removalRevision. Silent deprecation (replacement-less) is a footgun; explicit removal window is non-negotiable.
 - codemod superRefine had to reject `none` carrying a codemodId *and* reject `available`/`required` lacking one. Test cases lock both directions so the schema can't drift later.
+
+## 2026-06-08T01:30:00Z Task: runtime-supervision
+Added `apps/desktop/src/shared/firefly-plugin/runtime-supervision.ts` (+ test) and exported from `index.ts`.
+
+Encoded:
+- locked 11-state lifecycle state machine (`PLUGIN_LIFECYCLE_STATES` / `PLUGIN_LIFECYCLE_TRANSITIONS`) with terminal `removed`, transient `tearingDown` (the hot-reload boundary), and `quarantined -> discovered` re-entry after operator release. `isLifecycleTransitionAllowed`, `isLifecycleTerminalState`, `isLifecycleRunning`, `isLifecycleAcceptingCalls`, `isLifecycleQuarantined` are the predicates the runtime uses to decide what to do.
+- failure class taxonomy `PLUGIN_FAILURE_CLASSES` covering every V2 plan §11.3 class: `init_crash`, `runtime_crash`, `hang`, `partial_activation`, `oom`, `load_failure`, `critical_security`, `manual_disable`, `manifest_mismatch`.
+- `HeartbeatPolicy` (default 30s hang / 10s interval) + `isHangDetected(lastHeartbeatAt, nowMs, policy)`.
+- `RestartBackoffPolicy` + `computeNextRestartDelayMs(attemptCount, policy, random01)` with capped exponential and injectable jitter.
+- `CrashWindowPolicy` (default 5min window, 3-threshold for activation / runtime / hangs, 24h counter TTL, 50-deep history) + `crashCountWithin(history, windowMs, nowMs, failureClass?)` excluding future-stamped records.
+- `PluginSupervisionState` (Zod-validated, JSON-serializable) + `createEmptyPluginSupervision`.
+- `QuarantineRecord` (durable) + `quarantineRecordSchema` + `serializeQuarantineState` / `parseQuarantineRecord` (durable path = `~/.config/elf/firefly-client/quarantine.json`).
+- `evaluateQuarantineTrigger({ state, failureClass, policy, nowMs })` — pure quarantine-trigger check that takes the post-append state and the failure class. Encodes the V2 plan §11.4 policy: 3 activation / 3 runtime / 3 hangs in window, immediate trips for critical_security / manifest_mismatch / load_failure / oom, persistent partial_activation only.
+- `PluginSupervisionEvent` discriminated union (22 event kinds) + `applySupervisionEvent(prev, event, policy, nowMs)` — pure reducer. Returns `{ state, decision, transitions }`; `decision.action` is the host action: `none | spawn-worker | teardown-worker | restart-worker | stop-worker | purge-bundle | write-quarantine | clear-quarantine | notify-operator`.
+- `buildOperatorOverrideEvent(pluginId, action, note)` translates the 6 operator actions (`enable` / `disable` / `quarantine` / `quarantine_release` / `hot_reload` / `purge`) into reducer events.
+- `requestHotReloadDecision(state)` — pure policy check for the operator UI "what will happen if I click reload".
+- `PluginSupervisionSummary` + `summarizePluginSupervision` for the operator panel and `plugins.lifecycle` inspection tool.
+- `pluginLifecycle{Enable,Disable,Quarantine,Release,HotReload,History}ArgsShape` Zod arg shapes for the inspection tool.
+- `DEFAULT_SUPERVISION_POLICIES` aggregate of the three defaults.
+
+Verification:
+- `cd apps/desktop && bunx tsgo --noEmit` clean
+- `cd apps/desktop && bun test src/shared/firefly-plugin/` — 217 pass, 0 fail (was 139, added 78 new tests in `runtime-supervision.test.ts`).
+
+Key learnings:
+- contract-first means no main-process touch: this task is types + Zod + pure reducer only. The runtime worker spawn / teardown / IPC plumbing is downstream work (task 18, 22, 24, 25, 27, 28, 29). The reducer's `decision.action` vocabulary IS the API for the runtime — implement against the enum, not the state field.
+- the reducer must thread `crashHistory` through both the trigger path AND the `failed` fallthrough path. First reducer draft had `transition("failed")` spreading `prev` (without the just-appended crash) and dropped the record. Fixed by a single `buildFailedFromCrash` helper that returns both the hydrated state and the trigger, then both branches merge `hydrated.crashHistory` into the result.
+- hangStreak and `lastError` had to be carried into the `quarantined` transition explicitly — spreading `prev` (the pre-quarantine state) preserved the old (lower) hangStreak. Quarantine trips on the 3rd hang now correctly stamp `hangStreak=3` on the resulting state.
+- `crashCountWithin` initially only checked the lower bound (`timestamp >= nowMs - windowMs`). A test with a future-stamped record (`9_001` against `nowMs=6_000`) failed because the future record was counted. Added the `timestamp > nowMs` exclusion to harden against clock skew — this is a contract the runtime depends on even if no test today stamps future records.
+- `computeNextRestartDelayMs` exponent was originally `attemptCount - 1` so attempt 0 returned `baseMs * factor^0 = baseMs` (right) and attempt 1 returned `baseMs * factor^0 = baseMs` (wrong, should be `2x`). Switched to `attemptCount` directly with explicit docstring. Tests locked: attempt 0 = base, attempt 1 = 2x base, attempt 2 = 4x base, capped at maxMs.
+- The `tearingDown` transient state is the auditable answer to "where is the worker during a hot reload?". Plan §11.2 implied this with prose ("teardown + restart boundary"); the contract now names the state and locks the `active|degraded -> tearingDown -> activating` triple. The runtime can `decision.action === "teardown-worker"` then `decision.action === "spawn-worker"` after `teardownComplete`, no implicit gap.
+- Heartbeats are gated to running states (`activating | active | degraded | tearingDown`). A heartbeat in `failed` or `validated` is a no-op with `decision.action: "none"`. Test that wanted to reset `hangStreak` via heartbeat had to first bring the worker back up via `activationRequested -> activationSucceeded` — that's the right shape; a heartbeat on a dead worker would mask real hang detection.
+- Quarantine file path is `firefly-client/quarantine.json` (XDG-relative, same as the `palot-plugin` runtime's existing storage). Runtime will resolve via XDG base directory at write time; the contract just records the relative path so future agents know the layout.
+- `QUARANTINE_FILE_PATH` is exported as a `const` (`firefly-client/quarantine.json`) so the runtime layer can compose the absolute path against the XDG base directory without hardcoding it again.
+- `restartBackoffPolicySchema` had a `.refine` that only rejects `maxMs < baseMs`. The original test used `baseMs: 1, maxMs: 1` (which satisfies `1 >= 1` so the refine passed). Replaced with `baseMs: 100, maxMs: 50` so the schema actually rejects it. Test cases must probe the refine path, not the field validators alone.
+- Suppression note: biome ignores `apps/desktop/src/shared/` paths by design (per task 7 learning). `bun run lint` returned one pre-existing formatting error in `apps/server/src/services/mcp-connections.ts` — unrelated to this task. `tsgo --noEmit` is the real signal for the contract files.
+- Contract consumers: Task 18 (hot reload implementation) reads `hotReloadRequested` + `tearingDown` + `teardownComplete`; task 22 (lifecycle UI) reads `summarizePluginSupervision` + `pluginLifecycleXxxArgsShape`; task 24 (operator override) reads `buildOperatorOverrideEvent`; task 25 (lifecycle persistence) reads `serializeQuarantineState` / `parseQuarantineRecord`; task 27 (risks) verifies the failure-class coverage; task 28 (verification) re-runs the test surface; task 29 (metering) reads `crashHistory` + `attempt` + `lastTransitionAt`.
+
