@@ -1,0 +1,3 @@
+# firefly-plugin-system-v2 — decisions <!-- oc:id=sec_aa -->
+
+- **2026-06-08 — Plan CLOSED.** 33/33 V2 tasks committed; 498/498 firefly-plugin tests pass; `tsgo --noEmit` clean; F1-F4 audits APPROVE in `.sisyphus/evidence/`. Deferred runtime wiring (catalog loader in `main`, projection in `renderer`, preload bridge) is intentionally out-of-scope per plan guardrails — tracked as the next feature, NOT a closure blocker.
