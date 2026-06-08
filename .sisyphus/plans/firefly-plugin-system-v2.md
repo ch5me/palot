@@ -921,7 +921,7 @@ Wave FINAL
 
   **Commit**: NO
 
-- [ ] 11. Define plugin host isolation, crash supervision, and quarantine
+- [x] 11. Define plugin host isolation, crash supervision, and quarantine
 
   **What to do**:
   - Specify utility-process runtime, per-plugin worker model, heartbeat, crash counters, backoff, quarantine, cleanup, and manual recovery.
