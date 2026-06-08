@@ -814,6 +814,7 @@ export interface NotificationSettings {
 export interface ConnectionsSettings {
 	catalogCachePath?: string
 	managedConfigPath?: string
+	managedConfigPaths?: string[]
 	connectionRecordsPath?: string
 }
 
@@ -822,35 +823,11 @@ export interface McpConnectionConfigMutationInput {
 	config: Record<string, unknown>
 }
 
-export interface McpCatalogBrowseInput {
-	cursor?: { value: string; source: "registry" | "cache" } | null
-	limit: number
-}
-
-export interface McpCatalogSearchInput {
-	query: string
-	limit: number
-}
-
-export interface McpConnectionRecordSnapshot {
-	name: string
-	transport: string
-	target: string
-	scope: string
-	ownershipMode?: string
-	authState?: string
-	canonicalStore?: string
-	restorePolicy?: string
-	testState?: string
-	status?: string
-	runtimeState?: string
-	credentialMode?: string
-	projectedOpenCode?: Record<string, unknown> | null
-	metadata?: Record<string, unknown>
-	lastTestAt?: string | null
-	lastHealthyAt?: string | null
-	lastError?: string | null
-}
+export type {
+	McpCatalogBrowseInput,
+	McpCatalogSearchInput,
+	McpConnectionRecordSnapshot,
+} from "../shared/mcp-connections-shared"
 
 export interface AppSettings {
 	notifications: NotificationSettings
@@ -1271,6 +1248,102 @@ export interface ElfAPI {
 	getSettings: () => Promise<AppSettings>
 	/** Update settings with a partial object (deep-merged). Returns the updated settings. */
 	updateSettings: (partial: Record<string, unknown>) => Promise<AppSettings>
+	/** V2 plugin authority — list/describe/state per V2 manifest. */
+	plugins: {
+		list: () => Promise<{
+			appVersion: string
+			plugins: Array<{
+				pluginId: string
+				displayName: string
+				version: string
+				trust: "built-in" | "local-dev" | "signed-third-party" | "unsigned-third-party"
+				status: "validated" | "installed" | "disabled" | "active" | "degraded" | "quarantined"
+				manifestRevision: number
+				appVersion: string
+				requiredCapabilities: string[]
+				defaultGrantedCapabilities: string[]
+			}>
+			summaries: Array<{
+				pluginId: string
+				panelCount: number
+				widgetCount: number
+				commandCount: number
+				themeCount: number
+				toolCount: number
+			}>
+		}>
+		describe: (pluginId: string) => Promise<{
+			entry: {
+				pluginId: string
+				displayName: string
+				version: string
+				trust: "built-in" | "local-dev" | "signed-third-party" | "unsigned-third-party"
+				status: "validated" | "installed" | "disabled" | "active" | "degraded" | "quarantined"
+				manifestRevision: number
+				appVersion: string
+				requiredCapabilities: string[]
+				defaultGrantedCapabilities: string[]
+			} | null
+			projection: {
+				pluginId: string
+				panelCount: number
+				widgetCount: number
+				commandCount: number
+				themeCount: number
+				toolCount: number
+			} | null
+			decision: {
+				pluginId: string
+				token: string
+				granted: boolean
+				reason: string
+				reasonCode: string
+				risk: "low" | "medium" | "high" | "critical"
+				knownToHost: boolean
+				grantedTokens: string[]
+			}
+		}>
+		capabilities: (pluginId: string) => Promise<{
+			state: {
+				trust: "built-in" | "local-dev" | "signed-third-party" | "unsigned-third-party"
+				sessionScope: "session" | "project" | "app"
+				grantedTokens: string[]
+				loading?: boolean
+				pluginDisabled?: boolean
+				pluginQuarantined?: boolean
+				pluginError?: { code: string; message: string } | null
+			}
+			decision: {
+				pluginId: string
+				token: string
+				granted: boolean
+				reason: string
+				reasonCode: string
+				risk: "low" | "medium" | "high" | "critical"
+				knownToHost: boolean
+				grantedTokens: string[]
+			}
+		}>
+		panels: () => Promise<{ appVersion: string; items: unknown[] }>
+		widgets: () => Promise<{ appVersion: string; items: unknown[] }>
+		commands: () => Promise<{ appVersion: string; items: unknown[] }>
+		themes: () => Promise<{ appVersion: string; items: unknown[] }>
+		tools: (pluginId?: string) => Promise<{
+			appVersion: string
+			tools: Array<{
+				pluginId: string
+				id: string
+				title: string
+				description: string
+				scope: "session" | "project" | "app"
+				requires: string[]
+				timeoutMs: number
+				preview: boolean
+			}>
+		}>
+		refresh: () => Promise<{ appVersion: string; pluginCount: number }>
+		onChanged: (callback: (payload: { appVersion: string; pluginCount: number }) => void) => () => void
+	}
 	mcpConnections: {
 		upsertConfig: (input: McpConnectionConfigMutationInput) => Promise<AppSettings>
 		removeConfig: (name: string) => Promise<AppSettings>

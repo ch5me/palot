@@ -1,0 +1,310 @@
+/**
+ * Firefly Plugin System V2 — catalog authority
+ *
+ * The host-side runtime layer that turns V2 manifests into the
+ * canonical objects the rest of the app reads. The V2 plan (see
+ * `.sisyphus/plans/firefly-plugin-system-v2.md`) names four runtime
+ * objects: `PluginManifest` (on disk), `PluginDescriptor` (validated
+ * + normalized), `PluginInstance` (host-owned live worker), and
+ * `PluginSessionHandle` (session view). This file owns the first two
+ * and is the entry point every IPC channel calls into.
+ *
+ * The catalog deliberately starts narrow: built-in manifests are
+ * read from the existing shared V2 scaffold, validated through the
+ * same Zod schema the tests exercise, and turned into descriptors
+ * the host can trust as a single source of truth. Third-party /
+ * AI-authored manifests load the same way — every plugin goes
+ * through the same code path. That is the V2 acceptance criterion
+ * "first-party and third-party plugins use the SAME runtime path".
+ *
+ * No worker spawning, no tool dispatch, no renderer DOM in this
+ * module. Those are layered on top by the IPC handlers and the
+ * renderer projection consumer.
+ */
+
+import { z } from "zod"
+
+import {
+	acmeNotebookManifest,
+	ACME_NOTEBOOK_PLUGIN_ID,
+} from "../../shared/firefly-plugin/acme-notebook-exemplar"
+import { BUILT_IN_DEFAULT_CAPABILITIES } from "../../shared/firefly-plugin/capabilities"
+import { type PluginDescriptor } from "../../shared/firefly-plugin/descriptor"
+import {
+	defaultCapabilityState,
+	projectCommandsFromCatalog,
+	projectSidePanelsFromCatalog,
+	projectSessionWidgetsFromCatalog,
+	projectThemesFromCatalog,
+	type CapabilityStateShape,
+	type ProjectedCommand,
+	type ProjectedSessionWidget,
+	type ProjectedSidePanel,
+	type ProjectedTheme,
+} from "../../shared/firefly-plugin/index"
+import { type PluginManifest } from "../../shared/firefly-plugin/manifest"
+import { palotBridgeManifest, PALOT_BRIDGE_PLUGIN_ID } from "../../shared/firefly-plugin/palot-bridge-manifest"
+
+import { derivePluginDescriptor, parsePluginManifest } from "../../shared/firefly-plugin/index"
+
+import { createLogger } from "../logger"
+
+const log = createLogger("firefly-plugin-catalog")
+
+/**
+ * The deterministic, in-source list of V2 manifests the desktop
+ * app currently ships with. New exemplars land here in the same
+ * shape: a `PluginManifest` constant imported from `shared/firefly-plugin`.
+ *
+ * Treat this list as the boot order: first entry is the primary
+ * first-party exemplar, second is the third-party / AI-authored
+ * exemplar. The catalog is the only place that knows about either.
+ */
+const BUILT_IN_MANIFESTS: readonly PluginManifest[] = [
+	palotBridgeManifest,
+	acmeNotebookManifest,
+]
+
+/**
+ * Lifecycle status for a plugin the catalog knows about. The V2
+ * lifecycle state machine in `runtime-supervision.ts` defines the
+ * full set; for the catalog authority we expose a projection that
+ * only carries the states the operator surface cares about.
+ */
+export const PLUGIN_CATALOG_STATUSES = [
+	"validated",
+	"installed",
+	"disabled",
+	"active",
+	"degraded",
+	"quarantined",
+] as const
+export type PluginCatalogStatus = (typeof PLUGIN_CATALOG_STATUSES)[number]
+
+/**
+ * The minimal, safe-to-serialize plugin row. The full
+ * `PluginDescriptor` lives in main only; the renderer gets this
+ * slimmed view plus the projection outputs.
+ */
+export interface PluginCatalogEntry {
+	readonly pluginId: string
+	readonly displayName: string
+	readonly version: string
+	readonly trust: PluginDescriptor["trust"]
+	readonly status: PluginCatalogStatus
+	readonly manifestRevision: number
+	readonly appVersion: string
+	readonly requiredCapabilities: readonly string[]
+	readonly defaultGrantedCapabilities: readonly string[]
+}
+
+const appVersionSchema = z
+	.string()
+	.min(1)
+	.max(40)
+	.regex(/^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?(?:\+[0-9A-Za-z.-]+)?$/u, "appVersion must be semver")
+
+/**
+ * The single in-process catalog. Hosts:
+ *   - the parsed `PluginDescriptor[]` (one per built-in manifest)
+ *   - the per-plugin capability state the renderer reads
+ *   - the latest projections (panels/widgets/commands/themes)
+ *
+ * Pure functions, no fs. Persistence is handled by the runtime
+ * supervisor and the storage scopes layer (see
+ * `shared/firefly-plugin/storage-scopes.ts`).
+ */
+export interface PluginCatalog {
+	readonly appVersion: string
+	readonly descriptors: readonly PluginDescriptor[]
+	readonly entries: readonly PluginCatalogEntry[]
+	readonly capabilityStates: Readonly<Record<string, CapabilityStateShape>>
+	readonly projections: {
+		readonly panels: readonly ProjectedSidePanel[]
+		readonly widgets: readonly ProjectedSessionWidget[]
+		readonly commands: readonly ProjectedCommand[]
+		readonly themes: readonly ProjectedTheme[]
+	}
+}
+
+/**
+ * Build the V2 catalog. Pure: no fs, no side effects, no broadcast.
+ * The catalog's lifecycle status projection is deterministic
+ * (`validated` for every entry) until the runtime supervisor
+ * upgrades it. That keeps slice 1 auditable.
+ */
+export function buildPluginCatalog(input: { appVersion: string }): PluginCatalog {
+	const appVersion = appVersionSchema.parse(input.appVersion)
+	const descriptors: PluginDescriptor[] = []
+	const entries: PluginCatalogEntry[] = []
+	const capabilityStates: Record<string, CapabilityStateShape> = {}
+
+	for (const manifest of BUILT_IN_MANIFESTS) {
+		// Reuse the same parse/derive path the test suite exercises.
+		// Quarantine on parse failure rather than throwing: the
+		// catalog stays the source of truth, and one bad manifest
+		// cannot break boot.
+		let parsed: PluginManifest
+		try {
+			parsed = parsePluginManifest(manifest)
+		} catch (err) {
+			log.warn("Plugin manifest failed V2 schema parse, quarantining", {
+				pluginId: manifest.id,
+				reason: err instanceof Error ? err.message : String(err),
+			})
+			continue
+		}
+
+		let descriptor: PluginDescriptor
+		try {
+			descriptor = derivePluginDescriptor(parsed, { appVersion })
+		} catch (err) {
+			log.warn("Plugin descriptor derivation failed, quarantining", {
+				pluginId: parsed.id,
+				reason: err instanceof Error ? err.message : String(err),
+			})
+			continue
+		}
+
+		descriptors.push(descriptor)
+		capabilityStates[descriptor.normalizedId] = defaultCapabilityState(descriptor)
+		entries.push({
+			pluginId: descriptor.normalizedId,
+			displayName: descriptor.manifest.displayName,
+			version: descriptor.manifest.version,
+			trust: descriptor.trust,
+			status: "validated",
+			manifestRevision: descriptor.manifest.manifestRevision,
+			appVersion: descriptor.derived.appVersion,
+			requiredCapabilities: [...descriptor.capabilities],
+			defaultGrantedCapabilities: descriptor.trust === "built-in"
+				? [...BUILT_IN_DEFAULT_CAPABILITIES]
+				: [],
+		})
+	}
+
+	const projectionInput = {
+		descriptors,
+		stateByPluginId: capabilityStates,
+	}
+	const panels = projectSidePanelsFromCatalog(
+		descriptors,
+		capabilityStates,
+	).items
+	const widgets = projectSessionWidgetsFromCatalog(
+		descriptors,
+		capabilityStates,
+	).items
+	const commands = projectCommandsFromCatalog(
+		descriptors,
+		capabilityStates,
+	).items
+	const themes = projectThemesFromCatalog(
+		descriptors,
+		capabilityStates,
+	).items
+
+	void projectionInput
+	log.info("Built V2 plugin catalog", {
+		appVersion,
+		pluginCount: descriptors.length,
+		pluginIds: descriptors.map((d) => d.normalizedId),
+	})
+
+	return {
+		appVersion,
+		descriptors,
+		entries,
+		capabilityStates,
+		projections: { panels, widgets, commands, themes },
+	}
+}
+
+/**
+ * Render-friendly descriptor projection: the host can show "this
+ * plugin contributes N panels / M widgets / K tools" without
+ * shipping the full descriptor to the renderer.
+ */
+export interface PluginProjectionSummary {
+	readonly pluginId: string
+	readonly panelCount: number
+	readonly widgetCount: number
+	readonly commandCount: number
+	readonly themeCount: number
+	readonly toolCount: number
+}
+
+export function summarizeProjection(catalog: PluginCatalog): readonly PluginProjectionSummary[] {
+	return catalog.descriptors.map((descriptor) => {
+		const projected = {
+			panelCount: catalog.projections.panels.filter(
+				(p) => p.pluginId === descriptor.normalizedId,
+			).length,
+			widgetCount: catalog.projections.widgets.filter(
+				(w) => w.pluginId === descriptor.normalizedId,
+			).length,
+			commandCount: catalog.projections.commands.filter(
+				(c) => c.pluginId === descriptor.normalizedId,
+			).length,
+			themeCount: catalog.projections.themes.filter(
+				(t) => t.pluginId === descriptor.normalizedId,
+			).length,
+			toolCount: descriptor.tools.length,
+		}
+		return { pluginId: descriptor.normalizedId, ...projected }
+	})
+}
+
+/**
+ * Convenience: get one descriptor by normalized id. Returns `null`
+ * when the plugin is unknown to the catalog (caller should usually
+ * treat that as a `quarantined` result, not an error).
+ */
+export function findDescriptor(
+	catalog: PluginCatalog,
+	pluginId: string,
+): PluginDescriptor | null {
+	return catalog.descriptors.find((d) => d.normalizedId === pluginId) ?? null
+}
+
+/**
+ * Convenience: get the capability state the renderer should read
+ * for a plugin. Returns the catalog's default state when the
+ * plugin is unknown so the renderer can render a "loading" row
+ * instead of crashing.
+ */
+export function getCapabilityState(
+	catalog: PluginCatalog,
+	pluginId: string,
+): CapabilityStateShape {
+	return (
+		catalog.capabilityStates[pluginId] ?? {
+			...defaultCapabilityStateForId(pluginId),
+		}
+	)
+}
+
+function defaultCapabilityStateForId(pluginId: string): CapabilityStateShape {
+	// We don't have a descriptor here; produce a minimal state with
+	// `session` scope and no granted tokens. The renderer treats
+	// this exactly like `defaultCapabilityState` would.
+	return {
+		trust: pluginId.startsWith("firefly.built-in.") ? "built-in" : "signed-third-party",
+		sessionScope: "session",
+		grantedTokens: [],
+		loading: true,
+		pluginDisabled: false,
+		pluginQuarantined: false,
+		pluginError: null,
+	}
+}
+
+/**
+ * Exported plugin id constants so callers (IPC handlers, the
+ * renderer hook) can refer to a single typed name instead of a
+ * raw string. Re-exported from the exemplar manifests.
+ */
+export const KNOWN_PLUGIN_IDS = {
+	palotBridge: PALOT_BRIDGE_PLUGIN_ID,
+	acmeNotebook: ACME_NOTEBOOK_PLUGIN_ID,
+} as const

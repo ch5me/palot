@@ -228,6 +228,29 @@ contextBridge.exposeInMainWorld("elf", {
 	},
 
 	openExternal: (url: string) => ipcRenderer.invoke("browser:open-external", url),
+	plugins: {
+		list: () => ipcRenderer.invoke("firefly-plugin:list"),
+		describe: (pluginId: string) => ipcRenderer.invoke("firefly-plugin:describe", { pluginId }),
+		capabilities: (pluginId: string) =>
+			ipcRenderer.invoke("firefly-plugin:state", { pluginId }),
+		panels: () => ipcRenderer.invoke("firefly-plugin:panels"),
+		widgets: () => ipcRenderer.invoke("firefly-plugin:widgets"),
+		commands: () => ipcRenderer.invoke("firefly-plugin:commands"),
+		themes: () => ipcRenderer.invoke("firefly-plugin:themes"),
+		tools: (pluginId?: string) =>
+			ipcRenderer.invoke("firefly-plugin:tools", { pluginId }),
+		refresh: () => ipcRenderer.invoke("firefly-plugin:refresh"),
+		onChanged: (callback: (payload: { appVersion: string; pluginCount: number }) => void) => {
+			const listener = (
+				_event: unknown,
+				payload: { appVersion: string; pluginCount: number },
+			) => callback(payload)
+			ipcRenderer.on("firefly-plugin:changed", listener)
+			return () => {
+				ipcRenderer.removeListener("firefly-plugin:changed", listener)
+			}
+		},
+	},
 	clipboard: {
 		readText: () => ipcRenderer.invoke("clipboard:read-text"),
 		writeText: (text: string) => ipcRenderer.invoke("clipboard:write-text", text),

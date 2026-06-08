@@ -6,6 +6,7 @@ import { app, BrowserWindow, Menu, session, shell } from "electron"
 import { initAutomations, shutdownAutomations } from "./automation"
 import { registerBrowserLaneProtocol } from "./browser-lane-protocol"
 import { initCredentialStore } from "./credential-store"
+import { registerFireflyPluginIpc } from "./firefly-plugin/ipc"
 import { getOpaqueWindowsPref, registerIpcHandlers } from "./ipc-handlers"
 import { installLiquidGlass, resolveWindowChrome } from "./liquid-glass"
 import { createLogger } from "./logger"
@@ -22,6 +23,7 @@ import { initSettingsStore } from "./settings-store"
 import { startEnvResolution } from "./shell-env"
 import { createTray, destroyTray } from "./tray"
 import { initAutoUpdater, stopAutoUpdater } from "./updater"
+
 
 const log = createLogger("app")
 
@@ -310,6 +312,7 @@ if (!gotLock) {
 		initSettingsStore()
 		initCredentialStore()
 		registerIpcHandlers()
+		registerFireflyPluginIpc()
 		initBrowserLaneManager().catch(console.error)
 		initAutomations().catch(console.error)
 		initNotchCommandFileWatcher()
