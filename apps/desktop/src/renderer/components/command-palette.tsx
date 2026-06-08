@@ -12,31 +12,20 @@ import { useNavigate, useParams } from "@tanstack/react-router"
 import { useAtom, useAtomValue, useSetAtom } from "jotai"
 import {
 	BotIcon,
-	BookTextIcon,
 	CheckIcon,
 	CloudIcon,
 	ContainerIcon,
-	DatabaseIcon,
 	EyeIcon,
 	EyeOffIcon,
-	FileDiffIcon,
-	FilesIcon,
 	FilmIcon,
 	GitBranchIcon,
 	GitForkIcon,
-	MicIcon,
 	MonitorIcon,
-	MonitorPlayIcon,
-	PanelRightCloseIcon,
-	FileTextIcon,
-	PanelRightOpenIcon,
-	PlugIcon,
-	RectangleEllipsisIcon,
-	Share2Icon,
-	TerminalSquareIcon,
-	UsersIcon,
 	MoonIcon,
 	PaletteIcon,
+	PanelRightCloseIcon,
+	PanelRightOpenIcon,
+	PlugIcon,
 	PlusIcon,
 	Redo2Icon,
 	RefreshCwIcon,
@@ -51,45 +40,21 @@ import { sessionMetricsFamily } from "../atoms/derived/session-metrics"
 import { invokePluginCommand } from "../hooks/use-firefly-plugins"
 import {
 	automationsEnabledAtom,
-	browserPanelEnabledAtom,
-	bridgesSurfaceEnabledAtom,
-	ch5pmSurfaceEnabledAtom,
-	claudeSurfaceEnabledAtom,
-	crmSurfaceEnabledAtom,
-	editorSurfaceEnabledAtom,
-	filesSurfaceEnabledAtom,
-	memorySurfaceEnabledAtom,
-	notesSurfaceEnabledAtom,
-	pluginsSurfaceEnabledAtom,
-	pdfReviewSurfaceEnabledAtom,
-	pulseSurfaceEnabledAtom,
-	reviewSurfaceEnabledAtom,
-	studioSurfaceEnabledAtom,
-	terminalSurfaceEnabledAtom,
-	voiceSurfaceEnabledAtom,
+	fireflySurfaceFlagAtoms,
+	fireflySurfaceLabels,
 	toggleAutomationsAtom,
-	toggleBridgesSurfaceAtom,
-	toggleBrowserPanelAtom,
-	toggleCh5PmSurfaceAtom,
-	toggleClaudeSurfaceAtom,
-	toggleCrmSurfaceAtom,
-	toggleFilesSurfaceAtom,
-	toggleMemorySurfaceAtom,
-	toggleNotesSurfaceAtom,
-	togglePdfReviewSurfaceAtom,
-	togglePluginsSurfaceAtom,
-	togglePulseSurfaceAtom,
-	toggleReviewSurfaceAtom,
-	toggleStudioSurfaceAtom,
-	toggleTerminalSurfaceAtom,
-	toggleVoiceSurfaceAtom,
 } from "../atoms/feature-flags"
-import { getFireflySurfaceTabs, type FireflySurfaceContext } from "../firefly-surface-registry"
+import {
+	FIREFLY_SURFACE_REGISTRY,
+	getFireflySurfaceTabs,
+	type FireflySurfaceContext,
+} from "../firefly-surface-registry"
 import { isMockModeAtom, toggleMockModeAtom } from "../atoms/mock-mode"
 import { opaqueWindowsAtom } from "../atoms/preferences"
 import { isReactScanAtom, toggleReactScanAtom } from "../atoms/react-scan"
 import { openSidePanelTabAtom, sidePanelOpenAtom } from "../atoms/ui"
 import { useSessionRevert } from "../hooks/use-commands"
+import { useFireflySurfaceContext } from "../hooks/use-firefly-surface-context"
 import {
 	useAvailableThemes,
 	useColorScheme,
@@ -139,37 +104,7 @@ export function CommandPalette({ open, onOpenChange, agents, onForkSession }: Co
 	const toggleReactScan = useSetAtom(toggleReactScanAtom)
 	const automationsEnabled = useAtomValue(automationsEnabledAtom)
 	const toggleAutomations = useSetAtom(toggleAutomationsAtom)
-	const browserPanelEnabled = useAtomValue(browserPanelEnabledAtom)
-	const reviewSurfaceEnabled = useAtomValue(reviewSurfaceEnabledAtom)
-	const notesSurfaceEnabled = useAtomValue(notesSurfaceEnabledAtom)
-	const pulseSurfaceEnabled = useAtomValue(pulseSurfaceEnabledAtom)
-	const memorySurfaceEnabled = useAtomValue(memorySurfaceEnabledAtom)
-	const filesSurfaceEnabled = useAtomValue(filesSurfaceEnabledAtom)
-	const terminalSurfaceEnabled = useAtomValue(terminalSurfaceEnabledAtom)
-	const editorSurfaceEnabled = useAtomValue(editorSurfaceEnabledAtom)
-	const pluginsSurfaceEnabled = useAtomValue(pluginsSurfaceEnabledAtom)
-	const bridgesSurfaceEnabled = useAtomValue(bridgesSurfaceEnabledAtom)
-	const crmSurfaceEnabled = useAtomValue(crmSurfaceEnabledAtom)
-	const studioSurfaceEnabled = useAtomValue(studioSurfaceEnabledAtom)
-	const voiceSurfaceEnabled = useAtomValue(voiceSurfaceEnabledAtom)
-	const claudeSurfaceEnabled = useAtomValue(claudeSurfaceEnabledAtom)
-	const ch5pmSurfaceEnabled = useAtomValue(ch5pmSurfaceEnabledAtom)
-	const pdfReviewSurfaceEnabled = useAtomValue(pdfReviewSurfaceEnabledAtom)
-	const toggleBrowserPanel = useSetAtom(toggleBrowserPanelAtom)
-	const toggleReviewSurface = useSetAtom(toggleReviewSurfaceAtom)
-	const toggleNotesSurface = useSetAtom(toggleNotesSurfaceAtom)
-	const togglePulseSurface = useSetAtom(togglePulseSurfaceAtom)
-	const toggleMemorySurface = useSetAtom(toggleMemorySurfaceAtom)
-	const toggleFilesSurface = useSetAtom(toggleFilesSurfaceAtom)
-	const togglePluginsSurface = useSetAtom(togglePluginsSurfaceAtom)
-	const toggleBridgesSurface = useSetAtom(toggleBridgesSurfaceAtom)
-	const toggleCrmSurface = useSetAtom(toggleCrmSurfaceAtom)
-	const toggleStudioSurface = useSetAtom(toggleStudioSurfaceAtom)
-	const toggleVoiceSurface = useSetAtom(toggleVoiceSurfaceAtom)
-	const toggleClaudeSurface = useSetAtom(toggleClaudeSurfaceAtom)
-	const toggleCh5PmSurface = useSetAtom(toggleCh5PmSurfaceAtom)
-	const togglePdfReviewSurface = useSetAtom(togglePdfReviewSurfaceAtom)
-	const toggleTerminalSurface = useSetAtom(toggleTerminalSurfaceAtom)
+	const { flags } = useFireflySurfaceContext()
 	const openSidePanelTab = useSetAtom(openSidePanelTabAtom)
 	const [sidePanelOpen, setSidePanelOpen] = useAtom(sidePanelOpenAtom)
 	const [reloading, setReloading] = useState(false)
@@ -235,45 +170,91 @@ export function CommandPalette({ open, onOpenChange, agents, onForkSession }: Co
 				fileCount: 1,
 			},
 			flags: {
-				browserPanelEnabled,
-				review: reviewSurfaceEnabled,
-				notes: notesSurfaceEnabled,
-				pulse: pulseSurfaceEnabled,
-				memory: memorySurfaceEnabled,
-				files: filesSurfaceEnabled,
-				terminal: terminalSurfaceEnabled,
-				editor: editorSurfaceEnabled,
-				plugins: pluginsSurfaceEnabled,
-				bridges: bridgesSurfaceEnabled,
-				crm: crmSurfaceEnabled,
-				studio: studioSurfaceEnabled,
-				voice: voiceSurfaceEnabled,
-				claude: claudeSurfaceEnabled,
-				ch5pm: ch5pmSurfaceEnabled,
-				pdfReview: pdfReviewSurfaceEnabled,
+				review: flags.review,
+				browserPanelEnabled: flags.browserPanelEnabled,
+				notes: flags.notes,
+				pulse: flags.pulse,
+				artifacts: flags.artifacts,
+				memory: flags.memory,
+				files: flags.files,
+				terminal: flags.terminal,
+				editor: flags.editor,
+				plugins: flags.plugins,
+				bridges: flags.bridges,
+				crm: flags.crm,
+				studio: flags.studio,
+				voice: flags.voice,
+				oracle: flags.oracle,
+				claude: flags.claude,
+				ch5pm: flags.ch5pm,
+				pdfReview: flags.pdfReview,
 			},
 			chatTurnCount: 1,
 		}
 	}, [
 		activeAgent,
-		browserPanelEnabled,
-		reviewSurfaceEnabled,
-		notesSurfaceEnabled,
-		pulseSurfaceEnabled,
-		memorySurfaceEnabled,
-		filesSurfaceEnabled,
-		terminalSurfaceEnabled,
-		editorSurfaceEnabled,
-		pluginsSurfaceEnabled,
-		bridgesSurfaceEnabled,
-		crmSurfaceEnabled,
-		studioSurfaceEnabled,
-			voiceSurfaceEnabled,
-			claudeSurfaceEnabled,
-			ch5pmSurfaceEnabled,
-			pdfReviewSurfaceEnabled,
-		])
+		flags.review,
+		flags.browserPanelEnabled,
+		flags.notes,
+		flags.pulse,
+		flags.artifacts,
+		flags.memory,
+		flags.files,
+		flags.terminal,
+		flags.editor,
+		flags.plugins,
+		flags.bridges,
+		flags.crm,
+		flags.studio,
+		flags.voice,
+		flags.oracle,
+		flags.claude,
+		flags.ch5pm,
+		flags.pdfReview,
+	])
 
+	const toggleReviewSurface = useSetAtom(fireflySurfaceFlagAtoms.review)
+	const toggleBrowserSurface = useSetAtom(fireflySurfaceFlagAtoms.browser)
+	const toggleNotesSurface = useSetAtom(fireflySurfaceFlagAtoms.notes)
+	const togglePulseSurface = useSetAtom(fireflySurfaceFlagAtoms.pulse)
+	const toggleArtifactsSurface = useSetAtom(fireflySurfaceFlagAtoms.artifacts)
+	const toggleMemorySurface = useSetAtom(fireflySurfaceFlagAtoms.memory)
+	const toggleFilesSurface = useSetAtom(fireflySurfaceFlagAtoms.files)
+	const toggleTerminalSurface = useSetAtom(fireflySurfaceFlagAtoms.terminal)
+	const toggleEditorSurface = useSetAtom(fireflySurfaceFlagAtoms.editor)
+	const togglePluginsSurface = useSetAtom(fireflySurfaceFlagAtoms.plugins)
+	const toggleBridgesSurface = useSetAtom(fireflySurfaceFlagAtoms.bridges)
+	const toggleCrmSurface = useSetAtom(fireflySurfaceFlagAtoms.crm)
+	const toggleStudioSurface = useSetAtom(fireflySurfaceFlagAtoms.studio)
+	const toggleVoiceSurface = useSetAtom(fireflySurfaceFlagAtoms.voice)
+	const toggleOracleSurface = useSetAtom(fireflySurfaceFlagAtoms.oracle)
+	const toggleClaudeSurface = useSetAtom(fireflySurfaceFlagAtoms.claude)
+	const toggleCh5pmSurface = useSetAtom(fireflySurfaceFlagAtoms.ch5pm)
+	const togglePdfReviewSurface = useSetAtom(fireflySurfaceFlagAtoms["pdf-review"])
+
+	const surfaceToggles: Record<
+		typeof FIREFLY_SURFACE_REGISTRY[number]["id"],
+		(update: boolean | ((prev: boolean) => boolean)) => void
+	> = {
+		review: toggleReviewSurface,
+		browser: toggleBrowserSurface,
+		notes: toggleNotesSurface,
+		pulse: togglePulseSurface,
+		artifacts: toggleArtifactsSurface,
+		memory: toggleMemorySurface,
+		files: toggleFilesSurface,
+		terminal: toggleTerminalSurface,
+		editor: toggleEditorSurface,
+		plugins: togglePluginsSurface,
+		bridges: toggleBridgesSurface,
+		crm: toggleCrmSurface,
+		studio: toggleStudioSurface,
+		voice: toggleVoiceSurface,
+		oracle: toggleOracleSurface,
+		claude: toggleClaudeSurface,
+		ch5pm: toggleCh5pmSurface,
+		"pdf-review": togglePdfReviewSurface,
+	}
 
 	const availableSurfaceTabs = useMemo(
 		() => (surfaceContext ? getFireflySurfaceTabs(surfaceContext) : []),
@@ -469,182 +450,31 @@ export function CommandPalette({ open, onOpenChange, agents, onForkSession }: Co
 						<span>{automationsEnabled ? "Disable Automations" : "Enable Automations"}</span>
 						{automationsEnabled && <CheckIcon className="ml-auto h-4 w-4" />}
 					</CommandItem>
-					<CommandItem
-						keywords={["review", "changes", "diff", "side panel"]}
-						onSelect={() => {
-							toggleReviewSurface()
-							onOpenChange(false)
-						}}
-					>
-						<FileDiffIcon />
-						<span>{reviewSurfaceEnabled ? "Disable Changes Surface" : "Enable Changes Surface"}</span>
-						{reviewSurfaceEnabled && <CheckIcon className="ml-auto h-4 w-4" />}
-					</CommandItem>
-					<CommandItem
-						keywords={["browser", "web", "webview", "inline browser", "panel"]}
-						onSelect={() => {
-							toggleBrowserPanel()
-							onOpenChange(false)
-						}}
-					>
-						{availableSurfaceTabs.find((surface) => surface.id === "browser")?.icon ?? <MonitorIcon />}
-						<span>{browserPanelEnabled ? "Disable Browser Panel" : "Enable Browser Panel"}</span>
-						{browserPanelEnabled && <CheckIcon className="ml-auto h-4 w-4" />}
-					</CommandItem>
-					<CommandItem
-						keywords={["notes", "surface", "side panel"]}
-						onSelect={() => {
-							toggleNotesSurface()
-							onOpenChange(false)
-						}}
-					>
-						<BookTextIcon />
-						<span>{notesSurfaceEnabled ? "Disable Notes Surface" : "Enable Notes Surface"}</span>
-						{notesSurfaceEnabled && <CheckIcon className="ml-auto h-4 w-4" />}
-					</CommandItem>
-					<CommandItem
-						keywords={["pulse", "surface", "heartbeat", "telemetry"]}
-						onSelect={() => {
-							togglePulseSurface()
-							onOpenChange(false)
-						}}
-					>
-						<SparklesIcon />
-						<span>{pulseSurfaceEnabled ? "Disable Pulse Surface" : "Enable Pulse Surface"}</span>
-						{pulseSurfaceEnabled && <CheckIcon className="ml-auto h-4 w-4" />}
-					</CommandItem>
-					<CommandItem
-						keywords={["memory", "surface", "context"]}
-						onSelect={() => {
-							toggleMemorySurface()
-							onOpenChange(false)
-						}}
-					>
-						<DatabaseIcon />
-						<span>{memorySurfaceEnabled ? "Disable Memory Surface" : "Enable Memory Surface"}</span>
-						{memorySurfaceEnabled && <CheckIcon className="ml-auto h-4 w-4" />}
-					</CommandItem>
-					<CommandItem
-						keywords={["files", "surface", "review", "project files"]}
-						onSelect={() => {
-							toggleFilesSurface()
-							onOpenChange(false)
-						}}
-					>
-						<FilesIcon />
-						<span>{filesSurfaceEnabled ? "Disable Files Surface" : "Enable Files Surface"}</span>
-						{filesSurfaceEnabled && <CheckIcon className="ml-auto h-4 w-4" />}
-					</CommandItem>
-					<CommandItem
-						keywords={["terminal", "shell", "pty", "attach"]}
-						onSelect={() => {
-							toggleTerminalSurface()
-							onOpenChange(false)
-						}}
-					>
-						<TerminalSquareIcon />
-						<span>{terminalSurfaceEnabled ? "Disable Terminal Surface" : "Enable Terminal Surface"}</span>
-						{terminalSurfaceEnabled && <CheckIcon className="ml-auto h-4 w-4" />}
-					</CommandItem>
-					<CommandItem
-						keywords={["plugins", "skills", "mcp", "integrations"]}
-						onSelect={() => {
-							togglePluginsSurface()
-							onOpenChange(false)
-						}}
-					>
-						<PlugIcon />
-						<span>{pluginsSurfaceEnabled ? "Disable Plugins Surface" : "Enable Plugins Surface"}</span>
-						{pluginsSurfaceEnabled && <CheckIcon className="ml-auto h-4 w-4" />}
-					</CommandItem>
-					<CommandItem
-						keywords={["bridges", "connectors", "integrations", "hub"]}
-						onSelect={() => {
-							toggleBridgesSurface()
-							onOpenChange(false)
-						}}
-					>
-						<Share2Icon />
-						<span>{bridgesSurfaceEnabled ? "Disable Bridges Surface" : "Enable Bridges Surface"}</span>
-						{bridgesSurfaceEnabled && <CheckIcon className="ml-auto h-4 w-4" />}
-					</CommandItem>
-					<CommandItem
-						keywords={["crm", "contacts", "people", "relationships"]}
-						onSelect={() => {
-							toggleCrmSurface()
-							onOpenChange(false)
-						}}
-					>
-						<UsersIcon />
-						<span>{crmSurfaceEnabled ? "Disable Contacts / CRM Surface" : "Enable Contacts / CRM Surface"}</span>
-						{crmSurfaceEnabled && <CheckIcon className="ml-auto h-4 w-4" />}
-					</CommandItem>
-					<CommandItem
-						keywords={["studio", "office", "documents", "preview"]}
-						onSelect={() => {
-							toggleStudioSurface()
-							onOpenChange(false)
-						}}
-					>
-						<MonitorPlayIcon />
-						<span>{studioSurfaceEnabled ? "Disable Studio / Office Surface" : "Enable Studio / Office Surface"}</span>
-						{studioSurfaceEnabled && <CheckIcon className="ml-auto h-4 w-4" />}
-					</CommandItem>
-					<CommandItem
-						keywords={["voice", "speech", "microphone", "audio"]}
-						onSelect={() => {
-							toggleVoiceSurface()
-							onOpenChange(false)
-						}}
-					>
-						<MicIcon />
-						<span>{voiceSurfaceEnabled ? "Disable Voice Surface" : "Enable Voice Surface"}</span>
-						{voiceSurfaceEnabled && <CheckIcon className="ml-auto h-4 w-4" />}
-					</CommandItem>
-					<CommandItem
-						keywords={["claude", "claude code", "migration", "compatibility"]}
-						onSelect={() => {
-							toggleClaudeSurface()
-							onOpenChange(false)
-						}}
-					>
-						<RectangleEllipsisIcon />
-						<span>{claudeSurfaceEnabled ? "Disable Claude Code Surface" : "Enable Claude Code Surface"}</span>
-						{claudeSurfaceEnabled && <CheckIcon className="ml-auto h-4 w-4" />}
-					</CommandItem>
-					<CommandItem
-						keywords={["ch5pm", "dashboard", "plane", "operator"]}
-						onSelect={() => {
-							toggleCh5PmSurface()
-							onOpenChange(false)
-						}}
-					>
-						<MonitorPlayIcon />
-						<span>{ch5pmSurfaceEnabled ? "Disable CH5PM Dashboard" : "Enable CH5PM Dashboard"}</span>
-						{ch5pmSurfaceEnabled && <CheckIcon className="ml-auto h-4 w-4" />}
-					</CommandItem>
-					<CommandItem
-						keywords={["pdf", "document", "reader", "annotations", "citations"]}
-						onSelect={() => {
-							togglePdfReviewSurface()
-							onOpenChange(false)
-						}}
-					>
-						<FileTextIcon />
-						<span>{pdfReviewSurfaceEnabled ? "Disable PDF Review Surface" : "Enable PDF Review Surface"}</span>
-						{pdfReviewSurfaceEnabled && <CheckIcon className="ml-auto h-4 w-4" />}
-					</CommandItem>
-					<CommandItem
-						keywords={["pdf", "pdf review", "document", "paper", "citation"]}
-						onSelect={() => {
-							togglePdfReviewSurface()
-							onOpenChange(false)
-						}}
-					>
-						<FileTextIcon />
-						<span>{pdfReviewSurfaceEnabled ? "Disable PDF Review Surface" : "Enable PDF Review Surface"}</span>
-						{pdfReviewSurfaceEnabled && <CheckIcon className="ml-auto h-4 w-4" />}
-					</CommandItem>
+					{FIREFLY_SURFACE_REGISTRY.map((surface) => {
+						const Icon = surface.icon
+						const enabled =
+							surface.id === "browser"
+								? flags.browserPanelEnabled
+								: surface.id === "pdf-review"
+									? flags.pdfReview
+									: flags[surface.id]
+						const label = fireflySurfaceLabels[surface.id]
+						const toggleSurface = surfaceToggles[surface.id]
+						return (
+							<CommandItem
+								key={surface.id}
+								keywords={surface.commandIds.concat(label.toLowerCase(), surface.id, surface.title.toLowerCase())}
+								onSelect={() => {
+									toggleSurface((prev) => !prev)
+									onOpenChange(false)
+								}}
+							>
+								<Icon />
+								<span>{enabled ? `Disable ${label}` : `Enable ${label}`}</span>
+								{enabled && <CheckIcon className="ml-auto h-4 w-4" />}
+							</CommandItem>
+						)
+					})}
 				</CommandGroup>
 				{hasSession && availableSurfaceTabs.length > 0 && (
 					<>

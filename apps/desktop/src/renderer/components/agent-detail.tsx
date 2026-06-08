@@ -23,29 +23,7 @@ import {
 } from "lucide-react"
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import type { OpenInTarget } from "../../preload/api"
-import {
-	browserPanelEnabledAtom,
-	bridgesSurfaceEnabledAtom,
-	ch5pmSurfaceEnabledAtom,
-	claudeSurfaceEnabledAtom,
-	crmSurfaceEnabledAtom,
-	editorSurfaceEnabledAtom,
-	filesSurfaceEnabledAtom,
-	memorySurfaceEnabledAtom,
-	notesSurfaceEnabledAtom,
-	oracleSurfaceEnabledAtom,
-	pluginsSurfaceEnabledAtom,
-	pdfReviewSurfaceEnabledAtom,
-	pulseSurfaceEnabledAtom,
-	reviewSurfaceEnabledAtom,
-	studioSurfaceEnabledAtom,
-	terminalSurfaceEnabledAtom,
-	voiceSurfaceEnabledAtom,
-} from "../atoms/feature-flags"
-import {
-	getFireflySurfaceTabs,
-	type FireflySurfaceContext,
-} from "../firefly-surface-registry"
+import { getFireflySurfaceTabs, type FireflySurfaceContext } from "../firefly-surface-registry"
 import {
 	reviewPanelSettingsAtom,
 	sessionDiffStatsFamily,
@@ -60,6 +38,7 @@ import type {
 	SdkAgent,
 	VcsData,
 } from "../hooks/use-opencode-data"
+import { useFireflySurfaceContext } from "../hooks/use-firefly-surface-context"
 import { useServerConnection } from "../hooks/use-server"
 import type { ChatTurn } from "../hooks/use-session-chat"
 import type { Agent, FileAttachment, QuestionAnswer } from "../lib/types"
@@ -217,46 +196,31 @@ export function AgentDetail({
 		}
 	}, [isEditingTitle])
 
-	const browserPanelEnabled = useAtomValue(browserPanelEnabledAtom)
-	const reviewSurfaceEnabled = useAtomValue(reviewSurfaceEnabledAtom)
-	const notesSurfaceEnabled = useAtomValue(notesSurfaceEnabledAtom)
-	const pulseSurfaceEnabled = useAtomValue(pulseSurfaceEnabledAtom)
-	const memorySurfaceEnabled = useAtomValue(memorySurfaceEnabledAtom)
-	const filesSurfaceEnabled = useAtomValue(filesSurfaceEnabledAtom)
-	const terminalSurfaceEnabled = useAtomValue(terminalSurfaceEnabledAtom)
-	const editorSurfaceEnabled = useAtomValue(editorSurfaceEnabledAtom)
-	const pluginsSurfaceEnabled = useAtomValue(pluginsSurfaceEnabledAtom)
-	const bridgesSurfaceEnabled = useAtomValue(bridgesSurfaceEnabledAtom)
-	const crmSurfaceEnabled = useAtomValue(crmSurfaceEnabledAtom)
-	const studioSurfaceEnabled = useAtomValue(studioSurfaceEnabledAtom)
-	const voiceSurfaceEnabled = useAtomValue(voiceSurfaceEnabledAtom)
-	const oracleSurfaceEnabled = useAtomValue(oracleSurfaceEnabledAtom)
-	const claudeSurfaceEnabled = useAtomValue(claudeSurfaceEnabledAtom)
-	const ch5pmSurfaceEnabled = useAtomValue(ch5pmSurfaceEnabledAtom)
-	const pdfReviewSurfaceEnabled = useAtomValue(pdfReviewSurfaceEnabledAtom)
+	const { flags } = useFireflySurfaceContext()
 
 	const sidePanelTabs: SidePanelTabDef[] = useMemo(() => {
 		const ctx: FireflySurfaceContext = {
 			agent,
 			diffStats,
 			flags: {
-				browserPanelEnabled,
-				review: reviewSurfaceEnabled,
-				notes: notesSurfaceEnabled,
-				pulse: pulseSurfaceEnabled,
-				memory: memorySurfaceEnabled,
-				files: filesSurfaceEnabled,
-				terminal: terminalSurfaceEnabled,
-				editor: editorSurfaceEnabled,
-				plugins: pluginsSurfaceEnabled,
-				bridges: bridgesSurfaceEnabled,
-				crm: crmSurfaceEnabled,
-				studio: studioSurfaceEnabled,
-				voice: voiceSurfaceEnabled,
-				oracle: oracleSurfaceEnabled,
-				claude: claudeSurfaceEnabled,
-				ch5pm: ch5pmSurfaceEnabled,
-				pdfReview: pdfReviewSurfaceEnabled,
+				review: flags.review,
+				browserPanelEnabled: flags.browserPanelEnabled,
+				notes: flags.notes,
+				pulse: flags.pulse,
+				artifacts: flags.artifacts,
+				memory: flags.memory,
+				files: flags.files,
+				terminal: flags.terminal,
+				editor: flags.editor,
+				plugins: flags.plugins,
+				bridges: flags.bridges,
+				crm: flags.crm,
+				studio: flags.studio,
+				voice: flags.voice,
+				oracle: flags.oracle,
+				claude: flags.claude,
+				ch5pm: flags.ch5pm,
+				pdfReview: flags.pdfReview,
 			},
 			chatTurnCount: chatTurns.length,
 		}
@@ -264,23 +228,24 @@ export function AgentDetail({
 	}, [
 		agent,
 		diffStats,
-		browserPanelEnabled,
-		reviewSurfaceEnabled,
-		notesSurfaceEnabled,
-		pulseSurfaceEnabled,
-		memorySurfaceEnabled,
-		filesSurfaceEnabled,
-		terminalSurfaceEnabled,
-		editorSurfaceEnabled,
-		pluginsSurfaceEnabled,
-		bridgesSurfaceEnabled,
-		crmSurfaceEnabled,
-		studioSurfaceEnabled,
-		voiceSurfaceEnabled,
-		oracleSurfaceEnabled,
-		claudeSurfaceEnabled,
-		ch5pmSurfaceEnabled,
-		pdfReviewSurfaceEnabled,
+		flags.browserPanelEnabled,
+		flags.review,
+		flags.notes,
+		flags.pulse,
+		flags.artifacts,
+		flags.memory,
+		flags.files,
+		flags.terminal,
+		flags.editor,
+		flags.plugins,
+		flags.bridges,
+		flags.crm,
+		flags.studio,
+		flags.voice,
+		flags.oracle,
+		flags.claude,
+		flags.ch5pm,
+		flags.pdfReview,
 		chatTurns.length,
 	])
 	const availableSidePanelTabs = useMemo(
