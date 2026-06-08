@@ -19,7 +19,7 @@ import {
 } from "../services/connection-manager"
 
 const log = createLogger("discovery")
-const ACTIVE_SESSION_FALLBACK_POLL_MS = 10_000
+const ACTIVE_SESSION_FALLBACK_POLL_MS = 30_000
 const POST_PAINT_DISCOVERY_DELAY_MS = 150
 
 const FOCUSED_PROJECT_LIMIT = 10
@@ -169,23 +169,7 @@ export function useDiscovery() {
 				log.info("Loading projects from API...")
 				const projects = await loadAllProjects()
 				const focusedProjects = getFocusedProjects(projects)
-				log.info("Discovered projects via API", {
-					totalCount: projects.length,
-					focusedCount: focusedProjects.length,
-				})
-
-				// Store only the focused working set.
-				// The full OpenCode project list often contains stale test/scratch roots
-				// that overwhelm the sidebar. Fresh sessions from outside this set still
-				// appear live via SSE because session events seed the store directly.
-				appStore.set(discoveryAtom, {
-					loaded: true,
-					loading: false,
-					error: null,
-					phase: "ready",
-					projects: focusedProjects,
-				})
-
+				const existingBootstrapDirectories = appStore.get(discoveryAtom).bootstrapDirectories
 				const projectSandboxMap = new Map<string, Set<string>>()
 				for (const project of projects) {
 					if (!project.worktree || !project.sandboxes?.length) continue
@@ -193,8 +177,42 @@ export function useDiscovery() {
 					for (const s of project.sandboxes) sandboxSet.add(s)
 					projectSandboxMap.set(project.worktree, sandboxSet)
 				}
+				const bootstrapProjects = projects.filter((project) => {
+					const worktree = project.worktree?.trim()
+					return !!worktree && existingBootstrapDirectories.includes(worktree)
+				})
+				const discoveredProjects = new Map<string, OpenCodeProject>()
+				for (const project of [...focusedProjects, ...bootstrapProjects]) {
+					if (!project.worktree) continue
+					discoveredProjects.set(project.worktree, project)
+				}
+				const projectsToKeep = Array.from(discoveredProjects.values())
+				log.info("Discovered projects via API", {
+					totalCount: projects.length,
+					focusedCount: focusedProjects.length,
+					bootstrapCount: bootstrapProjects.length,
+				})
 
-				const projectsToPreload = focusedProjects.slice(0, PRELOADED_PROJECT_LIMIT)
+				appStore.set(discoveryAtom, {
+					loaded: true,
+					loading: false,
+					error: null,
+					phase: "ready",
+					projects: projectsToKeep,
+					bootstrapDirectories: existingBootstrapDirectories,
+				})
+
+				const preloadProjects = new Map<string, OpenCodeProject>()
+				for (const project of focusedProjects.slice(0, PRELOADED_PROJECT_LIMIT)) {
+					if (!project.worktree) continue
+					preloadProjects.set(project.worktree, project)
+				}
+				for (const project of bootstrapProjects) {
+					if (!project.worktree) continue
+					preloadProjects.set(project.worktree, project)
+				}
+
+				const projectsToPreload = Array.from(preloadProjects.values())
 				if (projectsToPreload.length > 0) {
 					scheduleAfterFirstPaint(() => {
 						void Promise.allSettled(

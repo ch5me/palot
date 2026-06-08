@@ -1,29 +1,9 @@
 import { Hono } from "hono"
-import { getActiveOpenCodeSessions } from "../services/opencode-active-sessions"
+import { activeSessionPresenceService } from "../services/active-session-presence-service"
 import { ensureSingleServer, getServerUrl, stopServer } from "../services/server-manager"
 
-const ACTIVE_SESSION_STREAM_POLL_MS = 1000
 const ACTIVE_SESSION_STREAM_HEARTBEAT_MS = 10_000
-
-function buildActiveSessionSnapshotKey(
-	snapshot: Awaited<ReturnType<typeof getActiveOpenCodeSessions>>,
-): string {
-	const sessions = [...snapshot.sessions]
-		.sort((a, b) => a.sessionId.localeCompare(b.sessionId))
-		.map((session) => ({
-			sessionId: session.sessionId,
-			directory: session.directory,
-			pid: session.pid,
-			source: session.source,
-		}))
-
-	return JSON.stringify({
-		serverUrl: snapshot.serverUrl,
-		clientCount: snapshot.clientCount,
-		sessionCount: snapshot.sessionCount,
-		sessions,
-	})
-}
+const ACTIVE_SESSION_STREAM_RETRY_MS = 5000
 
 function encodeSseChunk(event: string, payload: unknown): Uint8Array {
 	return new TextEncoder().encode(`event: ${event}\ndata: ${JSON.stringify(payload)}\n\n`)
@@ -43,7 +23,7 @@ const app = new Hono()
 	.get("/opencode/active-sessions", async (c) => {
 		try {
 			const server = await ensureSingleServer()
-			const snapshot = await getActiveOpenCodeSessions(server.url)
+			const snapshot = await activeSessionPresenceService.getSnapshot(server.url)
 			return c.json(snapshot, 200)
 		} catch (err) {
 			const message =
@@ -55,22 +35,23 @@ const app = new Hono()
 		try {
 			const server = await ensureSingleServer()
 			const signal = c.req.raw.signal
+			let cleanupStream: (() => void) | null = null
 
 			const stream = new ReadableStream<Uint8Array>({
 				start(controller) {
 					let closed = false
-					let polling = false
-					let lastSnapshotKey: string | null = null
+					let unsubscribe: (() => void) | null = null
 
 					const close = () => {
 						if (closed) return
 						closed = true
-						clearInterval(pollTimer)
 						clearInterval(heartbeatTimer)
+						unsubscribe?.()
 						try {
 							controller.close()
 						} catch {}
 					}
+					cleanupStream = close
 
 					const emit = (event: string, payload: unknown) => {
 						if (closed) return
@@ -81,30 +62,6 @@ const app = new Hono()
 						}
 					}
 
-					const tick = async (force = false) => {
-						if (closed || polling) return
-						polling = true
-						try {
-							const snapshot = await getActiveOpenCodeSessions(server.url)
-							const nextKey = buildActiveSessionSnapshotKey(snapshot)
-							if (force || nextKey !== lastSnapshotKey) {
-								lastSnapshotKey = nextKey
-								emit("presence", snapshot)
-							}
-						} catch (err) {
-							emit("presence-error", {
-								message:
-									err instanceof Error ? err.message : "Failed to inspect active OpenCode sessions",
-								at: Date.now(),
-							})
-						} finally {
-							polling = false
-						}
-					}
-
-					const pollTimer = setInterval(() => {
-						void tick(false)
-					}, ACTIVE_SESSION_STREAM_POLL_MS)
 					const heartbeatTimer = setInterval(() => {
 						emit("heartbeat", { at: Date.now() })
 					}, ACTIVE_SESSION_STREAM_HEARTBEAT_MS)
@@ -112,15 +69,30 @@ const app = new Hono()
 					signal.addEventListener("abort", close, { once: true })
 
 					try {
-						controller.enqueue(new TextEncoder().encode("retry: 1000\n\n"))
+						controller.enqueue(
+							new TextEncoder().encode(`retry: ${ACTIVE_SESSION_STREAM_RETRY_MS}\n\n`),
+						)
 					} catch {
 						close()
 						return
 					}
 
-					void tick(true)
+					const nextUnsubscribe = activeSessionPresenceService.subscribe(server.url, {
+						onError: (err) => {
+							emit("presence-error", {
+								message:
+									err instanceof Error ? err.message : "Failed to inspect active OpenCode sessions",
+								at: Date.now(),
+							})
+						},
+						onSnapshot: (snapshot) => emit("presence", snapshot),
+					})
+					unsubscribe = nextUnsubscribe
+					if (closed) unsubscribe()
 				},
-				cancel() {},
+				cancel() {
+					cleanupStream?.()
+				},
 			})
 
 			return new Response(stream, {

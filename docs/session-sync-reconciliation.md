@@ -112,9 +112,9 @@ Excluded sessions still need store presence plus explicit reason when seen from 
 | `client.session.get(id)` | renderer `hydrateAttachedSession()` / `fetchSessionById()` | targeted fallback | authoritative per session | active presence hydration, direct nav fallback | only used reactively after miss |
 | `client.session.status()` | renderer `bootstrapAttachedSessionStatuses()` / project loads | startup partial | authoritative status snapshot | `setSessionStatusAtom`, derived agents | one-shot bootstrap today, no reconnect resync |
 | `/global/event` | renderer `startEventLoop()` | live SSE | authoritative live event stream | `processEvent`, streaming buffer | reconnect gap, unknown-session events currently under-materialized |
-| active presence snapshot (`opencode:active-sessions` / HTTP route) | main or server service | 1s poll + push/fallback poll | advisory-to-strong local liveness | attached IDs, session hydration | Electron parity gap: attach-only today |
-| process scan (`ps`) | main/server active-session service | per snapshot poll | advisory raw signal | active-session snapshot builder | command heuristics, false positives/negatives |
-| inferred runtime/session correlation | server active-session service | per snapshot poll | advisory promoted to trusted presence | browser mode only today | missing from Electron path |
+| active presence snapshot (`opencode:active-sessions` / HTTP route) | main or server service | SSE fanout; singleton adaptive poll 1s -> 2s -> 5s; 30s renderer fallback | advisory-to-strong local liveness | attached IDs, session hydration | waits on native OpenCode client-presence events for zero-scan path |
+| process scan (`ps`) | main/server active-session service | once per server URL adaptive tick | advisory raw signal | active-session snapshot builder | command heuristics, false positives/negatives |
+| inferred runtime/session correlation | main/server active-session service | adaptive tick with 45s positive inference cache | advisory promoted to trusted presence | active presence hydration | cache only complete inferred mappings; misses re-query |
 | SQLite helper (`scripts/debug-sessions.ts`) | operator script | on demand | debug-only | manual audits | persisted history can lag or outlive runtime truth |
 | sandbox/worktree map from project payload | derived agents | startup + project updates | advisory for grouping | sidebar project/session grouping | stale after reconnect without full refresh |
 | child linkage via `session.parentID` | session payload + derived tree | on session upsert | authoritative relationship field | `session-requests`, sub-agent card | child rows may be missing when event order unfavorable |
@@ -129,6 +129,14 @@ Excluded sessions still need store presence plus explicit reason when seen from 
 | Session view | `apps/desktop/src/renderer/components/session-view.tsx` | direct `agentFamily`, `fetchSessionById` fallback | placeholder/backfill, canonical diagnostics |
 | Sub-agent cards | `apps/desktop/src/renderer/components/chat/sub-agent-card.tsx` | task part metadata + child session entry + tree waits | parent/child divergence state, child freshness |
 | Debug script/runbook | `scripts/debug-sessions.ts`, `docs/session-debugging.md` | SQLite transcript only today | renderer/API/presence comparison plus drift classes |
+
+## Active Presence Performance Model <!-- oc:id=sec_ak -->
+
+- Browser mode uses one backend `EventSource` stream per renderer tab, but collection is singleton per OpenCode server URL. Extra tabs subscribe to cached fanout; they do not create extra `ps` or `session.list` loops.
+- Backend cadence is adaptive: first/startup and changed snapshots schedule the next check at 1s, one stable check backs off to 2s, then stable checks run at 5s. Collection errors use exponential backoff from 1s to 30s.
+- Renderer fallback polling is 30s and only exists to recover from broken SSE or missed reconnects.
+- Plain `opencode /path` clients need `session.list` correlation. Complete inferred mappings are cached for 45s by process signature and claimed attach IDs. Missing mappings are not cached, so newly spawned clients can still resolve quickly.
+- Best future model is native OpenCode client presence over a long-lived global stream: `client.connected`, `client.disconnected`, and `client.session.selected`. Palot already has a `trySubscribeNativeOpenCodePresence` seam so that path can replace local scans when OpenCode exposes it.
 
 ## Canonical timestamp model <!-- oc:id=sec_ai -->
 

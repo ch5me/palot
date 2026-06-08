@@ -25,7 +25,14 @@ import { getSettings } from "./settings-store"
 import { waitForEnv } from "./shell-env"
 
 const log = createLogger("opencode-manager")
-const ACTIVE_SESSION_STREAM_POLL_MS = 1000
+const ACTIVE_SESSION_FAST_POLL_MS = 1000
+const ACTIVE_SESSION_MEDIUM_POLL_MS = 2000
+const ACTIVE_SESSION_STABLE_POLL_MS = 5000
+const ACTIVE_SESSION_ERROR_BASE_POLL_MS = 1000
+const ACTIVE_SESSION_ERROR_MAX_POLL_MS = 30_000
+const ACTIVE_SESSION_QUERY_TIMEOUT_MS = 2500
+const ACTIVE_SESSION_INFERENCE_CACHE_TTL_MS = 45_000
+const ACTIVE_SESSION_INFERENCE_CACHE_MAX_ENTRIES = 500
 
 // ============================================================
 // Types
@@ -52,7 +59,11 @@ let singleServer: {
 	process: ChildProcess | null
 } | null = null
 
-let activeSessionPoller: ReturnType<typeof setInterval> | null = null
+let activeSessionPoller: ReturnType<typeof setTimeout> | null = null
+let activeSessionBroadcastServerUrl: string | null = null
+let activeSessionPollInFlight = false
+let activeSessionStablePolls = 0
+let activeSessionConsecutiveErrors = 0
 let lastActiveSessionSnapshotKey: string | null = null
 
 const DEFAULT_PORT = Number(process.env.OPENCODE_PORT) || 4096
@@ -71,7 +82,13 @@ interface ClientProcess {
 	source: "attach" | "plain"
 }
 
+interface InferenceCacheEntry {
+	expiresAt: number
+	sessions: ActiveOpenCodeSessionPresence[]
+}
+
 const PROCESS_START_GRACE_MS = 5 * 60 * 1000
+const activeSessionInferenceCache = new Map<string, InferenceCacheEntry>()
 
 // ============================================================
 // Public API
@@ -374,6 +391,54 @@ function normalizeOrigin(value: string): string | null {
 	}
 }
 
+async function withTimeout<T>(promise: Promise<T>, timeoutMs: number, label: string): Promise<T> {
+	let timer: ReturnType<typeof setTimeout> | null = null
+	try {
+		return await Promise.race([
+			promise,
+			new Promise<never>((_, reject) => {
+				timer = setTimeout(() => {
+					reject(new Error(`${label} timed out after ${timeoutMs}ms`))
+				}, timeoutMs)
+			}),
+		])
+	} finally {
+		if (timer) clearTimeout(timer)
+	}
+}
+
+function buildInferenceCacheKey(
+	serverUrl: string,
+	directory: string,
+	processes: ClientProcess[],
+	claimed: Set<string>,
+): string {
+	return JSON.stringify({
+		serverUrl,
+		directory,
+		claimed: [...claimed].sort(),
+		processes: [...processes]
+			.sort((a, b) => a.pid - b.pid)
+			.map((process) => ({
+				pid: process.pid,
+				startedAtMs: process.startedAtMs,
+				command: process.command,
+			})),
+	})
+}
+
+function pruneInferenceCache(nowMs: number): void {
+	for (const [key, entry] of activeSessionInferenceCache) {
+		if (entry.expiresAt <= nowMs) activeSessionInferenceCache.delete(key)
+	}
+
+	while (activeSessionInferenceCache.size > ACTIVE_SESSION_INFERENCE_CACHE_MAX_ENTRIES) {
+		const firstKey = activeSessionInferenceCache.keys().next().value
+		if (!firstKey) break
+		activeSessionInferenceCache.delete(firstKey)
+	}
+}
+
 async function listClientProcesses(serverUrl: string): Promise<ClientProcess[]> {
 	const targetOrigin = normalizeOrigin(serverUrl)
 	if (!targetOrigin) {
@@ -459,11 +524,68 @@ async function listRecentRootSessions(
 ): Promise<Session[]> {
 	try {
 		const client = createOpencodeClient({ baseUrl: serverUrl, directory })
-		const result = await client.session.list({ roots: true, limit })
+		const result = await withTimeout(
+			client.session.list({ roots: true, limit }),
+			ACTIVE_SESSION_QUERY_TIMEOUT_MS,
+			`OpenCode session.list for ${directory}`,
+		)
 		return (result.data as Session[]) ?? []
 	} catch {
 		return []
 	}
+}
+
+async function inferDirectorySessions(
+	serverUrl: string,
+	directory: string,
+	processes: ClientProcess[],
+	claimed: Set<string>,
+): Promise<ActiveOpenCodeSessionPresence[]> {
+	const nowMs = Date.now()
+	pruneInferenceCache(nowMs)
+
+	const cacheKey = buildInferenceCacheKey(serverUrl, directory, processes, claimed)
+	const cached = activeSessionInferenceCache.get(cacheKey)
+	if (cached && cached.expiresAt > nowMs) {
+		return cached.sessions
+	}
+
+	const limit = Math.max(processes.length + claimed.size + 5, 10)
+	const sessions = await listRecentRootSessions(serverUrl, directory, limit)
+	const remaining = sessions.filter((session) => !claimed.has(session.id))
+	const next: ActiveOpenCodeSessionPresence[] = []
+
+	for (const process of [...processes].sort((a, b) => b.startedAtMs - a.startedAtMs)) {
+		if (remaining.length === 0) break
+
+		const bounded = remaining.filter(
+			(session) => session.time.created <= process.startedAtMs + PROCESS_START_GRACE_MS,
+		)
+		const chosen = bounded[0]
+		if (!chosen) continue
+
+		next.push({
+			sessionId: chosen.id,
+			directory,
+			pid: process.pid,
+			source: "inferred",
+			command: process.command,
+		})
+
+		const index = remaining.findIndex((session) => session.id === chosen.id)
+		if (index >= 0) remaining.splice(index, 1)
+	}
+
+	if (next.length >= processes.length) {
+		activeSessionInferenceCache.set(cacheKey, {
+			expiresAt: nowMs + ACTIVE_SESSION_INFERENCE_CACHE_TTL_MS,
+			sessions: next,
+		})
+	} else {
+		activeSessionInferenceCache.delete(cacheKey)
+	}
+
+	return next
 }
 
 function buildActiveSessionSnapshotKey(snapshot: ActiveOpenCodeSessionsSnapshot): string {
@@ -522,33 +644,7 @@ async function buildActiveOpenCodeSessionsSnapshot(
 	const inferredBatches = await Promise.all(
 		Array.from(inferredNeeds.entries()).map(async ([directory, directoryProcesses]) => {
 			const claimed = exactSessionIdsByDirectory.get(directory) ?? new Set<string>()
-			const limit = Math.max(directoryProcesses.length + claimed.size + 5, 10)
-			const sessions = await listRecentRootSessions(serverUrl, directory, limit)
-			const remaining = sessions.filter((session) => !claimed.has(session.id))
-			const next: ActiveOpenCodeSessionPresence[] = []
-
-			for (const process of [...directoryProcesses].sort((a, b) => b.startedAtMs - a.startedAtMs)) {
-				if (remaining.length === 0) break
-
-				const bounded = remaining.filter(
-					(session) => session.time.created <= process.startedAtMs + PROCESS_START_GRACE_MS,
-				)
-				const chosen = bounded[0]
-				if (!chosen) continue
-
-				next.push({
-					sessionId: chosen.id,
-					directory,
-					pid: process.pid,
-					source: "inferred",
-					command: process.command,
-				})
-
-				const index = remaining.findIndex((session) => session.id === chosen.id)
-				if (index >= 0) remaining.splice(index, 1)
-			}
-
-			return next
+			return inferDirectorySessions(serverUrl, directory, directoryProcesses, claimed)
 		}),
 	)
 
@@ -571,34 +667,72 @@ async function buildActiveOpenCodeSessionsSnapshot(
 	}
 }
 
-async function broadcastActiveSessionSnapshot(serverUrl: string): Promise<void> {
+function getActiveSessionPollDelayMs(): number {
+	if (activeSessionConsecutiveErrors > 0) {
+		const exponent = Math.max(0, activeSessionConsecutiveErrors - 1)
+		return Math.min(
+			ACTIVE_SESSION_ERROR_MAX_POLL_MS,
+			ACTIVE_SESSION_ERROR_BASE_POLL_MS * 2 ** exponent,
+		)
+	}
+
+	if (activeSessionStablePolls <= 0) return ACTIVE_SESSION_FAST_POLL_MS
+	if (activeSessionStablePolls === 1) return ACTIVE_SESSION_MEDIUM_POLL_MS
+	return ACTIVE_SESSION_STABLE_POLL_MS
+}
+
+async function broadcastActiveSessionSnapshot(serverUrl: string): Promise<boolean> {
 	const snapshot = await buildActiveOpenCodeSessionsSnapshot(serverUrl)
 	const nextKey = buildActiveSessionSnapshotKey(snapshot)
-	if (nextKey === lastActiveSessionSnapshotKey) return
+	if (nextKey === lastActiveSessionSnapshotKey) return false
 	lastActiveSessionSnapshotKey = nextKey
 	for (const win of electron.BrowserWindow.getAllWindows()) {
 		win.webContents.send("opencode:active-sessions", snapshot)
+	}
+	return true
+}
+
+function scheduleActiveSessionBroadcast(serverUrl: string): void {
+	if (activeSessionBroadcastServerUrl !== serverUrl) return
+	if (activeSessionPoller) clearTimeout(activeSessionPoller)
+	activeSessionPoller = setTimeout(() => {
+		activeSessionPoller = null
+		void runActiveSessionBroadcastTick(serverUrl)
+	}, getActiveSessionPollDelayMs())
+}
+
+async function runActiveSessionBroadcastTick(serverUrl: string): Promise<void> {
+	if (activeSessionPollInFlight || activeSessionBroadcastServerUrl !== serverUrl) return
+	activeSessionPollInFlight = true
+	try {
+		const changed = await broadcastActiveSessionSnapshot(serverUrl)
+		activeSessionConsecutiveErrors = 0
+		activeSessionStablePolls = changed ? 0 : activeSessionStablePolls + 1
+	} catch (err) {
+		activeSessionConsecutiveErrors += 1
+		log.error("Active session snapshot poll failed", err)
+	} finally {
+		activeSessionPollInFlight = false
+		scheduleActiveSessionBroadcast(serverUrl)
 	}
 }
 
 function stopActiveSessionBroadcast(): void {
 	if (activeSessionPoller) {
-		clearInterval(activeSessionPoller)
+		clearTimeout(activeSessionPoller)
 		activeSessionPoller = null
 	}
+	activeSessionBroadcastServerUrl = null
+	activeSessionPollInFlight = false
+	activeSessionStablePolls = 0
+	activeSessionConsecutiveErrors = 0
 	lastActiveSessionSnapshotKey = null
 }
 
 function startActiveSessionBroadcast(serverUrl: string): void {
 	stopActiveSessionBroadcast()
-	void broadcastActiveSessionSnapshot(serverUrl).catch((err) => {
-		log.error("Initial active session snapshot failed", err)
-	})
-	activeSessionPoller = setInterval(() => {
-		void broadcastActiveSessionSnapshot(serverUrl).catch((err) => {
-			log.error("Active session snapshot poll failed", err)
-		})
-	}, ACTIVE_SESSION_STREAM_POLL_MS)
+	activeSessionBroadcastServerUrl = serverUrl
+	void runActiveSessionBroadcastTick(serverUrl)
 }
 
 async function appendPalotPlugin(env: NodeJS.ProcessEnv & { OPENCODE_PLUGIN?: string }): Promise<void> {

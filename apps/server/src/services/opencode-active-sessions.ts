@@ -5,6 +5,9 @@ import { createOpencodeClient } from "@opencode-ai/sdk/v2/client"
 
 const execFileAsync = promisify(execFile)
 const PROCESS_START_GRACE_MS = 5 * 60 * 1000
+const ACTIVE_SESSION_QUERY_TIMEOUT_MS = 2500
+const ACTIVE_SESSION_INFERENCE_CACHE_TTL_MS = 45_000
+const ACTIVE_SESSION_INFERENCE_CACHE_MAX_ENTRIES = 500
 
 export interface ActiveOpenCodeSessionPresence {
 	sessionId: string
@@ -22,13 +25,49 @@ export interface ActiveOpenCodeSessionsSnapshot {
 	refreshedAt: number
 }
 
-interface ClientProcess {
+export interface ActiveOpenCodeClientProcess {
 	pid: number
 	command: string
 	directory: string
 	startedAtMs: number
 	sessionId?: string
 	source: "attach" | "plain"
+}
+
+export interface ActiveOpenCodeSessionCollectorDeps {
+	now?: () => number
+	listClientProcesses?: (serverUrl: string) => Promise<ActiveOpenCodeClientProcess[]>
+	listRecentRootSessions?: (
+		serverUrl: string,
+		directory: string,
+		limit: number,
+	) => Promise<Session[]>
+}
+
+export interface ActiveOpenCodeSessionCollector {
+	clearInferenceCache: () => void
+	getActiveOpenCodeSessions: (serverUrl: string) => Promise<ActiveOpenCodeSessionsSnapshot>
+}
+
+interface InferenceCacheEntry {
+	expiresAt: number
+	sessions: ActiveOpenCodeSessionPresence[]
+}
+
+async function withTimeout<T>(promise: Promise<T>, timeoutMs: number, label: string): Promise<T> {
+	let timer: ReturnType<typeof setTimeout> | null = null
+	try {
+		return await Promise.race([
+			promise,
+			new Promise<never>((_, reject) => {
+				timer = setTimeout(() => {
+					reject(new Error(`${label} timed out after ${timeoutMs}ms`))
+				}, timeoutMs)
+			}),
+		])
+	} finally {
+		if (timer) clearTimeout(timer)
+	}
 }
 
 function tokenizeArgs(input: string): string[] {
@@ -65,14 +104,14 @@ function normalizeOrigin(value: string): string | null {
 	}
 }
 
-async function listClientProcesses(serverUrl: string): Promise<ClientProcess[]> {
+async function listClientProcesses(serverUrl: string): Promise<ActiveOpenCodeClientProcess[]> {
 	const targetOrigin = normalizeOrigin(serverUrl)
 	if (!targetOrigin) {
 		throw new Error(`Invalid OpenCode server URL: ${serverUrl}`)
 	}
 
 	const { stdout } = await execFileAsync("ps", ["-axo", "pid=,lstart=,command=", "-ww"])
-	const processes: ClientProcess[] = []
+	const processes: ActiveOpenCodeClientProcess[] = []
 
 	for (const line of stdout.split("\n")) {
 		const match = line.match(
@@ -138,7 +177,11 @@ async function listRecentRootSessions(
 ): Promise<Session[]> {
 	try {
 		const client = createOpencodeClient({ baseUrl: serverUrl, directory })
-		const result = await client.session.list({ roots: true, limit })
+		const result = await withTimeout(
+			client.session.list({ roots: true, limit }),
+			ACTIVE_SESSION_QUERY_TIMEOUT_MS,
+			`OpenCode session.list for ${directory}`,
+		)
 		return (result.data as Session[]) ?? []
 	} catch {
 		return []
@@ -148,80 +191,181 @@ async function listRecentRootSessions(
 export async function getActiveOpenCodeSessions(
 	serverUrl: string,
 ): Promise<ActiveOpenCodeSessionsSnapshot> {
-	const processes = await listClientProcesses(serverUrl)
-	const exactSessions = new Map<string, ActiveOpenCodeSessionPresence>()
-	const exactSessionIdsByDirectory = new Map<string, Set<string>>()
-	const inferredNeeds = new Map<string, ClientProcess[]>()
+	return defaultActiveOpenCodeSessionCollector.getActiveOpenCodeSessions(serverUrl)
+}
 
-	for (const process of processes) {
-		if (process.source === "attach" && process.sessionId) {
-			exactSessions.set(process.sessionId, {
-				sessionId: process.sessionId,
-				directory: process.directory,
+function buildInferenceCacheKey(
+	serverUrl: string,
+	directory: string,
+	processes: ActiveOpenCodeClientProcess[],
+	claimed: Set<string>,
+): string {
+	return JSON.stringify({
+		serverUrl,
+		directory,
+		claimed: [...claimed].sort(),
+		processes: [...processes]
+			.sort((a, b) => a.pid - b.pid)
+			.map((process) => ({
 				pid: process.pid,
-				source: "attach",
+				startedAtMs: process.startedAtMs,
+				command: process.command,
+			})),
+	})
+}
+
+function pruneInferenceCache(cache: Map<string, InferenceCacheEntry>, now: number): void {
+	for (const [key, entry] of cache) {
+		if (entry.expiresAt <= now) cache.delete(key)
+	}
+
+	while (cache.size > ACTIVE_SESSION_INFERENCE_CACHE_MAX_ENTRIES) {
+		const firstKey = cache.keys().next().value
+		if (!firstKey) break
+		cache.delete(firstKey)
+	}
+}
+
+export function buildActiveSessionSnapshotKey(snapshot: ActiveOpenCodeSessionsSnapshot): string {
+	const sessions = [...snapshot.sessions]
+		.sort((a, b) => a.sessionId.localeCompare(b.sessionId))
+		.map((session) => ({
+			sessionId: session.sessionId,
+			directory: session.directory,
+			pid: session.pid,
+			source: session.source,
+		}))
+
+	return JSON.stringify({
+		serverUrl: snapshot.serverUrl,
+		clientCount: snapshot.clientCount,
+		sessionCount: snapshot.sessionCount,
+		sessions,
+	})
+}
+
+export function createActiveOpenCodeSessionCollector(
+	deps: ActiveOpenCodeSessionCollectorDeps = {},
+): ActiveOpenCodeSessionCollector {
+	const inferenceCache = new Map<string, InferenceCacheEntry>()
+	const now = deps.now ?? Date.now
+	const listClientProcessesFn = deps.listClientProcesses ?? listClientProcesses
+	const listRecentRootSessionsFn = deps.listRecentRootSessions ?? listRecentRootSessions
+
+	async function inferDirectorySessions(
+		serverUrl: string,
+		directory: string,
+		processes: ActiveOpenCodeClientProcess[],
+		claimed: Set<string>,
+	): Promise<ActiveOpenCodeSessionPresence[]> {
+		const nowMs = now()
+		pruneInferenceCache(inferenceCache, nowMs)
+
+		const cacheKey = buildInferenceCacheKey(serverUrl, directory, processes, claimed)
+		const cached = inferenceCache.get(cacheKey)
+		if (cached && cached.expiresAt > nowMs) {
+			return cached.sessions
+		}
+
+		const limit = Math.max(processes.length + claimed.size + 5, 10)
+		const sessions = await listRecentRootSessionsFn(serverUrl, directory, limit)
+		const remaining = sessions.filter((session) => !claimed.has(session.id))
+		const next: ActiveOpenCodeSessionPresence[] = []
+
+		for (const process of [...processes].sort((a, b) => b.startedAtMs - a.startedAtMs)) {
+			if (remaining.length === 0) break
+
+			const bounded = remaining.filter(
+				(session) => session.time.created <= process.startedAtMs + PROCESS_START_GRACE_MS,
+			)
+			const chosen = bounded[0]
+			if (!chosen) continue
+
+			next.push({
+				sessionId: chosen.id,
+				directory,
+				pid: process.pid,
+				source: "inferred",
 				command: process.command,
 			})
 
-			const existing = exactSessionIdsByDirectory.get(process.directory) ?? new Set<string>()
-			existing.add(process.sessionId)
-			exactSessionIdsByDirectory.set(process.directory, existing)
-			continue
+			const index = remaining.findIndex((session) => session.id === chosen.id)
+			if (index >= 0) remaining.splice(index, 1)
 		}
 
-		const existing = inferredNeeds.get(process.directory) ?? []
-		existing.push(process)
-		inferredNeeds.set(process.directory, existing)
-	}
-
-	const inferredBatches = await Promise.all(
-		Array.from(inferredNeeds.entries()).map(async ([directory, processes]) => {
-			const claimed = exactSessionIdsByDirectory.get(directory) ?? new Set<string>()
-			const limit = Math.max(processes.length + claimed.size + 5, 10)
-			const sessions = await listRecentRootSessions(serverUrl, directory, limit)
-			const remaining = sessions.filter((session) => !claimed.has(session.id))
-			const next: ActiveOpenCodeSessionPresence[] = []
-
-			for (const process of [...processes].sort((a, b) => b.startedAtMs - a.startedAtMs)) {
-				if (remaining.length === 0) break
-
-				const bounded = remaining.filter(
-					(session) => session.time.created <= process.startedAtMs + PROCESS_START_GRACE_MS,
-				)
-				const chosen = bounded[0]
-				if (!chosen) continue
-
-				next.push({
-					sessionId: chosen.id,
-					directory,
-					pid: process.pid,
-					source: "inferred",
-					command: process.command,
-				})
-
-				const index = remaining.findIndex((session) => session.id === chosen.id)
-				if (index >= 0) remaining.splice(index, 1)
-			}
-
-			return next
-		}),
-	)
-
-	const uniqueSessions = new Map<string, ActiveOpenCodeSessionPresence>()
-	for (const entry of exactSessions.values()) uniqueSessions.set(entry.sessionId, entry)
-	for (const batch of inferredBatches) {
-		for (const entry of batch) {
-			if (!uniqueSessions.has(entry.sessionId)) {
-				uniqueSessions.set(entry.sessionId, entry)
-			}
+		if (next.length >= processes.length) {
+			inferenceCache.set(cacheKey, {
+				expiresAt: nowMs + ACTIVE_SESSION_INFERENCE_CACHE_TTL_MS,
+				sessions: next,
+			})
+		} else {
+			inferenceCache.delete(cacheKey)
 		}
+
+		return next
 	}
 
 	return {
-		serverUrl,
-		clientCount: processes.length,
-		sessionCount: uniqueSessions.size,
-		sessions: Array.from(uniqueSessions.values()),
-		refreshedAt: Date.now(),
+		clearInferenceCache(): void {
+			inferenceCache.clear()
+		},
+		async getActiveOpenCodeSessions(serverUrl: string): Promise<ActiveOpenCodeSessionsSnapshot> {
+			const processes = await listClientProcessesFn(serverUrl)
+			const exactSessions = new Map<string, ActiveOpenCodeSessionPresence>()
+			const exactSessionIdsByDirectory = new Map<string, Set<string>>()
+			const inferredNeeds = new Map<string, ActiveOpenCodeClientProcess[]>()
+
+			for (const process of processes) {
+				if (process.source === "attach" && process.sessionId) {
+					exactSessions.set(process.sessionId, {
+						sessionId: process.sessionId,
+						directory: process.directory,
+						pid: process.pid,
+						source: "attach",
+						command: process.command,
+					})
+
+					const existing = exactSessionIdsByDirectory.get(process.directory) ?? new Set<string>()
+					existing.add(process.sessionId)
+					exactSessionIdsByDirectory.set(process.directory, existing)
+					continue
+				}
+
+				const existing = inferredNeeds.get(process.directory) ?? []
+				existing.push(process)
+				inferredNeeds.set(process.directory, existing)
+			}
+
+			const inferredBatches = await Promise.all(
+				Array.from(inferredNeeds.entries()).map(([directory, processes]) => {
+					const claimed = exactSessionIdsByDirectory.get(directory) ?? new Set<string>()
+					return inferDirectorySessions(serverUrl, directory, processes, claimed)
+				}),
+			)
+
+			const uniqueSessions = new Map<string, ActiveOpenCodeSessionPresence>()
+			for (const entry of exactSessions.values()) uniqueSessions.set(entry.sessionId, entry)
+			for (const batch of inferredBatches) {
+				for (const entry of batch) {
+					if (!uniqueSessions.has(entry.sessionId)) {
+						uniqueSessions.set(entry.sessionId, entry)
+					}
+				}
+			}
+
+			return {
+				serverUrl,
+				clientCount: processes.length,
+				sessionCount: uniqueSessions.size,
+				sessions: Array.from(uniqueSessions.values()),
+				refreshedAt: now(),
+			}
+		},
 	}
+}
+
+const defaultActiveOpenCodeSessionCollector = createActiveOpenCodeSessionCollector()
+
+export function clearActiveOpenCodeSessionInferenceCache(): void {
+	defaultActiveOpenCodeSessionCollector.clearInferenceCache()
 }

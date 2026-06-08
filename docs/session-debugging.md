@@ -7,6 +7,7 @@ Use this when Palette/OpenCode sessions look stuck, still moving, or disagree be
 ```bash
 bun run debug:sessions -- <session-id> [session-id...]
 OPENCODE_SERVER_URL=http://127.0.0.1:4096 bun run debug:sessions -- <session-id>
+PALETTE_SERVER_URL=http://127.0.0.1:30206 bun run debug:sessions -- <session-id>
 bun run svc:status
 ```
 
@@ -41,7 +42,7 @@ bun run svc:status
 - UI session store: `apps/desktop/src/renderer/atoms/sessions.ts`
 - derived running/waiting state: `apps/desktop/src/renderer/atoms/derived/agents.ts`
 - child request bubbling: `apps/desktop/src/renderer/atoms/derived/session-requests.ts`
-- active attached-session presence from running `opencode attach` clients: `apps/desktop/src/main/opencode-manager.ts`
+- active local-session presence from `opencode attach` and inferred plain clients: `apps/desktop/src/main/opencode-manager.ts`, `apps/server/src/services/active-session-presence-service.ts`
 
 ## Audit flows <!-- oc:id=sec_ae -->
 
