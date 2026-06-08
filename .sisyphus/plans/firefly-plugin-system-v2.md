@@ -967,7 +967,7 @@ Wave FINAL
 
   **Commit**: NO
 
-- [ ] 12. Define API tiering, versioning, and manifest evolution rules
+- [x] 12. Define API tiering, versioning, and manifest evolution rules
 
   **What to do**:
   - Define stable/proposed/internal tiers, host-plugin compatibility rules, schema negotiation, deprecation policy, and codemod expectations.
