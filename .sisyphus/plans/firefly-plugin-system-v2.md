@@ -687,7 +687,7 @@ Wave FINAL
 
   **Commit**: NO
 
-- [ ] 7. Define V2 manifest/schema and source-of-truth object
+- [x] 7. Define V2 manifest/schema and source-of-truth object
 
   **What to do**:
   - Design the V2 Zod manifest and its runtime-hydrated `PluginDescriptor` source-of-truth object.
@@ -735,7 +735,7 @@ Wave FINAL
 
   **Commit**: NO
 
-- [ ] 8. Define contribution family contracts for panels/widgets/commands/themes
+- [x] 8. Define contribution family contracts for panels/widgets/commands/themes
 
   **What to do**:
   - Define declarative contract per contribution family.
@@ -785,7 +785,7 @@ Wave FINAL
 
   **Commit**: NO
 
-- [ ] 9. Define Zod-backed OpenCode tool projection model
+- [x] 9. Define Zod-backed OpenCode tool projection model
 
   **What to do**:
   - Define how contributions project into agent-facing tools.
@@ -872,7 +872,7 @@ Wave FINAL
 
   **Commit**: NO
 
-- [ ] 10. Define capability broker, grants, and denial semantics
+- [x] 10. Define capability broker, grants, and denial semantics
 
   **What to do**:
   - Design broker APIs, permission prompts, deny-by-default behavior, revocation, audit logging, grant storage, and scope-aware authorization.
@@ -1478,7 +1478,7 @@ Wave FINAL
 
   **Commit**: NO
 
-- [ ] 21. First-party exemplar plugin vertical slice
+- [x] 21. First-party exemplar plugin vertical slice
 
   **What to do**:
   - Pick one first-party plugin that proves the full V2 path.
