@@ -29,7 +29,7 @@
 | **4** | Per-node `rev` + dirty-field protection | blocked | `loom.conflictProtection` | plan §3 Phase 4 | `wave-04-dirty-field.md` | blocked on wave 3 |
 | **5** | Durable artifact identity + `append` frame | blocked | `loom.persistence.migrate`, `loom.appendFrame` | plan §3 Phase 5 | `wave-05-durable-identity.md` | blocked on wave 4 |
 | **6** | `contributes.components` in the V2 manifest | blocked | `loom.v2Components` | plan §3 Phase 6 | `wave-06-v2-components.md` | blocked on wave 5; closes the cross-project loop |
-| **2** | The Loom wire (`session` / `render` / `patch` / `poll`) | not started | `loom.enabled` | plan §3 Phase 2 | `wave-02-loom-wire.md` | D1/D3/D4 resolved (WS, node-id+field, 250 ms batch). Pre-flight first must-do: `ensurePalotBridgeServer` not exported from `palot-browser-ipc.ts` — grep confirmed absent. |
+| **2** | The Loom wire (`session` / `render` / `patch` / `poll`) | dispatched | `loom.enabled` | plan §3 Phase 2 | `wave-02-loom-wire.md` | D1/D3/D4 resolved (WS, node-id+field, 250 ms batch). Pre-flight: `ensurePalotBridgeServer` exported from `palot-browser-ipc.ts` (port from main worktree uncommitted changes, 425-line version). Also preserves Wave 1 `palotComponentsList`/`palotComponentsDescribe` routes. 8 pre-existing Agent type errors (baseline). |
 
 ## Open decisions <!-- oc:id=sec_ad -->
 
