@@ -1571,7 +1571,7 @@ Wave FINAL
 
   **Commit**: NO
 
-- [ ] 23. VS Code import classifier + transpile architecture
+- [x] 23. VS Code import classifier + transpile architecture
 
   **What to do**:
   - Define classifier rubric for GREEN/YELLOW/ORANGE/RED extension import feasibility.
