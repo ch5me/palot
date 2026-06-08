@@ -65,9 +65,16 @@ const FIREFLY_SURFACE_LABELS = {
 } as const
 
 export const automationsEnabledAtom = atomWithStorage<boolean>("elf:automationsEnabled", true)
+export const loomComponentToolsEnabledAtom = atomWithStorage<boolean>(
+	"elf:loomComponentToolsEnabled",
+	false,
+)
 
 export const toggleAutomationsAtom = atom(null, (get, set) => {
 	set(automationsEnabledAtom, !get(automationsEnabledAtom))
+})
+export const toggleLoomComponentToolsAtom = atom(null, (get, set) => {
+	set(loomComponentToolsEnabledAtom, !get(loomComponentToolsEnabledAtom))
 })
 
 type SurfaceFlagKey = (typeof FIREFLY_SURFACE_IDS)[number]

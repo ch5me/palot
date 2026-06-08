@@ -6,8 +6,11 @@ import type {
 	SessionBinding,
 	SidePanelTabId,
 } from "../preload/api"
+import type { buildComponentsDescribeHandler, buildComponentsListHandler } from "./palot-plugin/plugin.js"
 import {
 	browserStateSnapshotSchema,
+	palotComponentsDescribeArgsSchema,
+	palotComponentsListArgsSchema,
 	palotUiStateSnapshotSchema,
 	publishBrowserActionInputSchema,
 	sessionBindingSchema,
@@ -17,6 +20,10 @@ import {
 	releaseSessionBinding,
 	upsertSessionBinding,
 } from "./palot-session-binding"
+const componentHandlerLoadPromise = import("./palot-plugin/plugin.js") as Promise<{
+	buildComponentsListHandler: typeof buildComponentsListHandler
+	buildComponentsDescribeHandler: typeof buildComponentsDescribeHandler
+}>
 
 export interface PublishBrowserActionInput {
 	event: BrowserActionEvent
@@ -193,6 +200,18 @@ export function setUiStateSnapshot(input: {
 
 export function setSessionBinding(binding: SessionBinding): SessionBinding {
 	return upsertSessionBinding(sessionBindingSchema.parse(binding))
+}
+
+export async function palotComponentsList(args: unknown): Promise<string> {
+	const parsedArgs = palotComponentsListArgsSchema.parse(args ?? {})
+	const { buildComponentsListHandler } = await componentHandlerLoadPromise
+	return await buildComponentsListHandler()(parsedArgs)
+}
+
+export async function palotComponentsDescribe(args: unknown): Promise<string> {
+	const parsedArgs = palotComponentsDescribeArgsSchema.parse(args ?? {})
+	const { buildComponentsDescribeHandler } = await componentHandlerLoadPromise
+	return await buildComponentsDescribeHandler()(parsedArgs)
 }
 
 export function releaseSessionBindingBySessionId(sessionId: string): SessionBinding | null {

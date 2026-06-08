@@ -12,6 +12,8 @@ declare module "./palot-plugin/plugin.js" {
 	export function buildBrowserToolHandler(input: unknown): unknown
 	export function buildOpenSidePanelHandler(input: unknown): unknown
 	export function buildUiStateHandler(input: unknown): unknown
+	export function buildComponentsListHandler(): (args?: unknown) => Promise<string>
+	export function buildComponentsDescribeHandler(): (args?: unknown) => Promise<string>
 	export function createQueuedResponse(input: unknown): unknown
 	export function createResolver(input: unknown): unknown
 	export function createTypedError(input: unknown): unknown
