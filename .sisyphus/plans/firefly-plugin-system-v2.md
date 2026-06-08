@@ -1321,7 +1321,7 @@ Wave FINAL
 
   **Commit**: NO
 
-- [ ] 18. Define plugin runtime hot reload and dev loop
+- [x] 18. Define plugin runtime hot reload and dev loop
 
   **What to do**:
   - Define plugin build/watch pipeline, hot reload teardown/restart, state preservation boundaries, and dev-mode unsigned behavior.
@@ -1368,7 +1368,7 @@ Wave FINAL
 
   **Commit**: NO
 
-- [ ] 19. Build first-party migration plan from hardcoded registries to plugins
+- [x] 19. Build first-party migration plan from hardcoded registries to plugins
 
   **What to do**:
   - Plan migration order for side panels, widgets, commands, and themes from current hardcoded sources into built-in plugins.
