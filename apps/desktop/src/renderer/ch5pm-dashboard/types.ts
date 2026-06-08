@@ -363,6 +363,33 @@ export interface Ch5PmBabysitter {
 	watchdogCron?: string
 }
 
+export interface Ch5PmLineageSession {
+	id: string
+	role: "planning" | "implementation" | "review" | "manual"
+	agent?: string
+	status?: string
+	output?: string
+	input?: string
+	repo?: string
+	projectSlug?: string
+}
+
+export interface Ch5PmLineageEdge {
+	from: string
+	to: string
+	kind?: string
+}
+
+export interface Ch5PmLineageItem {
+	ticket: string
+	title?: string
+	kind?: string
+	origin?: string
+	plan?: string
+	sessions: Ch5PmLineageSession[]
+	edges: Ch5PmLineageEdge[]
+}
+
 export interface Ch5PmLiveState {
 	_doc?: string
 	schemaVersion?: number
@@ -378,6 +405,7 @@ export interface Ch5PmLiveState {
 	needsChris: Ch5PmNeedsChrisItem[]
 	followUps?: Ch5PmFollowUp[]
 	babysitter?: Ch5PmBabysitter
+	lineage?: Ch5PmLineageItem[]
 }
 
 export interface Ch5PmEventStreamHandlers {
