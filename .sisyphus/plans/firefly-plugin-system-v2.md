@@ -1665,7 +1665,7 @@ Wave FINAL
 
   **Commit**: NO
 
-- [ ] 25. Unified phased roadmap and milestones
+- [x] 25. Unified phased roadmap and milestones
 
   **What to do**:
   - Combine all prior tasks into implementation roadmap with milestones, dependency gates, and defer points.
@@ -1710,7 +1710,7 @@ Wave FINAL
 
   **Commit**: NO
 
-- [ ] 26. Repo implementation matrix and package/module split
+- [x] 26. Repo implementation matrix and package/module split
 
   **What to do**:
   - Convert V2 plan into likely repo touch points and new module/package splits.
@@ -1755,7 +1755,7 @@ Wave FINAL
 
   **Commit**: NO
 
-- [ ] 27. Risk register and mitigations
+- [x] 27. Risk register and mitigations
 
   **What to do**:
   - Consolidate major technical, trust, runtime, UI, and scope risks.
@@ -1802,7 +1802,7 @@ Wave FINAL
 
   **Commit**: NO
 
-- [ ] 28. Verification matrix and release gates
+- [x] 28. Verification matrix and release gates
 
   **What to do**:
   - Define local, pre-merge, and release confidence gates for plugin runtime, bridge projection, renderer projection, and theme contributions.
@@ -1849,7 +1849,7 @@ Wave FINAL
 
   **Commit**: NO
 
-- [ ] 29. Performance, quotas, and plugin metering plan
+- [x] 29. Performance, quotas, and plugin metering plan
 
   **What to do**:
   - Define plugin count assumptions, worker limits, memory/cpu quotas, event fan-out policy, AI metering, and per-plugin telemetry.
