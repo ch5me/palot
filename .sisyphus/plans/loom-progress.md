@@ -29,7 +29,7 @@
 | **4** | Per-node `rev` + dirty-field protection | blocked | `loom.conflictProtection` | plan §3 Phase 4 | `wave-04-dirty-field.md` | blocked on wave 3 |
 | **5** | Durable artifact identity + `append` frame | blocked | `loom.persistence.migrate`, `loom.appendFrame` | plan §3 Phase 5 | `wave-05-durable-identity.md` | blocked on wave 4 |
 | **6** | `contributes.components` in the V2 manifest | blocked | `loom.v2Components` | plan §3 Phase 6 | `wave-06-v2-components.md` | blocked on wave 5; closes the cross-project loop |
-| **2** | The Loom wire (`session` / `render` / `patch` / `poll`) | merged (2026-06-08) | `loom.enabled` | plan §3 Phase 2 | `wave-02-loom-wire.md` | D1/D3/D4 exercised in code (WS surface, node-id+field patches, 250 ms client batching). Loom runtime + WS bridge landed with `palot_session_*`, `palot_render`, `palot_patch`, `palot_poll`, `palot_state`; `dag-sparkline` demo behind `loom.dagSparklineDemo`. |
+| **2** | The Loom wire (`session` / `render` / `patch` / `poll`) | merged (2026-06-08) | `loom.enabled` | plan §3 Phase 2 | `wave-02-loom-wire.md` | `7bd5cd40`. Loom runtime + WS bridge with `palot_session_*`, `palot_render`, `palot_patch`, `palot_poll`, `palot_state`; `dag-sparkline` demo behind `loom.dagSparklineDemo`. Inline fix (chat-view scope, plugin.d.ts). check-types: 8 pre-existing Agent errors only. bun test: 6 pass, 3 skip. |
 
 ## Open decisions <!-- oc:id=sec_ad -->
 
@@ -64,7 +64,7 @@ cross-project teams consume.
 
 ### 2026-06-08 — Wave 2 lands on `atlas/loom` <!-- oc:id=sec_w2 -->
 
-- Loom runtime added under `apps/desktop/src/main/palot-runtime/` with per-session tree/rev store, TOON wire helpers, command layer, and `wire.test.ts` spec-13 walkthrough.
+- Loom runtime added under `apps/desktop/src/main/palot-runtime/` with per-session tree/rev store, TOON wire helpers, command layer, and `wire.test.ts` spec-13 walkthrough. Inline type fixes: `chat-view.tsx` — `loomFeatureActive` declared in `ChatView` but used inside sibling `ChatInputSection`; fixed by passing as `loomFeatureActive?: boolean` prop. `plugin.d.ts` — added module augmentation for `plugin.js` with `LoomHandler` type and `buildLoomSession*` exports.
 - Local WS surface bridge added at `apps/desktop/src/main/loom-bridge.ts`; managed OpenCode spawn now exports `LOOM_RUNTIME_URL` alongside Palot bridge env.
 - `plugin.js` now exposes `palot_session_open`, `palot_session_end`, `palot_render`, `palot_patch`, `palot_poll`, and `palot_state` with TOON responses, AXI-style help/count behavior, and stale rev handling.
 - Renderer Loom path added via `apps/desktop/src/renderer/loom/*`, `LoomContextProvider`, and `GenUi` parallel render path. `dag-sparkline` demo gated by `loom.dagSparklineDemo`.
