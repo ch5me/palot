@@ -10,3 +10,4 @@
 export * from "./manifest"
 export * from "./descriptor"
 export * from "./capabilities"
+export * from "./tool-projection"
