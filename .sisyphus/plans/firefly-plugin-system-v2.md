@@ -1141,7 +1141,7 @@ Wave FINAL
 
   **Commit**: NO
 
-- [ ] 15. Define storage/state scopes and persistence ownership
+- [x] 15. Define storage/state scopes and persistence ownership
 
   **What to do**:
   - Define session/project/global scopes for plugin state.
