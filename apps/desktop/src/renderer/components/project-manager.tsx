@@ -23,6 +23,8 @@ import {
 	TicketIcon,
 } from "lucide-react"
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
+import { subscribeToActiveOpenCodeSessionEvents, fetchActiveOpenCodeSessions } from "../services/backend"
+import type { ActiveOpenCodeSessionsSnapshot } from "../services/backend"
 import { projectModelsAtom, setProjectModelAtom } from "../atoms/preferences"
 import { tagProjectManagerSessionAtom } from "../atoms/project-manager"
 import { agentFamily } from "../atoms/derived/agents"
@@ -166,6 +168,9 @@ export function ProjectManager() {
 	const draft = useDraftSnapshot(PROJECT_MANAGER_DRAFT_KEY)
 	const { setDraft, clearDraft } = useDraftActions(PROJECT_MANAGER_DRAFT_KEY)
 	const [projectPickerOpen, setProjectPickerOpen] = useState(false)
+	const [activeSessionSnapshot, setActiveSessionSnapshot] = useState<ActiveOpenCodeSessionsSnapshot | null>(
+		null,
+	)
 	const allAgents = useAgents()
 	const [selectedModel, setSelectedModel] = useState<ModelRef | null>(null)
 	const [selectedAgent, setSelectedAgent] = useState<string | null>(null)
@@ -212,14 +217,35 @@ export function ProjectManager() {
 		refetchInterval: 60_000,
 	})
 
+	useEffect(() => {
+		let cancelled = false
+		void fetchActiveOpenCodeSessions()
+			.then((snapshot) => {
+				if (!cancelled) setActiveSessionSnapshot(snapshot)
+			})
+			.catch(() => {})
+		const unsubscribe = subscribeToActiveOpenCodeSessionEvents({
+			onSnapshot: (snapshot) => {
+				if (!cancelled) setActiveSessionSnapshot(snapshot)
+			},
+		})
+		return () => {
+			cancelled = true
+			unsubscribe()
+		}
+	}, [])
+
 	const activeSessionCount = useMemo(() => {
 		if (!selectedDirectory) return 0
+		const liveAttachedCount =
+			activeSessionSnapshot?.sessions.filter((session) => session.directory === selectedDirectory).length ?? 0
+		if (liveAttachedCount > 0) return liveAttachedCount
 		return allAgents.filter(
 			(a) =>
 				a.directory === selectedDirectory &&
 				(a.status === "running" || a.status === "waiting" || (a.isAttached && a.status === "idle")),
 		).length
-	}, [allAgents, selectedDirectory])
+	}, [activeSessionSnapshot, allAgents, selectedDirectory])
 
 	const handleModelSelect = useCallback(
 		(model: ModelRef | null) => {
