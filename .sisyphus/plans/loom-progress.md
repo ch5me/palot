@@ -63,6 +63,20 @@ cross-project teams consume.
 
 ## Changelog <!-- oc:id=sec_af -->
 
+### 2026-06-08 — Wave 0 lands on `atlas/loom` <!-- oc:id=sec_ah -->
+
+Seven commits, all pathspec-only, pushed to `origin/atlas/loom`:
+
+- `eb1d70f8 wave-0: collapse the 7 mirror lists to a single registry source` — registry enriched with `manifestId`; `FIREFLY_SURFACE_IDS`, `FIREFLY_SURFACE_DEFAULT_ON`, `FIREFLY_SURFACE_LABELS`, `FireflySurfaceId` derived; runtime drift assertion guards registry.
+- `d11176b0 wave-0: refactor surface consumers` — `useFireflySurfaceContext` hook integrates with `agent-detail.tsx` + `command-palette.tsx`.
+- `030fcd68 wave-0: prune surface docs` — deleted dead `genui-artifact-context.ts`; rewrote `docs/firefly-surface-playbook.md:25-31` to one-line.
+- `b0e5ebab wave-0: add surface guard test` — first test attempt; bun module init blew up on registry/feature-flags circular import.
+- `8bef7e2f wave-0: stabilize surface guard test` — removed the `enabledFlag.atom` reference from registry; re-derived `feature-flags.ts` to own its own local `FIREFLY_SURFACE_IDS` literal; cycle broken.
+- `178ce220 wave-0: break registry↔feature-flags cycle via firefly-surface-atoms` — follow-on cleanup; introduced dead `firefly-surface-atoms.ts` file.
+- `23ae3060 wave-0: remove dead firefly-surface-atoms` — deleted the dead file; cycle was already broken by the previous commit.
+
+`bun run check-types` reports the same 11 pre-existing baseline errors (Appendix C.1 pre-flight + unrelated `Agent` type drift). `bun run lint` is clean. The CI guard at `apps/desktop/src/renderer/__tests__/surface-mirror-lists.test.ts` runs 9 tests, 62 expect() calls, 0 fail. Adding a new side-panel surface = adding one row to `FIREFLY_SURFACE_REGISTRY` in `apps/desktop/src/renderer/firefly-surface-registry.tsx`.
+
 ### 2026-06-08 — planning session, doc set lands <!-- oc:id=sec_ag -->
 
 - `.sisyphus/plans/loom-alignment-assessment.md` — file-anchored gap analysis vs. Loom
