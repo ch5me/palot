@@ -12,6 +12,7 @@ import type {
 import type { Session } from "@opencode-ai/sdk/v2/client"
 import { createOpencodeClient } from "@opencode-ai/sdk/v2/client"
 import { getCredential } from "./credential-store"
+import { ensureLoomBridgeServer } from "./loom-bridge"
 import { ensurePalotBridgeServer } from "./palot-browser-ipc"
 import { loadPalotPluginModule } from "./palot-opencode-plugin-shim"
 import { findFreePort } from "./find-free-port"
@@ -608,10 +609,12 @@ async function appendPalotPlugin(env: NodeJS.ProcessEnv & { OPENCODE_PLUGIN?: st
 		return
 	}
 	const bridgeServer = await ensurePalotBridgeServer()
+	const loomBridge = await ensureLoomBridgeServer()
 	await loadPalotPluginModule(pluginPath)
 	env.OPENCODE_PLUGIN = [env.OPENCODE_PLUGIN, pluginPath].filter(Boolean).join(",")
 	env.PALOT_BRIDGE_URL = `http://${bridgeServer.host}:${bridgeServer.port}${bridgeServer.path}`
 	env.PALOT_BRIDGE_TOKEN = bridgeServer.token
+	env.LOOM_RUNTIME_URL = `ws://${loomBridge.host}:${loomBridge.port}`
 }
 
 async function spawnServer(

@@ -34,6 +34,20 @@ test("round-trips tabular arrays of objects", () => {
 	expect(decode(encode(value))).toEqual(value)
 })
 
+test("round-trips object payloads through JSON fallback", () => {
+	const value = {
+		tree: {
+			id: "root",
+			component: "dag-sparkline",
+			props: {
+				nodes: [{ id: "plan", label: "Plan" }],
+				edges: [],
+			},
+		},
+	}
+	expect(decode(encode(value))).toEqual(value)
+})
+
 test("throws on malformed input", () => {
 	expect(() => decode("components[2]:\n  alpha")).toThrow("count mismatch")
 })

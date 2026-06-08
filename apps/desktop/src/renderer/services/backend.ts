@@ -247,6 +247,29 @@ export async function openPalotSidePanel(tab: import("../../preload/api").SidePa
 	return null
 }
 
+export async function openLoomSession(sessionId: string): Promise<import("../../preload/api").LoomOpenSessionResult | null> {
+	if (isElectron) {
+		return window.elf.palot.openLoomSession(sessionId)
+	}
+	return null
+}
+
+export async function sendLoomEvent(
+	sessionId: string,
+	event: { type: string; nodeId: string; payload?: Record<string, unknown> },
+): Promise<void> {
+	if (!isElectron) return
+	await window.elf.palot.sendLoomEvent(sessionId, event)
+}
+
+export async function sendLoomStateDelta(
+	sessionId: string,
+	delta: { nodeId: string; field: string; value: unknown },
+): Promise<void> {
+	if (!isElectron) return
+	await window.elf.palot.sendLoomStateDelta(sessionId, delta)
+}
+
 export function subscribeToPalotOpenSidePanel(
 	callback: (payload: { tab: import("../../preload/api").SidePanelTabId }) => void,
 ): () => void {

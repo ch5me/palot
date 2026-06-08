@@ -125,6 +125,10 @@ import {
 	setSessionBinding,
 	setUiStateSnapshot,
 } from "./palot-browser-ipc"
+import { openLoomSession as resolveLoomSession } from "./palot-resolver"
+import { sessionOpenCommand, stateCommand } from "./palot-runtime/commands"
+import { getLoomSessionState, queueLoomEvent } from "./palot-runtime/session-store"
+import { encodeWirePayload } from "./palot-runtime/wire"
 import { getOpaqueWindows, getSettings, onSettingsChanged, updateSettings } from "./settings-store"
 import {
 	checkForUpdates,
@@ -449,6 +453,37 @@ export function registerIpcHandlers(): void {
 			}
 			return snapshot
 		}),
+	)
+	ipcMain.handle(
+		"palot:loom-session-open",
+		withLogging("palot:loom-session-open", async (_, sessionId: string) => {
+			sessionOpenCommand(sessionId, encodeWirePayload({ title: sessionId }))
+			const session = getLoomSessionState(sessionId)
+			const resolved = await resolveLoomSession(sessionId)
+			return {
+				sessionId,
+				surfaceUrl: resolved.surface_url,
+				rev: session?.rev ?? 0,
+			}
+		}),
+	)
+	ipcMain.handle(
+		"palot:loom-event",
+		withLogging(
+			"palot:loom-event",
+			async (_, sessionId: string, event: { type: string; nodeId: string; payload?: Record<string, unknown> }) => {
+				queueLoomEvent(sessionId, event)
+			},
+		),
+	)
+	ipcMain.handle(
+		"palot:loom-state",
+		withLogging(
+			"palot:loom-state",
+			async (_, sessionId: string, delta: { nodeId: string; field: string; value: unknown }) => {
+				stateCommand(sessionId, encodeWirePayload({ delta }))
+			},
+		),
 	)
 
 	// --- Model state ---

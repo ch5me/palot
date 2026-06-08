@@ -81,6 +81,15 @@ contextBridge.exposeInMainWorld("elf", {
 		getUiStateSnapshot: () => ipcRenderer.invoke("palot:ui-state-snapshot"),
 		openSidePanel: (tab: import("./api").SidePanelTabId) =>
 			ipcRenderer.invoke("palot:open-side-panel", tab),
+		openLoomSession: (sessionId: string) => ipcRenderer.invoke("palot:loom-session-open", sessionId),
+		sendLoomEvent: (
+			sessionId: string,
+			event: { type: string; nodeId: string; payload?: Record<string, unknown> },
+		) => ipcRenderer.invoke("palot:loom-event", sessionId, event),
+		sendLoomStateDelta: (
+			sessionId: string,
+			delta: { nodeId: string; field: string; value: unknown },
+		) => ipcRenderer.invoke("palot:loom-state", sessionId, delta),
 		onOpenSidePanel: (callback: (payload: { tab: import("./api").SidePanelTabId }) => void) => {
 			const listener = (_event: unknown, payload: { tab: import("./api").SidePanelTabId }) => callback(payload)
 			ipcRenderer.on("palot:open-side-panel", listener)

@@ -304,6 +304,23 @@ export const palotComponentsDescribeArgsShape = {
 	name: z.string().trim().min(1),
 	full: z.boolean().optional(),
 } satisfies z.ZodRawShape
+export const loomSessionOpenArgsShape = {
+	title: z.string().trim().min(1),
+} satisfies z.ZodRawShape
+export const loomSessionEndArgsShape = {} satisfies z.ZodRawShape
+export const loomRenderArgsShape = {
+	tree: z.string().trim().min(1),
+} satisfies z.ZodRawShape
+export const loomPatchArgsShape = {
+	patch: z.string().trim().min(1),
+} satisfies z.ZodRawShape
+export const loomPollArgsShape = {
+	rev: z.number().int().nonnegative().optional(),
+	help: z.boolean().optional(),
+} satisfies z.ZodRawShape
+export const loomStateArgsShape = {
+	delta: z.string().trim().min(1),
+} satisfies z.ZodRawShape
 export const palotOpenSidePanelArgsShape = {
 	tab: sidePanelTabSchema,
 } satisfies z.ZodRawShape
@@ -318,6 +335,12 @@ export const palotBrowserTypeArgsSchema = z.object(palotBrowserTypeArgsShape).pa
 export const palotBrowserScrollArgsSchema = z.object(palotBrowserScrollArgsShape).passthrough()
 export const palotComponentsListArgsSchema = z.object(palotComponentsListArgsShape).passthrough()
 export const palotComponentsDescribeArgsSchema = z.object(palotComponentsDescribeArgsShape)
+export const loomSessionOpenArgsSchema = z.object(loomSessionOpenArgsShape)
+export const loomSessionEndArgsSchema = z.object(loomSessionEndArgsShape).passthrough()
+export const loomRenderArgsSchema = z.object(loomRenderArgsShape)
+export const loomPatchArgsSchema = z.object(loomPatchArgsShape)
+export const loomPollArgsSchema = z.object(loomPollArgsShape).passthrough()
+export const loomStateArgsSchema = z.object(loomStateArgsShape)
 export const palotOpenSidePanelArgsSchema = z.object(palotOpenSidePanelArgsShape)
 export const palotUiStateArgsSchema = z.object(palotUiStateArgsShape).passthrough()
 
@@ -340,6 +363,27 @@ export const palotComponentsDescribeResultSchema = z.object({
 	errorCode: z.string().optional(),
 	help: z.array(z.string()).optional(),
 })
+export const loomSessionOpenResultSchema = z.object({
+	session_id: z.string(),
+	surface_url: z.string(),
+	rev: z.number().int().nonnegative(),
+})
+export const loomSessionEndResultSchema = z.object({
+	rev: z.number().int().nonnegative(),
+})
+export const loomMutationResultSchema = z.object({
+	rev: z.number().int().nonnegative(),
+	errorCode: z.string().optional(),
+	delta: z.array(z.unknown()).optional(),
+})
+export const loomPollResultSchema = z.object({
+	rev: z.number().int().nonnegative(),
+	events: z.array(z.unknown()),
+	state_delta: z.array(z.unknown()),
+	tree_slice: z.unknown().nullable(),
+	help: z.array(z.string()).optional(),
+	count: z.number().int().nonnegative().optional(),
+})
 
 export const palotToolArgsSchemas = {
 	browser_status: palotBrowserStatusArgsSchema,
@@ -351,6 +395,12 @@ export const palotToolArgsSchemas = {
 	browser_scroll: palotBrowserScrollArgsSchema,
 	palot_components_list: palotComponentsListArgsSchema,
 	palot_components_describe: palotComponentsDescribeArgsSchema,
+	palot_session_open: loomSessionOpenArgsSchema,
+	palot_session_end: loomSessionEndArgsSchema,
+	palot_render: loomRenderArgsSchema,
+	palot_patch: loomPatchArgsSchema,
+	palot_poll: loomPollArgsSchema,
+	palot_state: loomStateArgsSchema,
 	open_side_panel: palotOpenSidePanelArgsSchema,
 	ui_state: palotUiStateArgsSchema,
 } as const
@@ -365,6 +415,12 @@ export const palotToolArgsShapes = {
 	browser_scroll: palotBrowserScrollArgsShape,
 	palot_components_list: palotComponentsListArgsShape,
 	palot_components_describe: palotComponentsDescribeArgsShape,
+	palot_session_open: loomSessionOpenArgsShape,
+	palot_session_end: loomSessionEndArgsShape,
+	palot_render: loomRenderArgsShape,
+	palot_patch: loomPatchArgsShape,
+	palot_poll: loomPollArgsShape,
+	palot_state: loomStateArgsShape,
 	open_side_panel: palotOpenSidePanelArgsShape,
 	ui_state: palotUiStateArgsShape,
 } as const
@@ -373,3 +429,5 @@ export type DispatchBrowserToolInput = z.infer<typeof dispatchBrowserToolInputSc
 export type PalotResolverResult = z.infer<typeof palotResolverResultSchema>
 export type PublishBrowserActionInput = z.infer<typeof publishBrowserActionInputSchema>
 export type SessionBindingStoreFile = z.infer<typeof sessionBindingStoreFileSchema>
+export type LoomSessionOpenResult = z.infer<typeof loomSessionOpenResultSchema>
+export type LoomPollResult = z.infer<typeof loomPollResultSchema>

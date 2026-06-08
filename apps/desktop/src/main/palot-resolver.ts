@@ -1,5 +1,6 @@
-import type { PalotResolverResult } from "../shared/palot-bridge-schemas"
+import type { LoomSessionOpenResult, PalotResolverResult } from "../shared/palot-bridge-schemas"
 import { palotResolverResultSchema } from "../shared/palot-bridge-schemas"
+import { ensureLoomBridgeServer } from "./loom-bridge"
 import { getBrowserStateSnapshot, getSessionBinding } from "./palot-browser-ipc"
 
 export function resolvePalotSessionBinding(opencodeSessionId: string): PalotResolverResult {
@@ -21,4 +22,13 @@ export function resolvePalotSessionBinding(opencodeSessionId: string): PalotReso
 			magicBrowserSessionId: binding.magicBrowserSessionId,
 		},
 	})
+}
+
+export async function openLoomSession(sessionId: string): Promise<LoomSessionOpenResult> {
+	const bridge = await ensureLoomBridgeServer()
+	return {
+		session_id: sessionId,
+		surface_url: bridge.surfaceUrl(sessionId),
+		rev: 0,
+	}
 }

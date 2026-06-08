@@ -29,7 +29,7 @@
 | **4** | Per-node `rev` + dirty-field protection | blocked | `loom.conflictProtection` | plan §3 Phase 4 | `wave-04-dirty-field.md` | blocked on wave 3 |
 | **5** | Durable artifact identity + `append` frame | blocked | `loom.persistence.migrate`, `loom.appendFrame` | plan §3 Phase 5 | `wave-05-durable-identity.md` | blocked on wave 4 |
 | **6** | `contributes.components` in the V2 manifest | blocked | `loom.v2Components` | plan §3 Phase 6 | `wave-06-v2-components.md` | blocked on wave 5; closes the cross-project loop |
-| **2** | The Loom wire (`session` / `render` / `patch` / `poll`) | dispatched | `loom.enabled` | plan §3 Phase 2 | `wave-02-loom-wire.md` | D1/D3/D4 resolved (WS, node-id+field, 250 ms batch). Pre-flight: `ensurePalotBridgeServer` exported from `palot-browser-ipc.ts` (port from main worktree uncommitted changes, 425-line version). Also preserves Wave 1 `palotComponentsList`/`palotComponentsDescribe` routes. 8 pre-existing Agent type errors (baseline). |
+| **2** | The Loom wire (`session` / `render` / `patch` / `poll`) | merged (2026-06-08) | `loom.enabled` | plan §3 Phase 2 | `wave-02-loom-wire.md` | D1/D3/D4 exercised in code (WS surface, node-id+field patches, 250 ms client batching). Loom runtime + WS bridge landed with `palot_session_*`, `palot_render`, `palot_patch`, `palot_poll`, `palot_state`; `dag-sparkline` demo behind `loom.dagSparklineDemo`. |
 
 ## Open decisions <!-- oc:id=sec_ad -->
 
@@ -61,6 +61,14 @@ cross-project teams consume.
 | CH5 agent CLIs/tools | ongoing | new tools run the AXI checklist by default |
 
 ## Changelog <!-- oc:id=sec_af -->
+
+### 2026-06-08 — Wave 2 lands on `atlas/loom` <!-- oc:id=sec_w2 -->
+
+- Loom runtime added under `apps/desktop/src/main/palot-runtime/` with per-session tree/rev store, TOON wire helpers, command layer, and `wire.test.ts` spec-13 walkthrough.
+- Local WS surface bridge added at `apps/desktop/src/main/loom-bridge.ts`; managed OpenCode spawn now exports `LOOM_RUNTIME_URL` alongside Palot bridge env.
+- `plugin.js` now exposes `palot_session_open`, `palot_session_end`, `palot_render`, `palot_patch`, `palot_poll`, and `palot_state` with TOON responses, AXI-style help/count behavior, and stale rev handling.
+- Renderer Loom path added via `apps/desktop/src/renderer/loom/*`, `LoomContextProvider`, and `GenUi` parallel render path. `dag-sparkline` demo gated by `loom.dagSparklineDemo`.
+- Progress row updated to merged. Baseline pre-existing type drift still excluded from scope.
 
 ### 2026-06-08 — Wave 1 lands on `atlas/loom` <!-- oc:id=sec_w1 -->
 

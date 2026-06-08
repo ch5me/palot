@@ -3,6 +3,8 @@ import { cn } from "@ch5me/elf-ui/lib/utils"
 import { useSetAtom } from "jotai"
 import { memo, useEffect, useMemo, useRef } from "react"
 import { upsertGenUiArtifactAtom } from "../atoms/genui-artifacts"
+import { useLoomContext } from "../loom/loom-context"
+import { LoomRenderer } from "../loom/loom-renderer"
 import type { GenUiArtifactDescriptor } from "../lib/types"
 import { GenUiArtifactInlineActions } from "../components/genui/genui-artifact-inline-actions"
 import { parseGenUiProps, resolveGenUiEntry } from "./registry"
@@ -338,7 +340,11 @@ interface TextWithGenUiProps {
  * parse errors.
  */
 export function TextWithGenUi({ text, isStreaming, className, sessionId, messageId, partId }: TextWithGenUiProps) {
+	const loom = useLoomContext()
 	const segments = useMemo(() => splitGenUiFences(text, { dropErrors: true }), [text])
+	if (loom?.tree) {
+		return <LoomRenderer tree={loom.tree} />
+	}
 	if (segments.length === 1 && segments[0].kind === "text") {
 		return (
 			<MessageResponse className={className} animated={isStreaming}>

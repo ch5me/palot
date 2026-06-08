@@ -17,6 +17,7 @@ import {
 } from "@ch5me/elf-ui/components/ai-elements/prompt-input"
 import { cn } from "@ch5me/elf-ui/lib/utils"
 import { useAtomValue, useSetAtom } from "jotai"
+import { LoomContextProvider } from "../../loom/loom-context"
 import {
 	ArrowUpToLineIcon,
 	ChevronUpIcon,
@@ -46,6 +47,7 @@ import {
 	primePlanModeAtom,
 	setPlanModeAtom,
 } from "../../atoms/chat"
+import { loomEnabledAtom } from "../../atoms/feature-flags"
 import { projectModelsAtom, setProjectModelAtom } from "../../atoms/preferences"
 import type { SessionSetupPhase } from "../../atoms/sessions"
 import { sessionFamily } from "../../atoms/sessions"
@@ -475,7 +477,6 @@ export function ChatView({
 	sidePanelOpen,
 }: ChatViewProps) {
 	const isWorking = agent.status === "running"
-
 	// Ref to imperatively scroll the conversation to bottom from outside the
 	// <Conversation> tree (e.g. after sending a message or answering a question).
 	const scrollRef = useRef<ScrollHandle | null>(null)
@@ -732,9 +733,10 @@ export function ChatView({
 						onRedo={onRedo}
 						isReverted={isReverted}
 						scrollRef={scrollRef}
-						sidePanelOpen={sidePanelOpen}
-						onForkFromTurn={onForkFromTurn}
-					/>
+					sidePanelOpen={sidePanelOpen}
+					loomFeatureActive={useAtomValue(loomEnabledAtom)}
+					onForkFromTurn={onForkFromTurn}
+				/>
 				)}
 			</div>
 		</SessionWidgetWorkspace>
@@ -771,6 +773,7 @@ interface ChatInputSectionProps {
 	isReverted?: boolean
 	scrollRef: React.RefObject<ScrollHandle | null>
 	sidePanelOpen?: boolean
+	loomFeatureActive?: boolean
 	/** Fork the current session (full fork, no cutoff) */
 	onForkFromTurn?: (messageId?: string) => Promise<void>
 }
@@ -796,6 +799,7 @@ function ChatInputSection({
 	isReverted,
 	scrollRef,
 	sidePanelOpen,
+	loomFeatureActive,
 	onForkFromTurn,
 }: ChatInputSectionProps) {
 	const [sending, setSending] = useState(false)
@@ -1333,7 +1337,8 @@ function ChatInputSection({
 		: "mx-auto w-full min-w-0 max-w-4xl"
 
 	return (
-		<>
+		<LoomContextProvider sessionId={loomFeatureActive ? agent.sessionId : null}>
+			<>
 			<div className="min-w-0 px-0 pb-0 pt-1 sm:px-4 sm:pb-4 sm:pt-2">
 				<div className={inputWidthClass}>
 					{/* Revert banner — shown when session is in undo state */}
@@ -1524,6 +1529,7 @@ function ChatInputSection({
 				onSelect={handleSkillSelect}
 			/>
 		</>
+		</LoomContextProvider>
 	)
 }
 
