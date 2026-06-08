@@ -5,7 +5,11 @@ mock.module("../../../renderer/lib/monaco", () => ({
 	languageForPath: () => "plaintext",
 }))
 
-const { buildComponentsDescribeHandler, buildComponentsListHandler } = await import("../plugin.js")
+const pluginModule = (await import("../plugin.js")) as unknown as {
+	buildComponentsDescribeHandler: () => (args?: unknown) => Promise<string>
+	buildComponentsListHandler: () => (args?: unknown) => Promise<string>
+}
+const { buildComponentsDescribeHandler, buildComponentsListHandler } = pluginModule
 
 test("palot_components_list returns TOON catalog", async () => {
 	const result = await buildComponentsListHandler()({})

@@ -147,7 +147,8 @@ export function decode(toon: string): unknown {
 		if (!decoded || typeof decoded !== "object" || Array.isArray(decoded) || !("key" in decoded)) {
 			throw new Error(`Malformed TOON line: ${line}`)
 		}
-		result[decoded.key] = decoded.value
+		const pair = decoded as { key: string; value: unknown }
+		result[pair.key] = pair.value
 	}
 	return result
 }

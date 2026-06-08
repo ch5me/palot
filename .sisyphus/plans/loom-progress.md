@@ -24,7 +24,7 @@
 | Wave | Title | Status | Feature flag | Doc | Prompt | Notes |
 |---|---|---|---|---|---|---|
 | **0** | Collapse the 7 mirror lists | merged (2026-06-08) | n/a (refactor) | plan §3 Phase 0 | `wave-00-mirror-lists.md` | 6 commits on `atlas/loom` (`eb1d70f8`, `d11176b0`, `030fcd68`, `b0e5ebab`, `8bef7e2f`, `178ce220`, `23ae3060`). Single source of truth = `FIREFLY_SURFACE_REGISTRY` in `apps/desktop/src/renderer/firefly-surface-registry.tsx`. CI guard test at `apps/desktop/src/renderer/__tests__/surface-mirror-lists.test.ts` (9/9 pass). Cycle break: registry no longer imports `feature-flags.ts`; `feature-flags.ts` owns its own `FIREFLY_SURFACE_IDS` literal (test guards sync). |
-| **1** | Typed Zod GenUI registry + `list` / `describe` | not started | `loom.componentTools.enabled` | plan §3 Phase 1 | `wave-01-typed-registry.md` | first Loom wave; smallest safe step |
+| **1** | Typed Zod GenUI registry + `list` / `describe` | merged (2026-06-08) | `loom.componentTools.enabled` | plan §3 Phase 1 | `wave-01-typed-registry.md` | merged on `atlas/loom`; flag remains off for dogfood |
 | **2** | The Loom wire (`session` / `render` / `patch` / `poll`) | blocked | `loom.enabled` | plan §3 Phase 2 | `wave-02-loom-wire.md` | blocked on D1, D3, D4 |
 | **3** | Dual `signal` / `state` bindings + `decision_card` | blocked | `loom.dualBindings` | plan §3 Phase 3 | `wave-03-dual-bindings.md` | blocked on wave 2 |
 | **4** | Per-node `rev` + dirty-field protection | blocked | `loom.conflictProtection` | plan §3 Phase 4 | `wave-04-dirty-field.md` | blocked on wave 3 |
