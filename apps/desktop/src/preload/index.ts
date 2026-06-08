@@ -1,4 +1,5 @@
 import { contextBridge, ipcRenderer } from "electron"
+import type { DeviceCodeUi, ElfAuthStateDto } from "./api"
 
 /**
  * Preload bridge — exposes a typed API from the main process to the renderer.
@@ -490,5 +491,31 @@ contextBridge.exposeInMainWorld("elf", {
 		},
 		/** Restore the most recent migration backup. */
 		restoreBackup: () => ipcRenderer.invoke("onboarding:restore-backup"),
+	},
+
+	// --- Firefly Cloud auth ---
+	auth: {
+		getState(): Promise<ElfAuthStateDto | null> {
+			return ipcRenderer.invoke("auth:get-state")
+		},
+		signIn(): Promise<DeviceCodeUi> {
+			return ipcRenderer.invoke("auth:sign-in")
+		},
+		poll(): Promise<ElfAuthStateDto | null> {
+			return ipcRenderer.invoke("auth:poll")
+		},
+		cancelSignIn(): Promise<void> {
+			return ipcRenderer.invoke("auth:cancel-sign-in")
+		},
+		signOut(): Promise<void> {
+			return ipcRenderer.invoke("auth:sign-out")
+		},
+		onChange(cb: (state: ElfAuthStateDto | null) => void): () => void {
+			const listener = (_event: unknown, state: ElfAuthStateDto | null) => cb(state)
+			ipcRenderer.on("auth:state-changed", listener)
+			return () => {
+				ipcRenderer.removeListener("auth:state-changed", listener)
+			}
+		},
 	},
 })

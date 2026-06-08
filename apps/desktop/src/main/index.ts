@@ -7,6 +7,7 @@ import { initAutomations, shutdownAutomations } from "./automation"
 import { registerBrowserLaneProtocol } from "./browser-lane-protocol"
 import { initCredentialStore } from "./credential-store"
 import { registerFireflyPluginIpc } from "./firefly-plugin/ipc"
+import { registerDeepLink } from "./services/auth/sign-in-to-editor-handler"
 import { getOpaqueWindowsPref, registerIpcHandlers } from "./ipc-handlers"
 import { installLiquidGlass, resolveWindowChrome } from "./liquid-glass"
 import { createLogger } from "./logger"
@@ -312,6 +313,7 @@ if (!gotLock) {
 
 		initSettingsStore()
 		initCredentialStore()
+		registerDeepLink()
 		registerIpcHandlers()
 		registerBuiltInHostCommands()
 		registerFireflyPluginIpc()

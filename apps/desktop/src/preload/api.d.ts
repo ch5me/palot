@@ -823,6 +823,33 @@ export interface McpConnectionConfigMutationInput {
 	config: Record<string, unknown>
 }
 
+// ============================================================
+// Firefly Cloud auth types
+// ============================================================
+
+export interface ElfAuthStateDto {
+	hasToken: boolean
+	elfUserId: string | null
+	expiresAt: number | null
+	issuer: string | null
+	audience: string | null
+}
+
+export interface DeviceCodeUi {
+	userCode: string
+	verificationUriComplete: string
+	expiresIn: number
+}
+
+export interface ElfAuthApi {
+	getState(): Promise<ElfAuthStateDto | null>
+	signIn(): Promise<DeviceCodeUi>
+	poll(): Promise<ElfAuthStateDto | null>
+	cancelSignIn(): Promise<void>
+	signOut(): Promise<void>
+	onChange(cb: (state: ElfAuthStateDto | null) => void): () => void
+}
+
 export type {
 	McpCatalogBrowseInput,
 	McpCatalogSearchInput,
@@ -1422,13 +1449,15 @@ export interface ElfAPI {
 		/** Subscribe to migration progress updates (history writing). */
 		onMigrationProgress: (callback: (progress: MigrationProgress) => void) => () => void
 		/** Restore the most recent migration backup. */
-		restoreBackup: () => Promise<{
+restoreBackup: () => Promise<{
 			success: boolean
 			restored: string[]
 			removed: string[]
 			errors: string[]
 		}>
 	}
+
+	auth: ElfAuthApi
 }
 
 declare global {

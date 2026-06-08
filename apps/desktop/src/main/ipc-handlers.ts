@@ -27,6 +27,13 @@ import type { CreateAutomationInput, UpdateAutomationInput } from "./automation/
 import { installCli, isCliInstalled, uninstallCli } from "./cli-install"
 import { deleteCredential, getCredential, storeCredential } from "./credential-store"
 import {
+	getAuthState,
+	startSignIn,
+	pollSignIn,
+	cancelSignIn,
+	signOut,
+} from "./services/auth/auth-controller"
+import {
 	applyChangesToLocal,
 	applyDiffTextToLocal,
 	checkout,
@@ -117,6 +124,7 @@ import {
 	stopBrowserLane,
 } from "./browser-lane-manager"
 import {
+	broadcastOpenSidePanel,
 	getBrowserStateSnapshot,
 	getSessionBinding,
 	getUiStateSnapshot,
@@ -444,9 +452,7 @@ export function registerIpcHandlers(): void {
 					activeTab: parsedTab,
 				},
 			})
-			for (const win of BrowserWindow.getAllWindows()) {
-				win.webContents.send("palot:open-side-panel", { tab: parsedTab })
-			}
+			broadcastOpenSidePanel(parsedTab)
 			return snapshot
 		}),
 	)
@@ -939,6 +945,31 @@ export function registerIpcHandlers(): void {
 			deleteCredential(serverId)
 		}),
 	)
+
+	// --- Firefly Cloud auth ---
+
+	ipcMain.handle("auth:get-state", async () => {
+		return getAuthState()
+	})
+
+	ipcMain.handle("auth:sign-in", async (_, clientId: string) => {
+		return startSignIn(clientId)
+	})
+
+	ipcMain.handle("auth:poll", async () => {
+		return pollSignIn()
+	})
+
+	ipcMain.handle("auth:cancel-sign-in", async () => {
+		return cancelSignIn()
+	})
+
+	ipcMain.handle("auth:sign-out", async () => {
+		await signOut()
+		for (const win of BrowserWindow.getAllWindows()) {
+			win.webContents.send("auth:state-changed", null)
+		}
+	})
 
 	// --- mDNS discovery ---
 
