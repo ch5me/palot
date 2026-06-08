@@ -6,7 +6,6 @@ import type {
 	SessionBinding,
 	SidePanelTabId,
 } from "../preload/api"
-import type { buildComponentsDescribeHandler, buildComponentsListHandler } from "./palot-plugin/plugin.js"
 import {
 	browserStateSnapshotSchema,
 	palotComponentsDescribeArgsSchema,
@@ -20,9 +19,9 @@ import {
 	releaseSessionBinding,
 	upsertSessionBinding,
 } from "./palot-session-binding"
-const componentHandlerLoadPromise = import("./palot-plugin/plugin.js") as Promise<{
-	buildComponentsListHandler: typeof buildComponentsListHandler
-	buildComponentsDescribeHandler: typeof buildComponentsDescribeHandler
+const componentHandlerLoadPromise = import("./palot-plugin-entry.js") as unknown as Promise<{
+	buildComponentsListHandler: () => (args?: unknown) => Promise<string>
+	buildComponentsDescribeHandler: () => (args?: unknown) => Promise<string>
 }>
 
 export interface PublishBrowserActionInput {
