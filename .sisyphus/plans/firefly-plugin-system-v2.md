@@ -1275,7 +1275,7 @@ Wave FINAL
 
   **Commit**: NO
 
-- [ ] 17. Define command/menu/keybinding projection path
+- [x] 17. Define command/menu/keybinding projection path
 
   **What to do**:
   - Design how plugin commands appear in command palette, menus, and keybindings.
