@@ -9,7 +9,7 @@
 > `/tmp/palot-genui-architecture-map.recovered.md`. This appendix folds
 > the recovered findings into the alignment assessment.
 
-The original `docs/loom-alignment-assessment.md` was written without the
+The original `.sisyphus/plans/loom-alignment-assessment.md` was written without the
 full architecture map. The recovered map confirms everything in the
 original assessment *and* adds several structural findings the
 assessment should have called out. This addendum is the canonical
