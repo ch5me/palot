@@ -1,18 +1,7 @@
-import { Badge } from "@ch5me/elf-ui/components/badge"
 import { Button } from "@ch5me/elf-ui/components/button"
 import { useQuery } from "@tanstack/react-query"
-import {
-	ActivityIcon,
-	ArrowUpRightIcon,
-	CheckCircle2Icon,
-	CircleAlertIcon,
-	RefreshCwIcon,
-	ServerIcon,
-	TicketIcon,
-	UserRoundIcon,
-	WorkflowIcon,
-} from "lucide-react"
 import { useRouter } from "@tanstack/react-router"
+import { RefreshCwIcon } from "lucide-react"
 import { useMemo } from "react"
 import type {
 	Ch5PmLiveBackgroundAgent,
@@ -29,16 +18,22 @@ import { fetchCh5PmState, openExternalUrl } from "../services/backend"
 const log = createLogger("pm-live-dashboard")
 
 const POLL_MS = 15_000
+const SESSION_COLUMNS = "72px minmax(0,1.9fr) minmax(0,1.2fr) 68px 86px minmax(0,1.3fr)"
+const BOX_COLUMNS = "72px minmax(0,0.9fr) minmax(0,1.1fr) 28px"
+const NEEDS_COLUMNS = "92px minmax(0,1fr) 62px 74px"
+const FRONTIER_COLUMNS = "86px minmax(0,1fr) 82px 76px"
+const AGENT_COLUMNS = "minmax(0,1.15fr) 90px minmax(0,1fr)"
+const COMPLETION_COLUMNS = "28px minmax(0,1fr)"
 
-const YOLO_TONES: Record<string, string> = {
-	working: "border-emerald-500/30 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300",
-	done: "border-sky-500/30 bg-sky-500/10 text-sky-700 dark:text-sky-300",
-	idle: "border-border/70 bg-muted/40 text-muted-foreground",
-	nudged: "border-blue-500/30 bg-blue-500/10 text-blue-700 dark:text-blue-300",
-	"needs-chris": "border-rose-500/40 bg-rose-500/10 text-rose-700 dark:text-rose-300",
+const STATUS_STYLES: Record<string, string> = {
+	working: "bg-emerald-500/18 text-emerald-300",
+	done: "bg-sky-500/18 text-sky-300",
+	idle: "bg-muted text-muted-foreground",
+	nudged: "bg-blue-500/18 text-blue-300",
+	"needs-chris": "bg-rose-500/18 text-rose-300",
 }
 
-function normalizeLaneStatus(status?: string): keyof typeof YOLO_TONES {
+function normalizeLaneStatus(status?: string): keyof typeof STATUS_STYLES {
 	const normalized = status?.trim().toLowerCase() ?? "idle"
 	if (normalized.includes("need") || normalized.includes("human")) return "needs-chris"
 	if (normalized.includes("nudge")) return "nudged"
@@ -52,13 +47,18 @@ function formatTimeAgo(value?: string): string {
 	const timestamp = Date.parse(value)
 	if (Number.isNaN(timestamp)) return value
 	const deltaSeconds = Math.max(0, Math.floor((Date.now() - timestamp) / 1000))
-	if (deltaSeconds < 60) return `${deltaSeconds}s ago`
+	if (deltaSeconds < 60) return `${deltaSeconds}s`
 	const deltaMinutes = Math.floor(deltaSeconds / 60)
-	if (deltaMinutes < 60) return `${deltaMinutes}m ago`
+	if (deltaMinutes < 60) return `${deltaMinutes}m`
 	const deltaHours = Math.floor(deltaMinutes / 60)
-	if (deltaHours < 48) return `${deltaHours}h ago`
+	if (deltaHours < 48) return `${deltaHours}h`
 	const deltaDays = Math.floor(deltaHours / 24)
-	return `${deltaDays}d ago`
+	return `${deltaDays}d`
+}
+
+function formatCompact(value?: string): string {
+	if (!value) return "--"
+	return value.replace(/^https?:\/\//, "")
 }
 
 function openUrl(url?: string) {
@@ -68,69 +68,48 @@ function openUrl(url?: string) {
 	})
 }
 
-function StatCard({
-	label,
-	value,
-	caption,
-	icon: Icon,
-	tone,
-}: {
-	label: string
-	value: number | string
-	caption: string
-	icon: typeof ActivityIcon
-	tone?: string
-}) {
+function HeaderCell({ children, className }: { children: React.ReactNode; className?: string }) {
+	return <div className={`truncate px-2 py-1 font-medium uppercase tracking-[0.18em] text-muted-foreground ${className ?? ""}`}>{children}</div>
+}
+
+function Cell({ children, className }: { children: React.ReactNode; className?: string }) {
+	return <div className={`truncate px-2 py-1 ${className ?? ""}`}>{children}</div>
+}
+
+function SectionTitle({ title, meta }: { title: string; meta?: string }) {
 	return (
-		<div className="rounded-3xl border border-border/60 bg-card/75 p-4 shadow-sm backdrop-blur-sm">
-			<div className="flex items-center gap-2 text-[11px] font-medium uppercase tracking-[0.22em] text-muted-foreground">
-				<Icon className="size-3.5" />
-				{label}
-			</div>
-			<div className={`mt-3 text-3xl font-semibold ${tone ?? "text-foreground"}`}>{value}</div>
-			<div className="mt-1 text-xs text-muted-foreground">{caption}</div>
+		<div className="flex h-7 items-center justify-between border-b border-border bg-background px-2 text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
+			<span>{title}</span>
+			{meta ? <span className="truncate">{meta}</span> : null}
 		</div>
 	)
 }
 
-function Section({ title, eyebrow, children }: { title: string; eyebrow: string; children: React.ReactNode }) {
+function StripStat({ label, value, tone }: { label: string; value: number | string; tone?: string }) {
 	return (
-		<section className="rounded-[28px] border border-border/60 bg-card/70 p-5 shadow-sm backdrop-blur-sm">
-			<div className="text-[11px] font-medium uppercase tracking-[0.24em] text-muted-foreground">{eyebrow}</div>
-			<h2 className="mt-2 text-lg font-semibold text-foreground">{title}</h2>
-			<div className="mt-4">{children}</div>
-		</section>
+		<div className="flex min-w-0 items-center gap-2 border-l border-border px-2 first:border-l-0">
+			<div className="truncate text-[10px] uppercase tracking-[0.18em] text-muted-foreground">{label}</div>
+			<div className={`truncate text-[12px] font-semibold ${tone ?? "text-foreground"}`}>{value}</div>
+		</div>
 	)
 }
 
-function BoxCard({ box }: { box: Ch5PmLiveBox }) {
+function BoxRow({ box }: { box: Ch5PmLiveBox }) {
 	const healthy = box.daemon.health === "healthy"
 	return (
-		<div className="rounded-3xl border border-border/60 bg-background/80 p-4">
-			<div className="flex items-start justify-between gap-3">
-				<div>
-					<div className="flex items-center gap-2">
-						<div className="text-base font-semibold text-foreground">{box.id}</div>
-						<Badge variant={healthy ? "secondary" : "destructive"}>{box.daemon.health ?? "unknown"}</Badge>
-					</div>
-					<div className="mt-1 text-sm text-muted-foreground">{box.role ?? "box"}</div>
-				</div>
-				<Button variant="ghost" size="icon-sm" onClick={() => openUrl(box.daemon.url)}>
-					<ArrowUpRightIcon className="size-4" />
-				</Button>
-			</div>
-			<div className="mt-4 grid gap-2 text-xs text-muted-foreground">
-				<div className="rounded-2xl border border-border/50 bg-muted/30 px-3 py-2">
-					<div className="font-medium text-foreground">Daemon</div>
-					<div className="mt-1 break-all">{box.daemon.url ?? "--"}</div>
-					{box.daemon.altUrl ? <div className="mt-1 break-all">alt {box.daemon.altUrl}</div> : null}
-				</div>
-				<div className="rounded-2xl border border-border/50 bg-muted/30 px-3 py-2">
-					<div className="font-medium text-foreground">OpenCode serve</div>
-					<div className="mt-1 break-all">{box.opencodeServe ?? "--"}</div>
-				</div>
-				{box.notes ? <div className="text-xs leading-5 text-muted-foreground">{box.notes}</div> : null}
-			</div>
+		<div className="grid border-b border-border text-[11px] leading-4 last:border-b-0" style={{ gridTemplateColumns: BOX_COLUMNS }}>
+			<Cell className={healthy ? "text-emerald-300" : "text-rose-300"}>{box.id}</Cell>
+			<Cell className="text-muted-foreground">{box.role ?? "box"}</Cell>
+			<Cell className="text-muted-foreground">{formatCompact(box.opencodeServe ?? box.daemon.url)}</Cell>
+			<Cell className="px-0 text-right">
+				<button
+					type="button"
+					onClick={() => openUrl(box.daemon.url)}
+					className="h-5 w-5 text-[11px] text-muted-foreground transition-colors hover:text-foreground"
+				>
+					&gt;
+				</button>
+			</Cell>
 		</div>
 	)
 }
@@ -138,6 +117,7 @@ function BoxCard({ box }: { box: Ch5PmLiveBox }) {
 function SessionRow({ session, lane }: { session: Ch5PmLiveSession; lane?: Ch5PmLiveLane }) {
 	const router = useRouter()
 	const laneStatus = normalizeLaneStatus(lane?.status ?? session.state)
+	const clickable = Boolean(session.projectSlug)
 
 	function handleSessionClick() {
 		if (!session.projectSlug) return
@@ -147,98 +127,78 @@ function SessionRow({ session, lane }: { session: Ch5PmLiveSession; lane?: Ch5Pm
 		})
 	}
 
-	const clickable = Boolean(session.projectSlug)
-
 	return (
-		<div className="grid grid-cols-[minmax(0,1.5fr)_minmax(0,0.75fr)_minmax(0,0.8fr)_minmax(0,1fr)] gap-3 rounded-2xl border border-border/60 bg-background/70 px-4 py-3 text-sm">
-			<div className="min-w-0">
+		<div className="grid border-b border-border text-[11px] leading-4 last:border-b-0" style={{ gridTemplateColumns: SESSION_COLUMNS }}>
+			<Cell className={`uppercase tracking-[0.12em] ${laneStatus === "working" ? "text-emerald-300" : laneStatus === "needs-chris" ? "text-rose-300" : laneStatus === "done" ? "text-sky-300" : "text-muted-foreground"}`}>
+				{lane?.symbol ?? ".."}
+			</Cell>
+			<Cell>
 				<button
 					type="button"
 					onClick={handleSessionClick}
 					disabled={!clickable}
-					className={`w-full text-left font-medium text-foreground transition-colors ${clickable ? "cursor-pointer hover:text-primary" : "cursor-default opacity-60"}`}
+					className={`block w-full truncate text-left ${clickable ? "text-foreground hover:text-primary" : "cursor-default text-foreground/65"}`}
 				>
 					{session.title}
 				</button>
-				<div className="mt-1 text-xs text-muted-foreground">{session.id}</div>
-			</div>
-			<div className="min-w-0">
-				<div className="truncate text-foreground">{session.repo ?? "--"}</div>
-				<div className="mt-1 text-xs text-muted-foreground">{session.box ?? "--"}</div>
-			</div>
-			<div className="min-w-0">
-				<div className="truncate text-foreground">{session.lane ?? lane?.name ?? "--"}</div>
-				<div className="mt-1 text-xs text-muted-foreground">{lane?.goal ?? ""}</div>
-			</div>
-			<div className="flex items-center justify-between gap-2">
-				<Badge className={YOLO_TONES[laneStatus]} variant="outline">
-					{lane?.symbol ? `${lane.symbol} ` : ""}
-					{lane?.status ?? session.state ?? "unknown"}
-				</Badge>
-			</div>
+			</Cell>
+			<Cell className="text-muted-foreground">{session.repo ?? "--"}</Cell>
+			<Cell className="text-muted-foreground">{session.box ?? "--"}</Cell>
+			<Cell>
+				<span className={`inline-flex min-w-0 max-w-full truncate px-1.5 py-0.5 text-[10px] uppercase tracking-[0.16em] ${STATUS_STYLES[laneStatus]}`}>
+					{lane?.status ?? session.state ?? "--"}
+				</span>
+			</Cell>
+			<Cell className="text-muted-foreground">{lane?.goal ?? session.lane ?? session.id}</Cell>
 		</div>
 	)
 }
 
-function NeedsChrisCard({ item }: { item: Ch5PmNeedsChrisItem }) {
+function NeedsChrisRow({ item }: { item: Ch5PmNeedsChrisItem }) {
 	return (
-		<div className="rounded-3xl border border-rose-500/40 bg-rose-500/10 p-4 shadow-sm">
-			<div className="flex items-center gap-2 text-sm font-semibold text-rose-700 dark:text-rose-300">
-				<UserRoundIcon className="size-4" />
-				{item.ticket ?? item.title ?? "Needs Chris"}
-			</div>
-			{item.title && item.ticket ? <div className="mt-2 text-sm text-foreground">{item.title}</div> : null}
-			{item.note ? <div className="mt-2 text-sm leading-6 text-muted-foreground">{item.note}</div> : null}
-			<div className="mt-3 flex flex-wrap gap-2 text-xs text-muted-foreground">
-				{item.priority ? <Badge variant="outline">{item.priority}</Badge> : null}
-				{item.source ? <Badge variant="outline">{item.source}</Badge> : null}
-			</div>
-		</div>
-	)
-}
-
-function BackgroundAgentCard({ agent }: { agent: Ch5PmLiveBackgroundAgent }) {
-	const milestones = Object.entries(agent.milestones ?? {})
-	return (
-		<div className="rounded-3xl border border-border/60 bg-background/80 p-4">
-			<div className="flex items-start justify-between gap-3">
-				<div>
-					<div className="font-medium text-foreground">{agent.task}</div>
-					<div className="mt-1 text-sm text-muted-foreground">{agent.status ?? "unknown"}</div>
-				</div>
-				<Badge variant="outline">agent</Badge>
-			</div>
-			{milestones.length > 0 ? (
-				<div className="mt-4 grid gap-2 sm:grid-cols-2">
-					{milestones.map(([label, value]) => (
-						<div key={label} className="rounded-2xl border border-border/50 bg-muted/30 px-3 py-2 text-xs">
-							<div className="font-medium uppercase tracking-[0.16em] text-muted-foreground">{label}</div>
-							<div className="mt-1 text-foreground">{value}</div>
-						</div>
-					))}
-				</div>
-			) : null}
+		<div className="grid border-b border-border text-[11px] leading-4 text-rose-300 last:border-b-0" style={{ gridTemplateColumns: NEEDS_COLUMNS }}>
+			<Cell>{item.ticket ?? "manual"}</Cell>
+			<Cell className="text-foreground">{item.title ?? item.note ?? "attention"}</Cell>
+			<Cell className="text-muted-foreground">{item.priority ?? "--"}</Cell>
+			<Cell className="text-muted-foreground">{item.source ?? "--"}</Cell>
 		</div>
 	)
 }
 
 function FrontierRow({ ticket }: { ticket: Ch5PmLivePlaneSummary["readyFrontier"][number] }) {
 	return (
-		<div className="rounded-2xl border border-border/60 bg-background/70 px-4 py-3">
-			<div className="flex items-start justify-between gap-3">
-				<div>
-					<div className="font-medium text-foreground">{ticket.ticket}</div>
-					<div className="mt-1 text-sm text-foreground">{ticket.title}</div>
-					<div className="mt-1 text-xs text-muted-foreground">
-						{[ticket.repo, ticket.coveredBy ? `covered by ${ticket.coveredBy}` : "uncovered"]
-							.filter(Boolean)
-							.join(" · ")}
-					</div>
-				</div>
-				{ticket.priority ? <Badge variant="outline">{ticket.priority}</Badge> : null}
-			</div>
+		<div className="grid border-b border-border text-[11px] leading-4 last:border-b-0" style={{ gridTemplateColumns: FRONTIER_COLUMNS }}>
+			<Cell className="text-sky-300">{ticket.ticket}</Cell>
+			<Cell className="text-foreground">{ticket.title}</Cell>
+			<Cell className="text-muted-foreground">{ticket.repo ?? "--"}</Cell>
+			<Cell className="text-muted-foreground">{ticket.priority ?? "--"}</Cell>
 		</div>
 	)
+}
+
+function AgentRow({ agent }: { agent: Ch5PmLiveBackgroundAgent }) {
+	const milestones = Object.entries(agent.milestones ?? {})
+	const summary = milestones.slice(0, 2).map(([label, value]) => `${label}:${value}`).join(" | ")
+	return (
+		<div className="grid border-b border-border text-[11px] leading-4 last:border-b-0" style={{ gridTemplateColumns: AGENT_COLUMNS }}>
+			<Cell className="text-foreground">{agent.task}</Cell>
+			<Cell className="text-muted-foreground">{agent.status ?? "--"}</Cell>
+			<Cell className="text-muted-foreground">{summary || "--"}</Cell>
+		</div>
+	)
+}
+
+function CompletionRow({ item }: { item: string }) {
+	return (
+		<div className="grid border-b border-border text-[11px] leading-4 last:border-b-0" style={{ gridTemplateColumns: COMPLETION_COLUMNS }}>
+			<Cell className="text-emerald-300">ok</Cell>
+			<Cell className="text-foreground">{item}</Cell>
+		</div>
+	)
+}
+
+function EmptyRow({ label }: { label: string }) {
+	return <div className="px-2 py-2 text-[11px] text-muted-foreground">{label}</div>
 }
 
 export function PmLiveDashboard() {
@@ -262,6 +222,7 @@ export function PmLiveDashboard() {
 	const needsChrisCount = data?.needsChris.length ?? 0
 	const readyCount = data?.plane.readyFrontier.length ?? 0
 	const humanGatedCount = data?.plane.humanGated?.count ?? 0
+	const errorMessage = query.error instanceof Error ? query.error.message : query.error ? "failed to load pm state" : null
 
 	const emptyState: Ch5PmLiveState = {
 		boxes: [],
@@ -274,139 +235,132 @@ export function PmLiveDashboard() {
 	}
 
 	const state = data ?? emptyState
+	const sessions = state.sessions.slice(0, 14)
+	const needsChris = state.needsChris.slice(0, 7)
+	const frontier = state.plane.readyFrontier.slice(0, 7)
+	const boxes = state.boxes.slice(0, 6)
+	const agents = state.backgroundAgents.slice(0, 6)
+	const completions = state.recentCompletions.slice(0, 6)
 
 	return (
-		<div className="grid gap-6">
-			<div className="relative overflow-hidden rounded-[32px] border border-border/60 bg-[radial-gradient(circle_at_top_left,_rgba(251,146,60,0.22),_transparent_35%),radial-gradient(circle_at_top_right,_rgba(59,130,246,0.16),_transparent_30%),linear-gradient(135deg,rgba(255,255,255,0.98),rgba(248,250,252,0.92))] p-6 shadow-sm dark:bg-[radial-gradient(circle_at_top_left,_rgba(251,146,60,0.2),_transparent_30%),radial-gradient(circle_at_top_right,_rgba(59,130,246,0.2),_transparent_24%),linear-gradient(135deg,rgba(15,23,42,0.96),rgba(17,24,39,0.92))]">
-				<div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
-					<div>
-						<div className="text-[11px] font-medium uppercase tracking-[0.28em] text-muted-foreground">CH5PM live watchdog</div>
-						<h1 className="mt-3 max-w-2xl text-3xl font-semibold leading-tight text-foreground sm:text-4xl">
-							Real-time PM state across boxes, sessions, lanes, and Plane.
-						</h1>
-						<p className="mt-3 max-w-3xl text-sm leading-6 text-muted-foreground">
-							This page reads the curated PM feed now and is ready to swap to daemon HTTP later.
-							 Chris should only have to look here to know whether the mesh is working or needs a decision.
-						</p>
-					</div>
-					<div className="flex flex-wrap items-center gap-3">
-						<Badge variant="outline">schema v{state.schemaVersion ?? "?"}</Badge>
-						<Badge variant="outline">updated {formatTimeAgo(state.updatedAt)}</Badge>
-						<Button variant="outline" size="sm" onClick={() => void query.refetch()} disabled={query.isFetching}>
-							<RefreshCwIcon className={`size-4 ${query.isFetching ? "animate-spin" : ""}`} />
-							Refresh
-						</Button>
-					</div>
+		<div className="flex h-[calc(100vh-7.5rem)] min-h-[720px] flex-col overflow-hidden border border-border bg-background text-[11px] text-foreground">
+			<div className="flex h-8 items-center border-b border-border bg-muted/30">
+				<div className="px-2 text-[10px] font-medium uppercase tracking-[0.2em] text-foreground">CH5PM</div>
+				<StripStat label="updated" value={formatTimeAgo(state.updatedAt)} />
+				<StripStat label="boxes" value={state.boxes.length} />
+				<StripStat label="sessions" value={state.sessions.length} />
+				<StripStat label="working" value={workingCount} tone="text-emerald-300" />
+				<StripStat label="ready" value={readyCount} tone="text-sky-300" />
+				<StripStat label="human" value={needsChrisCount || humanGatedCount} tone={(needsChrisCount || humanGatedCount) > 0 ? "text-rose-300" : undefined} />
+				<StripStat label="schema" value={state.schemaVersion ?? "?"} />
+				<div className="ml-auto flex h-full items-center border-l border-border px-1.5">
+					<Button variant="ghost" size="sm" onClick={() => void query.refetch()} disabled={query.isFetching} className="h-6 rounded-none px-2 text-[10px] uppercase tracking-[0.16em]">
+						<RefreshCwIcon className={`size-3 ${query.isFetching ? "animate-spin" : ""}`} />
+						Sync
+					</Button>
 				</div>
-				{query.error ? (
-					<div className="mt-4 rounded-2xl border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-700 dark:text-amber-300">
-						{query.error instanceof Error ? query.error.message : "Failed to load PM state"}
-					</div>
-				) : null}
 			</div>
 
-			<div className="grid grid-cols-2 gap-3 xl:grid-cols-5">
-				<StatCard label="Boxes" value={state.boxes.length} caption="daemon peers observed" icon={ServerIcon} />
-				<StatCard label="Sessions" value={state.sessions.length} caption="OpenCode sessions in flight" icon={ActivityIcon} />
-				<StatCard label="Working" value={workingCount} caption="lanes actively moving" icon={WorkflowIcon} tone="text-emerald-600 dark:text-emerald-300" />
-				<StatCard label="Ready frontier" value={readyCount} caption="dispatchable Plane work" icon={TicketIcon} />
-				<StatCard label="Needs Chris" value={needsChrisCount || humanGatedCount} caption="human-gated attention" icon={CircleAlertIcon} tone={(needsChrisCount || humanGatedCount) > 0 ? "text-rose-600 dark:text-rose-300" : undefined} />
-			</div>
-
-			{(state.needsChris.length > 0 || humanGatedCount > 0) ? (
-				<Section eyebrow="Only human work" title="Needs Chris">
-					<div className="grid gap-3 lg:grid-cols-2">
-						{state.needsChris.length > 0 ? state.needsChris.map((item, index) => <NeedsChrisCard key={`${item.ticket ?? item.title ?? "need"}-${index}`} item={item} />) : null}
-						{humanGatedCount > 0 ? (
-							<div className="rounded-3xl border border-rose-500/40 bg-rose-500/10 p-4 shadow-sm">
-								<div className="flex items-center gap-2 text-sm font-semibold text-rose-700 dark:text-rose-300">
-									<CircleAlertIcon className="size-4" />
-									{humanGatedCount} Plane tickets are human-gated
-								</div>
-								<div className="mt-2 text-sm leading-6 text-muted-foreground">{state.plane.humanGated?.note ?? "Blocked in Plane without a dependency edge; these need a Chris decision."}</div>
-							</div>
-						) : null}
-					</div>
-				</Section>
+			{errorMessage ? (
+				<div className="border-b border-amber-500/40 bg-amber-500/10 px-2 py-1 text-[10px] uppercase tracking-[0.16em] text-amber-300">
+					error {errorMessage}
+				</div>
 			) : null}
 
-			<div className="grid gap-6 xl:grid-cols-[1.2fr_1fr]">
-				<Section eyebrow="Runtime mesh" title="Box health">
-					<div className="grid gap-3 md:grid-cols-2">
-						{state.boxes.length > 0 ? state.boxes.map((box) => <BoxCard key={box.id} box={box} />) : <div className="text-sm text-muted-foreground">No box projections yet.</div>}
-					</div>
-				</Section>
-
-				<Section eyebrow="Control plane" title="Plane frontier">
-					<div className="grid gap-3">
-						<div className="grid grid-cols-2 gap-3">
-							<div className="rounded-2xl border border-border/60 bg-background/80 px-4 py-3">
-								<div className="text-xs uppercase tracking-[0.18em] text-muted-foreground">Projects</div>
-								<div className="mt-2 text-2xl font-semibold text-foreground">{state.plane.projects ?? 0}</div>
+			<div className="grid min-h-0 flex-1 grid-cols-[minmax(0,1.65fr)_minmax(320px,0.9fr)]">
+				<div className="grid min-h-0 grid-rows-[minmax(0,1fr)_168px] border-r border-border">
+					<div className="grid min-h-0 grid-rows-[152px_minmax(0,1fr)]">
+						<div className="min-h-0 border-b border-border">
+							<SectionTitle title="boxes" meta={state.generatedBy ?? "feed"} />
+							<div className="grid border-b border-border bg-muted/20" style={{ gridTemplateColumns: BOX_COLUMNS }}>
+								<HeaderCell>box</HeaderCell>
+								<HeaderCell>role</HeaderCell>
+								<HeaderCell>serve</HeaderCell>
+								<HeaderCell className="text-right">go</HeaderCell>
 							</div>
-							<div className="rounded-2xl border border-border/60 bg-background/80 px-4 py-3">
-								<div className="text-xs uppercase tracking-[0.18em] text-muted-foreground">Epics</div>
-								<div className="mt-2 text-2xl font-semibold text-foreground">{state.plane.epics ?? 0}</div>
+							<div className="min-h-0 overflow-hidden">
+								{boxes.length > 0 ? boxes.map((box) => <BoxRow key={box.id} box={box} />) : <EmptyRow label="no boxes" />}
 							</div>
 						</div>
-						<div className="space-y-2">
-							{state.plane.readyFrontier.length > 0 ? state.plane.readyFrontier.slice(0, 5).map((ticket) => <FrontierRow key={ticket.ticket} ticket={ticket} />) : <div className="text-sm text-muted-foreground">No ready frontier items.</div>}
-						</div>
-					</div>
-				</Section>
-			</div>
 
-			<div className="grid gap-6 xl:grid-cols-[1.4fr_1fr]">
-				<Section eyebrow="YOLO view" title="Sessions and lanes">
-					<div className="grid gap-2">
-						<div className="grid grid-cols-[minmax(0,1.5fr)_minmax(0,0.75fr)_minmax(0,0.8fr)_minmax(0,1fr)] gap-3 px-4 text-[11px] font-medium uppercase tracking-[0.18em] text-muted-foreground">
-							<div>Session</div>
-							<div>Repo / box</div>
-							<div>Lane</div>
-							<div>Status</div>
-						</div>
-						{state.sessions.length > 0 ? state.sessions.map((session) => <SessionRow key={session.id} session={session} lane={lanesBySession.get(session.id)} />) : <div className="rounded-2xl border border-dashed border-border/70 px-4 py-6 text-sm text-muted-foreground">No live sessions in the PM feed.</div>}
-					</div>
-				</Section>
-
-				<Section eyebrow="Background work" title="Background agents">
-					<div className="grid gap-3">
-						{state.backgroundAgents.length > 0 ? state.backgroundAgents.map((agent, index) => <BackgroundAgentCard key={`${agent.task}-${index}`} agent={agent} />) : <div className="text-sm text-muted-foreground">No background agents reported.</div>}
-					</div>
-				</Section>
-			</div>
-
-			<div className="grid gap-6 xl:grid-cols-[1fr_1.2fr]">
-				<Section eyebrow="Recent wins" title="Completions">
-					<div className="grid gap-2">
-						{state.recentCompletions.length > 0 ? state.recentCompletions.map((item, index) => (
-							<div key={`${item}-${index}`} className="rounded-2xl border border-border/60 bg-background/70 px-4 py-3 text-sm text-foreground">
-								<div className="flex items-start gap-3">
-									<CheckCircle2Icon className="mt-0.5 size-4 text-emerald-500" />
-									<span className="leading-6">{item}</span>
-								</div>
+						<div className="min-h-0">
+							<SectionTitle title="sessions" meta={`${state.sessions.length} live`} />
+							<div className="grid border-b border-border bg-muted/20" style={{ gridTemplateColumns: SESSION_COLUMNS }}>
+								<HeaderCell>st</HeaderCell>
+								<HeaderCell>session</HeaderCell>
+								<HeaderCell>repo</HeaderCell>
+								<HeaderCell>box</HeaderCell>
+								<HeaderCell>lane</HeaderCell>
+								<HeaderCell>goal</HeaderCell>
 							</div>
-						)) : <div className="text-sm text-muted-foreground">No recent completions yet.</div>}
+							<div className="min-h-0 overflow-hidden">
+								{sessions.length > 0 ? sessions.map((session) => <SessionRow key={session.id} session={session} lane={lanesBySession.get(session.id)} />) : <EmptyRow label="no live sessions" />}
+							</div>
+						</div>
 					</div>
-				</Section>
 
-				<Section eyebrow="Feed details" title="Source + cadence">
-					<div className="grid gap-3 text-sm text-muted-foreground">
-						<div className="rounded-2xl border border-border/60 bg-background/70 px-4 py-3">
-							<div className="font-medium text-foreground">Generated by</div>
-							<div className="mt-1">{state.generatedBy ?? "--"}</div>
+					<div className="grid min-h-0 grid-cols-[1fr_1fr]">
+						<div className="min-h-0 border-r border-border">
+							<SectionTitle title="background agents" meta={`${state.backgroundAgents.length}`} />
+							<div className="grid border-b border-border bg-muted/20" style={{ gridTemplateColumns: AGENT_COLUMNS }}>
+								<HeaderCell>task</HeaderCell>
+								<HeaderCell>status</HeaderCell>
+								<HeaderCell>milestones</HeaderCell>
+							</div>
+							<div className="min-h-0 overflow-hidden">
+								{agents.length > 0 ? agents.map((agent, index) => <AgentRow key={`${agent.task}-${index}`} agent={agent} />) : <EmptyRow label="no agents" />}
+							</div>
 						</div>
-						<div className="rounded-2xl border border-border/60 bg-background/70 px-4 py-3">
-							<div className="font-medium text-foreground">Updated</div>
-							<div className="mt-1">{state.updatedAt ?? "--"}</div>
-							<div className="mt-1 text-xs">{formatTimeAgo(state.updatedAt)}</div>
-						</div>
-						<div className="rounded-2xl border border-border/60 bg-background/70 px-4 py-3">
-							<div className="font-medium text-foreground">Adapter</div>
-							<div className="mt-1 leading-6">Reading `pm-state.json` via the local Firefly server today; ready to swap to daemon HTTP with one fetch change.</div>
+
+						<div className="min-h-0">
+							<SectionTitle title="recent completions" meta={`${state.recentCompletions.length}`} />
+							<div className="grid border-b border-border bg-muted/20" style={{ gridTemplateColumns: COMPLETION_COLUMNS }}>
+								<HeaderCell>ok</HeaderCell>
+								<HeaderCell>item</HeaderCell>
+							</div>
+							<div className="min-h-0 overflow-hidden">
+								{completions.length > 0 ? completions.map((item, index) => <CompletionRow key={`${item}-${index}`} item={item} />) : <EmptyRow label="no completions" />}
+							</div>
 						</div>
 					</div>
-				</Section>
+				</div>
+
+				<div className="grid min-h-0 grid-rows-[minmax(0,1fr)_minmax(0,1fr)]">
+					<div className="min-h-0 border-b border-border">
+						<SectionTitle title="needs chris" meta={humanGatedCount > 0 ? `human gated ${humanGatedCount}` : undefined} />
+						<div className="grid border-b border-border bg-muted/20" style={{ gridTemplateColumns: NEEDS_COLUMNS }}>
+							<HeaderCell>ticket</HeaderCell>
+							<HeaderCell>title</HeaderCell>
+							<HeaderCell>prio</HeaderCell>
+							<HeaderCell>src</HeaderCell>
+						</div>
+						<div className="min-h-0 overflow-hidden">
+							{needsChris.length > 0 ? needsChris.map((item, index) => <NeedsChrisRow key={`${item.ticket ?? item.title ?? "need"}-${index}`} item={item} />) : <EmptyRow label={humanGatedCount > 0 ? `human gated ${humanGatedCount}` : "clear"} />}
+						</div>
+					</div>
+
+					<div className="grid min-h-0 grid-rows-[minmax(0,1fr)_72px]">
+						<div className="min-h-0 border-b border-border">
+							<SectionTitle title="ready frontier" meta={`${state.plane.projects ?? 0} proj | ${state.plane.epics ?? 0} epic`} />
+							<div className="grid border-b border-border bg-muted/20" style={{ gridTemplateColumns: FRONTIER_COLUMNS }}>
+								<HeaderCell>ticket</HeaderCell>
+								<HeaderCell>title</HeaderCell>
+								<HeaderCell>repo</HeaderCell>
+								<HeaderCell>prio</HeaderCell>
+							</div>
+							<div className="min-h-0 overflow-hidden">
+								{frontier.length > 0 ? frontier.map((ticket) => <FrontierRow key={ticket.ticket} ticket={ticket} />) : <EmptyRow label="no ready frontier" />}
+							</div>
+						</div>
+
+						<div className="grid border-t border-border bg-muted/15 px-2 text-[10px] uppercase tracking-[0.16em] text-muted-foreground">
+							<div className="flex items-center justify-between gap-2">
+								<span className="truncate">adapter pm-state.json via firefly</span>
+								<span className="truncate">{state.updatedAt ?? "--"}</span>
+							</div>
+						</div>
+					</div>
+				</div>
 			</div>
 		</div>
 	)
