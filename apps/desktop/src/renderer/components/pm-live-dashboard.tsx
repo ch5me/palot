@@ -7,10 +7,11 @@ import type {
 	Ch5PmLiveBackgroundAgent,
 	Ch5PmLiveBox,
 	Ch5PmLiveLane,
-	Ch5PmLivePlaneSummary,
+	Ch5PmLiveReadyFrontierTicket,
 	Ch5PmLiveSession,
 	Ch5PmLiveState,
 	Ch5PmNeedsChrisItem,
+	Ch5PmFollowUp,
 } from "../ch5pm-dashboard/types"
 import { createLogger } from "../lib/logger"
 import { fetchCh5PmState, openExternalUrl } from "../services/backend"
@@ -18,78 +19,83 @@ import { fetchCh5PmState, openExternalUrl } from "../services/backend"
 const log = createLogger("pm-live-dashboard")
 
 const POLL_MS = 15_000
-const SESSION_COLUMNS = "72px minmax(0,1.9fr) minmax(0,1.2fr) 68px 86px minmax(0,1.3fr)"
-const BOX_COLUMNS = "72px minmax(0,0.9fr) minmax(0,1.1fr) 28px"
-const NEEDS_COLUMNS = "92px minmax(0,1fr) 62px 74px"
-const FRONTIER_COLUMNS = "86px minmax(0,1fr) 82px 76px"
-const AGENT_COLUMNS = "minmax(0,1.15fr) 90px minmax(0,1fr)"
-const COMPLETION_COLUMNS = "28px minmax(0,1fr)"
 
-const STATUS_STYLES: Record<string, string> = {
-	working: "bg-emerald-500/18 text-emerald-300",
-	done: "bg-sky-500/18 text-sky-300",
-	idle: "bg-muted text-muted-foreground",
-	nudged: "bg-blue-500/18 text-blue-300",
-	"needs-chris": "bg-rose-500/18 text-rose-300",
+const BOX_COLS = "52px minmax(0,0.8fr) minmax(0,1.2fr) 20px"
+const NEEDS_COLS = "72px minmax(0,1fr) 48px 52px"
+const FOLLOWUP_COLS = "64px minmax(0,1fr) 68px 82px"
+const FRONTIER_COLS = "72px minmax(0,1fr) 68px 52px"
+const AGENT_COLS = "minmax(0,1fr) 72px minmax(0,0.9fr)"
+const COMPLETE_COLS = "18px minmax(0,1fr)"
+
+const SESSION_COLS = "52px minmax(0,1.8fr) minmax(0,1fr) 54px 68px minmax(0,1.2fr)"
+
+const GLYPH: Record<string, string> = {
+	working: "\u25B6",
+	done: "\u25FC",
+	nudged: "\u2192",
+	idle: "\u25C7",
+	"needs-chris": "\u2717",
 }
 
-function normalizeLaneStatus(status?: string): keyof typeof STATUS_STYLES {
-	const normalized = status?.trim().toLowerCase() ?? "idle"
-	if (normalized.includes("need") || normalized.includes("human")) return "needs-chris"
-	if (normalized.includes("nudge")) return "nudged"
-	if (normalized.includes("done") || normalized.includes("claim")) return "done"
-	if (normalized.includes("work") || normalized.includes("busy") || normalized.includes("run")) return "working"
+type LaneStatus = keyof typeof GLYPH
+
+function normalizeLaneStatus(status?: string): LaneStatus {
+	const s = status?.trim().toLowerCase() ?? "idle"
+	if (s.includes("need") || s.includes("human")) return "needs-chris"
+	if (s.includes("nudge")) return "nudged"
+	if (s.includes("done") || s.includes("claim")) return "done"
+	if (s.includes("work") || s.includes("busy") || s.includes("run")) return "working"
 	return "idle"
 }
 
-function formatTimeAgo(value?: string): string {
+function fmtAge(value?: string): string {
 	if (!value) return "--"
-	const timestamp = Date.parse(value)
-	if (Number.isNaN(timestamp)) return value
-	const deltaSeconds = Math.max(0, Math.floor((Date.now() - timestamp) / 1000))
-	if (deltaSeconds < 60) return `${deltaSeconds}s`
-	const deltaMinutes = Math.floor(deltaSeconds / 60)
-	if (deltaMinutes < 60) return `${deltaMinutes}m`
-	const deltaHours = Math.floor(deltaMinutes / 60)
-	if (deltaHours < 48) return `${deltaHours}h`
-	const deltaDays = Math.floor(deltaHours / 24)
-	return `${deltaDays}d`
-}
-
-function formatCompact(value?: string): string {
-	if (!value) return "--"
-	return value.replace(/^https?:\/\//, "")
+	const ts = Date.parse(value)
+	if (Number.isNaN(ts)) return value
+	const sec = Math.max(0, Math.floor((Date.now() - ts) / 1000))
+	if (sec < 60) return `${sec}s`
+	const min = Math.floor(sec / 60)
+	if (min < 60) return `${min}m`
+	const hr = Math.floor(min / 60)
+	if (hr < 48) return `${hr}h`
+	return `${Math.floor(hr / 24)}d`
 }
 
 function openUrl(url?: string) {
 	if (!url) return
-	void openExternalUrl(url).catch((error) => {
-		log.warn("failed to open external url", { url, error })
-	})
+	void openExternalUrl(url).catch((err) => log.warn("open url failed", { url, err }))
 }
 
-function HeaderCell({ children, className }: { children: React.ReactNode; className?: string }) {
-	return <div className={`truncate px-2 py-1 font-medium uppercase tracking-[0.18em] text-muted-foreground ${className ?? ""}`}>{children}</div>
-}
-
-function Cell({ children, className }: { children: React.ReactNode; className?: string }) {
-	return <div className={`truncate px-2 py-1 ${className ?? ""}`}>{children}</div>
-}
-
-function SectionTitle({ title, meta }: { title: string; meta?: string }) {
+function H({ children, className }: { children?: React.ReactNode; className?: string }) {
 	return (
-		<div className="flex h-7 items-center justify-between border-b border-border bg-background px-2 text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
-			<span>{title}</span>
-			{meta ? <span className="truncate">{meta}</span> : null}
+		<div
+			className={`truncate px-1.5 py-0.5 text-[9px] font-medium uppercase tracking-[0.16em] text-neutral-500 dark:text-neutral-400 ${className ?? ""}`}
+		>
+			{children}
 		</div>
 	)
 }
 
-function StripStat({ label, value, tone }: { label: string; value: number | string; tone?: string }) {
+function C({ children, className }: { children: React.ReactNode; className?: string }) {
 	return (
-		<div className="flex min-w-0 items-center gap-2 border-l border-border px-2 first:border-l-0">
-			<div className="truncate text-[10px] uppercase tracking-[0.18em] text-muted-foreground">{label}</div>
-			<div className={`truncate text-[12px] font-semibold ${tone ?? "text-foreground"}`}>{value}</div>
+		<div className={`truncate px-1.5 py-0.5 text-[10px] leading-3 ${className ?? ""}`}>{children}</div>
+	)
+}
+
+function SecRow({ label, meta }: { label: string; meta?: string }) {
+	return (
+		<div className="flex h-5 items-center justify-between border-b border-neutral-300 bg-neutral-100 px-1.5 text-[9px] font-medium uppercase tracking-[0.18em] text-neutral-500 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-400">
+			<span>{label}</span>
+			{meta && <span className="truncate font-normal tracking-[0.1em]">{meta}</span>}
+		</div>
+	)
+}
+
+function StatPill({ label, value, tone }: { label: string; value: number | string; tone?: string }) {
+	return (
+		<div className="flex items-center gap-1 border-l border-neutral-300 px-2 py-0.5 text-[10px] dark:border-neutral-700 first:border-l-0">
+			<span className="text-[9px] uppercase tracking-[0.16em] text-neutral-500 dark:text-neutral-400">{label}</span>
+			<span className={`font-medium ${tone ?? "text-neutral-900 dark:text-neutral-100"}`}>{value}</span>
 		</div>
 	)
 }
@@ -97,29 +103,32 @@ function StripStat({ label, value, tone }: { label: string; value: number | stri
 function BoxRow({ box }: { box: Ch5PmLiveBox }) {
 	const healthy = box.daemon.health === "healthy"
 	return (
-		<div className="grid border-b border-border text-[11px] leading-4 last:border-b-0" style={{ gridTemplateColumns: BOX_COLUMNS }}>
-			<Cell className={healthy ? "text-emerald-300" : "text-rose-300"}>{box.id}</Cell>
-			<Cell className="text-muted-foreground">{box.role ?? "box"}</Cell>
-			<Cell className="text-muted-foreground">{formatCompact(box.opencodeServe ?? box.daemon.url)}</Cell>
-			<Cell className="px-0 text-right">
+		<div
+			className="grid border-b border-neutral-200 last:border-b-0 dark:border-neutral-700"
+			style={{ gridTemplateColumns: BOX_COLS }}
+		>
+			<C className={healthy ? "text-emerald-400" : "text-red-400"}>{box.id}</C>
+			<C className="text-neutral-500 dark:text-neutral-400">{box.role ?? "box"}</C>
+			<C className="truncate text-neutral-400 dark:text-neutral-500">{box.opencodeServe ?? box.daemon.url ?? ""}</C>
+			<C className="px-0 text-center">
 				<button
 					type="button"
 					onClick={() => openUrl(box.daemon.url)}
-					className="h-5 w-5 text-[11px] text-muted-foreground transition-colors hover:text-foreground"
+					className="text-neutral-400 transition-colors hover:text-neutral-900 dark:hover:text-neutral-100"
 				>
-					&gt;
+					→
 				</button>
-			</Cell>
+			</C>
 		</div>
 	)
 }
 
 function SessionRow({ session, lane }: { session: Ch5PmLiveSession; lane?: Ch5PmLiveLane }) {
 	const router = useRouter()
-	const laneStatus = normalizeLaneStatus(lane?.status ?? session.state)
+	const status = normalizeLaneStatus(lane?.status ?? session.state)
 	const clickable = Boolean(session.projectSlug)
 
-	function handleSessionClick() {
+	function navigate() {
 		if (!session.projectSlug) return
 		void router.navigate({
 			to: "/project/$projectSlug/session/$sessionId",
@@ -127,78 +136,111 @@ function SessionRow({ session, lane }: { session: Ch5PmLiveSession; lane?: Ch5Pm
 		})
 	}
 
+	const colorClass =
+		status === "working" ? "text-emerald-400" :
+		status === "needs-chris" ? "text-red-400" :
+		status === "done" ? "text-sky-400" :
+		"text-neutral-600 dark:text-neutral-400"
+
 	return (
-		<div className="grid border-b border-border text-[11px] leading-4 last:border-b-0" style={{ gridTemplateColumns: SESSION_COLUMNS }}>
-			<Cell className={`uppercase tracking-[0.12em] ${laneStatus === "working" ? "text-emerald-300" : laneStatus === "needs-chris" ? "text-rose-300" : laneStatus === "done" ? "text-sky-300" : "text-muted-foreground"}`}>
-				{lane?.symbol ?? ".."}
-			</Cell>
-			<Cell>
+		<div
+			className="grid border-b border-neutral-200 last:border-b-0 dark:border-neutral-700"
+			style={{ gridTemplateColumns: SESSION_COLS }}
+		>
+			<C className={`font-medium ${colorClass}`}>{GLYPH[status]}</C>
+			<C>
 				<button
 					type="button"
-					onClick={handleSessionClick}
+					onClick={navigate}
 					disabled={!clickable}
-					className={`block w-full truncate text-left ${clickable ? "text-foreground hover:text-primary" : "cursor-default text-foreground/65"}`}
+					className={`block w-full truncate text-left ${clickable ? "text-neutral-900 dark:text-neutral-100 hover:text-amber-500" : "cursor-default text-neutral-500 dark:text-neutral-500"}`}
 				>
 					{session.title}
 				</button>
-			</Cell>
-			<Cell className="text-muted-foreground">{session.repo ?? "--"}</Cell>
-			<Cell className="text-muted-foreground">{session.box ?? "--"}</Cell>
-			<Cell>
-				<span className={`inline-flex min-w-0 max-w-full truncate px-1.5 py-0.5 text-[10px] uppercase tracking-[0.16em] ${STATUS_STYLES[laneStatus]}`}>
-					{lane?.status ?? session.state ?? "--"}
-				</span>
-			</Cell>
-			<Cell className="text-muted-foreground">{lane?.goal ?? session.lane ?? session.id}</Cell>
+			</C>
+			<C className="truncate text-neutral-500 dark:text-neutral-400">{session.repo ?? "--"}</C>
+			<C className="truncate text-neutral-500 dark:text-neutral-400">{session.box ?? "--"}</C>
+			<C className="truncate text-neutral-500 dark:text-neutral-400">{lane?.status ?? session.state ?? "--"}</C>
+			<C className="truncate text-neutral-400 dark:text-neutral-500">{lane?.goal ?? session.lane ?? ""}</C>
 		</div>
 	)
 }
 
-function NeedsChrisRow({ item }: { item: Ch5PmNeedsChrisItem }) {
+function NeedsRow({ item }: { item: Ch5PmNeedsChrisItem }) {
 	return (
-		<div className="grid border-b border-border text-[11px] leading-4 text-rose-300 last:border-b-0" style={{ gridTemplateColumns: NEEDS_COLUMNS }}>
-			<Cell>{item.ticket ?? "manual"}</Cell>
-			<Cell className="text-foreground">{item.title ?? item.note ?? "attention"}</Cell>
-			<Cell className="text-muted-foreground">{item.priority ?? "--"}</Cell>
-			<Cell className="text-muted-foreground">{item.source ?? "--"}</Cell>
+		<div
+			className="grid border-b border-red-900/30 last:border-b-0"
+			style={{ gridTemplateColumns: NEEDS_COLS }}
+		>
+			<C className="text-red-400">{item.ticket ?? "manual"}</C>
+			<C className="truncate text-neutral-900 dark:text-neutral-100">{item.title ?? item.note ?? "attention"}</C>
+			<C className="text-neutral-500 dark:text-neutral-400">{item.priority ?? "--"}</C>
+			<C className="text-neutral-500 dark:text-neutral-400">{item.source ?? "--"}</C>
 		</div>
 	)
 }
 
-function FrontierRow({ ticket }: { ticket: Ch5PmLivePlaneSummary["readyFrontier"][number] }) {
+function FollowUpRow({ item }: { item: Ch5PmFollowUp }) {
+	const status = item.status ?? "open"
+	const statusColor =
+		status === "done" ? "text-emerald-400" :
+		status === "dispatched" ? "text-amber-400" :
+		"text-red-400"
 	return (
-		<div className="grid border-b border-border text-[11px] leading-4 last:border-b-0" style={{ gridTemplateColumns: FRONTIER_COLUMNS }}>
-			<Cell className="text-sky-300">{ticket.ticket}</Cell>
-			<Cell className="text-foreground">{ticket.title}</Cell>
-			<Cell className="text-muted-foreground">{ticket.repo ?? "--"}</Cell>
-			<Cell className="text-muted-foreground">{ticket.priority ?? "--"}</Cell>
+		<div
+			className="grid border-b border-neutral-200 last:border-b-0 dark:border-neutral-700"
+			style={{ gridTemplateColumns: FOLLOWUP_COLS }}
+		>
+			<C className="truncate text-neutral-500 dark:text-neutral-400">{item.source ?? "--"}</C>
+			<C className="truncate text-neutral-900 dark:text-neutral-100">{item.item}</C>
+			<C className={`font-medium ${statusColor}`}>{status}</C>
+			<C className="truncate text-neutral-400 dark:text-neutral-500">{item.resolution ?? ""}</C>
+		</div>
+	)
+}
+
+function FrontierRow({ ticket }: { ticket: Ch5PmLiveReadyFrontierTicket }) {
+	return (
+		<div
+			className="grid border-b border-neutral-200 last:border-b-0 dark:border-neutral-700"
+			style={{ gridTemplateColumns: FRONTIER_COLS }}
+		>
+			<C className="text-sky-400">{ticket.ticket}</C>
+			<C className="truncate text-neutral-900 dark:text-neutral-100">{ticket.title}</C>
+			<C className="truncate text-neutral-500 dark:text-neutral-400">{ticket.repo ?? "--"}</C>
+			<C className="text-neutral-500 dark:text-neutral-400">{ticket.priority ?? "--"}</C>
 		</div>
 	)
 }
 
 function AgentRow({ agent }: { agent: Ch5PmLiveBackgroundAgent }) {
-	const milestones = Object.entries(agent.milestones ?? {})
-	const summary = milestones.slice(0, 2).map(([label, value]) => `${label}:${value}`).join(" | ")
+	const ms = Object.entries(agent.milestones ?? {}).slice(0, 2).map(([k, v]) => `${k}:${v}`).join(" ")
 	return (
-		<div className="grid border-b border-border text-[11px] leading-4 last:border-b-0" style={{ gridTemplateColumns: AGENT_COLUMNS }}>
-			<Cell className="text-foreground">{agent.task}</Cell>
-			<Cell className="text-muted-foreground">{agent.status ?? "--"}</Cell>
-			<Cell className="text-muted-foreground">{summary || "--"}</Cell>
+		<div
+			className="grid border-b border-neutral-200 last:border-b-0 dark:border-neutral-700"
+			style={{ gridTemplateColumns: AGENT_COLS }}
+		>
+			<C className="text-neutral-900 dark:text-neutral-100">{agent.task}</C>
+			<C className="text-neutral-500 dark:text-neutral-400">{agent.status ?? "--"}</C>
+			<C className="truncate text-neutral-400 dark:text-neutral-500">{ms || "--"}</C>
 		</div>
 	)
 }
 
-function CompletionRow({ item }: { item: string }) {
+function CompleteRow({ item }: { item: string }) {
 	return (
-		<div className="grid border-b border-border text-[11px] leading-4 last:border-b-0" style={{ gridTemplateColumns: COMPLETION_COLUMNS }}>
-			<Cell className="text-emerald-300">ok</Cell>
-			<Cell className="text-foreground">{item}</Cell>
+		<div
+			className="grid border-b border-neutral-200 last:border-b-0 dark:border-neutral-700"
+			style={{ gridTemplateColumns: COMPLETE_COLS }}
+		>
+			<C className="px-1.5 text-center text-emerald-500">\u2713</C>
+			<C className="truncate text-neutral-600 dark:text-neutral-400">{item}</C>
 		</div>
 	)
 }
 
-function EmptyRow({ label }: { label: string }) {
-	return <div className="px-2 py-2 text-[11px] text-muted-foreground">{label}</div>
+function Empty({ label }: { label: string }) {
+	return <div className="px-1.5 py-1 text-[10px] text-neutral-400 dark:text-neutral-500">{label}</div>
 }
 
 export function PmLiveDashboard() {
@@ -210,157 +252,174 @@ export function PmLiveDashboard() {
 	})
 
 	const data = query.data
+
 	const lanesBySession = useMemo(() => {
-		const map = new Map<string, Ch5PmLiveLane>()
+		const m = new Map<string, Ch5PmLiveLane>()
 		for (const lane of data?.lanes ?? []) {
-			if (lane.session) map.set(lane.session, lane)
+			if (lane.session) m.set(lane.session, lane)
 		}
-		return map
+		return m
 	}, [data?.lanes])
 
-	const workingCount = (data?.lanes ?? []).filter((lane) => normalizeLaneStatus(lane.status) === "working").length
-	const needsChrisCount = data?.needsChris.length ?? 0
+	const workingCount = (data?.lanes ?? []).filter((l) => normalizeLaneStatus(l.status) === "working").length
+	const needsCount = (data?.needsChris.length ?? 0) || (data?.plane.humanGated?.count ?? 0)
 	const readyCount = data?.plane.readyFrontier.length ?? 0
-	const humanGatedCount = data?.plane.humanGated?.count ?? 0
-	const errorMessage = query.error instanceof Error ? query.error.message : query.error ? "failed to load pm state" : null
+	const errMsg = query.error instanceof Error ? query.error.message : query.error ? "load failed" : null
 
-	const emptyState: Ch5PmLiveState = {
-		boxes: [],
-		sessions: [],
-		lanes: [],
-		backgroundAgents: [],
-		plane: { readyFrontier: [] },
-		recentCompletions: [],
-		needsChris: [],
+	const empty: Ch5PmLiveState = {
+		boxes: [], sessions: [], lanes: [], backgroundAgents: [],
+		plane: { readyFrontier: [] }, recentCompletions: [], needsChris: [],
 	}
+	const s = data ?? empty
 
-	const state = data ?? emptyState
-	const sessions = state.sessions.slice(0, 14)
-	const needsChris = state.needsChris.slice(0, 7)
-	const frontier = state.plane.readyFrontier.slice(0, 7)
-	const boxes = state.boxes.slice(0, 6)
-	const agents = state.backgroundAgents.slice(0, 6)
-	const completions = state.recentCompletions.slice(0, 6)
+	const SESSION_ROWS = 14
+	const BOX_ROWS = 6
+	const AGENT_ROWS = 5
+	const COMPLETE_ROWS = 5
+	const NEEDS_ROWS = 7
+	const FOLLOWUP_ROWS = 8
+	const FRONTIER_ROWS = 7
+
+	const sessions = s.sessions.slice(0, SESSION_ROWS)
+	const boxes = s.boxes.slice(0, BOX_ROWS)
+	const agents = s.backgroundAgents.slice(0, AGENT_ROWS)
+	const completes = s.recentCompletions.slice(0, COMPLETE_ROWS)
+	const needs = s.needsChris.slice(0, NEEDS_ROWS)
+	const followups = (s.followUps ?? []).slice(0, FOLLOWUP_ROWS)
+	const frontier = s.plane.readyFrontier.slice(0, FRONTIER_ROWS)
 
 	return (
-		<div className="flex h-[calc(100vh-7.5rem)] min-h-[720px] flex-col overflow-hidden border border-border bg-background text-[11px] text-foreground">
-			<div className="flex h-8 items-center border-b border-border bg-muted/30">
-				<div className="px-2 text-[10px] font-medium uppercase tracking-[0.2em] text-foreground">CH5PM</div>
-				<StripStat label="updated" value={formatTimeAgo(state.updatedAt)} />
-				<StripStat label="boxes" value={state.boxes.length} />
-				<StripStat label="sessions" value={state.sessions.length} />
-				<StripStat label="working" value={workingCount} tone="text-emerald-300" />
-				<StripStat label="ready" value={readyCount} tone="text-sky-300" />
-				<StripStat label="human" value={needsChrisCount || humanGatedCount} tone={(needsChrisCount || humanGatedCount) > 0 ? "text-rose-300" : undefined} />
-				<StripStat label="schema" value={state.schemaVersion ?? "?"} />
-				<div className="ml-auto flex h-full items-center border-l border-border px-1.5">
-					<Button variant="ghost" size="sm" onClick={() => void query.refetch()} disabled={query.isFetching} className="h-6 rounded-none px-2 text-[10px] uppercase tracking-[0.16em]">
-						<RefreshCwIcon className={`size-3 ${query.isFetching ? "animate-spin" : ""}`} />
-						Sync
+		<div className="flex h-[calc(100vh-7.5rem)] min-h-[680px] flex-col overflow-hidden bg-white font-mono text-[10px] dark:bg-neutral-950 dark:text-neutral-200">
+
+				<div className="flex h-full items-center border-r border-neutral-300 px-2 text-[10px] font-bold tracking-widest text-neutral-900 dark:border-neutral-700 dark:text-neutral-100">
+					CH5PM
+				</div>
+
+				{s.babysitter ? (
+					<div className="flex h-full items-center border-r border-neutral-300 px-2 text-[9px] text-neutral-500 dark:border-neutral-700 dark:text-neutral-400">
+						<span className={`mr-1.5 font-bold ${s.babysitter.running ? "text-emerald-500" : "text-red-400"}`}>
+							{s.babysitter.running ? "\u25CF" : "\u25CB"}
+						</span>
+						<span className="truncate">{s.babysitter.surface}</span>
+						<span className="mx-1 text-neutral-300 dark:text-neutral-600">/</span>
+						<span className="truncate">{s.babysitter.package}</span>
+						<span className="ml-2 text-neutral-400">{s.babysitter.loopSeconds}s</span>
+					</div>
+				) : null}
+
+				<StatPill label="updated" value={fmtAge(s.updatedAt)} />
+				<StatPill label="host" value={s.host ?? "--"} />
+				<StatPill label="boxes" value={s.boxes.length} />
+				<StatPill label="sessions" value={s.sessions.length} />
+				<StatPill label="work" value={workingCount} tone="text-emerald-400" />
+				<StatPill label="ready" value={readyCount} tone="text-sky-400" />
+				<StatPill label="needs" value={needsCount} tone={needsCount > 0 ? "text-red-400" : undefined} />
+				<StatPill label="schema" value={s.schemaVersion ?? "?"} />
+				<StatPill label="followups" value={followups.length} />
+
+				<div className="ml-auto flex h-full items-center border-l border-neutral-300 px-1.5 dark:border-neutral-700">
+					<Button
+						variant="ghost"
+						size="sm"
+						onClick={() => void query.refetch()}
+						disabled={query.isFetching}
+						className="h-5 rounded-none border-0 px-1.5 text-[9px] uppercase tracking-[0.16em] text-neutral-500 hover:text-neutral-900 dark:text-neutral-400 dark:hover:text-neutral-100"
+					>
+						<RefreshCwIcon className={`mr-1 size-2.5 ${query.isFetching ? "animate-spin" : ""}`} />
+						sync
 					</Button>
 				</div>
-			</div>
 
-			{errorMessage ? (
-				<div className="border-b border-amber-500/40 bg-amber-500/10 px-2 py-1 text-[10px] uppercase tracking-[0.16em] text-amber-300">
-					error {errorMessage}
+			{errMsg ? (
+				<div className="flex h-5 items-center border-b border-amber-600/30 bg-amber-950/30 px-2 text-[9px] uppercase tracking-[0.16em] text-amber-400">
+					&#x26A0; {errMsg}
 				</div>
 			) : null}
 
-			<div className="grid min-h-0 flex-1 grid-cols-[minmax(0,1.65fr)_minmax(320px,0.9fr)]">
-				<div className="grid min-h-0 grid-rows-[minmax(0,1fr)_168px] border-r border-border">
-					<div className="grid min-h-0 grid-rows-[152px_minmax(0,1fr)]">
-						<div className="min-h-0 border-b border-border">
-							<SectionTitle title="boxes" meta={state.generatedBy ?? "feed"} />
-							<div className="grid border-b border-border bg-muted/20" style={{ gridTemplateColumns: BOX_COLUMNS }}>
-								<HeaderCell>box</HeaderCell>
-								<HeaderCell>role</HeaderCell>
-								<HeaderCell>serve</HeaderCell>
-								<HeaderCell className="text-right">go</HeaderCell>
-							</div>
-							<div className="min-h-0 overflow-hidden">
-								{boxes.length > 0 ? boxes.map((box) => <BoxRow key={box.id} box={box} />) : <EmptyRow label="no boxes" />}
-							</div>
-						</div>
+			<div className="grid min-h-0 flex-1 grid-cols-[minmax(0,1.7fr)_minmax(0,0.8fr)_minmax(280px,0.75fr)]">
 
-						<div className="min-h-0">
-							<SectionTitle title="sessions" meta={`${state.sessions.length} live`} />
-							<div className="grid border-b border-border bg-muted/20" style={{ gridTemplateColumns: SESSION_COLUMNS }}>
-								<HeaderCell>st</HeaderCell>
-								<HeaderCell>session</HeaderCell>
-								<HeaderCell>repo</HeaderCell>
-								<HeaderCell>box</HeaderCell>
-								<HeaderCell>lane</HeaderCell>
-								<HeaderCell>goal</HeaderCell>
-							</div>
-							<div className="min-h-0 overflow-hidden">
-								{sessions.length > 0 ? sessions.map((session) => <SessionRow key={session.id} session={session} lane={lanesBySession.get(session.id)} />) : <EmptyRow label="no live sessions" />}
-							</div>
-						</div>
-					</div>
-
-					<div className="grid min-h-0 grid-cols-[1fr_1fr]">
-						<div className="min-h-0 border-r border-border">
-							<SectionTitle title="background agents" meta={`${state.backgroundAgents.length}`} />
-							<div className="grid border-b border-border bg-muted/20" style={{ gridTemplateColumns: AGENT_COLUMNS }}>
-								<HeaderCell>task</HeaderCell>
-								<HeaderCell>status</HeaderCell>
-								<HeaderCell>milestones</HeaderCell>
-							</div>
-							<div className="min-h-0 overflow-hidden">
-								{agents.length > 0 ? agents.map((agent, index) => <AgentRow key={`${agent.task}-${index}`} agent={agent} />) : <EmptyRow label="no agents" />}
-							</div>
-						</div>
-
-						<div className="min-h-0">
-							<SectionTitle title="recent completions" meta={`${state.recentCompletions.length}`} />
-							<div className="grid border-b border-border bg-muted/20" style={{ gridTemplateColumns: COMPLETION_COLUMNS }}>
-								<HeaderCell>ok</HeaderCell>
-								<HeaderCell>item</HeaderCell>
-							</div>
-							<div className="min-h-0 overflow-hidden">
-								{completions.length > 0 ? completions.map((item, index) => <CompletionRow key={`${item}-${index}`} item={item} />) : <EmptyRow label="no completions" />}
-							</div>
-						</div>
-					</div>
-				</div>
-
-				<div className="grid min-h-0 grid-rows-[minmax(0,1fr)_minmax(0,1fr)]">
-					<div className="min-h-0 border-b border-border">
-						<SectionTitle title="needs chris" meta={humanGatedCount > 0 ? `human gated ${humanGatedCount}` : undefined} />
-						<div className="grid border-b border-border bg-muted/20" style={{ gridTemplateColumns: NEEDS_COLUMNS }}>
-							<HeaderCell>ticket</HeaderCell>
-							<HeaderCell>title</HeaderCell>
-							<HeaderCell>prio</HeaderCell>
-							<HeaderCell>src</HeaderCell>
+				<div className="grid min-h-0 grid-rows-[1fr_128px] border-r border-neutral-300 dark:border-neutral-700">
+					<div className="min-h-0">
+						<SecRow label="sessions" meta={`${s.sessions.length} live`} />
+						<div className="grid border-b border-neutral-200 bg-neutral-50 dark:border-neutral-700 dark:bg-neutral-900" style={{ gridTemplateColumns: SESSION_COLS }}>
+							<H>st</H><H>session</H><H>repo</H><H>box</H><H>lane</H><H>goal</H>
 						</div>
 						<div className="min-h-0 overflow-hidden">
-							{needsChris.length > 0 ? needsChris.map((item, index) => <NeedsChrisRow key={`${item.ticket ?? item.title ?? "need"}-${index}`} item={item} />) : <EmptyRow label={humanGatedCount > 0 ? `human gated ${humanGatedCount}` : "clear"} />}
+							{sessions.length ? sessions.map((ss) => (
+								<SessionRow key={ss.id} session={ss} lane={lanesBySession.get(ss.id)} />
+							)) : <Empty label="no live sessions" />}
 						</div>
 					</div>
-
-					<div className="grid min-h-0 grid-rows-[minmax(0,1fr)_72px]">
-						<div className="min-h-0 border-b border-border">
-							<SectionTitle title="ready frontier" meta={`${state.plane.projects ?? 0} proj | ${state.plane.epics ?? 0} epic`} />
-							<div className="grid border-b border-border bg-muted/20" style={{ gridTemplateColumns: FRONTIER_COLUMNS }}>
-								<HeaderCell>ticket</HeaderCell>
-								<HeaderCell>title</HeaderCell>
-								<HeaderCell>repo</HeaderCell>
-								<HeaderCell>prio</HeaderCell>
+					<div className="grid min-h-0 grid-rows-[1fr_1fr] border-t border-neutral-300 dark:border-neutral-700">
+						<div className="min-h-0 border-b border-neutral-200 dark:border-neutral-700">
+							<SecRow label="agents" meta={`${s.backgroundAgents.length}`} />
+							<div className="grid border-b border-neutral-200 bg-neutral-50 dark:border-neutral-700 dark:bg-neutral-900" style={{ gridTemplateColumns: AGENT_COLS }}>
+								<H>task</H><H>status</H><H>milestones</H>
 							</div>
 							<div className="min-h-0 overflow-hidden">
-								{frontier.length > 0 ? frontier.map((ticket) => <FrontierRow key={ticket.ticket} ticket={ticket} />) : <EmptyRow label="no ready frontier" />}
+								{agents.length ? agents.map((a, i) => <AgentRow key={`${a.task}-${i}`} agent={a} />) : <Empty label="no agents" />}
 							</div>
 						</div>
-
-						<div className="grid border-t border-border bg-muted/15 px-2 text-[10px] uppercase tracking-[0.16em] text-muted-foreground">
-							<div className="flex items-center justify-between gap-2">
-								<span className="truncate">adapter pm-state.json via firefly</span>
-								<span className="truncate">{state.updatedAt ?? "--"}</span>
+						<div className="min-h-0">
+							<SecRow label="completions" meta={`${s.recentCompletions.length}`} />
+							<div className="grid border-b border-neutral-200 bg-neutral-50 dark:border-neutral-700 dark:bg-neutral-900" style={{ gridTemplateColumns: COMPLETE_COLS }}>
+								<H/><H>item</H>
+							</div>
+							<div className="min-h-0 overflow-hidden">
+								{completes.length ? completes.map((c, i) => <CompleteRow key={`${c}-${i}`} item={c} />) : <Empty label="no completions" />}
 							</div>
 						</div>
 					</div>
 				</div>
+
+				<div className="grid min-h-0 grid-rows-[minmax(0,1fr)_minmax(0,1fr)] border-r border-neutral-300 dark:border-neutral-700">
+					<div className="min-h-0 border-b border-neutral-200 dark:border-neutral-700">
+						<SecRow label="needs chris" meta={needsCount > 0 ? `${needsCount}` : undefined} />
+						<div className="grid border-b border-neutral-200 bg-neutral-50 dark:border-neutral-700 dark:bg-neutral-900" style={{ gridTemplateColumns: NEEDS_COLS }}>
+							<H>ticket</H><H>title</H><H>prio</H><H>src</H>
+						</div>
+						<div className="min-h-0 overflow-hidden bg-red-950/10 dark:bg-red-950/20">
+							{needs.length ? needs.map((n, i) => <NeedsRow key={`${n.ticket ?? n.title ?? "n"}-${i}`} item={n} />) : (
+								<Empty label={needsCount > 0 ? `${needsCount} human-gated` : "clear"} />
+							)}
+						</div>
+					</div>
+					<div className="min-h-0">
+						<SecRow label="ready frontier" meta={`${s.plane.projects ?? 0}p ${s.plane.epics ?? 0}e`} />
+						<div className="grid border-b border-neutral-200 bg-neutral-50 dark:border-neutral-700 dark:bg-neutral-900" style={{ gridTemplateColumns: FRONTIER_COLS }}>
+							<H>ticket</H><H>title</H><H>repo</H><H>prio</H>
+						</div>
+						<div className="min-h-0 overflow-hidden">
+							{frontier.length ? frontier.map((t) => <FrontierRow key={t.ticket} ticket={t} />) : <Empty label="no ready frontier" />}
+						</div>
+					</div>
+				</div>
+
+				<div className="grid min-h-0 grid-rows-[minmax(0,1fr)_144px]">
+					<div className="min-h-0 border-b border-neutral-200 dark:border-neutral-700">
+						<SecRow label="followups" meta={`${(s.followUps ?? []).length}`} />
+						<div className="grid border-b border-neutral-200 bg-neutral-50 dark:border-neutral-700 dark:bg-neutral-900" style={{ gridTemplateColumns: FOLLOWUP_COLS }}>
+							<H>src</H><H>item</H><H>status</H><H>resolution</H>
+						</div>
+						<div className="min-h-0 overflow-hidden">
+							{followups.length ? followups.map((f, i) => <FollowUpRow key={`${f.source ?? "f"}-${i}`} item={f} />) : <Empty label="no followups" />}
+						</div>
+					</div>
+					<div className="min-h-0">
+						<SecRow label="boxes" meta={`${s.boxes.length}`} />
+						<div className="grid border-b border-neutral-200 bg-neutral-50 dark:border-neutral-700 dark:bg-neutral-900" style={{ gridTemplateColumns: BOX_COLS }}>
+							<H>id</H><H>role</H><H>serve</H><H/>
+						</div>
+						<div className="min-h-0 overflow-hidden">
+							{boxes.length ? boxes.map((b) => <BoxRow key={b.id} box={b} />) : <Empty label="no boxes" />}
+						</div>
+					</div>
+				</div>
+			</div>
+
+			<div className="flex h-4 items-center justify-between border-t border-neutral-300 bg-neutral-50 px-2 text-[9px] text-neutral-400 dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-500">
+				<span className="truncate">pm-state.json via firefly</span>
+				<span className="truncate">{s.generatedBy ?? "--"}</span>
 			</div>
 		</div>
 	)

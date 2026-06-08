@@ -348,11 +348,27 @@ export interface Ch5PmNeedsChrisItem {
 	priority?: string
 }
 
+export interface Ch5PmFollowUp {
+	source?: string
+	item: string
+	status?: string
+	resolution?: string
+}
+
+export interface Ch5PmBabysitter {
+	running?: boolean
+	surface?: string
+	package?: string
+	loopSeconds?: number
+	watchdogCron?: string
+}
+
 export interface Ch5PmLiveState {
 	_doc?: string
 	schemaVersion?: number
 	updatedAt?: string
 	generatedBy?: string
+	host?: string
 	boxes: Ch5PmLiveBox[]
 	sessions: Ch5PmLiveSession[]
 	lanes: Ch5PmLiveLane[]
@@ -360,6 +376,8 @@ export interface Ch5PmLiveState {
 	plane: Ch5PmLivePlaneSummary
 	recentCompletions: string[]
 	needsChris: Ch5PmNeedsChrisItem[]
+	followUps?: Ch5PmFollowUp[]
+	babysitter?: Ch5PmBabysitter
 }
 
 export interface Ch5PmEventStreamHandlers {
