@@ -38,7 +38,7 @@ import { VoicePanel } from "./components/side-panel/voice-panel"
 import { NotesPanel } from "./components/side-panel/notes-panel"
 import { EditorPanel } from "./components/side-panel/editor-panel"
 import { FilesPanel } from "./components/side-panel/files-panel"
-import { PluginsPanel } from "./components/side-panel/plugins-panel"
+import { V2PluginsPanel } from "./components/side-panel/v2-plugins-panel"
 import { PulsePanel } from "./components/side-panel/pulse-panel"
 import { TerminalPanel } from "./components/side-panel/terminal-panel"
 import type { Agent, FireflySurfaceTarget } from "./lib/types"
@@ -294,7 +294,7 @@ export const FIREFLY_SURFACE_REGISTRY: FireflySurfaceDef[] = [
 		persistenceKey: "side-panel.plugins",
 		telemetryNamespace: "firefly.surface.plugins",
 		target: { kind: "side-panel", tab: "plugins" },
-		spawn: (ctx) => <PluginsPanel agent={ctx.agent} />,
+		spawn: (ctx) => <V2PluginsPanel agent={ctx.agent} />,
 	},
 	{
 		id: "bridges",
