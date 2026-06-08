@@ -1,6 +1,10 @@
 import { BrowserWindow, ipcMain } from "electron"
 
-import { pluginListArgsShape } from "../../shared/firefly-plugin/index"
+import { pluginDescribeArgsShape } from "../../shared/firefly-plugin/index"
+import { z } from "zod"
+
+const describeArgsSchema = z.object(pluginDescribeArgsShape)
+const stateArgsSchema = describeArgsSchema
 
 import { createLogger } from "../logger"
 import {
@@ -75,12 +79,12 @@ export function registerFireflyPluginIpc(): void {
 	})
 
 	ipcMain.handle(FIREFLY_PLUGIN_IPC_CHANNELS.describe, (_event, rawArgs: unknown) => {
-		const args = pluginListArgsShape.parse(coerceArgs(rawArgs))
+		const args = describeArgsSchema.parse(coerceArgs(rawArgs))
 		return describePlugin(args.pluginId)
 	})
 
 	ipcMain.handle(FIREFLY_PLUGIN_IPC_CHANNELS.state, (_event, rawArgs: unknown) => {
-		const args = pluginListArgsShape.parse(coerceArgs(rawArgs))
+		const args = stateArgsSchema.parse(coerceArgs(rawArgs))
 		const caps = getPluginCapabilities(args.pluginId)
 		return {
 			found: caps.state.trust !== "built-in" || args.pluginId.length > 0,

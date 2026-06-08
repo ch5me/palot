@@ -81,10 +81,26 @@ export interface FireflyPluginToolsResult {
 	tools: FireflyPluginToolItem[]
 }
 
+export interface FireflyPluginInvokeInput {
+	pluginId: string
+	commandId: string
+	args: Record<string, unknown>
+}
+
+export interface FireflyPluginInvokeResult {
+	status: "completed" | "failed" | "denied" | "unavailable" | "queued" | "cancelled"
+	pluginId: string
+	commandId: string
+	errorCode?: string
+	errorMessage?: string
+	data?: unknown
+}
+
 function getBridge(): {
 	list: () => Promise<FireflyPluginListResult>
 	capabilities: (pluginId: string) => Promise<FireflyPluginCapabilitiesResult>
 	tools: (pluginId?: string) => Promise<FireflyPluginToolsResult>
+	invoke: (input: FireflyPluginInvokeInput) => Promise<FireflyPluginInvokeResult>
 	onChanged: (cb: (p: { appVersion: string; pluginCount: number }) => void) => () => void
 } {
 	if (typeof window === "undefined") {
@@ -120,6 +136,12 @@ export function useFireflyPluginTools(pluginId?: string) {
 		queryFn: () => getBridge().tools(pluginId),
 		staleTime: 5_000,
 	})
+}
+
+export async function invokePluginCommand(
+	input: FireflyPluginInvokeInput,
+): Promise<FireflyPluginInvokeResult> {
+	return getBridge().invoke(input)
 }
 
 export function useFireflyPluginCatalogChanged(

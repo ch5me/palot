@@ -239,6 +239,8 @@ contextBridge.exposeInMainWorld("elf", {
 		themes: () => ipcRenderer.invoke("firefly-plugin:themes"),
 		tools: (pluginId?: string) =>
 			ipcRenderer.invoke("firefly-plugin:tools", { pluginId }),
+		invoke: (input: { pluginId: string; commandId: string; args: Record<string, unknown> }) =>
+			ipcRenderer.invoke("firefly-plugin:invoke", input),
 		refresh: () => ipcRenderer.invoke("firefly-plugin:refresh"),
 		onChanged: (callback: (payload: { appVersion: string; pluginCount: number }) => void) => {
 			const listener = (

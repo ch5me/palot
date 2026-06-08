@@ -22,6 +22,28 @@ function resolveAppVersion(): string {
 	}
 }
 
+const log = {
+	debug: () => undefined,
+	info: (...args: unknown[]) => {
+		// Re-attach to the host logger lazily so the authority module
+		// still loads in the bun test runner.
+		try {
+			// eslint-disable-next-line @typescript-eslint/no-var-requires
+			const { createLogger } = require("../logger") as typeof import("../logger")
+			createLogger("firefly-plugin-authority").info(...args)
+		} catch {
+			// ignore
+		}
+	},
+	warn: () => undefined,
+	error: () => undefined,
+} satisfies {
+	debug: (...args: unknown[]) => void
+	info: (...args: unknown[]) => void
+	warn: (...args: unknown[]) => void
+	error: (...args: unknown[]) => void
+}
+
 export { decideCapability, type CapabilityDecision }
 
 export function getPluginCatalog(): PluginCatalog {

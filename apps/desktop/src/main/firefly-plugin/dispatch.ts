@@ -134,10 +134,10 @@ export async function invokePluginCommand(
 			errorMessage: "No host handler registered",
 		}
 	}
-	const argsSchema = z.object(command.args ?? {}).passthrough()
+	const argsSchema = z.object((command as { args?: Record<string, z.ZodTypeAny> }).args ?? {}).passthrough()
 	const result = await handler({
 		command: argsSchema as z.ZodTypeAny,
-		args: input.args,
+		args: input.args as Record<string, unknown> | undefined,
 		sessionId: input.sessionId ?? null,
 	})
 	if ("error" in result) {

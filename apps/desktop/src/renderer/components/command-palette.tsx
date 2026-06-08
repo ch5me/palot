@@ -48,6 +48,7 @@ import {
 } from "lucide-react"
 import { useCallback, useEffect, useMemo, useState } from "react"
 import { sessionMetricsFamily } from "../atoms/derived/session-metrics"
+import { invokePluginCommand } from "../hooks/use-firefly-plugins"
 import {
 	automationsEnabledAtom,
 	browserPanelEnabledAtom,
@@ -217,12 +218,9 @@ export function CommandPalette({ open, onOpenChange, agents, onForkSession }: Co
 	const activeSessions = useMemo(
 		() =>
 			open
-				? agents.filter(
-						(a) =>
-							a.status === "running" ||
-							a.status === "waiting" ||
-							(a.isAttached && a.status === "idle"),
-					)
+				? agents
+						.filter((a) => a.visibilityReason === "visible" && a.status !== "idle")
+						.sort((a, b) => b.lastActiveAt - a.lastActiveAt)
 				: [],
 		[agents, open],
 	)
@@ -361,11 +359,45 @@ export function CommandPalette({ open, onOpenChange, agents, onForkSession }: Co
 							<span>Fork Session</span>
 						</CommandItem>
 					)}
-					<CommandItem onSelect={handleReloadConfig} disabled={reloading}>
-						<RefreshCwIcon />
-						<span>{reloading ? "Reloading..." : "Reload Config"}</span>
-					</CommandItem>
-				</CommandGroup>
+				<CommandItem onSelect={handleReloadConfig} disabled={reloading}>
+					<RefreshCwIcon />
+					<span>{reloading ? "Reloading..." : "Reload Config"}</span>
+				</CommandItem>
+			</CommandGroup>
+
+			<CommandSeparator />
+			<CommandGroup heading="Plugins">
+				<CommandItem
+					keywords={["plugin", "palot", "ui", "refresh", "firefly"]}
+					onSelect={async () => {
+						onOpenChange(false)
+						await invokePluginCommand({
+							pluginId: "firefly.built-in.palot-bridge",
+							commandId: "palot-refresh-ui-state",
+							args: {},
+						})
+					}}
+				>
+					<PlugIcon />
+					<span>Plugin: Refresh Palot UI State</span>
+					<span className="ml-auto text-[10px] text-muted-foreground">palot-bridge</span>
+				</CommandItem>
+				<CommandItem
+					keywords={["plugin", "acme", "notebook", "firefly"]}
+					onSelect={async () => {
+						onOpenChange(false)
+						await invokePluginCommand({
+							pluginId: "acme.acme-notebook",
+							commandId: "acme-notebook-open",
+							args: {},
+						})
+					}}
+				>
+					<PlugIcon />
+					<span>Plugin: Open Acme Notebook</span>
+					<span className="ml-auto text-[10px] text-muted-foreground">acme-notebook</span>
+				</CommandItem>
+			</CommandGroup>
 
 				<CommandSeparator />
 				<CommandGroup heading="Appearance">

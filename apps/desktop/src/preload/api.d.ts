@@ -1342,6 +1342,18 @@ export interface ElfAPI {
 			}>
 		}>
 		refresh: () => Promise<{ appVersion: string; pluginCount: number }>
+		invoke: (input: {
+			pluginId: string
+			commandId: string
+			args: Record<string, unknown>
+		}) => Promise<{
+			status: "completed" | "failed" | "denied" | "unavailable" | "queued" | "cancelled"
+			pluginId: string
+			commandId: string
+			errorCode?: string
+			errorMessage?: string
+			data?: unknown
+		}>
 		onChanged: (callback: (payload: { appVersion: string; pluginCount: number }) => void) => () => void
 	}
 	mcpConnections: {
