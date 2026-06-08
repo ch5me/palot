@@ -7,14 +7,14 @@ mock.module("../lib/monaco", () => ({
 	languageForPath: () => "plaintext",
 }))
 
+const { FIREFLY_SURFACE_IDS, FIREFLY_SURFACE_REGISTRY } = await import(
+	"../firefly-surface-registry"
+)
 const {
 	fireflySurfaceDefaults,
 	fireflySurfaceFlagAtoms,
 	fireflySurfaceLabels,
 } = await import("../atoms/feature-flags")
-const { FIREFLY_SURFACE_IDS, FIREFLY_SURFACE_REGISTRY } = await import(
-	"../firefly-surface-registry"
-)
 const { palotSidePanelTabSchema } = await import(
 	"../../shared/firefly-plugin/palot-bridge-manifest"
 )
@@ -65,5 +65,6 @@ test("every surface flag atom is a usable atom object", () => {
 	for (const id of FIREFLY_SURFACE_IDS) {
 		expect(fireflySurfaceFlagAtoms[id]).toBeTruthy()
 		expect(typeof fireflySurfaceFlagAtoms[id]).toBe("object")
+		expect("toString" in fireflySurfaceFlagAtoms[id]).toBe(true)
 	}
 })
