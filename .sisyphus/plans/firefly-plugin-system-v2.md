@@ -1525,7 +1525,7 @@ Wave FINAL
 
   **Commit**: NO
 
-- [ ] 22. Third-party / AI-authored exemplar plugin vertical slice
+- [x] 22. Third-party / AI-authored exemplar plugin vertical slice
 
   **What to do**:
   - Define one realistic third-party or AI-authored plugin that exercises trust, permissions, UI contribution, OpenCode tool control, isolation, and lifecycle surfaces.
