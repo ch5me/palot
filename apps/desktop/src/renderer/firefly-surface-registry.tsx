@@ -1,27 +1,6 @@
 import { 	ActivityIcon, BookTextIcon, BoxesIcon, DatabaseIcon, FileDiffIcon, FileTextIcon, FilesIcon, GlobeIcon, MicIcon, MonitorPlayIcon, PlugIcon, RectangleEllipsisIcon, Share2Icon, SquarePenIcon, TerminalSquareIcon, UsersIcon, WandSparklesIcon, type LucideIcon } from "lucide-react"
 
 import type { ReactNode } from "react"
-import {
-	browserPanelEnabledAtom,
-	artifactsSurfaceEnabledAtom,
-	bridgesSurfaceEnabledAtom,
-	claudeSurfaceEnabledAtom,
-	ch5pmSurfaceEnabledAtom,
-	crmSurfaceEnabledAtom,
-	editorSurfaceEnabledAtom,
-	filesSurfaceEnabledAtom,
-	memorySurfaceEnabledAtom,
-	notesSurfaceEnabledAtom,
-	oracleSurfaceEnabledAtom,
-	pluginsSurfaceEnabledAtom,
-	pdfReviewSurfaceEnabledAtom,
-	pulseSurfaceEnabledAtom,
-	reviewSurfaceEnabledAtom,
-	studioSurfaceEnabledAtom,
-	terminalSurfaceEnabledAtom,
-	voiceSurfaceEnabledAtom,
-} from "./atoms/feature-flags"
-
 import { Ch5PmDashboardPanel } from "./ch5pm-dashboard/panel"
 import { ReviewPanel } from "./components/review/review-panel"
 import { ArtifactsPanel } from "./components/side-panel/artifacts-panel"
@@ -67,7 +46,6 @@ export interface FireflySurfaceDef {
 	formFactor: FireflySurfaceFormFactor
 	enabledFlag: {
 		key: string
-		atom?: typeof browserPanelEnabledAtom
 	}
 	defaultOn: boolean
 	availability: (ctx: FireflySurfaceContext) => FireflySurfaceAvailability
@@ -100,7 +78,6 @@ export const FIREFLY_SURFACE_REGISTRY: FireflySurfaceDef[] = [
 		formFactor: "side-panel-tab",
 		enabledFlag: {
 			key: "review",
-			atom: reviewSurfaceEnabledAtom,
 		},
 		defaultOn: true,
 		availability: (ctx) => {
@@ -125,7 +102,6 @@ export const FIREFLY_SURFACE_REGISTRY: FireflySurfaceDef[] = [
 		formFactor: "side-panel-tab",
 		enabledFlag: {
 			key: "browserPanelEnabled",
-			atom: browserPanelEnabledAtom,
 		},
 		defaultOn: false,
 		availability: (ctx) =>
@@ -146,7 +122,6 @@ export const FIREFLY_SURFACE_REGISTRY: FireflySurfaceDef[] = [
 		formFactor: "side-panel-tab",
 		enabledFlag: {
 			key: "notes",
-			atom: notesSurfaceEnabledAtom,
 		},
 		defaultOn: true,
 		availability: (ctx) =>
@@ -167,7 +142,6 @@ export const FIREFLY_SURFACE_REGISTRY: FireflySurfaceDef[] = [
 		formFactor: "side-panel-tab",
 		enabledFlag: {
 			key: "pulse",
-			atom: pulseSurfaceEnabledAtom,
 		},
 		defaultOn: false,
 		availability: (ctx) =>
@@ -188,7 +162,6 @@ export const FIREFLY_SURFACE_REGISTRY: FireflySurfaceDef[] = [
 		formFactor: "side-panel-tab",
 		enabledFlag: {
 			key: "artifacts",
-			atom: artifactsSurfaceEnabledAtom,
 		},
 		defaultOn: true,
 		availability: (ctx) =>
@@ -209,7 +182,6 @@ export const FIREFLY_SURFACE_REGISTRY: FireflySurfaceDef[] = [
 		formFactor: "side-panel-tab",
 		enabledFlag: {
 			key: "memory",
-			atom: memorySurfaceEnabledAtom,
 		},
 		defaultOn: false,
 		availability: (ctx) =>
@@ -230,7 +202,6 @@ export const FIREFLY_SURFACE_REGISTRY: FireflySurfaceDef[] = [
 		formFactor: "side-panel-tab",
 		enabledFlag: {
 			key: "files",
-			atom: filesSurfaceEnabledAtom,
 		},
 		defaultOn: true,
 		availability: (ctx) =>
@@ -251,7 +222,6 @@ export const FIREFLY_SURFACE_REGISTRY: FireflySurfaceDef[] = [
 		formFactor: "side-panel-tab",
 		enabledFlag: {
 			key: "terminal",
-			atom: terminalSurfaceEnabledAtom,
 		},
 		defaultOn: true,
 		availability: (ctx) =>
@@ -272,7 +242,6 @@ export const FIREFLY_SURFACE_REGISTRY: FireflySurfaceDef[] = [
 		formFactor: "side-panel-tab",
 		enabledFlag: {
 			key: "editor",
-			atom: editorSurfaceEnabledAtom,
 		},
 		defaultOn: true,
 		availability: (ctx) =>
@@ -293,7 +262,6 @@ export const FIREFLY_SURFACE_REGISTRY: FireflySurfaceDef[] = [
 		formFactor: "side-panel-tab",
 		enabledFlag: {
 			key: "plugins",
-			atom: pluginsSurfaceEnabledAtom,
 		},
 		defaultOn: true,
 		availability: (ctx) =>
@@ -314,7 +282,6 @@ export const FIREFLY_SURFACE_REGISTRY: FireflySurfaceDef[] = [
 		formFactor: "side-panel-tab",
 		enabledFlag: {
 			key: "bridges",
-			atom: bridgesSurfaceEnabledAtom,
 		},
 		defaultOn: true,
 		availability: (ctx) =>
@@ -335,7 +302,6 @@ export const FIREFLY_SURFACE_REGISTRY: FireflySurfaceDef[] = [
 		formFactor: "side-panel-tab",
 		enabledFlag: {
 			key: "crm",
-			atom: crmSurfaceEnabledAtom,
 		},
 		defaultOn: true,
 		availability: (ctx) =>
@@ -356,7 +322,6 @@ export const FIREFLY_SURFACE_REGISTRY: FireflySurfaceDef[] = [
 		formFactor: "side-panel-tab",
 		enabledFlag: {
 			key: "studio",
-			atom: studioSurfaceEnabledAtom,
 		},
 		defaultOn: true,
 		availability: (ctx) =>
@@ -377,7 +342,6 @@ export const FIREFLY_SURFACE_REGISTRY: FireflySurfaceDef[] = [
 		formFactor: "side-panel-tab",
 		enabledFlag: {
 			key: "voice",
-			atom: voiceSurfaceEnabledAtom,
 		},
 		defaultOn: true,
 		availability: (ctx) =>
@@ -398,7 +362,6 @@ export const FIREFLY_SURFACE_REGISTRY: FireflySurfaceDef[] = [
 		formFactor: "side-panel-tab",
 		enabledFlag: {
 			key: "oracle",
-			atom: oracleSurfaceEnabledAtom,
 		},
 		defaultOn: true,
 		availability: (ctx) =>
@@ -419,7 +382,6 @@ export const FIREFLY_SURFACE_REGISTRY: FireflySurfaceDef[] = [
 		formFactor: "side-panel-tab",
 		enabledFlag: {
 			key: "claude",
-			atom: claudeSurfaceEnabledAtom,
 		},
 		defaultOn: true,
 		availability: (ctx) =>
@@ -440,7 +402,6 @@ export const FIREFLY_SURFACE_REGISTRY: FireflySurfaceDef[] = [
 		formFactor: "side-panel-tab",
 		enabledFlag: {
 			key: "ch5pm",
-			atom: ch5pmSurfaceEnabledAtom,
 		},
 		defaultOn: false,
 		availability: (ctx) =>
@@ -461,7 +422,6 @@ export const FIREFLY_SURFACE_REGISTRY: FireflySurfaceDef[] = [
 		formFactor: "side-panel-tab",
 		enabledFlag: {
 			key: "pdfReview",
-			atom: pdfReviewSurfaceEnabledAtom,
 		},
 		defaultOn: false,
 		availability: (ctx) =>
