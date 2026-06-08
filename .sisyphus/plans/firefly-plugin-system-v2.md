@@ -1199,7 +1199,7 @@ Wave FINAL
 
   **Commit**: NO
 
-- [ ] 16. Define theme contribution pipeline and precedence model
+- [x] 16. Define theme contribution pipeline and precedence model
 
   **What to do**:
   - Define how plugins contribute themes, how host validates/applies them, precedence vs user preferences, and rollback/reset behavior.
