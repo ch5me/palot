@@ -182,6 +182,110 @@ Plus the docs onboarding ritual: `docs/firefly-surface-playbook.md:25–31` walk
 
 **Convergence target:** one `SurfaceContribution` table (V2 manifest `panels` family extended with `component: {kind: "host-reconciler", id}`). All 7 lists derive from it. The audit in `docs/firefly-surface-playbook.md` shrinks to "add a manifest entry".
 
+## Appendix C — extra findings from the recovered architecture map
+
+The original architecture scout subagent's full output was lost to an
+OMO background-output recovery bug. The full map was salvaged to
+`/tmp/palot-genui-architecture-map.recovered.md` and folded into this
+addendum. The findings below are facts the first pass did not catch.
+
+### C.1 `ensurePalotBridgeServer` is missing from the current source
+
+- `apps/desktop/src/main/opencode-manager.ts:15` imports
+  `ensurePalotBridgeServer` from `./palot-browser-ipc`.
+- The current `palot-browser-ipc.ts` is 200 lines and does **not**
+  export that symbol. The `out/main/index.js` build artifact has it
+  (compiled from a different tree) at `out/main/index.js:7388`.
+- Consequence: in the current source, the V1 plugin's
+  `createBridgeClient` returns null and falls through to the
+  queued / permission-denied envelopes (`plugin.js:215–265, 224–230`).
+  Live standalone transport is not actually working on `main` right
+  now — it is shipping a degraded path. This is a **pre-Loom bug**
+  worth flagging to the PM; wave 2 (the wire) and wave 5 (durable
+  identity) both depend on the bridge transport being live.
+
+### C.2 `genui-artifact-context.ts` is dead code
+
+- `apps/desktop/src/renderer/atoms/genui-artifact-context.ts` (24 LOC)
+  exports `sessionArtifactPromptContextFamily` and
+  `markArtifactPromptContextInjectedAtom`.
+- Neither is imported anywhere in the source tree.
+- The real artifact-prompt-context builder lives inline at
+  `apps/desktop/src/renderer/atoms/chat.ts:95–111`
+  (`buildArtifactPromptContext`).
+- Action: delete the dead file as part of wave 0 or wave 1. Cheap,
+  reversible, reduces confusion.
+
+### C.3 Discovery tools are stubbed fixtures
+
+- `apps/desktop/src/main/palot-plugin/plugin.js:301–379` ships
+  `search_tools`, `describe_tool`, `call_tool`, and `tools_status` as
+  hand-rolled fixtures.
+- They do **not** consult the real MCP runtime
+  (`apps/desktop/src/main/mcp-connections-runtime.ts`, 1.1K LOC).
+- This is a palot-internal bug, not a Loom gap, but it is the right
+  place to look when wave 1's `palot_components_describe` lands —
+  the new tool should not collide with the existing stub.
+
+### C.4 `appendPalotPlugin` does not consult the V2 catalog
+
+- `apps/desktop/src/main/opencode-manager.ts:604–615` only wires the
+  V1 plugin and the V1 bridge env vars.
+- The V2 `buildPluginCatalog` returns descriptors with
+  `bridge.systemContextBlock`, but the spawn-env path does not read
+  it.
+- This is the "V2 designed but not wired" gotcha. Wave 6 (V2
+  `contributes.components`) is the moment this gets fixed.
+
+### C.5 `genui-artifact-prop-actions.tsx` is DAG-specific
+
+- The single shipped prop patch (`Tweak` →
+  `{ showLabels: true, animate: "flow" }`) is hardcoded for
+  `dag-sparkline` (`components/genui/genui-artifact-prop-actions.tsx:18–20`).
+- A real Loom-style artifact system would let each component
+  declare its own prop patch UI in its registry entry.
+- Action: generalize as part of wave 3 (dual bindings). The
+  `decision_card`'s `state` binding carries a real prop patch
+  pattern (the `notes` textarea). Use that as the template.
+
+### C.6 `GenUiArtifactPlacement` includes an invalid V2 zone
+
+- `GenUiArtifactPlacement = "inline" | "above-chat" | "chat-inline-right" | "side-panel"`
+  (`apps/desktop/src/renderer/lib/types.ts:140–175`).
+- `side-panel` is a V2 panel **slot**, not a widget **zone**. The
+  V2 host widget-zone vocabulary is closed: `["above-chat",
+  "chat-inline-right"]`
+  (`apps/desktop/src/shared/firefly-plugin/descriptor.ts:33–40`).
+- Action: rename the renderer placement to `side-panel-slot` or
+  collapse it out. Wave 6 (V2 `contributes.components`) is the
+  moment this gets cleaned up.
+
+### C.7 Three more dead code / drift sites worth flagging
+
+- `apps/desktop/src/renderer/atoms/chat.ts:68–70`
+  (`PLAN_MODE_DAG_NUDGE`) hardcodes a specific GenUI component in
+  plan mode. Loom would want plan mode to be a plugin contribution
+  (`plan-mode` activation event) or a tool UI hint, not a renderer
+  constant. Fix in wave 6 or a follow-up.
+- `apps/desktop/src/renderer/atoms/genui-artifacts.ts` exposes `pin`,
+  `patch`, `upsert` but **no `remove` atom**. Wave 4's conflict
+  resolution needs `remove`; add it as part of wave 4.
+- The persisted session-binding JSON
+  (`~/.config/elf/opencode/session-bindings.json`) has no `scope`
+  field, but V2 `ToolContribution.scope` is `session | project |
+  app` (`manifest.ts:314`). Wave 5's persistence layer should
+  add `scope` to the binding record.
+
+### C.8 Bridge server is the load-bearing missing piece
+
+The plan's wave-2 prompt assumes the localhost bridge is alive. The
+recovered map says it is **not alive on `main` today** — the import
+in `opencode-manager.ts:15` references a symbol that does not exist
+in the current source. Wave 2 should explicitly include a
+"reintroduce or replace the bridge server" step before the runtime
+work begins. This is a 1-day fix in `palot-browser-ipc.ts` and is
+a hard prerequisite for the wire.
+
 ## Appendix B — file:line index of Loom-relevant code in palot <!-- oc:id=sec_ar -->
 
 | Concern | File | Lines |
