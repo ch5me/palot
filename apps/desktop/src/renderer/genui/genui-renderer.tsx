@@ -5,7 +5,7 @@ import { memo, useEffect, useMemo, useRef } from "react"
 import { upsertGenUiArtifactAtom } from "../atoms/genui-artifacts"
 import type { GenUiArtifactDescriptor } from "../lib/types"
 import { GenUiArtifactInlineActions } from "../components/genui/genui-artifact-inline-actions"
-import { resolveGenUiEntry } from "./registry"
+import { parseGenUiProps, resolveGenUiEntry } from "./registry"
 
 // ============================================================
 // Fence parsing
@@ -202,7 +202,7 @@ function GenUiBlockImpl({
 	if (!entry) {
 		return <GenUiErrorBlock error={`Unknown component: ${name}`} raw={JSON.stringify(props)} />
 	}
-	const parsed = entry.parseProps(props)
+	const parsed = parseGenUiProps(entry, props)
 	if (!parsed.ok) {
 		return <GenUiErrorBlock error={`${entry.name}: ${parsed.error}`} raw={JSON.stringify(props)} />
 	}
