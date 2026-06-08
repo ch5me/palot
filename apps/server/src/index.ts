@@ -4,8 +4,10 @@ import browserLanes, {
 	LOCAL_LANE_AUTH_HEADER,
 	resolveBrowserLaneProxyTarget,
 } from "./routes/browser-lanes"
+import ch5pm from "./routes/ch5pm"
 import files from "./routes/files"
 import health from "./routes/health"
+import mcpConnections from "./routes/mcp-connections"
 import modelState from "./routes/model-state"
 import servers from "./routes/servers"
 import { ensureSingleServer } from "./services/server-manager"
@@ -28,7 +30,9 @@ app.use(
 const routes = app
 	.route("/api/servers", servers)
 	.route("/api/model-state", modelState)
+	.route("/api/mcp-connections", mcpConnections)
 	.route("/api/files", files)
+	.route("/api/ch5pm", ch5pm)
 	.route("/browser", browserLanes)
 	.route("/health", health)
 

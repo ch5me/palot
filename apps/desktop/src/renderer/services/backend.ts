@@ -61,12 +61,28 @@ import type {
 	UpdateAutomationInput,
 } from "../../preload/api"
 import {
+	browseMcpCatalog as httpBrowseMcpCatalog,
 	ELF_SERVER_BASE_URL,
+	getMcpConnectionAuthStatus as httpGetMcpConnectionAuthStatus,
+	listMcpConnectionRecords as httpListMcpConnectionRecords,
+	loginMcpConnection as httpLoginMcpConnection,
+	registerMcpConnection as httpRegisterMcpConnection,
+	searchMcpCatalog as httpSearchMcpCatalog,
+	startMcpConnectionAuth as httpStartMcpConnectionAuth,
 	subscribeToActiveOpenCodeSessionEvents as httpSubscribeActiveOpenCodeSessionEvents,
+	testMcpConnection as httpTestMcpConnection,
 	type ActiveOpenCodeSessionStreamHandlers,
 } from "./elf-server"
 
+
 export { ELF_SERVER_BASE_URL }
+
+export async function openExternalUrl(url: string): Promise<void> {
+	if (isElectron) {
+		return window.elf.openExternal(url)
+	}
+	window.open(url, "_blank", "noopener,noreferrer")
+}
 
 export interface FileSystemEntry {
 	name: string
@@ -162,6 +178,7 @@ export type {
 }
 
 import { createLogger } from "../lib/logger"
+import type { Ch5PmLiveState } from "../ch5pm-dashboard/types"
 
 const log = createLogger("backend")
 
@@ -561,14 +578,14 @@ export async function browseMcpCatalog(input: import("../../preload/api").McpCat
 	if (isElectron) {
 		return window.elf.mcpConnections.browseCatalog(input)
 	}
-	throw new Error("MCP catalog browse is only available in Electron mode")
+	return httpBrowseMcpCatalog(input)
 }
 
 export async function searchMcpCatalog(input: import("../../preload/api").McpCatalogSearchInput) {
 	if (isElectron) {
 		return window.elf.mcpConnections.searchCatalog(input)
 	}
-	throw new Error("MCP catalog search is only available in Electron mode")
+	return httpSearchMcpCatalog(input)
 }
 
 export async function registerMcpConnection(input: {
@@ -585,28 +602,36 @@ export async function registerMcpConnection(input: {
 	if (isElectron) {
 		return window.elf.mcpConnections.register(input)
 	}
-	throw new Error("MCP connection registration is only available in Electron mode")
+	return httpRegisterMcpConnection(input)
 }
 
 export async function loginMcpConnection(name: string) {
 	if (isElectron) {
 		return window.elf.mcpConnections.login(name)
 	}
-	throw new Error("MCP connection login is only available in Electron mode")
+	return httpLoginMcpConnection(name)
+}
+
+export async function startMcpConnectionAuth(name: string) {
+	return httpStartMcpConnectionAuth(name)
+}
+
+export async function getMcpConnectionAuthStatus(name: string) {
+	return httpGetMcpConnectionAuthStatus(name)
 }
 
 export async function testMcpConnection(name: string) {
 	if (isElectron) {
 		return window.elf.mcpConnections.test(name)
 	}
-	throw new Error("MCP connection test is only available in Electron mode")
+	return httpTestMcpConnection(name)
 }
 
 export async function listMcpConnectionRecords() {
 	if (isElectron) {
 		return window.elf.mcpConnections.listRecords()
 	}
-	throw new Error("MCP connection records are only available in Electron mode")
+	return httpListMcpConnectionRecords()
 }
 
 export async function readFileContents(filePath: string): Promise<FileReadResult> {
@@ -629,6 +654,25 @@ export async function readTextFile(filePath: string): Promise<string> {
 	}
 	const { fetchTextFile } = await import("./elf-server")
 	return fetchTextFile(filePath)
+}
+
+export async function fetchCh5PmState(): Promise<Ch5PmLiveState> {
+	if (isElectron) {
+		return window.elf.fetch({
+			url: `${ELF_SERVER_BASE_URL}/api/ch5pm/state`,
+			method: "GET",
+			headers: { accept: "application/json" },
+			body: null,
+		}).then((result) => {
+			if (result.status < 200 || result.status >= 300) {
+				throw new Error(`CH5PM state fetch failed: ${result.status} ${result.statusText}`)
+			}
+			return JSON.parse(result.body ?? "null") as Ch5PmLiveState
+		})
+
+	}
+	const { fetchCh5PmState: httpFetch } = await import("./elf-server")
+	return httpFetch() as Promise<Ch5PmLiveState>
 }
 
 export async function writeTextFile(filePath: string, content: string): Promise<void> {

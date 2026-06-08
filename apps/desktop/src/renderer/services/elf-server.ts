@@ -290,6 +290,94 @@ export function subscribeToActiveOpenCodeSessionEvents(
  * Fetches the OpenCode model state (recent models, favorites, variants)
  * from the backend, which reads ~/.local/state/opencode/model.json.
  */
+export async function browseMcpCatalog(input: import("../../shared/mcp-connections-shared").McpCatalogBrowseInput) {
+	const res = await fetch(`${BASE_URL}/api/mcp-connections/catalog/browse`, {
+		method: "POST",
+		headers: { "Content-Type": "application/json" },
+		body: JSON.stringify(input),
+	})
+	if (!res.ok) {
+		throw new Error(await readError(res, `MCP catalog browse failed: ${res.status} ${res.statusText}`))
+	}
+	return res.json()
+}
+
+export async function searchMcpCatalog(input: import("../../shared/mcp-connections-shared").McpCatalogSearchInput) {
+	const res = await fetch(`${BASE_URL}/api/mcp-connections/catalog/search`, {
+		method: "POST",
+		headers: { "Content-Type": "application/json" },
+		body: JSON.stringify(input),
+	})
+	if (!res.ok) {
+		throw new Error(await readError(res, `MCP catalog search failed: ${res.status} ${res.statusText}`))
+	}
+	return res.json()
+}
+
+export async function registerMcpConnection(input: import("../../shared/mcp-connections-shared").McpConnectionRegisterInput) {
+	const res = await fetch(`${BASE_URL}/api/mcp-connections/register`, {
+		method: "POST",
+		headers: { "Content-Type": "application/json" },
+		body: JSON.stringify(input),
+	})
+	if (!res.ok) {
+		throw new Error(await readError(res, `MCP connection registration failed: ${res.status} ${res.statusText}`))
+	}
+	return res.json()
+}
+
+export async function loginMcpConnection(name: string) {
+	const res = await fetch(`${BASE_URL}/api/mcp-connections/login`, {
+		method: "POST",
+		headers: { "Content-Type": "application/json" },
+		body: JSON.stringify({ name }),
+	})
+	if (!res.ok) {
+		throw new Error(await readError(res, `MCP connection login failed: ${res.status} ${res.statusText}`))
+	}
+	return res.json()
+}
+
+export async function startMcpConnectionAuth(name: string) {
+	const res = await fetch(`${BASE_URL}/api/mcp-connections/auth/start`, {
+		method: "POST",
+		headers: { "Content-Type": "application/json" },
+		body: JSON.stringify({ name }),
+	})
+	if (!res.ok) {
+		throw new Error(await readError(res, `MCP auth start failed: ${res.status} ${res.statusText}`))
+	}
+	return res.json() as Promise<{ name: string; status: string; authorizeUrl: string | null; message: string | null }>
+}
+
+export async function getMcpConnectionAuthStatus(name: string) {
+	const res = await fetch(`${BASE_URL}/api/mcp-connections/auth/${encodeURIComponent(name)}`)
+	if (!res.ok) {
+		throw new Error(await readError(res, `MCP auth status failed: ${res.status} ${res.statusText}`))
+	}
+	return res.json() as Promise<{ name: string; status: string; authorizeUrl: string | null; message: string | null }>
+}
+
+export async function testMcpConnection(name: string) {
+	const res = await fetch(`${BASE_URL}/api/mcp-connections/test`, {
+		method: "POST",
+		headers: { "Content-Type": "application/json" },
+		body: JSON.stringify({ name }),
+	})
+	if (!res.ok) {
+		throw new Error(await readError(res, `MCP connection test failed: ${res.status} ${res.statusText}`))
+	}
+	return res.json()
+}
+
+export async function listMcpConnectionRecords() {
+	const res = await fetch(`${BASE_URL}/api/mcp-connections/records`)
+	if (!res.ok) {
+		throw new Error(await readError(res, `MCP connection records failed: ${res.status} ${res.statusText}`))
+	}
+	return res.json()
+}
+
 export async function fetchModelState(): Promise<{
 	recent: { providerID: string; modelID: string }[]
 	favorite: { providerID: string; modelID: string }[]
@@ -298,6 +386,14 @@ export async function fetchModelState(): Promise<{
 	const res = await client.api["model-state"].$get()
 	if (!res.ok) {
 		throw new Error(`Model state fetch failed: ${res.status} ${res.statusText}`)
+	}
+	return res.json()
+}
+
+export async function fetchCh5PmState() {
+	const res = await client.api.ch5pm.state.$get()
+	if (!res.ok) {
+		throw new Error(await readError(res, `CH5PM state fetch failed: ${res.status} ${res.statusText}`))
 	}
 	return res.json()
 }

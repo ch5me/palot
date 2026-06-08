@@ -283,6 +283,84 @@ export interface Ch5PmDashboardState {
 	lastEventAt: string | null
 }
 
+export interface Ch5PmLiveBox {
+	id: string
+	role?: string
+	daemon: {
+		url?: string
+		altUrl?: string
+		health?: string
+		boundHost?: string
+	}
+	opencodeServe?: string
+	notes?: string
+}
+
+export interface Ch5PmLiveSession {
+	id: string
+	title: string
+	repo?: string
+	box?: string
+	state?: string
+	lane?: string
+}
+
+export interface Ch5PmLiveLane {
+	name: string
+	symbol?: string
+	status?: string
+	session?: string
+	goal?: string
+}
+
+export interface Ch5PmLiveBackgroundAgent {
+	task: string
+	status?: string
+	milestones?: Record<string, string>
+}
+
+export interface Ch5PmLiveReadyFrontierTicket {
+	ticket: string
+	title: string
+	priority?: string
+	repo?: string
+	coveredBy?: string | null
+}
+
+export interface Ch5PmLivePlaneSummary {
+	workspaceSlug?: string
+	projects?: number
+	epics?: number
+	readUrl?: string
+	readyFrontier: Ch5PmLiveReadyFrontierTicket[]
+	humanGated?: {
+		count?: number
+		note?: string
+	}
+}
+
+export interface Ch5PmNeedsChrisItem {
+	ticket?: string
+	title?: string
+	note?: string
+	source?: string
+	priority?: string
+}
+
+export interface Ch5PmLiveState {
+	_doc?: string
+	schemaVersion?: number
+	updatedAt?: string
+	generatedBy?: string
+	boxes: Ch5PmLiveBox[]
+	sessions: Ch5PmLiveSession[]
+	lanes: Ch5PmLiveLane[]
+	backgroundAgents: Ch5PmLiveBackgroundAgent[]
+	plane: Ch5PmLivePlaneSummary
+	recentCompletions: string[]
+	needsChris: Ch5PmNeedsChrisItem[]
+}
+
 export interface Ch5PmEventStreamHandlers {
 	onSnapshot?: (payload: Ch5PmSnapshotPayload) => void
 	onPressure?: (payload: Ch5PmPressurePayload) => void
