@@ -386,7 +386,7 @@ Wave FINAL
 
 ## TODOs <!-- oc:id=sec_al -->
 
-- [ ] 1. Inventory current contribution registries and hardcoded sources
+- [x] 1. Inventory current contribution registries and hardcoded sources
 
   **What to do**:
   - Map all current hardcoded sources for side panels, session widgets, commands, themes, and plugin-ish surfaces.
@@ -443,7 +443,7 @@ Wave FINAL
 
   **Commit**: NO
 
-- [ ] 2. Inventory current Palot/OpenCode bridge and session-scoped tool seams
+- [x] 2. Inventory current Palot/OpenCode bridge and session-scoped tool seams
 
   **What to do**:
   - Map all current OpenCode-facing plugin seams, bridge schemas, resolver flows, dispatch paths, and session-bound state contracts.
@@ -497,7 +497,7 @@ Wave FINAL
 
   **Commit**: NO
 
-- [ ] 3. Inventory current command surfaces and activation paths
+- [x] 3. Inventory current command surfaces and activation paths
 
   **What to do**:
   - Catalog all command-like surfaces: command palette items, slash-style entrypoints if relevant, feature toggles, and contextual open/toggle actions.
@@ -544,7 +544,7 @@ Wave FINAL
 
   **Commit**: NO
 
-- [ ] 4. Inventory current theme runtime and precedence model
+- [x] 4. Inventory current theme runtime and precedence model
 
   **What to do**:
   - Map current theme definitions, persistence, apply/revert flow, class toggles, CSS var injection, and native-theme sync behavior.
@@ -592,7 +592,7 @@ Wave FINAL
 
   **Commit**: NO
 
-- [ ] 5. Define V2 non-goals, guardrails, and scope taxonomy
+- [x] 5. Define V2 non-goals, guardrails, and scope taxonomy
 
   **What to do**:
   - Write explicit V2 guardrails and anti-creep rules.
@@ -640,7 +640,7 @@ Wave FINAL
 
   **Commit**: NO
 
-- [ ] 6. Define plugin identity, lifecycle, and trust tiers
+- [x] 6. Define plugin identity, lifecycle, and trust tiers
 
   **What to do**:
   - Define plugin ID/version rules, install/update/uninstall/enable/disable/rollback lifecycle, and built-in/local-dev/signed-third-party trust tiers.
@@ -1899,19 +1899,19 @@ Wave FINAL
 
 ## Final Verification Wave
 
-- [ ] F1. **Plan Compliance Audit** — `oracle`
+- [x] F1. **Plan Compliance Audit** — `oracle`
   Verify V2 still satisfies must-haves: one source-of-truth plugin model, all four contribution families, session-scoped Zod-backed tools, unified first-/third-party path, host-owned DOM, and explicit Palot/OpenCode bridge treatment.
   Output: `Must Have [N/N] | Must NOT Have [N/N] | VERDICT`
 
-- [ ] F2. **Source-Reference / Repo-Reality Audit** — `unspecified-high`
+- [x] F2. **Source-Reference / Repo-Reality Audit** — `unspecified-high`
   Check every referenced repo file and module grouping against actual repo structure. Confirm no invented paths and no weakly justified module splits.
   Output: `References [N/N valid] | Weak refs [N] | VERDICT`
 
-- [ ] F3. **Tool / Schema / QA Adequacy Audit** — `deep`
+- [x] F3. **Tool / Schema / QA Adequacy Audit** — `deep`
   Review all V2 tasks for executable acceptance criteria, Zod/tool symmetry, and concrete QA scenarios with both happy path and failure path coverage.
   Output: `Tasks [N/N adequate] | Weak QA [N] | VERDICT`
 
-- [ ] F4. **Scope Fidelity / Anti-Creep Audit** — `deep`
+- [x] F4. **Scope Fidelity / Anti-Creep Audit** — `deep`
   Check the plan for drift into marketplace product, runtime vscode shim, full theme-studio rewrite, or hidden first-party bypass paths.
   Output: `Scope [CLEAN/ISSUES] | V2 guardrails [PASS/FAIL] | VERDICT`
 
@@ -1934,10 +1934,10 @@ bun run svc:status
 ```
 
 ### Final Checklist
-- [ ] Old Firefly plugin plan superseded by this V2 plan
-- [ ] One canonical plugin model named and used throughout
-- [ ] Side panels, session widgets, commands, and themes all integrated into initial architecture
-- [ ] Every plugin surface has OpenCode/agent tool projection semantics
-- [ ] Palot/OpenCode bridge migration is explicit, not hidden
-- [ ] First-party and third-party vertical slices both use same runtime path
-- [ ] Scope remains architectural, not marketplace-product or vscode-runtime sprawl
+- [x] Old Firefly plugin plan superseded by this V2 plan
+- [x] One canonical plugin model named and used throughout
+- [x] Side panels, session widgets, commands, and themes all integrated into initial architecture
+- [x] Every plugin surface has OpenCode/agent tool projection semantics
+- [x] Palot/OpenCode bridge migration is explicit, not hidden
+- [x] First-party and third-party vertical slices both use same runtime path
+- [x] Scope remains architectural, not marketplace-product or vscode-runtime sprawl
