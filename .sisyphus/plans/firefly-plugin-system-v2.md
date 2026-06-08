@@ -1023,7 +1023,7 @@ Wave FINAL
 
   **Commit**: NO
 
-- [ ] 13. Define renderer projection architecture
+- [x] 13. Define renderer projection architecture
 
   **What to do**:
   - Design how plugin contributions project into renderer data structures and React surfaces.

@@ -72,3 +72,11 @@ Key learnings:
 - Suppression note: biome ignores `apps/desktop/src/shared/` paths by design (per task 7 learning). `bun run lint` returned one pre-existing formatting error in `apps/server/src/services/mcp-connections.ts` — unrelated to this task. `tsgo --noEmit` is the real signal for the contract files.
 - Contract consumers: Task 18 (hot reload implementation) reads `hotReloadRequested` + `tearingDown` + `teardownComplete`; task 22 (lifecycle UI) reads `summarizePluginSupervision` + `pluginLifecycleXxxArgsShape`; task 24 (operator override) reads `buildOperatorOverrideEvent`; task 25 (lifecycle persistence) reads `serializeQuarantineState` / `parseQuarantineRecord`; task 27 (risks) verifies the failure-class coverage; task 28 (verification) re-runs the test surface; task 29 (metering) reads `crashHistory` + `attempt` + `lastTransitionAt`.
 
+
+## 2026-06-08T02:15:00Z Task: renderer-projection
+Added `apps/desktop/src/shared/firefly-plugin/renderer-projection.ts` (+ test) and exported from `index.ts`.
+
+Key learnings:
+- Renderer projection needs a host-owned capability state snapshot baked into every availability reason so later UI migration can render gating without recomputing broker semantics.
+- Collision reporting belongs at catalog scope, not single-descriptor scope: per-plugin manifests already reject local duplicates, so cross-plugin collisions are the real renderer risk surface for panels/widgets/commands/themes.
+- Theme projection should stay a strict data envelope clone; no renderer registry types or host apply logic should leak into the shared contract layer.
