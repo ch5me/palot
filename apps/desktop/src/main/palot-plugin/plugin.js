@@ -14,9 +14,25 @@ import {
 	palotUiStateArgsSchema,
 	palotUiStateArgsShape,
 } from "../../shared/palot-bridge-schemas"
+import { readFileSync } from "node:fs"
+import { dirname, join } from "node:path"
+import { fileURLToPath } from "node:url"
 
 const BRIDGE_ENV_URL = "PALOT_BRIDGE_URL"
 const BRIDGE_ENV_TOKEN = "PALOT_BRIDGE_TOKEN"
+
+// Loom Wave 0: the side-panel tab vocabulary is owned by
+// `apps/desktop/src/renderer/firefly-surface-registry.tsx`. The Node-side
+// runtime cannot import that file (it pulls React), so it reads the same
+// 18 ids from a JSON sidecar. Drift between the registry and this list is
+// caught by `apps/desktop/src/renderer/__tests__/surface-mirror-lists.test.ts`.
+const __filename = fileURLToPath(import.meta.url)
+const __dirname = dirname(__filename)
+const SIDE_PANEL_TABS_SIDECAR = join(
+	__dirname,
+	"../../renderer/firefly-surface-registry-ids.json",
+)
+const VALID_SIDE_PANEL_TABS = JSON.parse(readFileSync(SIDE_PANEL_TABS_SIDECAR, "utf8"))
 
 const createQueuedResponse = ({ toolName, requestId, resultSummary = null }) => ({
 	status: "queued",

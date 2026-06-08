@@ -1,6 +1,7 @@
 import { atom } from "jotai"
 import { atomFamily, atomWithStorage } from "jotai/utils"
 import { fireflySurfacePreferencesAtom } from "./preferences"
+import type { FireflySurfaceId } from "../firefly-surface-registry"
 import type { FileDiff } from "../lib/types"
 
 export const commandPaletteOpenAtom = atom(false)
@@ -22,25 +23,12 @@ export const sidebarSectionOpenAtom = atomWithStorage<Record<SidebarSectionId, b
 
 export const viewedSessionIdAtom = atom<string | null>(null)
 
-export type SidePanelTabId =
-	| "review"
-	| "browser"
-	| "notes"
-	| "pulse"
-	| "memory"
-	| "files"
-	| "terminal"
-	| "editor"
-	| "plugins"
-	| "bridges"
-	| "crm"
-	| "studio"
-	| "voice"
-	| "oracle"
-	| "claude"
-	| "ch5pm"
-	| "artifacts"
-	| "pdf-review"
+/**
+ * Closed vocabulary of side-panel tab ids. Re-exported from the registry so
+ * adding a new surface = adding one row to `FIREFLY_SURFACE_REGISTRY`; the
+ * string-literal type updates here automatically.
+ */
+export type SidePanelTabId = FireflySurfaceId
 
 export interface SidePanelRoute {
 	tab: SidePanelTabId

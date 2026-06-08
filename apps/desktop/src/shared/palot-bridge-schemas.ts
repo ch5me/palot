@@ -1,25 +1,7 @@
 import { z } from "zod"
+import { FIREFLY_SURFACE_IDS } from "../renderer/firefly-surface-registry"
 
-export const sidePanelTabValues = [
-	"review",
-	"browser",
-	"notes",
-	"pulse",
-	"memory",
-	"files",
-	"terminal",
-	"editor",
-	"plugins",
-	"bridges",
-	"crm",
-	"studio",
-	"voice",
-	"oracle",
-	"claude",
-	"ch5pm",
-	"artifacts",
-	"pdf-review",
-] as const
+export const sidePanelTabValues = FIREFLY_SURFACE_IDS
 
 export const sidePanelTabSchema = z.enum(sidePanelTabValues)
 

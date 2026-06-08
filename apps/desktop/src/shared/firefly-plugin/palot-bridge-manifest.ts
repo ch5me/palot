@@ -16,28 +16,10 @@
 
 import { z } from "zod"
 
+import { FIREFLY_SURFACE_IDS } from "../../renderer/firefly-surface-registry"
 import type { PluginManifest } from "./manifest"
 
-const palotSidePanelTabSchema = z.enum([
-	"review",
-	"browser",
-	"notes",
-	"pulse",
-	"memory",
-	"files",
-	"terminal",
-	"editor",
-	"plugins",
-	"bridges",
-	"crm",
-	"studio",
-	"voice",
-	"oracle",
-	"claude",
-	"ch5pm",
-	"artifacts",
-	"pdf-review",
-])
+const palotSidePanelTabSchema = z.enum(FIREFLY_SURFACE_IDS)
 
 const browserActionArgsShape = {
 	selector: z.string().optional(),

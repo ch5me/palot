@@ -1,21 +1,20 @@
 /**
  * Feature flags -- persisted toggles for experimental features.
  *
- * Each flag is an independent atomWithStorage so they survive reloads.
- * Toggle via the command palette (Cmd+K > "Enable/Disable ...").
+ * Each side-panel surface flag is an independent atomWithStorage so user prefs
+ * survive reloads. The set of flags, default values, storage keys, and labels
+ * are all derived from `FIREFLY_SURFACE_REGISTRY` in `firefly-surface-registry.tsx`.
+ * Adding a new surface = adding one row to that registry.
  */
 
 import { atom } from "jotai"
 import { atomWithStorage } from "jotai/utils"
+import {
+	FIREFLY_SURFACE_DEFAULT_ON,
+	FIREFLY_SURFACE_LABELS,
+	FIREFLY_SURFACE_REGISTRY,
+} from "../firefly-surface-registry"
 
-// ============================================================
-// Automations
-// ============================================================
-
-/**
- * Whether the Automations feature is enabled.
- * Enabled by default -- users can disable it via the command palette.
- */
 export const automationsEnabledAtom = atomWithStorage<boolean>("elf:automationsEnabled", true)
 
 /** Write-only toggle for the command palette. */
@@ -23,158 +22,83 @@ export const toggleAutomationsAtom = atom(null, (get, set) => {
 	set(automationsEnabledAtom, !get(automationsEnabledAtom))
 })
 
-export const fireflySurfaceDefaults = {
-	review: true,
-	browserPanelEnabled: true,
-	notes: true,
-	pulse: false,
-	memory: false,
-	files: true,
-	terminal: true,
-	editor: true,
-	plugins: true,
-	bridges: true,
-	crm: true,
-	studio: true,
-	voice: true,
-	oracle: true,
-	claude: true,
-	ch5pm: false,
-	artifacts: true,
-	pdfReview: false,
-} as const
+type SurfaceFlagKey = keyof typeof FIREFLY_SURFACE_DEFAULT_ON
 
-export type FireflySurfaceFlagKey = keyof typeof fireflySurfaceDefaults
+/**
+ * Surface-flag defaults. Derived from FIREFLY_SURFACE_REGISTRY; do not hand-edit.
+ * Shape preserved (no `as const`) because legacy callers type it as
+ * `Record<FireflySurfaceFlagKey, boolean>`.
+ */
+export const fireflySurfaceDefaults: Record<SurfaceFlagKey, boolean> = Object.fromEntries(
+	FIREFLY_SURFACE_REGISTRY.map((surface) => [surface.id, surface.defaultOn as boolean]),
+) as Record<SurfaceFlagKey, boolean>
 
-export const reviewSurfaceEnabledAtom = atomWithStorage<boolean>("elf:reviewSurfaceEnabled", true)
-export const browserPanelEnabledAtom = atomWithStorage<boolean>("elf:browserPanelEnabled", true)
-export const notesSurfaceEnabledAtom = atomWithStorage<boolean>("elf:notesSurfaceEnabled", true)
-export const pulseSurfaceEnabledAtom = atomWithStorage<boolean>("elf:pulseSurfaceEnabled", false)
-export const memorySurfaceEnabledAtom = atomWithStorage<boolean>("elf:memorySurfaceEnabled", false)
-export const filesSurfaceEnabledAtom = atomWithStorage<boolean>("elf:filesSurfaceEnabled", true)
-export const terminalSurfaceEnabledAtom = atomWithStorage<boolean>("elf:terminalSurfaceEnabled", true)
-export const editorSurfaceEnabledAtom = atomWithStorage<boolean>("elf:editorSurfaceEnabled", true)
-export const pluginsSurfaceEnabledAtom = atomWithStorage<boolean>("elf:pluginsSurfaceEnabled", true)
-export const bridgesSurfaceEnabledAtom = atomWithStorage<boolean>("elf:bridgesSurfaceEnabled", true)
-export const crmSurfaceEnabledAtom = atomWithStorage<boolean>("elf:crmSurfaceEnabled", true)
-export const studioSurfaceEnabledAtom = atomWithStorage<boolean>("elf:studioSurfaceEnabled", true)
-export const voiceSurfaceEnabledAtom = atomWithStorage<boolean>("elf:voiceSurfaceEnabled", true)
-export const oracleSurfaceEnabledAtom = atomWithStorage<boolean>("elf:oracleSurfaceEnabled", true)
-export const claudeSurfaceEnabledAtom = atomWithStorage<boolean>("elf:claudeSurfaceEnabled", true)
-export const ch5pmSurfaceEnabledAtom = atomWithStorage<boolean>("elf:ch5pmSurfaceEnabled", false)
-export const artifactsSurfaceEnabledAtom = atomWithStorage<boolean>("elf:artifactsSurfaceEnabled", true)
-export const pdfReviewSurfaceEnabledAtom = atomWithStorage<boolean>("elf:pdfReviewSurfaceEnabled", false)
+export type FireflySurfaceFlagKey = SurfaceFlagKey
 
-export const fireflySurfaceFlagAtoms: Record<FireflySurfaceFlagKey, typeof reviewSurfaceEnabledAtom> = {
-	review: reviewSurfaceEnabledAtom,
-	browserPanelEnabled: browserPanelEnabledAtom,
-	notes: notesSurfaceEnabledAtom,
-	pulse: pulseSurfaceEnabledAtom,
-	memory: memorySurfaceEnabledAtom,
-	files: filesSurfaceEnabledAtom,
-	terminal: terminalSurfaceEnabledAtom,
-	editor: editorSurfaceEnabledAtom,
-	plugins: pluginsSurfaceEnabledAtom,
-	bridges: bridgesSurfaceEnabledAtom,
-	crm: crmSurfaceEnabledAtom,
-	studio: studioSurfaceEnabledAtom,
-	voice: voiceSurfaceEnabledAtom,
-	oracle: oracleSurfaceEnabledAtom,
-	claude: claudeSurfaceEnabledAtom,
-	ch5pm: ch5pmSurfaceEnabledAtom,
-	artifacts: artifactsSurfaceEnabledAtom,
-	pdfReview: pdfReviewSurfaceEnabledAtom,
+/** Storage key for a given side-panel surface flag. */
+function storageKeyFor(panelId: SurfaceFlagKey): string {
+	return `elf:${panelId}SurfaceEnabled`
 }
 
-export const fireflySurfaceLabels: Record<FireflySurfaceFlagKey, string> = {
-	review: "Changes",
-	browserPanelEnabled: "Browser",
-	notes: "Notes",
-	pulse: "Pulse",
-	memory: "Memory",
-	files: "Files",
-	terminal: "Terminal",
-	editor: "Editor",
-	plugins: "Plugins",
-	bridges: "Bridges",
-	crm: "Contacts / CRM",
-	studio: "Studio / Office",
-	voice: "Voice",
-	oracle: "Oracle Roster",
-	claude: "Claude Code",
-	ch5pm: "CH5PM Dashboard",
-	artifacts: "Artifacts",
-	pdfReview: "PDF Review",
+type FlagAtom = ReturnType<typeof atomWithStorage<boolean>>
+
+const surfaceFlagAtomsById: Record<SurfaceFlagKey, FlagAtom> = Object.fromEntries(
+	FIREFLY_SURFACE_REGISTRY.map((surface) => [
+		surface.id,
+		atomWithStorage<boolean>(storageKeyFor(surface.id), surface.defaultOn),
+	]),
+) as Record<SurfaceFlagKey, FlagAtom>
+
+export const reviewSurfaceEnabledAtom = surfaceFlagAtomsById.review
+export const browserPanelEnabledAtom = surfaceFlagAtomsById.browser
+export const notesSurfaceEnabledAtom = surfaceFlagAtomsById.notes
+export const pulseSurfaceEnabledAtom = surfaceFlagAtomsById.pulse
+export const memorySurfaceEnabledAtom = surfaceFlagAtomsById.memory
+export const filesSurfaceEnabledAtom = surfaceFlagAtomsById.files
+export const terminalSurfaceEnabledAtom = surfaceFlagAtomsById.terminal
+export const editorSurfaceEnabledAtom = surfaceFlagAtomsById.editor
+export const pluginsSurfaceEnabledAtom = surfaceFlagAtomsById.plugins
+export const bridgesSurfaceEnabledAtom = surfaceFlagAtomsById.bridges
+export const crmSurfaceEnabledAtom = surfaceFlagAtomsById.crm
+export const studioSurfaceEnabledAtom = surfaceFlagAtomsById.studio
+export const voiceSurfaceEnabledAtom = surfaceFlagAtomsById.voice
+export const oracleSurfaceEnabledAtom = surfaceFlagAtomsById.oracle
+export const claudeSurfaceEnabledAtom = surfaceFlagAtomsById.claude
+export const ch5pmSurfaceEnabledAtom = surfaceFlagAtomsById.ch5pm
+export const artifactsSurfaceEnabledAtom = surfaceFlagAtomsById.artifacts
+export const pdfReviewSurfaceEnabledAtom = surfaceFlagAtomsById["pdf-review"]
+
+/** Lookup table: every surface flag atom, by id. */
+export const fireflySurfaceFlagAtoms: Record<SurfaceFlagKey, FlagAtom> = surfaceFlagAtomsById
+
+/** Display labels for each surface, derived from the registry titles. */
+export const fireflySurfaceLabels: Record<SurfaceFlagKey, string> = FIREFLY_SURFACE_LABELS
+
+/**
+ * Build a write-only toggle atom for any side-panel surface. The exported
+ * `toggle*SurfaceAtom` atoms below are derived from this factory.
+ */
+function makeToggleSurfaceAtom(panelId: SurfaceFlagKey) {
+	return atom(null, (get, set) => {
+		set(surfaceFlagAtomsById[panelId], !get(surfaceFlagAtomsById[panelId]))
+	})
 }
 
-export const toggleReviewSurfaceAtom = atom(null, (get, set) => {
-	set(reviewSurfaceEnabledAtom, !get(reviewSurfaceEnabledAtom))
-})
-
-export const toggleBrowserPanelAtom = atom(null, (get, set) => {
-	set(browserPanelEnabledAtom, !get(browserPanelEnabledAtom))
-})
-
-export const toggleNotesSurfaceAtom = atom(null, (get, set) => {
-	set(notesSurfaceEnabledAtom, !get(notesSurfaceEnabledAtom))
-})
-
-export const togglePulseSurfaceAtom = atom(null, (get, set) => {
-	set(pulseSurfaceEnabledAtom, !get(pulseSurfaceEnabledAtom))
-})
-
-export const toggleMemorySurfaceAtom = atom(null, (get, set) => {
-	set(memorySurfaceEnabledAtom, !get(memorySurfaceEnabledAtom))
-})
-
-export const toggleFilesSurfaceAtom = atom(null, (get, set) => {
-	set(filesSurfaceEnabledAtom, !get(filesSurfaceEnabledAtom))
-})
-
-export const toggleTerminalSurfaceAtom = atom(null, (get, set) => {
-	set(terminalSurfaceEnabledAtom, !get(terminalSurfaceEnabledAtom))
-})
-
-export const toggleEditorSurfaceAtom = atom(null, (get, set) => {
-	set(editorSurfaceEnabledAtom, !get(editorSurfaceEnabledAtom))
-})
-
-export const togglePluginsSurfaceAtom = atom(null, (get, set) => {
-	set(pluginsSurfaceEnabledAtom, !get(pluginsSurfaceEnabledAtom))
-})
-
-export const toggleBridgesSurfaceAtom = atom(null, (get, set) => {
-	set(bridgesSurfaceEnabledAtom, !get(bridgesSurfaceEnabledAtom))
-})
-
-export const toggleCrmSurfaceAtom = atom(null, (get, set) => {
-	set(crmSurfaceEnabledAtom, !get(crmSurfaceEnabledAtom))
-})
-
-export const toggleStudioSurfaceAtom = atom(null, (get, set) => {
-	set(studioSurfaceEnabledAtom, !get(studioSurfaceEnabledAtom))
-})
-
-export const toggleVoiceSurfaceAtom = atom(null, (get, set) => {
-	set(voiceSurfaceEnabledAtom, !get(voiceSurfaceEnabledAtom))
-})
-
-export const toggleOracleSurfaceAtom = atom(null, (get, set) => {
-	set(oracleSurfaceEnabledAtom, !get(oracleSurfaceEnabledAtom))
-})
-
-export const toggleClaudeSurfaceAtom = atom(null, (get, set) => {
-	set(claudeSurfaceEnabledAtom, !get(claudeSurfaceEnabledAtom))
-})
-
-export const toggleCh5PmSurfaceAtom = atom(null, (get, set) => {
-	set(ch5pmSurfaceEnabledAtom, !get(ch5pmSurfaceEnabledAtom))
-})
-
-export const toggleArtifactsSurfaceAtom = atom(null, (get, set) => {
-	set(artifactsSurfaceEnabledAtom, !get(artifactsSurfaceEnabledAtom))
-})
-
-export const togglePdfReviewSurfaceAtom = atom(null, (get, set) => {
-	set(pdfReviewSurfaceEnabledAtom, !get(pdfReviewSurfaceEnabledAtom))
-})
+export const toggleReviewSurfaceAtom = makeToggleSurfaceAtom("review")
+export const toggleBrowserPanelAtom = makeToggleSurfaceAtom("browser")
+export const toggleNotesSurfaceAtom = makeToggleSurfaceAtom("notes")
+export const togglePulseSurfaceAtom = makeToggleSurfaceAtom("pulse")
+export const toggleMemorySurfaceAtom = makeToggleSurfaceAtom("memory")
+export const toggleFilesSurfaceAtom = makeToggleSurfaceAtom("files")
+export const toggleTerminalSurfaceAtom = makeToggleSurfaceAtom("terminal")
+export const toggleEditorSurfaceAtom = makeToggleSurfaceAtom("editor")
+export const togglePluginsSurfaceAtom = makeToggleSurfaceAtom("plugins")
+export const toggleBridgesSurfaceAtom = makeToggleSurfaceAtom("bridges")
+export const toggleCrmSurfaceAtom = makeToggleSurfaceAtom("crm")
+export const toggleStudioSurfaceAtom = makeToggleSurfaceAtom("studio")
+export const toggleVoiceSurfaceAtom = makeToggleSurfaceAtom("voice")
+export const toggleOracleSurfaceAtom = makeToggleSurfaceAtom("oracle")
+export const toggleClaudeSurfaceAtom = makeToggleSurfaceAtom("claude")
+export const toggleCh5PmSurfaceAtom = makeToggleSurfaceAtom("ch5pm")
+export const toggleArtifactsSurfaceAtom = makeToggleSurfaceAtom("artifacts")
+export const togglePdfReviewSurfaceAtom = makeToggleSurfaceAtom("pdf-review")

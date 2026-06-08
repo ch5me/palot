@@ -18,7 +18,7 @@
     },
     "../ch5-packages/packages/effects/contract": {
       "name": "@ch5me/effects",
-      "version": "0.6.1",
+      "version": "0.6.2",
       "dependencies": {
         "@ch5me/skia-canvas-init": "workspace:*",
         "@ch5me/workspace": "workspace:*",
@@ -76,7 +76,7 @@
     },
     "../ch5-packages/packages/motion/motion": {
       "name": "@ch5me/motion",
-      "version": "0.2.0",
+      "version": "0.3.0",
       "dependencies": {
         "@ch5me/vitest-react-native-mocks": "workspace:*",
         "@react-spring/core": "^10.1.0",
@@ -152,7 +152,7 @@
     },
     "../ch5-packages/packages/workspace/contract": {
       "name": "@ch5me/workspace",
-      "version": "0.1.1",
+      "version": "0.1.2",
       "dependencies": {
         "@ch5me/motion": "workspace:*",
         "@react-spring/web": "^10.1.0",
@@ -213,6 +213,7 @@
         "simple-git": "^3.30.0",
         "sonner": "^2.0.7",
         "three": "^0.184.0",
+        "zod": "^4.1.11",
       },
       "devDependencies": {
         "@ch5me/elf-server": "workspace:*",
@@ -3684,6 +3685,8 @@
     "@ch5me/elf-desktop/react-dom": ["react-dom@19.2.4", "", { "dependencies": { "scheduler": "^0.27.0" }, "peerDependencies": { "react": "^19.2.4" } }, "sha512-AXJdLo8kgMbimY95O2aKQqsz2iWi9jMgKJhRBAxECE4IFxfcazB2LmzloIoibJI3C12IlY20+KFaLv+71bUJeQ=="],
 
     "@ch5me/elf-desktop/typescript": ["typescript@5.9.3", "", { "bin": { "tsc": "bin/tsc", "tsserver": "bin/tsserver" } }, "sha512-jl1vZzPDinLr9eUt3J/t7V6FgNEw9QjvBPdysz9KfQDD41fQrC2Y4vKQdiaUpFT4bXlb1RHhLpp8wtm6M5TgSw=="],
+
+    "@ch5me/elf-desktop/zod": ["zod@4.3.6", "", {}, "sha512-rftlrkhHZOcjDwkGlnUtZZkvaPHCsDATp4pGpuOOMDaTdDDXF91wuVDJoWoPsKX/3YPQ5fHuF3STjcYyKr+Qhg=="],
 
     "@ch5me/elf-server/typescript": ["typescript@5.9.3", "", { "bin": { "tsc": "bin/tsc", "tsserver": "bin/tsserver" } }, "sha512-jl1vZzPDinLr9eUt3J/t7V6FgNEw9QjvBPdysz9KfQDD41fQrC2Y4vKQdiaUpFT4bXlb1RHhLpp8wtm6M5TgSw=="],
 
