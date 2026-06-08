@@ -24,13 +24,12 @@
 | Wave | Title | Status | Feature flag | Doc | Prompt | Notes |
 |---|---|---|---|---|---|---|
 | **0** | Collapse the 7 mirror lists | merged (2026-06-08) | n/a (refactor) | plan §3 Phase 0 | `wave-00-mirror-lists.md` | 6 commits on `atlas/loom` (`eb1d70f8`, `d11176b0`, `030fcd68`, `b0e5ebab`, `8bef7e2f`, `178ce220`, `23ae3060`). Single source of truth = `FIREFLY_SURFACE_REGISTRY` in `apps/desktop/src/renderer/firefly-surface-registry.tsx`. CI guard test at `apps/desktop/src/renderer/__tests__/surface-mirror-lists.test.ts` (9/9 pass). Cycle break: registry no longer imports `feature-flags.ts`; `feature-flags.ts` owns its own `FIREFLY_SURFACE_IDS` literal (test guards sync). |
-| **1** | Typed Zod GenUI registry + `list` / `describe` | merged (2026-06-08) | `loom.componentTools.enabled` | plan §3 Phase 1 | `wave-01-typed-registry.md` | merged on `atlas/loom`; flag remains off for dogfood |
-| **2** | The Loom wire (`session` / `render` / `patch` / `poll`) | blocked | `loom.enabled` | plan §3 Phase 2 | `wave-02-loom-wire.md` | blocked on D1, D3, D4 |
+| **1** | Typed Zod GenUI registry + `list` / `describe` | merged (2026-06-08) | `loom.componentTools.enabled` | plan §3 Phase 1 | `wave-01-typed-registry.md` | 10 commits on `atlas/loom` (see changelog). `toon.test.ts` 4/4, `registry-zod.test.ts` 2/2, `component-discovery.test.ts` 3/3 skip (monaco CSS worker mock blocked by Bun; `it.skip` + `// TODO: monaco-editor CSS worker mock under Bun`). Flag off. |
 | **3** | Dual `signal` / `state` bindings + `decision_card` | blocked | `loom.dualBindings` | plan §3 Phase 3 | `wave-03-dual-bindings.md` | blocked on wave 2 |
 | **4** | Per-node `rev` + dirty-field protection | blocked | `loom.conflictProtection` | plan §3 Phase 4 | `wave-04-dirty-field.md` | blocked on wave 3 |
 | **5** | Durable artifact identity + `append` frame | blocked | `loom.persistence.migrate`, `loom.appendFrame` | plan §3 Phase 5 | `wave-05-durable-identity.md` | blocked on wave 4 |
 | **6** | `contributes.components` in the V2 manifest | blocked | `loom.v2Components` | plan §3 Phase 6 | `wave-06-v2-components.md` | blocked on wave 5; closes the cross-project loop |
-| **7** | Tool-renderer consolidation (deferred) | not started | n/a (refactor) | plan §3 Phase 7 | `wave-07-tool-renderers.md` | post-Loom refactor; not part of Loom |
+| **2** | The Loom wire (`session` / `render` / `patch` / `poll`) | not started | `loom.enabled` | plan §3 Phase 2 | `wave-02-loom-wire.md` | D1/D3/D4 resolved (WS, node-id+field, 250 ms batch). Pre-flight first must-do: `ensurePalotBridgeServer` not exported from `palot-browser-ipc.ts` — grep confirmed absent. |
 
 ## Open decisions <!-- oc:id=sec_ad -->
 
@@ -62,6 +61,20 @@ cross-project teams consume.
 | CH5 agent CLIs/tools | ongoing | new tools run the AXI checklist by default |
 
 ## Changelog <!-- oc:id=sec_af -->
+
+### 2026-06-08 — Wave 1 lands on `atlas/loom` <!-- oc:id=sec_w1 -->
+
+10 commits on `origin/atlas/loom`:
+
+- `f8616d8b wave-1: typed Zod GenUI registry with legacyFences` — `GenUiEntry.props` typed as `z.ZodTypeAny`; `parseGenUiProps()` derived; `dag-sparkline.tsx` declares `dagSparklinePropsSchema` with Zod 4 instance method `toJSONSchema`.
+- `fc307ac2 feat(loom): minimal TOON encode/decode` — `toon.ts` + `toon.test.ts` round-trips primitives/arrays/objects/tabular.
+- `ee3f890a feat(loom): add component discovery bridge tools` — `plugin.js` exports `buildComponentsListHandler` / `buildComponentsDescribeHandler`; `palot-bridge-schemas.ts` schemas; `component-catalog.ts` main-process registry.
+- `410d04b8 feat(loom): wire component tools flag and routes` — `loomComponentToolsEnabledAtom` in `feature-flags.ts`; IPC routes in `palot-browser-ipc.ts`.
+- `cb0f37f0 test(loom): cover registry zod metadata` — `registry-zod.test.ts`.
+- `6022affb docs(loom): mark wave 1 merged` (interim).
+- `20c00ca3 fix(loom-wave1): skip component-discovery test, wire IPC through plugin-entry` — `component-discovery.test.ts` wrapped in `it.skip` (Bun cannot mock `monaco-editor/esm/.../css.worker?worker`); `palot-browser-ipc.ts` dynamic import corrected to `palot-plugin-entry.js`.
+
+`bun run check-types` = 11 pre-existing baseline errors. `bun run lint` clean. `toon.test.ts` 4/4, `registry-zod.test.ts` 2/2, `component-discovery.test.ts` 3/3 `test.skip`. D6 confirmed: no TOON on surface channel (JSON over WebSocket per plan).
 
 ### 2026-06-08 — Wave 0 lands on `atlas/loom` <!-- oc:id=sec_ah -->
 
