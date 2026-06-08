@@ -108,7 +108,7 @@ export function encode(value: unknown): string {
 	for (const [key, entry] of Object.entries(value)) {
 		if (isScalar(entry)) lines.push(`${key}: ${encodeScalar(entry)}`)
 		else if (Array.isArray(entry)) lines.push(...encodeArray(entry, key))
-		else throw new Error(`Unsupported TOON object field: ${key}`)
+		else lines.push(`${key}: ${JSON.stringify(entry)}`)
 	}
 	return lines.join("\n")
 }
@@ -131,7 +131,10 @@ export function decode(toon: string): unknown {
 		if (line.startsWith("  ")) throw new Error("Unexpected TOON indentation")
 		const scalarMatch = line.match(/^([^\[{:]+):\s*(.+)$/)
 		if (scalarMatch) {
-			result[scalarMatch[1]] = decodeScalar(scalarMatch[2])
+			const valueToken = scalarMatch[2]
+			result[scalarMatch[1]] = valueToken.startsWith("{") || valueToken.startsWith("[")
+				? JSON.parse(valueToken)
+				: decodeScalar(valueToken)
 			continue
 		}
 		if (!line.endsWith(":")) throw new Error(`Malformed TOON line: ${line}`)

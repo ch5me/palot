@@ -7,6 +7,10 @@ import {
 	palotBrowserStatusArgsShape,
 	palotBrowserTabsArgsShape,
 	palotBrowserTypeArgsShape,
+	palotComponentsDescribeArgsShape,
+	palotComponentsDescribeResultSchema,
+	palotComponentsListArgsShape,
+	palotComponentsListResultSchema,
 	palotOpenSidePanelArgsSchema,
 	palotOpenSidePanelArgsShape,
 	palotResolverResultSchema,
@@ -17,6 +21,8 @@ import {
 import { readFileSync } from "node:fs"
 import { dirname, join } from "node:path"
 import { fileURLToPath } from "node:url"
+import { describeComponentCatalogEntry, getComponentCatalogItems } from "../palot-runtime/component-catalog"
+import { encode as encodeToon } from "../palot-runtime/toon"
 
 const BRIDGE_ENV_URL = "PALOT_BRIDGE_URL"
 const BRIDGE_ENV_TOKEN = "PALOT_BRIDGE_TOKEN"
@@ -57,6 +63,8 @@ const PRODUCT_CONTROL_TOOLS = [
 	"browser_click",
 	"browser_type",
 	"browser_scroll",
+	"palot_components_list",
+	"palot_components_describe",
 	"open_side_panel",
 	"ui_state",
 ]
@@ -105,6 +113,7 @@ export const buildProductContextBlock = (resolved) => {
 		`side_panel_open: ${sidePanel?.open ? "yes" : "no"}`,
 		`side_panel_tab: ${sidePanel?.activeTab ?? "none"}`,
 		`side_panel_tabs: ${(sidePanel?.availableTabs ?? []).join(",") || "none"}`,
+		`loom_component_tools: ${resolved?.loomComponentToolsEnabled ? "enabled" : "disabled"}`,
 		"connected_apps:",
 		...connectedApps.map((line) => `- ${line}`),
 		`connected_app_discovery_tools: ${CONNECTION_DISCOVERY_TOOLS.join(",")}`,
@@ -133,30 +142,10 @@ const createResolver = ({ resolve, bridgeRequest, listConnections }) => {
 			opaqueActionTarget: resolved?.opaqueActionTarget ?? null,
 			uiState: resolved?.uiState,
 			connections: Array.isArray(connections) ? connections : [],
+			loomComponentToolsEnabled: env.LOOM_COMPONENT_TOOLS_ENABLED === "1",
 		}
 	}
 }
-
-const VALID_SIDE_PANEL_TABS = [
-	"review",
-	"browser",
-	"notes",
-	"pulse",
-	"memory",
-	"files",
-	"terminal",
-	"editor",
-	"plugins",
-	"bridges",
-	"crm",
-	"studio",
-	"voice",
-	"oracle",
-	"claude",
-	"ch5pm",
-	"artifacts",
-	"pdf-review",
-]
 
 const createUiStateError = (toolName, message) =>
 	createTypedError({
@@ -291,6 +280,44 @@ export const buildUiStateHandler = ({ bridgeRequest, getUiState }) => {
 			return JSON.stringify(await bridgeRequest({ action: "get-ui-state" }))
 		}
 		return JSON.stringify({ sidePanel: null })
+	}
+}
+
+export const buildComponentsListHandler = () => {
+	return async (args = {}) => {
+		const parsedArgs = palotToolArgsSchemas.palot_components_list.parse(args)
+		const components = getComponentCatalogItems()
+			.filter((entry) => !parsedArgs.category || entry.category === parsedArgs.category)
+			.map((entry) => ({ name: entry.name, one_line: entry.one_line, category: entry.category }))
+		const result = palotComponentsListResultSchema.parse({ count: components.length, components })
+		return encodeToon(result)
+	}
+}
+
+export const buildComponentsDescribeHandler = () => {
+	return async (args = {}) => {
+		const parsedArgs = palotToolArgsSchemas.palot_components_describe.parse(args)
+		const entry = describeComponentCatalogEntry(parsedArgs.name)
+		if (!entry) {
+			return encodeToon(
+				palotComponentsDescribeResultSchema.parse({
+					errorCode: "unknown_component",
+					help: ["Run `palot components list` to see available components."],
+				}),
+			)
+		}
+		const props_schema = parsedArgs.full
+			? z.toJSONSchema(entry.propsSchema)
+			: { type: "object", properties: z.toJSONSchema(entry.propsSchema).properties ?? {}, path: entry.name }
+		return encodeToon(
+			palotComponentsDescribeResultSchema.parse({
+				name: entry.name,
+				one_line: entry.one_line,
+				category: entry.category,
+				props_schema,
+				example: entry.example,
+			}),
+		)
 	}
 }
 
@@ -469,6 +496,16 @@ export const createPalotPlugin = (
 					bridgeRequest,
 					schema: palotToolArgsSchemas.browser_scroll,
 				}),
+			},
+			palot_components_list: {
+				description: "List Loom component discovery entries as TOON",
+				args: palotComponentsListArgsShape,
+				execute: buildComponentsListHandler(),
+			},
+			palot_components_describe: {
+				description: "Describe one Loom component as TOON",
+				args: palotComponentsDescribeArgsShape,
+				execute: buildComponentsDescribeHandler(),
 			},
 			open_side_panel: {
 				description: "Open a Palot side panel tab in the desktop UI",

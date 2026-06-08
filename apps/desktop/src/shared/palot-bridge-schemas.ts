@@ -297,6 +297,13 @@ export const palotBrowserScrollArgsShape = {
 	direction: z.enum(["up", "down"]).optional(),
 	amount: z.number().optional(),
 } satisfies z.ZodRawShape
+export const palotComponentsListArgsShape = {
+	category: z.string().optional(),
+} satisfies z.ZodRawShape
+export const palotComponentsDescribeArgsShape = {
+	name: z.string().trim().min(1),
+	full: z.boolean().optional(),
+} satisfies z.ZodRawShape
 export const palotOpenSidePanelArgsShape = {
 	tab: sidePanelTabSchema,
 } satisfies z.ZodRawShape
@@ -309,8 +316,30 @@ export const palotBrowserTabsArgsSchema = z.object(palotBrowserTabsArgsShape).pa
 export const palotBrowserClickArgsSchema = z.object(palotBrowserClickArgsShape).passthrough()
 export const palotBrowserTypeArgsSchema = z.object(palotBrowserTypeArgsShape).passthrough()
 export const palotBrowserScrollArgsSchema = z.object(palotBrowserScrollArgsShape).passthrough()
+export const palotComponentsListArgsSchema = z.object(palotComponentsListArgsShape).passthrough()
+export const palotComponentsDescribeArgsSchema = z.object(palotComponentsDescribeArgsShape)
 export const palotOpenSidePanelArgsSchema = z.object(palotOpenSidePanelArgsShape)
 export const palotUiStateArgsSchema = z.object(palotUiStateArgsShape).passthrough()
+
+export const palotComponentsListResultSchema = z.object({
+	count: z.number().int().nonnegative(),
+	components: z.array(
+		z.object({
+			name: z.string(),
+			one_line: z.string(),
+			category: z.string(),
+		}),
+	),
+})
+export const palotComponentsDescribeResultSchema = z.object({
+	name: z.string().optional(),
+	one_line: z.string().optional(),
+	category: z.string().optional(),
+	props_schema: z.unknown().optional(),
+	example: z.unknown().optional(),
+	errorCode: z.string().optional(),
+	help: z.array(z.string()).optional(),
+})
 
 export const palotToolArgsSchemas = {
 	browser_status: palotBrowserStatusArgsSchema,
@@ -320,6 +349,8 @@ export const palotToolArgsSchemas = {
 	browser_click: palotBrowserClickArgsSchema,
 	browser_type: palotBrowserTypeArgsSchema,
 	browser_scroll: palotBrowserScrollArgsSchema,
+	palot_components_list: palotComponentsListArgsSchema,
+	palot_components_describe: palotComponentsDescribeArgsSchema,
 	open_side_panel: palotOpenSidePanelArgsSchema,
 	ui_state: palotUiStateArgsSchema,
 } as const
@@ -332,6 +363,8 @@ export const palotToolArgsShapes = {
 	browser_click: palotBrowserClickArgsShape,
 	browser_type: palotBrowserTypeArgsShape,
 	browser_scroll: palotBrowserScrollArgsShape,
+	palot_components_list: palotComponentsListArgsShape,
+	palot_components_describe: palotComponentsDescribeArgsShape,
 	open_side_panel: palotOpenSidePanelArgsShape,
 	ui_state: palotUiStateArgsShape,
 } as const
