@@ -303,6 +303,7 @@ export interface Ch5PmLiveSession {
 	box?: string
 	state?: string
 	lane?: string
+	projectSlug?: string
 }
 
 export interface Ch5PmLiveLane {

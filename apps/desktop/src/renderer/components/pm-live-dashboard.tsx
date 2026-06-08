@@ -12,6 +12,7 @@ import {
 	UserRoundIcon,
 	WorkflowIcon,
 } from "lucide-react"
+import { useRouter } from "@tanstack/react-router"
 import { useMemo } from "react"
 import type {
 	Ch5PmLiveBackgroundAgent,
@@ -135,11 +136,30 @@ function BoxCard({ box }: { box: Ch5PmLiveBox }) {
 }
 
 function SessionRow({ session, lane }: { session: Ch5PmLiveSession; lane?: Ch5PmLiveLane }) {
+	const router = useRouter()
 	const laneStatus = normalizeLaneStatus(lane?.status ?? session.state)
+
+	function handleSessionClick() {
+		if (!session.projectSlug) return
+		void router.navigate({
+			to: "/project/$projectSlug/session/$sessionId",
+			params: { projectSlug: session.projectSlug, sessionId: session.id },
+		})
+	}
+
+	const clickable = Boolean(session.projectSlug)
+
 	return (
 		<div className="grid grid-cols-[minmax(0,1.5fr)_minmax(0,0.75fr)_minmax(0,0.8fr)_minmax(0,1fr)] gap-3 rounded-2xl border border-border/60 bg-background/70 px-4 py-3 text-sm">
-			<div>
-				<div className="font-medium text-foreground">{session.title}</div>
+			<div className="min-w-0">
+				<button
+					type="button"
+					onClick={handleSessionClick}
+					disabled={!clickable}
+					className={`w-full text-left font-medium text-foreground transition-colors ${clickable ? "cursor-pointer hover:text-primary" : "cursor-default opacity-60"}`}
+				>
+					{session.title}
+				</button>
 				<div className="mt-1 text-xs text-muted-foreground">{session.id}</div>
 			</div>
 			<div className="min-w-0">
