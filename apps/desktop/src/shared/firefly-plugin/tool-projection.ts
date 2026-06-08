@@ -122,7 +122,11 @@ export const TERMINAL_ERROR_CODES = {
 	denied: "permission_denied",
 	unavailable: "plugin_unavailable",
 	cancelled: "cancelled",
-} as const satisfies Record<"completed" | "failed" | "denied" | "unavailable" | "cancelled", ToolErrorCode | null>
+	queued: null,
+	dispatching: null,
+	running: null,
+	timeout: "timeout",
+} as const satisfies Readonly<Record<ToolCallState, ToolErrorCode | null>>
 
 /**
  * Returns true if the `from -> to` transition is allowed by the locked

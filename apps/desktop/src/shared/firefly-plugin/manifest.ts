@@ -324,7 +324,7 @@ const toolContributionSchema = z
 			})
 			.strict()
 			.optional(),
-		preview: z.boolean().default(false),
+		preview: z.boolean().optional(),
 	})
 	.strict()
 

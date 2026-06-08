@@ -19,7 +19,8 @@ import {
 	NEVER_AUTO_GRANT,
 	lookupCapability,
 } from "../../shared/firefly-plugin/capabilities"
-import type { CapabilityRisk, CapabilityToken, PluginId, TrustTier } from "../../shared/firefly-plugin/manifest"
+import type { CapabilityRisk } from "../../shared/firefly-plugin/capabilities"
+import type { CapabilityToken, PluginId, TrustTier } from "../../shared/firefly-plugin/manifest"
 import { createLogger } from "../logger"
 
 const log = createLogger("firefly-plugin/broker")

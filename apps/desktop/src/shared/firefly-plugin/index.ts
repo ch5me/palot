@@ -11,16 +11,54 @@ export * from "./manifest"
 export * from "./descriptor"
 export * from "./capabilities"
 export * from "./tool-projection"
-export * from "./family-contracts"
+export {
+	commandPlacementSurfaceSchema,
+	type CommandPlacementSurface,
+} from "./family-contracts"
 export * from "./hot-reload"
 export * from "./runtime-supervision"
 export * from "./palot-bridge-manifest"
 export * from "./api-versioning"
 export * from "./bridge-projection"
-export * from "./renderer-projection"
+export {
+	projectSidePanelsFromCatalog,
+	projectSessionWidgetsFromCatalog,
+	projectCommandsFromCatalog,
+	projectThemesFromCatalog,
+	projectRendererFamiliesFromCatalog,
+	defaultCapabilityState,
+	getProjectedCommandId,
+	getProjectedWidgetId,
+	getProjectedPanelId,
+	getProjectedThemeId,
+	RENDERER_PROJECTION_FAMILIES,
+	type RendererProjectionFamily,
+	type RendererContributionState,
+	type RendererAvailabilityReasonCode,
+	type RendererAvailabilityReason,
+	type RendererAvailability,
+	type RendererCapabilityGate,
+	type RendererProjectionResult,
+	type CapabilityStateShape,
+	type ProjectionCollision,
+} from "./renderer-projection"
 export * from "./theme-pipeline"
 export * from "./storage-scopes"
-export * from "./command-projection"
+export {
+	COMMAND_PLACEMENT_SURFACES,
+	projectCommand,
+	projectAllCommands,
+	projectCommandsBySurface,
+	projectCommandsByCategory,
+	evaluateCommandWhen,
+	RESERVED_COMMAND_PREFIXES,
+	commandWhenContextSchema,
+	commandPlacementSurfaceSchema as commandPlacementSurfaceSchemaFromProjection,
+	type CommandPlacementSurface as CommandPlacementSurfaceFromProjection,
+	type CommandWhenContext,
+	type CommandCollision,
+	type ProjectedCommand as ProjectedCommandFromProjection,
+} from "./command-projection"
 export * from "./first-party-migration"
 export * from "./bridge-migration"
 export * from "./acme-notebook-exemplar"

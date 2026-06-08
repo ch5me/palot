@@ -860,9 +860,9 @@ export function applySupervisionEvent(
 		return { state: hydrated, trigger }
 	}
 
-	const stampQuarantine = (trigger: QuarantineTrigger, nextState: PluginLifecycleState): PluginSupervisionState => {
-		const next: PluginSupervisionState = {
-			...nextState,
+	const stampQuarantine = (trigger: QuarantineTrigger, next: PluginSupervisionState): PluginSupervisionState => {
+		const stamped: PluginSupervisionState = {
+			...next,
 			quarantined: {
 				pluginId: prev.pluginId,
 				reason: trigger.reason,
@@ -875,7 +875,7 @@ export function applySupervisionEvent(
 				releaseNote: null,
 			},
 		}
-		return next
+		return stamped
 	}
 
 	switch (event.kind) {

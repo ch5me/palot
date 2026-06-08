@@ -37,11 +37,13 @@ import {
 	projectSessionWidgetsFromCatalog,
 	projectThemesFromCatalog,
 	type CapabilityStateShape,
+} from "../../shared/firefly-plugin/index"
+import {
 	type ProjectedCommand,
 	type ProjectedSessionWidget,
 	type ProjectedSidePanel,
 	type ProjectedTheme,
-} from "../../shared/firefly-plugin/index"
+} from "../../shared/firefly-plugin/renderer-projection"
 import { type PluginManifest } from "../../shared/firefly-plugin/manifest"
 import { palotBridgeManifest, PALOT_BRIDGE_PLUGIN_ID } from "../../shared/firefly-plugin/palot-bridge-manifest"
 

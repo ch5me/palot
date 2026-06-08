@@ -20,7 +20,8 @@
 
 import { z } from "zod"
 
-import type { CommandContribution, PluginDescriptor, PluginId } from "./manifest"
+import type { PluginDescriptor } from "./descriptor"
+import type { CommandContribution, PluginId } from "./manifest"
 
 /**
  * The four host-owned command placement surfaces. The host owns the

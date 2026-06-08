@@ -260,9 +260,11 @@ export function findBridgeMigrationRow(currentId: string): BridgeMigrationRow | 
 }
 
 export function pendingBridgeMigrationRows(
-	currentTarget: "v2.0" | "v2.1" | "v2.2",
+	currentTarget: "defer" | "v2.0" | "v2.1" | "v2.2",
 ): readonly BridgeMigrationRow[] {
-	const order = { "v2.0": 0, "v2.1": 1, "v2.2": 2 } as const
+	const order = { defer: -1, "v2.0": 0, "v2.1": 1, "v2.2": 2 } as const satisfies Readonly<
+		Record<"defer" | "v2.0" | "v2.1" | "v2.2", number>
+	>
 	const current = order[currentTarget]
-	return BRIDGE_MIGRATION_MATRIX.filter((row) => order[row.removeIn] > current)
+	return BRIDGE_MIGRATION_MATRIX.filter((row) => (order as Readonly<Record<string, number>>)[row.removeIn] > current)
 }

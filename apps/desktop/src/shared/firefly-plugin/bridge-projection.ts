@@ -229,7 +229,7 @@ export function projectBridgeToolDefinitions(
 		scope: tool.scope,
 		requires: [...tool.requires],
 		timeoutMs: tool.timeoutMs ?? descriptor.derived.defaultToolTimeoutMs,
-		preview: tool.preview,
+		preview: tool.preview ?? false,
 		argsShape: tool.args,
 		argsSchema: buildOpenCodeToolArgsSchema(tool.args),
 		resultSchemaRef: tool.resultSchemaRef ?? null,
