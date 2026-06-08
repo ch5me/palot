@@ -4,6 +4,31 @@ import { mapSnapshotBundleToCards, resolvePmTicketProjectSlug } from "./project-
 import { composePmPrompt, markPendingAssignment, markPendingFailure } from "./project-manager-launcher"
 import { createPendingSubmission } from "./project-manager-types"
 
+type ActiveSessionCountArgs = {
+	selectedDirectory: string
+	activeSessionSnapshot:
+		| {
+				sessions: Array<{ directory: string }>
+			}
+		| null
+	allAgents: Array<{ directory: string; status: string; isAttached: boolean }>
+}
+
+function countProjectManagerActiveSessions({
+	selectedDirectory,
+	activeSessionSnapshot,
+	allAgents,
+}: ActiveSessionCountArgs): number {
+	const liveAttachedCount =
+		activeSessionSnapshot?.sessions.filter((session) => session.directory === selectedDirectory).length ?? 0
+	if (liveAttachedCount > 0) return liveAttachedCount
+	return allAgents.filter(
+		(a) =>
+			a.directory === selectedDirectory &&
+			(a.status === "running" || a.status === "waiting" || (a.isAttached && a.status === "idle")),
+	).length
+}
+
 describe("project manager launcher", () => {
 	test("composePmPrompt appends the user request below the prompt document", () => {
 		const result = composePmPrompt("# PM", "Ship the sidebar")
@@ -117,6 +142,44 @@ describe("project manager cards", () => {
 				fallbackProjectSlug: "fallback",
 			}),
 		).toBe("palot-local")
+	})
+})
+
+describe("project manager active session count", () => {
+	test("prefers live attached session snapshot over partially hydrated agents", () => {
+		expect(
+			countProjectManagerActiveSessions({
+				selectedDirectory: "/repo/palot",
+				activeSessionSnapshot: {
+					sessions: [
+						{ directory: "/repo/palot" },
+						{ directory: "/repo/palot" },
+						{ directory: "/repo/palot" },
+						{ directory: "/repo/palot" },
+					],
+				},
+				allAgents: [
+					{ directory: "/repo/palot", status: "running", isAttached: true },
+					{ directory: "/repo/palot", status: "idle", isAttached: true },
+				],
+			}),
+		).toBe(4)
+	})
+
+	test("falls back to hydrated agents when no live snapshot exists", () => {
+		expect(
+			countProjectManagerActiveSessions({
+				selectedDirectory: "/repo/palot",
+				activeSessionSnapshot: null,
+				allAgents: [
+					{ directory: "/repo/palot", status: "running", isAttached: true },
+					{ directory: "/repo/palot", status: "waiting", isAttached: false },
+					{ directory: "/repo/palot", status: "idle", isAttached: true },
+					{ directory: "/repo/palot", status: "idle", isAttached: false },
+					{ directory: "/repo/other", status: "running", isAttached: true },
+				],
+			}),
+		).toBe(3)
 	})
 })
 
