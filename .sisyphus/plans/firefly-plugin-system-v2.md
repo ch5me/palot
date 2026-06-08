@@ -1430,7 +1430,7 @@ Wave FINAL
 
   **Commit**: NO
 
-- [ ] 20. Build bridge migration plan from current palot-bridge to V2 tool/runtime system
+- [x] 20. Build bridge migration plan from current palot-bridge to V2 tool/runtime system
 
   **What to do**:
   - Define how current `palot-bridge` and shim/bridge transport evolve into generalized plugin tool/runtime projection.
