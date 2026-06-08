@@ -1618,7 +1618,7 @@ Wave FINAL
 
   **Commit**: NO
 
-- [ ] 24. Plugin lifecycle UI / operator surface plan
+- [x] 24. Plugin lifecycle UI / operator surface plan
 
   **What to do**:
   - Plan the user/operator-facing plugin management surfaces: install status, enable/disable, permission review, quarantine, logs, dev reload, and basic inventory.
