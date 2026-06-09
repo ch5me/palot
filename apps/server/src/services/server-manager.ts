@@ -185,10 +185,11 @@ export function stopServer(): boolean {
 async function detectExistingServer(): Promise<OpenCodeServer | null> {
 	const url = `http://${OPENCODE_HOSTNAME}:${OPENCODE_PORT}`
 	try {
-		// limit=1: an unbounded /session serializes the entire global session
-		// store and can wedge the shared host. The probe only needs liveness.
+		// /global/health is instance-free. A directory-less /session probe makes
+		// the shared host cold-bootstrap its cwd as a project (plugins, LSP, VCS
+		// scans), which blocks its event loop for tens of seconds fleet-wide.
 		// The shared host can still take several seconds to answer under load.
-		const res = await fetch(`${url}/session?limit=1`, {
+		const res = await fetch(`${url}/global/health`, {
 			signal: AbortSignal.timeout(10_000),
 		})
 		if (res.ok) {
@@ -201,13 +202,13 @@ async function detectExistingServer(): Promise<OpenCodeServer | null> {
 }
 
 /**
- * Polls the session endpoint until the server responds.
+ * Polls the instance-free health endpoint until the server responds.
  */
 async function waitForReady(url: string, timeoutMs: number): Promise<void> {
 	const start = Date.now()
 	while (Date.now() - start < timeoutMs) {
 		try {
-			const res = await fetch(`${url}/session?limit=1`, {
+			const res = await fetch(`${url}/global/health`, {
 				signal: AbortSignal.timeout(1000),
 			})
 			if (res.ok) return
