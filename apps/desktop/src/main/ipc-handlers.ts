@@ -971,6 +971,28 @@ export function registerIpcHandlers(): void {
 		}
 	})
 
+	// --- Firefly Cloud runtime (Lane B first end-to-end consumer) ---
+
+	ipcMain.handle(
+		"cloud:runtime-status",
+		withLogging("cloud:runtime-status", async () => {
+			const { getFireflyRuntimeProvisioningStatus } = await import(
+				"./services/cloud/firefly-runtime-client"
+			)
+			return getFireflyRuntimeProvisioningStatus()
+		}),
+	)
+
+	ipcMain.handle(
+		"cloud:claim-runtime",
+		withLogging("cloud:claim-runtime", async () => {
+			const { claimFireflyRuntime } = await import(
+				"./services/cloud/firefly-runtime-client"
+			)
+			return claimFireflyRuntime()
+		}),
+	)
+
 	// --- mDNS discovery ---
 
 	ipcMain.handle("mdns:get-discovered", () => getDiscoveredServers())

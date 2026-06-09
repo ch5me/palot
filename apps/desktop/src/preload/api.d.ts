@@ -850,6 +850,19 @@ export interface ElfAuthApi {
 	onChange(cb: (state: ElfAuthStateDto | null) => void): () => void
 }
 
+export interface FireflyRuntimeStatus {
+	state: string
+	runtimeId: string | null
+	region: string | null
+	healthy: boolean
+	lastUpdated: string
+}
+
+export interface FireflyCloudApi {
+	getRuntimeStatus(): Promise<FireflyRuntimeStatus>
+	claimRuntime(): Promise<{ runtimeId: string; status: string }>
+}
+
 export type {
 	McpCatalogBrowseInput,
 	McpCatalogSearchInput,
@@ -1458,6 +1471,7 @@ restoreBackup: () => Promise<{
 	}
 
 	auth: ElfAuthApi
+	cloud: FireflyCloudApi
 }
 
 declare global {

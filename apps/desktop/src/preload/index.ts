@@ -518,4 +518,13 @@ contextBridge.exposeInMainWorld("elf", {
 			}
 		},
 	},
+
+	cloud: {
+		getRuntimeStatus(): Promise<import("./api").FireflyRuntimeStatus> {
+			return ipcRenderer.invoke("cloud:runtime-status")
+		},
+		claimRuntime(): Promise<{ runtimeId: string; status: string }> {
+			return ipcRenderer.invoke("cloud:claim-runtime")
+		},
+	},
 })
