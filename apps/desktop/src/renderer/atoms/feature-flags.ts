@@ -23,10 +23,14 @@ export const toggleAutomationsAtom = atom(null, (get, set) => {
 	set(automationsEnabledAtom, !get(automationsEnabledAtom))
 })
 
+// NOTE: `notes` has no feature flag any more — the Notes surface is a
+// catalog-served plugin (firefly.built-in.surface.notes); its
+// enable/disable state lives in the host plugin lifecycle store. The
+// legacy `elf:notesSurfaceEnabled` localStorage value is migrated once
+// by `renderer/firefly-plugin-flag-migration.ts`.
 export const fireflySurfaceDefaults = {
 	review: true,
 	browserPanelEnabled: true,
-	notes: true,
 	pulse: false,
 	memory: false,
 	files: true,
@@ -48,7 +52,6 @@ export type FireflySurfaceFlagKey = keyof typeof fireflySurfaceDefaults
 
 export const reviewSurfaceEnabledAtom = atomWithStorage<boolean>("elf:reviewSurfaceEnabled", true)
 export const browserPanelEnabledAtom = atomWithStorage<boolean>("elf:browserPanelEnabled", true)
-export const notesSurfaceEnabledAtom = atomWithStorage<boolean>("elf:notesSurfaceEnabled", true)
 export const pulseSurfaceEnabledAtom = atomWithStorage<boolean>("elf:pulseSurfaceEnabled", false)
 export const memorySurfaceEnabledAtom = atomWithStorage<boolean>("elf:memorySurfaceEnabled", false)
 export const filesSurfaceEnabledAtom = atomWithStorage<boolean>("elf:filesSurfaceEnabled", true)
@@ -68,7 +71,6 @@ export const pdfReviewSurfaceEnabledAtom = atomWithStorage<boolean>("elf:pdfRevi
 export const fireflySurfaceFlagAtoms: Record<FireflySurfaceFlagKey, typeof reviewSurfaceEnabledAtom> = {
 	review: reviewSurfaceEnabledAtom,
 	browserPanelEnabled: browserPanelEnabledAtom,
-	notes: notesSurfaceEnabledAtom,
 	pulse: pulseSurfaceEnabledAtom,
 	memory: memorySurfaceEnabledAtom,
 	files: filesSurfaceEnabledAtom,
@@ -89,7 +91,6 @@ export const fireflySurfaceFlagAtoms: Record<FireflySurfaceFlagKey, typeof revie
 export const fireflySurfaceLabels: Record<FireflySurfaceFlagKey, string> = {
 	review: "Changes",
 	browserPanelEnabled: "Browser",
-	notes: "Notes",
 	pulse: "Pulse",
 	memory: "Memory",
 	files: "Files",
@@ -113,10 +114,6 @@ export const toggleReviewSurfaceAtom = atom(null, (get, set) => {
 
 export const toggleBrowserPanelAtom = atom(null, (get, set) => {
 	set(browserPanelEnabledAtom, !get(browserPanelEnabledAtom))
-})
-
-export const toggleNotesSurfaceAtom = atom(null, (get, set) => {
-	set(notesSurfaceEnabledAtom, !get(notesSurfaceEnabledAtom))
 })
 
 export const togglePulseSurfaceAtom = atom(null, (get, set) => {

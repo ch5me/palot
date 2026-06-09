@@ -242,6 +242,12 @@ contextBridge.exposeInMainWorld("elf", {
 			ipcRenderer.invoke("firefly-plugin:tools", { pluginId }),
 		invoke: (input: { pluginId: string; commandId: string; args: Record<string, unknown> }) =>
 			ipcRenderer.invoke("firefly-plugin:invoke", input),
+		invokeTool: (input: {
+			pluginId: string
+			toolId: string
+			args: Record<string, unknown>
+			sessionId?: string
+		}) => ipcRenderer.invoke("firefly-plugin:invoke-tool", input),
 		refresh: () => ipcRenderer.invoke("firefly-plugin:refresh"),
 		setEnabled: (pluginId: string, enabled: boolean) =>
 			ipcRenderer.invoke("firefly-plugin:set-enabled", { pluginId, enabled }),

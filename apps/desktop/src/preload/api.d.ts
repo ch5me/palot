@@ -1382,6 +1382,19 @@ export interface ElfAPI {
 			}>
 		}>
 		refresh: () => Promise<{ appVersion: string; pluginCount: number }>
+		invokeTool: (input: {
+			pluginId: string
+			toolId: string
+			args: Record<string, unknown>
+			sessionId?: string
+		}) => Promise<{
+			status: "completed" | "failed" | "denied" | "unavailable" | "queued" | "cancelled"
+			pluginId: string
+			commandId: string
+			errorCode?: string
+			errorMessage?: string
+			data?: unknown
+		}>
 		setEnabled: (
 			pluginId: string,
 			enabled: boolean,

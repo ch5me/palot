@@ -59,7 +59,9 @@ export interface PluginPanelProps {
  */
 export const PLUGIN_PANEL_COMPONENTS: Readonly<
 	Record<string, LazyExoticComponent<ComponentType<PluginPanelProps>>>
-> = {}
+> = {
+	"firefly.built-in.surface.notes.notes": lazy(() => import("../../plugins/notes/panel/notes-panel")),
+}
 
 /** Manifest icon-name → Lucide component. Extend per migrated surface. */
 const PANEL_ICONS: Readonly<Record<string, LucideIcon>> = {
@@ -250,5 +252,3 @@ export function useCatalogSurfaceTabs(agent: Agent | null): FireflySidePanelTab[
 		return tabs
 	}, [agent, panels])
 }
-
-export { lazy as lazyPanel }

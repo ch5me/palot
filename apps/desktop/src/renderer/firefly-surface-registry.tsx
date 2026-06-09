@@ -1,4 +1,4 @@
-import { 	ActivityIcon, BookTextIcon, BoxesIcon, DatabaseIcon, FileDiffIcon, FileTextIcon, FilesIcon, GlobeIcon, MicIcon, MonitorPlayIcon, PlugIcon, RectangleEllipsisIcon, Share2Icon, SquarePenIcon, TerminalSquareIcon, UsersIcon, WandSparklesIcon, type LucideIcon } from "lucide-react"
+import { 	ActivityIcon, BoxesIcon, DatabaseIcon, FileDiffIcon, FileTextIcon, FilesIcon, GlobeIcon, MicIcon, MonitorPlayIcon, PlugIcon, RectangleEllipsisIcon, Share2Icon, SquarePenIcon, TerminalSquareIcon, UsersIcon, WandSparklesIcon, type LucideIcon } from "lucide-react"
 
 import type { ReactNode } from "react"
 import {
@@ -11,7 +11,6 @@ import {
 	editorSurfaceEnabledAtom,
 	filesSurfaceEnabledAtom,
 	memorySurfaceEnabledAtom,
-	notesSurfaceEnabledAtom,
 	oracleSurfaceEnabledAtom,
 	pluginsSurfaceEnabledAtom,
 	pdfReviewSurfaceEnabledAtom,
@@ -35,7 +34,6 @@ import { OraclePanel } from "./components/side-panel/oracle-panel"
 import { PdfReviewPanel } from "./components/side-panel/pdf-review-panel"
 import { StudioPanel } from "./components/side-panel/studio-panel"
 import { VoicePanel } from "./components/side-panel/voice-panel"
-import { NotesPanel } from "./components/side-panel/notes-panel"
 import { EditorPanel } from "./components/side-panel/editor-panel"
 import { FilesPanel } from "./components/side-panel/files-panel"
 import { V2PluginsPanel } from "./components/side-panel/v2-plugins-panel"
@@ -136,26 +134,8 @@ export const FIREFLY_SURFACE_REGISTRY: FireflySurfaceDef[] = [
 		target: { kind: "side-panel", tab: "browser" },
 		spawn: (ctx) => <BrowserPanel agent={ctx.agent} />,
 	},
-	{
-		id: "notes",
-		title: "Notes",
-		icon: BookTextIcon,
-		formFactor: "side-panel-tab",
-		enabledFlag: {
-			key: "notes",
-			atom: notesSurfaceEnabledAtom,
-		},
-		defaultOn: true,
-		availability: (ctx) =>
-			ctx.flags.notes
-				? { available: true }
-				: { available: false, reason: "Notes surface is disabled in feature flags" },
-		commandIds: ["surface.notes.open", "surface.notes.toggle"],
-		persistenceKey: "side-panel.notes",
-		telemetryNamespace: "firefly.surface.notes",
-		target: { kind: "side-panel", tab: "notes" },
-		spawn: (ctx) => <NotesPanel agent={ctx.agent} />,
-	},
+	// `notes` is served from the plugin catalog (firefly.built-in.surface.notes,
+	// apps/desktop/plugins/notes) — first migrated surface. Do not re-add a row.
 	{
 		id: "pulse",
 		title: "Pulse",

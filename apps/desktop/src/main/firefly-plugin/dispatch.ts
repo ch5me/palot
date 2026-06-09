@@ -157,6 +157,146 @@ export async function invokePluginCommand(
 	}
 }
 
+// ---------------------------------------------------------------------------
+// Tool dispatch (paired OpenCode/agent tools from `contributes.tools`)
+// ---------------------------------------------------------------------------
+
+export type HostToolHandler = (input: {
+	args: Record<string, unknown>
+	sessionId: string | null
+}) => Promise<HostCommandResult>
+
+const toolHandlers = new Map<string, HostToolHandler>()
+
+export function registerHostTool(pluginId: string, toolId: string, handler: HostToolHandler): void {
+	toolHandlers.set(`${pluginId}::${toolId}`, handler)
+}
+
+export function unregisterHostTool(pluginId: string, toolId: string): void {
+	toolHandlers.delete(`${pluginId}::${toolId}`)
+}
+
+export function listKnownTools(): string[] {
+	return Array.from(toolHandlers.keys())
+}
+
+export function _resetHostToolsForTests(): void {
+	toolHandlers.clear()
+}
+
+export interface PluginToolInvokeInput {
+	pluginId: string
+	toolId: string
+	args: Record<string, unknown>
+	sessionId?: string | null
+}
+
+/**
+ * Invoke a plugin tool through the catalog: manifest lookup → broker
+ * capability check → Zod args validation → registered host handler.
+ * Same envelope family as command dispatch; every failure is typed.
+ */
+export async function invokePluginTool(
+	input: PluginToolInvokeInput,
+	context: PluginInvokeContext = {
+		grantedTokens: [
+			"host:command.register",
+			"host:tool.register",
+			"host:panel.register",
+			"host:widget.register",
+			"host:theme.register",
+			"host:ui.read",
+			"host:bridge.session-read",
+			"host:bridge.ui-state-read",
+			"host:bridge.ui-state-write",
+		],
+		sessionScope: "session",
+	},
+): Promise<ToolDispatchEnvelope> {
+	const catalog = getPluginCatalog()
+	const descriptor = catalog.descriptors.find((d) => d.normalizedId === input.pluginId)
+	const tool = descriptor?.tools.find((t) => t.id === input.toolId)
+	if (!descriptor || !tool) {
+		return {
+			status: "unavailable",
+			pluginId: input.pluginId,
+			commandId: input.toolId,
+			errorCode: "plugin_unavailable",
+			errorMessage: "Unknown tool",
+		}
+	}
+	const state = catalog.capabilityStates[input.pluginId]
+	if (state?.pluginDisabled || state?.pluginQuarantined) {
+		return {
+			status: "unavailable",
+			pluginId: input.pluginId,
+			commandId: input.toolId,
+			errorCode: state.pluginQuarantined ? "plugin_quarantined" : "plugin_disabled",
+			errorMessage: state.pluginQuarantined
+				? "Plugin is quarantined by the host"
+				: "Plugin is disabled by the host",
+		}
+	}
+	const broker = decideCapabilityAll({
+		pluginId: input.pluginId,
+		trust: descriptor.trust,
+		tokens: tool.requires,
+		sessionScope: context.sessionScope,
+		grantedTokens: context.grantedTokens,
+	})
+	if (!broker.granted) {
+		return {
+			status: "denied",
+			pluginId: input.pluginId,
+			commandId: input.toolId,
+			errorCode: "permission_denied",
+			errorMessage: broker.failures[0]?.reason ?? "capability denied",
+		}
+	}
+	const argsSchema = z.object(tool.args as Record<string, z.ZodTypeAny>)
+	const parsedArgs = argsSchema.safeParse(input.args ?? {})
+	if (!parsedArgs.success) {
+		return {
+			status: "failed",
+			pluginId: input.pluginId,
+			commandId: input.toolId,
+			errorCode: "validation_error",
+			errorMessage: parsedArgs.error.issues
+				.map((issue) => `${issue.path.join(".") || "(root)"}: ${issue.message}`)
+				.join("; "),
+		}
+	}
+	const handler = toolHandlers.get(`${input.pluginId}::${input.toolId}`)
+	if (!handler) {
+		return {
+			status: "unavailable",
+			pluginId: input.pluginId,
+			commandId: input.toolId,
+			errorCode: "plugin_unavailable",
+			errorMessage: "No host tool handler registered",
+		}
+	}
+	const result = await handler({
+		args: parsedArgs.data as Record<string, unknown>,
+		sessionId: input.sessionId ?? null,
+	})
+	if ("error" in result) {
+		return {
+			status: "failed",
+			pluginId: input.pluginId,
+			commandId: input.toolId,
+			errorCode: result.error.code,
+			errorMessage: result.error.message,
+		}
+	}
+	return {
+		status: "completed",
+		pluginId: input.pluginId,
+		commandId: input.toolId,
+		data: result.data,
+	}
+}
+
 async function invokePalotOpenSidePanel(input: {
 	command: z.ZodTypeAny
 	args: unknown
@@ -188,6 +328,82 @@ async function invokeAcmeNotebookClear() {
 	return ok({ cleared: true, clearedAt: Date.now() })
 }
 
+// ---------------------------------------------------------------------------
+// Notes plugin host handlers (firefly.built-in.surface.notes)
+// ---------------------------------------------------------------------------
+
+export interface SidePanelStateSnapshot {
+	readonly open: boolean
+	readonly activeTab: string | null
+	readonly availableTabs: readonly string[]
+}
+
+export interface NotesHostDeps {
+	openSidePanel: (tab: "notes") => Promise<void>
+	getSidePanelState: () => SidePanelStateSnapshot
+	setPluginEnabled: (pluginId: string, enabled: boolean) => { enabled: boolean }
+}
+
+async function defaultOpenSidePanel(tab: "notes"): Promise<void> {
+	const { broadcastOpenSidePanel } = await import("../palot-browser-ipc")
+	await broadcastOpenSidePanel(tab)
+}
+
+function defaultGetSidePanelState(): SidePanelStateSnapshot {
+	// Lazy import keeps the bun test runner free of the bridge server
+	// module graph unless a handler actually runs.
+	// eslint-disable-next-line @typescript-eslint/no-var-requires
+	const { getUiStateSnapshot } = require("../palot-browser-ipc") as typeof import("../palot-browser-ipc")
+	const snapshot = getUiStateSnapshot()
+	return {
+		open: snapshot.sidePanel.open,
+		activeTab: snapshot.sidePanel.activeTab,
+		availableTabs: snapshot.sidePanel.availableTabs,
+	}
+}
+
+const NOTES_PLUGIN_ID = "firefly.built-in.surface.notes"
+
+export function registerNotesHostHandlers(deps?: Partial<NotesHostDeps>): void {
+	const openSidePanel = deps?.openSidePanel ?? defaultOpenSidePanel
+	const getSidePanelState = deps?.getSidePanelState ?? defaultGetSidePanelState
+	const setEnabled =
+		deps?.setPluginEnabled ??
+		((pluginId: string, enabled: boolean) => {
+			// eslint-disable-next-line @typescript-eslint/no-var-requires
+			const authority = require("./authority") as typeof import("./authority")
+			return authority.setPluginEnabled(pluginId, enabled)
+		})
+
+	registerHostTool(NOTES_PLUGIN_ID, "plugin.firefly.built-in.surface.notes.open", async () => {
+		await openSidePanel("notes")
+		return ok({ opened: true, tab: "notes", source: "v2-plugin-tool-dispatch" })
+	})
+
+	registerHostTool(NOTES_PLUGIN_ID, "plugin.firefly.built-in.surface.notes.state", async () => {
+		const sidePanel = getSidePanelState()
+		return ok({
+			tab: "notes",
+			available: sidePanel.availableTabs.includes("notes"),
+			open: sidePanel.open,
+			active: sidePanel.open && sidePanel.activeTab === "notes",
+		})
+	})
+
+	registerHostCommand(NOTES_PLUGIN_ID, "open-notes", async () => {
+		await openSidePanel("notes")
+		return ok({ opened: true, tab: "notes" })
+	})
+
+	registerHostCommand(NOTES_PLUGIN_ID, "toggle-notes", async () => {
+		const catalog = getPluginCatalog()
+		const state = catalog.capabilityStates[NOTES_PLUGIN_ID]
+		const currentlyEnabled = !(state?.pluginDisabled ?? false)
+		const next = setEnabled(NOTES_PLUGIN_ID, !currentlyEnabled)
+		return ok({ pluginId: NOTES_PLUGIN_ID, enabled: next.enabled })
+	})
+}
+
 export function registerBuiltInHostCommands(): void {
 	registerHostCommand(
 		"firefly.built-in.palot-bridge",
@@ -202,7 +418,9 @@ export function registerBuiltInHostCommands(): void {
 	registerHostCommand("firefly.built-in.palot-bridge", "palot-ui-state", invokePalotUiState)
 	registerHostCommand("acme.acme-notebook", "acme-notebook-open", invokeAcmeNotebookOpen)
 	registerHostCommand("acme.acme-notebook", "acme-notebook-clear", invokeAcmeNotebookClear)
+	registerNotesHostHandlers()
 	log.info("Registered V2 host command handlers", {
 		commands: Array.from(handlers.keys()),
+		tools: Array.from(toolHandlers.keys()),
 	})
 }

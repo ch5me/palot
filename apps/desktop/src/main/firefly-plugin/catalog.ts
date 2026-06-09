@@ -28,6 +28,10 @@ import {
 	acmeNotebookManifest,
 	ACME_NOTEBOOK_PLUGIN_ID,
 } from "../../shared/firefly-plugin/acme-notebook-exemplar"
+import {
+	notesPluginManifest,
+	NOTES_PLUGIN_ID,
+} from "../../../plugins/notes/manifest"
 import { BUILT_IN_DEFAULT_CAPABILITIES } from "../../shared/firefly-plugin/capabilities"
 import { type PluginDescriptor } from "../../shared/firefly-plugin/descriptor"
 import {
@@ -65,6 +69,7 @@ const log = createLogger("firefly-plugin-catalog")
 const BUILT_IN_MANIFESTS: readonly PluginManifest[] = [
 	palotBridgeManifest,
 	acmeNotebookManifest,
+	notesPluginManifest,
 ]
 
 /**
@@ -406,4 +411,5 @@ function defaultCapabilityStateForId(pluginId: string): CapabilityStateShape {
 export const KNOWN_PLUGIN_IDS = {
 	palotBridge: PALOT_BRIDGE_PLUGIN_ID,
 	acmeNotebook: ACME_NOTEBOOK_PLUGIN_ID,
+	notes: NOTES_PLUGIN_ID,
 } as const

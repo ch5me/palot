@@ -49,7 +49,8 @@ import {
 } from "lucide-react"
 import { useCallback, useEffect, useMemo, useState } from "react"
 import { sessionMetricsFamily } from "../atoms/derived/session-metrics"
-import { invokePluginCommand } from "../hooks/use-firefly-plugins"
+import { invokePluginCommand, useFireflyPlugins } from "../hooks/use-firefly-plugins"
+import { useQueryClient } from "@tanstack/react-query"
 import {
 	automationsEnabledAtom,
 	browserPanelEnabledAtom,
@@ -60,7 +61,6 @@ import {
 	editorSurfaceEnabledAtom,
 	filesSurfaceEnabledAtom,
 	memorySurfaceEnabledAtom,
-	notesSurfaceEnabledAtom,
 	pluginsSurfaceEnabledAtom,
 	pdfReviewSurfaceEnabledAtom,
 	pulseSurfaceEnabledAtom,
@@ -76,7 +76,6 @@ import {
 	toggleCrmSurfaceAtom,
 	toggleFilesSurfaceAtom,
 	toggleMemorySurfaceAtom,
-	toggleNotesSurfaceAtom,
 	togglePdfReviewSurfaceAtom,
 	togglePluginsSurfaceAtom,
 	togglePulseSurfaceAtom,
@@ -147,7 +146,6 @@ export function CommandPalette({ open, onOpenChange, agents, onForkSession }: Co
 	const toggleAutomations = useSetAtom(toggleAutomationsAtom)
 	const browserPanelEnabled = useAtomValue(browserPanelEnabledAtom)
 	const reviewSurfaceEnabled = useAtomValue(reviewSurfaceEnabledAtom)
-	const notesSurfaceEnabled = useAtomValue(notesSurfaceEnabledAtom)
 	const pulseSurfaceEnabled = useAtomValue(pulseSurfaceEnabledAtom)
 	const memorySurfaceEnabled = useAtomValue(memorySurfaceEnabledAtom)
 	const filesSurfaceEnabled = useAtomValue(filesSurfaceEnabledAtom)
@@ -163,7 +161,6 @@ export function CommandPalette({ open, onOpenChange, agents, onForkSession }: Co
 	const pdfReviewSurfaceEnabled = useAtomValue(pdfReviewSurfaceEnabledAtom)
 	const toggleBrowserPanel = useSetAtom(toggleBrowserPanelAtom)
 	const toggleReviewSurface = useSetAtom(toggleReviewSurfaceAtom)
-	const toggleNotesSurface = useSetAtom(toggleNotesSurfaceAtom)
 	const togglePulseSurface = useSetAtom(togglePulseSurfaceAtom)
 	const toggleMemorySurface = useSetAtom(toggleMemorySurfaceAtom)
 	const toggleFilesSurface = useSetAtom(toggleFilesSurfaceAtom)
@@ -243,7 +240,6 @@ export function CommandPalette({ open, onOpenChange, agents, onForkSession }: Co
 			flags: {
 				browserPanelEnabled,
 				review: reviewSurfaceEnabled,
-				notes: notesSurfaceEnabled,
 				pulse: pulseSurfaceEnabled,
 				memory: memorySurfaceEnabled,
 				files: filesSurfaceEnabled,
@@ -264,7 +260,6 @@ export function CommandPalette({ open, onOpenChange, agents, onForkSession }: Co
 		activeAgent,
 		browserPanelEnabled,
 		reviewSurfaceEnabled,
-		notesSurfaceEnabled,
 		pulseSurfaceEnabled,
 		memorySurfaceEnabled,
 		filesSurfaceEnabled,
@@ -280,6 +275,21 @@ export function CommandPalette({ open, onOpenChange, agents, onForkSession }: Co
 			pdfReviewSurfaceEnabled,
 		])
 
+
+	// Notes is a catalog-served plugin: its enable/disable flows through
+	// the host plugin lifecycle, not a renderer feature-flag atom.
+	const queryClient = useQueryClient()
+	const { data: pluginList } = useFireflyPlugins()
+	const notesPluginEntry = pluginList?.plugins.find(
+		(plugin) => plugin.pluginId === "firefly.built-in.surface.notes",
+	)
+	const notesPluginEnabled = notesPluginEntry
+		? notesPluginEntry.status !== "disabled" && notesPluginEntry.status !== "quarantined"
+		: true
+	const toggleNotesPlugin = useCallback(async () => {
+		await window.elf?.plugins.setEnabled("firefly.built-in.surface.notes", !notesPluginEnabled)
+		await queryClient.invalidateQueries({ queryKey: ["firefly-plugin"] })
+	}, [notesPluginEnabled, queryClient])
 
 	const catalogSurfaceTabs = useCatalogSurfaceTabs(activeAgent)
 	const availableSurfaceTabs = useMemo(
@@ -502,15 +512,15 @@ export function CommandPalette({ open, onOpenChange, agents, onForkSession }: Co
 						{browserPanelEnabled && <CheckIcon className="ml-auto h-4 w-4" />}
 					</CommandItem>
 					<CommandItem
-						keywords={["notes", "surface", "side panel"]}
+						keywords={["notes", "surface", "side panel", "plugin"]}
 						onSelect={() => {
-							toggleNotesSurface()
+							void toggleNotesPlugin()
 							onOpenChange(false)
 						}}
 					>
 						<BookTextIcon />
-						<span>{notesSurfaceEnabled ? "Disable Notes Surface" : "Enable Notes Surface"}</span>
-						{notesSurfaceEnabled && <CheckIcon className="ml-auto h-4 w-4" />}
+						<span>{notesPluginEnabled ? "Disable Notes Surface" : "Enable Notes Surface"}</span>
+						{notesPluginEnabled && <CheckIcon className="ml-auto h-4 w-4" />}
 					</CommandItem>
 					<CommandItem
 						keywords={["pulse", "surface", "heartbeat", "telemetry"]}

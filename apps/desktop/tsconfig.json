@@ -28,7 +28,9 @@
 		"src/preload/**/*.ts",
 		"src/preload/**/*.d.ts",
 		"src/renderer/**/*.ts",
-		"src/renderer/**/*.tsx"
+		"src/renderer/**/*.tsx",
+		"plugins/**/*.ts",
+		"plugins/**/*.tsx"
 	],
 	"exclude": ["node_modules", "dist", "out", "release"]
 }

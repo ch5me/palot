@@ -24,6 +24,7 @@ import {
 } from "./authority"
 import {
 	invokePluginCommand,
+	invokePluginTool,
 	listKnownCommands,
 } from "./dispatch"
 import { projectBridgeToolDefinitions } from "../../shared/firefly-plugin/bridge-projection"
@@ -41,6 +42,7 @@ export const FIREFLY_PLUGIN_IPC_CHANNELS = {
 	themes: "firefly-plugin:themes",
 	refresh: "firefly-plugin:refresh",
 	invoke: "firefly-plugin:invoke",
+	invokeTool: "firefly-plugin:invoke-tool",
 	setEnabled: "firefly-plugin:set-enabled",
 	panelCrash: "firefly-plugin:panel-crash",
 	releaseQuarantine: "firefly-plugin:release-quarantine",
@@ -206,6 +208,24 @@ export function registerFireflyPluginIpc(): void {
 				unknown
 			>
 			return invokePluginCommand({ pluginId, commandId, args })
+		},
+	)
+
+	ipcMain.handle(
+		FIREFLY_PLUGIN_IPC_CHANNELS.invokeTool,
+		async (
+			_event,
+			rawArgs: unknown,
+		) => {
+			const obj = (rawArgs ?? {}) as Record<string, unknown>
+			const pluginId = typeof obj.pluginId === "string" ? obj.pluginId : ""
+			const toolId = typeof obj.toolId === "string" ? obj.toolId : ""
+			const args = (obj.args && typeof obj.args === "object" ? obj.args : {}) as Record<
+				string,
+				unknown
+			>
+			const sessionId = typeof obj.sessionId === "string" ? obj.sessionId : null
+			return invokePluginTool({ pluginId, toolId, args, sessionId })
 		},
 	)
 

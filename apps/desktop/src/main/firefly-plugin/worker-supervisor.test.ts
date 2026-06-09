@@ -92,6 +92,10 @@ describe("plugin worker supervisor — quarantine drill (real worker_threads)", 
 				spawnWorker: createWorkerThreadSpawner(),
 				quarantineStore: store,
 				...FAST_POLICIES,
+				// Long hang timeout: under load a crashed worker's delayed
+				// exit event must never race the hang scanner, so this drill
+				// deterministically quarantines via runtime_crashes.
+				heartbeatPolicy: { hangTimeoutMs: 10_000, heartbeatIntervalMs: 40 },
 			}),
 		)
 		supervisor.register({ pluginId: "firefly.built-in.healthy", entryPath: fixture("healthy-worker.mjs") })
