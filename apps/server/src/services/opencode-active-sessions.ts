@@ -293,14 +293,12 @@ export function createActiveOpenCodeSessionCollector(
 			if (index >= 0) remaining.splice(index, 1)
 		}
 
-		if (next.length >= processes.length) {
-			inferenceCache.set(cacheKey, {
-				expiresAt: nowMs + ACTIVE_SESSION_INFERENCE_CACHE_TTL_MS,
-				sessions: next,
-			})
-		} else {
-			inferenceCache.delete(cacheKey)
-		}
+		// Cache partial/failed inference too: session.list against the shared
+		// host is expensive, and re-querying on every poll (1-5s) can wedge it.
+		inferenceCache.set(cacheKey, {
+			expiresAt: nowMs + ACTIVE_SESSION_INFERENCE_CACHE_TTL_MS,
+			sessions: next,
+		})
 
 		return next
 	}

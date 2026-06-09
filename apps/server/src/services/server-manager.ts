@@ -33,9 +33,45 @@ function isPortBindConflict(stderr: string): boolean {
 
 const DEFAULT_OPENCODE_PORT = 14096
 
-// 4096 is reserved for the shared OpenCode host after the 2026-06-09 outage; palot dev must default elsewhere.
+// 4096 is reserved for the shared OpenCode host; palot only points at it in
+// external mode (never spawns). Managed mode defaults elsewhere.
 const OPENCODE_PORT = Number(process.env.OPENCODE_PORT) || DEFAULT_OPENCODE_PORT
 const OPENCODE_HOSTNAME = process.env.OPENCODE_HOSTNAME || "127.0.0.1"
+
+/**
+ * OPENCODE_MODE selects who owns the OpenCode server lifecycle:
+ * - "external": palot NEVER spawns OpenCode. It requires a server already
+ *   running at the configured host:port (e.g. the process-compose-supervised
+ *   shared host on :4096 in dev) and fails loud if it is missing.
+ * - "managed": palot spawns and owns OpenCode if none is running. Packaged
+ *   customer builds use this with OPENCODE_BIN pointing at the bundled
+ *   portable opencode binary.
+ */
+type OpenCodeMode = "external" | "managed"
+
+function resolveOpenCodeMode(): OpenCodeMode {
+	const raw = process.env.OPENCODE_MODE
+	if (!raw || raw === "managed") return "managed"
+	if (raw === "external") return "external"
+	throw new Error(`Invalid OPENCODE_MODE "${raw}" — expected "external" or "managed"`)
+}
+
+const OPENCODE_MODE = resolveOpenCodeMode()
+
+// Managed-mode binary. Defaults to "opencode" resolved with ~/.opencode/bin
+// first on PATH (the local dev copy); packaged builds set OPENCODE_BIN.
+const OPENCODE_BIN = process.env.OPENCODE_BIN || "opencode"
+
+class OpenCodeExternalServerMissingError extends Error {
+	constructor(url: string) {
+		super(
+			`OPENCODE_MODE=external but no OpenCode server is responding at ${url}. ` +
+				`Palot will not spawn one in external mode. Start the shared host ` +
+				`(process-compose opencode-serve) or switch to OPENCODE_MODE=managed.`,
+		)
+		this.name = "OpenCodeExternalServerMissingError"
+	}
+}
 
 // ============================================================
 // Public API
@@ -58,9 +94,15 @@ export async function ensureSingleServer(): Promise<OpenCodeServer> {
 		return existing
 	}
 
+	if (OPENCODE_MODE === "external") {
+		throw new OpenCodeExternalServerMissingError(
+			`http://${OPENCODE_HOSTNAME}:${OPENCODE_PORT}`,
+		)
+	}
+
 	// Start a new one
 	const proc = Bun.spawn({
-		cmd: ["opencode", "serve", `--hostname=${OPENCODE_HOSTNAME}`, `--port=${OPENCODE_PORT}`],
+		cmd: [OPENCODE_BIN, "serve", `--hostname=${OPENCODE_HOSTNAME}`, `--port=${OPENCODE_PORT}`],
 		cwd: process.env.HOME, // arbitrary cwd — directory param overrides per-request
 		stdout: "pipe",
 		stderr: "pipe",
@@ -143,8 +185,11 @@ export function stopServer(): boolean {
 async function detectExistingServer(): Promise<OpenCodeServer | null> {
 	const url = `http://${OPENCODE_HOSTNAME}:${OPENCODE_PORT}`
 	try {
-		const res = await fetch(`${url}/session`, {
-			signal: AbortSignal.timeout(2000),
+		// limit=1: an unbounded /session serializes the entire global session
+		// store and can wedge the shared host. The probe only needs liveness.
+		// The shared host can still take several seconds to answer under load.
+		const res = await fetch(`${url}/session?limit=1`, {
+			signal: AbortSignal.timeout(10_000),
 		})
 		if (res.ok) {
 			return { url, pid: null, managed: false }
@@ -162,7 +207,7 @@ async function waitForReady(url: string, timeoutMs: number): Promise<void> {
 	const start = Date.now()
 	while (Date.now() - start < timeoutMs) {
 		try {
-			const res = await fetch(`${url}/session`, {
+			const res = await fetch(`${url}/session?limit=1`, {
 				signal: AbortSignal.timeout(1000),
 			})
 			if (res.ok) return

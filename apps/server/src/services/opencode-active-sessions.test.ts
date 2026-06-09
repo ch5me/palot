@@ -55,7 +55,9 @@ describe("active OpenCode session collector", () => {
 		expect(sessionListCalls).toBe(2)
 	})
 
-	test("does not cache missing inferred mappings", async () => {
+	test("caches missing inferred mappings for the TTL instead of re-querying every poll", async () => {
+		// Re-querying session.list on every poll for unresolved mappings can
+		// wedge the shared OpenCode host, so misses are cached like hits.
 		let sessionListCalls = 0
 		const collector = createActiveOpenCodeSessionCollector({
 			listClientProcesses: async () => [plainProcess()],
@@ -70,6 +72,6 @@ describe("active OpenCode session collector", () => {
 
 		expect(first.sessions).toEqual([])
 		expect(second.sessions).toEqual([])
-		expect(sessionListCalls).toBe(2)
+		expect(sessionListCalls).toBe(1)
 	})
 })

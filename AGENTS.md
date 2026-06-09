@@ -215,11 +215,16 @@ Elf follows the XDG Base Directory Specification (same convention as OpenCode). 
 
 `electron.vite.config.ts` has three sections: `main`, `preload`, `renderer`. Main and preload use `externalizeDepsPlugin()` to keep Node.js deps external.
 
-### OpenCode default port
+### OpenCode server modes (dev vs packaged)
 
-Palot defaults its embedded/dev OpenCode server to **14096**. Both `server-manager.ts` and `opencode-manager.ts` read `OPENCODE_PORT` first, so explicit env still wins when you intentionally attach to another host (including the shared 4096 lane).
+`apps/server` selects the OpenCode lifecycle owner via `OPENCODE_MODE` (see `server-manager.ts`):
 
-To connect to an existing server:
+- **`external`** (dev, set by `devmux.config.json`): palot points at the shared OpenCode host on **127.0.0.1:4096** (supervised by process-compose `opencode-serve`, running the local dev build of opencode) and **never spawns** OpenCode. If the shared host is down, palot fails loud with `OpenCodeExternalServerMissingError` instead of respawning it out from under the supervisor. Active-session presence works in this mode because TUI clients attach to the same :4096 origin.
+- **`managed`** (default; packaged/customer builds): palot spawns and owns `opencode serve` on `OPENCODE_PORT` (default 14096 — never 4096, reserved for the shared host). The binary is `OPENCODE_BIN` when set; otherwise `opencode` resolved with `~/.opencode/bin` first on PATH (the dev copy). Customer packaging must set `OPENCODE_BIN` to the bundled portable opencode binary (see the `portable-opencode` repo) — do not assume a global install on user machines. Cold start can take ~60s before `/session` responds; readiness waits up to 120s.
+
+`opencode-manager.ts` (Electron desktop) has its own lifecycle with the same `OPENCODE_PORT` env override; devmux points it at :4096 in dev. It does not yet honor `OPENCODE_MODE` — port it to the same contract before shipping desktop builds that bundle portable opencode.
+
+To connect a one-off desktop dev run to an existing server:
 ```bash
 cd apps/desktop && OPENCODE_PORT=4096 node ../../node_modules/.bin/electron-vite dev
 ```
