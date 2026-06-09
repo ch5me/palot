@@ -21,8 +21,9 @@
 	},
 	"dependencies": {
 		"@base-ui/react": "^1.2.0",
-		"@hookform/resolvers": "^5.2.2",
 		"@ch5me/firefly-design": "workspace:*",
+		"@hookform/resolvers": "^5.2.2",
+		"@number-flow/react": "^0.6.0",
 		"@pierre/diffs": "^1.0.10",
 		"@rive-app/react-webgl2": "^4.26.2",
 		"@streamdown/cjk": "^1.0.2",
@@ -49,6 +50,7 @@
 		"react-hook-form": "^7.71.1",
 		"react-jsx-parser": "^2.4.1",
 		"react-resizable-panels": "^4.6.2",
+		"react-use-measure": "^2.1.7",
 		"recharts": "2.15.4",
 		"shadcn": "^3.8.4",
 		"shiki": "^3.22.0",

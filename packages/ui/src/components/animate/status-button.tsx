@@ -54,7 +54,9 @@ function StatusButton({
 
 	// Per-character pop + reflow; stiff per the S>=500 mechanical mapping.
 	const charTransition = reducedMotion ? reducedMotionTransition : springs.stiff
-	const indicatorTransition = reducedMotion ? reducedMotionTransition : semanticTransitions.indicator
+	const indicatorTransition = reducedMotion
+		? reducedMotionTransition
+		: semanticTransitions.indicator
 	const exitTransition = reducedMotion ? reducedMotionTransition : semanticTransitions.exit
 
 	return (
