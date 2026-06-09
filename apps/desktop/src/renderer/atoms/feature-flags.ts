@@ -67,6 +67,7 @@ const FIREFLY_SURFACE_LABELS = {
 export const automationsEnabledAtom = atomWithStorage<boolean>("elf:automationsEnabled", true)
 export const loomEnabledAtom = atomWithStorage<boolean>("elf:loomEnabled", false)
 export const loomDualBindingsAtom = atomWithStorage<boolean>("elf:loomDualBindings", false)
+export const loomConflictProtectionAtom = atomWithStorage<boolean>("elf:loomConflictProtection", false)
 export const loomDagSparklineDemoAtom = atomWithStorage<boolean>("elf:loomDagSparklineDemo", false)
 export const loomComponentToolsEnabledAtom = atomWithStorage<boolean>(
 	"elf:loomComponentToolsEnabled",
@@ -81,6 +82,9 @@ export const toggleLoomEnabledAtom = atom(null, (get, set) => {
 })
 export const toggleLoomDualBindingsAtom = atom(null, (get, set) => {
 	set(loomDualBindingsAtom, !get(loomDualBindingsAtom))
+})
+export const toggleLoomConflictProtectionAtom = atom(null, (get, set) => {
+	set(loomConflictProtectionAtom, !get(loomConflictProtectionAtom))
 })
 export const toggleLoomDagSparklineDemoAtom = atom(null, (get, set) => {
 	set(loomDagSparklineDemoAtom, !get(loomDagSparklineDemoAtom))

@@ -19,6 +19,7 @@ import {
 export {
 	openLoomSession,
 	endLoomSession,
+	getLoomSessionState,
 	renderLoomTree,
 	patchLoomTree,
 	pollLoomSession,

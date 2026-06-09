@@ -12,7 +12,14 @@ function clone<T>(value: T): T {
 
 function getEntryForNode(node: LoomNode | null) {
 	if (!node) return undefined
-	return resolveGenUiEntry(node.component)
+	const entry = resolveGenUiEntry(node.component)
+	if (!entry) return undefined
+	const nodePolicy = (node.meta?.loomBindings as { conflictPolicy?: LoomConflictPolicy } | undefined)
+		?.conflictPolicy
+	if (nodePolicy) {
+		return { ...entry, conflictPolicy: nodePolicy }
+	}
+	return entry
 }
 
 export class LoomDirtyTracker {
@@ -58,6 +65,7 @@ export class LoomDirtyTracker {
 		humanValue: unknown
 	}):
 		| { kind: "apply"; value: unknown; policy: LoomConflictPolicy }
+		| { kind: "drop"; value: unknown; policy: LoomConflictPolicy }
 		| { kind: "held"; conflict: LoomConflictFrame } {
 		const policy = getEntryForNode(options.node)?.conflictPolicy ?? "ask"
 		if (!this.isDirty(options.patch.nodeId, options.patch.field)) {
@@ -68,8 +76,9 @@ export class LoomDirtyTracker {
 			return { kind: "apply", value: clone(options.patch.value), policy }
 		}
 		if (policy === "human-wins") {
+			const humanValue = clone(options.humanValue)
 			this.clearDirty(options.patch.nodeId, options.patch.field)
-			return { kind: "held", conflict: this.queueConflict(options.patch, options.humanValue, options.patch.value, policy) }
+			return { kind: "drop", value: humanValue, policy }
 		}
 		if (policy === "merge") {
 			const merged = getEntryForNode(options.node)?.merge?.(

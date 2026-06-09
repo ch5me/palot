@@ -25,6 +25,14 @@ export interface LoomPatch {
 	value: unknown
 }
 
+export interface LoomConflictResolvedEventPayload {
+	field: string
+	policy: LoomConflictPolicy
+	humanValue: unknown
+	agentValue: unknown
+	resolvedValue: unknown
+}
+
 export interface LoomStateDeltaFrame {
 	nodeId: string
 	field: string

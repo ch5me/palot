@@ -1,6 +1,7 @@
 import { describe, expect, test } from "bun:test"
 
 import {
+	getLoomSessionState,
 	patchCommand,
 	pollCommand,
 	renderCommand,
@@ -10,36 +11,42 @@ import {
 } from "../commands"
 import { encodeWirePayload } from "../wire"
 
-describe("loom dirty field protection", () => {
-	const tree = {
-		id: "decision-root",
-		component: "decision_card",
-		props: {
-			title: "Pick",
-			options: [
-				{ id: "opt_a", label: "A" },
-				{ id: "opt_b", label: "B" },
-			],
-			selected: null,
-			notes: "",
-		},
-	}
+const tree = {
+	id: "decision-root",
+	component: "decision_card",
+	props: {
+		title: "Pick",
+		options: [
+			{ id: "opt_a", label: "A" },
+			{ id: "opt_b", label: "B" },
+		],
+		selected: null,
+		notes: "",
+	},
+}
 
-	test("clean field accepts patch", () => {
+describe("loom dirty field protection", () => {
+	test("clean field accepts patch and increments node rev", () => {
 		const sessionId = "ses_dirty_clean"
 		sessionOpenCommand(sessionId, encodeWirePayload({ title: "dirty" }))
 		renderCommand(sessionId, encodeWirePayload({ tree }))
+		const initialTree = getLoomSessionState(sessionId)?.tree
+		expect(initialTree?.rev).toBe(1)
 		const result = patchCommand(
 			sessionId,
 			encodeWirePayload({ patch: { rev: 1, nodeId: "decision-root", field: "selected", value: "opt_b" } }),
 		)
 		expect(result.errorCode).toBeUndefined()
+		expect(result.rev).toBe(2)
+		const state = getLoomSessionState(sessionId)
+		expect(state?.tree?.rev).toBe(2)
 		const poll = pollCommand(sessionId, encodeWirePayload({ rev: 0 }))
 		expect(poll.conflicts).toHaveLength(0)
+		expect(poll.events.find((frame) => frame.kind === "patch")?.patch?.rev).toBe(2)
 		sessionEndCommand(sessionId)
 	})
 
-	test("dirty notes field holds patch and returns conflict", () => {
+	test("dirty notes field holds patch and returns conflict without bumping node rev", () => {
 		const sessionId = "ses_dirty_hold"
 		sessionOpenCommand(sessionId, encodeWirePayload({ title: "dirty" }))
 		renderCommand(sessionId, encodeWirePayload({ tree }))
@@ -49,7 +56,9 @@ describe("loom dirty field protection", () => {
 			encodeWirePayload({ patch: { rev: 1, nodeId: "decision-root", field: "notes", value: "agent note" } }),
 		)
 		expect(result.errorCode).toBe("dirty_field")
+		expect(result.rev).toBe(1)
 		expect((result.held as { policy?: string } | undefined)?.policy).toBe("ask")
+		expect(getLoomSessionState(sessionId)?.tree?.rev).toBe(1)
 		const poll = pollCommand(sessionId, encodeWirePayload({ rev: 0 }))
 		expect(poll.conflicts).toEqual([
 			{
@@ -63,15 +72,24 @@ describe("loom dirty field protection", () => {
 		sessionEndCommand(sessionId)
 	})
 
-	test("merge policy uses registry merge function", async () => {
-		const { LoomDirtyTracker } = await import("../dirty")
-		const tracker = new LoomDirtyTracker()
-		tracker.setDirty("decision-root", "notes", true)
-		const resolution = tracker.resolvePatch({
-			node: tree,
-			patch: { nodeId: "decision-root", field: "notes", value: "agent note" },
-			humanValue: "human note",
-		})
-		expect(resolution.kind).toBe("held")
+	test("stale per-node rev returns node delta", () => {
+		const sessionId = "ses_stale_rev"
+		sessionOpenCommand(sessionId, encodeWirePayload({ title: "dirty" }))
+		renderCommand(sessionId, encodeWirePayload({ tree }))
+		const firstPatch = patchCommand(
+			sessionId,
+			encodeWirePayload({ patch: { rev: 1, nodeId: "decision-root", field: "selected", value: "opt_b" } }),
+		)
+		expect(firstPatch.errorCode).toBeUndefined()
+		const stalePatch = patchCommand(
+			sessionId,
+			encodeWirePayload({ patch: { rev: 1, nodeId: "decision-root", field: "notes", value: "agent note" } }),
+		)
+		expect(stalePatch.errorCode).toBe("stale_rev")
+		expect(stalePatch.rev).toBe(2)
+		expect(stalePatch.delta).toEqual([
+			{ nodeId: "decision-root", field: "selected", value: "opt_b", rev: 2 },
+		])
+		sessionEndCommand(sessionId)
 	})
 })

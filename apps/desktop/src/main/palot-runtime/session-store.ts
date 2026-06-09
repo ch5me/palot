@@ -4,6 +4,7 @@ import { LoomDirtyTracker } from "./dirty"
 import { clearSessionRevision, getSessionRevision, nextSessionRevision, setSessionRevision } from "./revision"
 import type {
 	LoomConflictFrame,
+	LoomConflictResolvedEventPayload,
 	LoomEventFrame,
 	LoomNode,
 	LoomPatch,
@@ -36,6 +37,7 @@ export type LoomFrame = LoomTreeFrame | LoomPatchFrame | LoomEventQueueFrame
 interface LoomSessionState {
 	tree: LoomNode | null
 	rev: number
+	nodeRevisions: Map<string, number>
 	eventQueue: LoomFrame[]
 	stateDelta: LoomStateDeltaFrame[]
 	conflicts: LoomConflictFrame[]
@@ -55,6 +57,7 @@ function ensureSessionState(sessionId: string): LoomSessionState {
 	const created: LoomSessionState = {
 		tree: null,
 		rev: setSessionRevision(sessionId, 0),
+		nodeRevisions: new Map<string, number>(),
 		eventQueue: [],
 		stateDelta: [],
 		conflicts: [],
@@ -105,29 +108,73 @@ function writeNodeField(node: LoomNode, field: string, value: unknown): LoomNode
 	}
 }
 
-function patchNodeField(tree: LoomNode | null, patch: LoomPatch, value = patch.value, rev?: number): LoomNode | null {
+function patchNodeField(
+	tree: LoomNode | null,
+	patch: LoomPatch,
+	value = patch.value,
+	nodeRev?: number,
+): LoomNode | null {
 	let matched = false
 	const nextTree = visitNodes(tree, (node) => {
 		if (node.id !== patch.nodeId) return { ...node }
 		matched = true
 		return {
 			...writeNodeField(node, patch.field, value),
-			rev: typeof rev === "number" ? rev : node.rev,
+			rev: typeof nodeRev === "number" ? nodeRev : node.rev,
 		}
 	})
 	if (!matched) throw new Error(`Unknown Loom node: ${patch.nodeId}`)
 	return nextTree
 }
 
+function buildNodeRevisionMap(tree: LoomNode | null): Map<string, number> {
+	const revisions = new Map<string, number>()
+	visitNodes(tree, (node) => {
+		revisions.set(node.id, node.rev ?? 0)
+		return { ...node }
+	})
+	return revisions
+}
+
 function refreshNodeMetadata(tree: LoomNode | null, tracker: LoomDirtyTracker): LoomNode | null {
-	return visitNodes(tree, (node) => ({
-		...node,
-		dirtyFields: tracker.getDirtyFields(node.id),
-		meta: {
-			...(node.meta ?? {}),
-			loomBindings: node.meta?.loomBindings ?? attachBindingsToTree(node).meta?.loomBindings,
-		},
-	}))
+	return visitNodes(tree, (node) => {
+		const attachedNode = attachBindingsToTree(node, Math.max((node.rev ?? 1) - 1, 0))
+		const bindings = (node.meta?.loomBindings ?? attachedNode.meta?.loomBindings) as
+			| {
+					conflictPolicy?: "agent-wins" | "human-wins" | "merge" | "ask"
+					events?: string[]
+					state?: string[]
+			  }
+			| undefined
+		const attachedBindings = attachedNode.meta?.loomBindings as
+			| { conflictPolicy?: "agent-wins" | "human-wins" | "merge" | "ask" }
+			| undefined
+		return {
+			...node,
+			dirtyFields: tracker.getDirtyFields(node.id),
+			meta: {
+				...(node.meta ?? {}),
+				loomBindings: {
+					...(bindings ?? {}),
+					conflictPolicy:
+						typeof bindings?.conflictPolicy === "string"
+							? bindings.conflictPolicy
+							: attachedBindings?.conflictPolicy,
+				},
+			},
+		}
+	})
+}
+
+function createConflictResolvedEvent(
+	nodeId: string,
+	payload: LoomConflictResolvedEventPayload,
+): LoomEventFrame {
+	return {
+		type: "conflict_resolved",
+		nodeId,
+		payload: clone(payload) as unknown as Record<string, unknown>,
+	}
 }
 
 export function openLoomSession(sessionId: string): { rev: number } {
@@ -145,7 +192,8 @@ export function endLoomSession(sessionId: string): { rev: number } {
 export function renderLoomTree(sessionId: string, tree: LoomNode): { rev: number } {
 	const state = ensureSessionState(sessionId)
 	const rev = nextSessionRevision(sessionId)
-	state.tree = refreshNodeMetadata(attachBindingsToTree(tree, rev), state.dirtyTracker)
+	state.tree = refreshNodeMetadata(attachBindingsToTree(tree, 0), state.dirtyTracker)
+	state.nodeRevisions = buildNodeRevisionMap(state.tree)
 	state.rev = rev
 	state.eventQueue.push({ kind: "tree", rev, tree: clone(state.tree) })
 	state.dirty = true
@@ -157,12 +205,13 @@ export function patchLoomTree(
 	patch: LoomPatch,
 ): { rev: number; errorCode?: "stale_rev" | "dirty_field"; delta?: LoomPatch[]; held?: LoomConflictFrame } {
 	const state = ensureSessionState(sessionId)
-	if (typeof patch.rev === "number" && patch.rev !== state.rev) {
+	const currentNodeRev = state.nodeRevisions.get(patch.nodeId) ?? 0
+	if (typeof patch.rev === "number" && patch.rev !== currentNodeRev) {
 		return {
-			rev: state.rev,
+			rev: currentNodeRev,
 			errorCode: "stale_rev",
 			delta: state.eventQueue
-				.filter((frame): frame is LoomPatchFrame => frame.kind === "patch")
+				.filter((frame): frame is LoomPatchFrame => frame.kind === "patch" && frame.patch.nodeId === patch.nodeId)
 				.map((frame) => clone(frame.patch)),
 		}
 	}
@@ -173,19 +222,54 @@ export function patchLoomTree(
 		patch,
 		humanValue: currentValue,
 	})
-	const rev = nextSessionRevision(sessionId)
-	state.rev = rev
 	if (resolution.kind === "held") {
 		state.conflicts.push(clone(resolution.conflict))
 		state.tree = refreshNodeMetadata(state.tree, state.dirtyTracker)
 		state.dirty = true
-		return { rev, errorCode: "dirty_field", held: resolution.conflict }
+		return { rev: currentNodeRev, errorCode: "dirty_field", held: resolution.conflict }
 	}
-	state.tree = patchNodeField(state.tree, patch, resolution.value, rev)
+	const rev = nextSessionRevision(sessionId)
+	const nextNodeRev = currentNodeRev + 1
+	state.rev = rev
+	state.nodeRevisions.set(patch.nodeId, nextNodeRev)
+	if (resolution.kind === "drop") {
+		state.tree = refreshNodeMetadata(state.tree, state.dirtyTracker)
+		state.eventQueue.push({
+			kind: "event",
+			rev,
+			event: createConflictResolvedEvent(patch.nodeId, {
+				field: patch.field,
+				policy: resolution.policy,
+				humanValue: currentValue,
+				agentValue: patch.value,
+				resolvedValue: resolution.value,
+			}),
+		})
+		state.dirty = true
+		return { rev: nextNodeRev }
+	}
+	state.tree = patchNodeField(state.tree, patch, resolution.value, nextNodeRev)
 	state.tree = refreshNodeMetadata(state.tree, state.dirtyTracker)
-	state.eventQueue.push({ kind: "patch", rev, patch: clone({ ...patch, value: resolution.value, rev }) })
+	state.eventQueue.push({
+		kind: "patch",
+		rev,
+		patch: clone({ ...patch, value: resolution.value, rev: nextNodeRev }),
+	})
+	if (resolution.policy !== "ask") {
+		state.eventQueue.push({
+			kind: "event",
+			rev,
+			event: createConflictResolvedEvent(patch.nodeId, {
+				field: patch.field,
+				policy: resolution.policy,
+				humanValue: currentValue,
+				agentValue: patch.value,
+				resolvedValue: resolution.value,
+			}),
+		})
+	}
 	state.dirty = true
-	return { rev }
+	return { rev: nextNodeRev }
 }
 
 function findLoomNode(tree: LoomNode | null, nodeId: string): LoomNode | null {
@@ -218,6 +302,7 @@ export function recordLoomStateDelta(sessionId: string, delta: LoomStateDeltaFra
 	const entry = node ? resolveGenUiEntry(node.component) : undefined
 	const value = delta.value
 	state.tree = patchNodeField(state.tree, delta as LoomPatch, value)
+	state.nodeRevisions = buildNodeRevisionMap(state.tree)
 	state.dirtyTracker.setDirty(delta.nodeId, delta.field, true)
 	state.stateDelta.push(createStateDeltaFrame(delta))
 	state.tree = refreshNodeMetadata(state.tree, state.dirtyTracker)
@@ -260,6 +345,7 @@ export function getLoomSessionState(sessionId: string): LoomSessionState | null 
 		? {
 			...state,
 			tree: state.tree ? clone(state.tree) : null,
+			nodeRevisions: new Map(state.nodeRevisions),
 			eventQueue: state.eventQueue.map((frame) => clone(frame)),
 			stateDelta: state.stateDelta.map((frame) => clone(frame)),
 			conflicts: state.conflicts.map((frame) => clone(frame)),

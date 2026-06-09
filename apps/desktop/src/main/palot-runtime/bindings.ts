@@ -32,7 +32,9 @@ export function getNodeBindingDescriptor(node: LoomNode): LoomNodeBindingDescrip
 	const entry = resolveGenUiEntry(node.component)
 	const eventKeys = Object.keys(entry?.events ?? {})
 	const stateKeys = Object.keys(entry?.state ?? {})
-	const policy: LoomConflictPolicy = entry?.conflictPolicy ?? "ask"
+	const nodePolicy = (node.meta?.loomBindings as { conflictPolicy?: LoomConflictPolicy } | undefined)
+		?.conflictPolicy
+	const policy: LoomConflictPolicy = nodePolicy ?? entry?.conflictPolicy ?? "ask"
 	return {
 		events: eventKeys,
 		state: stateKeys,
@@ -42,14 +44,15 @@ export function getNodeBindingDescriptor(node: LoomNode): LoomNodeBindingDescrip
 
 export function attachBindingsToTree(node: LoomNode, inheritedRev = 0): LoomNode {
 	const descriptor = getNodeBindingDescriptor(node)
+	const nodeRev = typeof node.rev === "number" ? node.rev : inheritedRev + 1
 	return {
 		...clone(node),
-		rev: typeof node.rev === "number" ? node.rev : inheritedRev,
+		rev: nodeRev,
 		meta: {
 			...(node.meta ?? {}),
 			loomBindings: descriptor,
 		},
-		children: node.children?.map((child) => attachBindingsToTree(child, inheritedRev)),
+		children: node.children?.map((child) => attachBindingsToTree(child, nodeRev)),
 	}
 }
 
