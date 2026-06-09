@@ -1,5 +1,5 @@
 import { memo } from "react"
-import { useFireflyPluginComponents } from "../hooks/use-firefly-plugins"
+import { buildPluginCatalog } from "../../main/firefly-plugin/catalog"
 import { LoomComponentMount } from "../components/loom/component-mount"
 import { useLoomContext } from "./loom-context"
 import type { LoomNode } from "./use-loom-session"
@@ -10,8 +10,8 @@ interface LoomBindingHostProps {
 
 function LoomBindingHostImpl({ node }: LoomBindingHostProps) {
 	const loom = useLoomContext()
-	const projectedComponents = useFireflyPluginComponents().data?.components ?? []
-	const projectedComponent = projectedComponents.find((component) => component.id === node.component) ?? null
+	const projectedComponents = buildPluginCatalog({ appVersion: "0.11.0" }).projections.components
+	const projectedComponent = projectedComponents.find((component) => component.contributionId === node.component) ?? null
 	const props = { ...(node.props ?? {}) }
 
 	if (node.component === "decision_card" && loom) {

@@ -1,13 +1,4 @@
 import { z } from "zod"
-import { describeGenUiEntry } from "../../renderer/genui/registry"
-
-export interface ComponentBindingSummary {
-	name: string
-	props: unknown
-	events: Record<string, unknown>
-	state: Record<string, unknown>
-	conflictPolicy: string
-}
 
 function toJsonishSchema(schema: z.ZodTypeAny): unknown {
 	try {
@@ -17,21 +8,27 @@ function toJsonishSchema(schema: z.ZodTypeAny): unknown {
 	}
 }
 
-export function summarizeComponentBindings(name: string): ComponentBindingSummary | undefined {
-	const described = describeGenUiEntry(name)
-	if (!described) return undefined
-	const schema = described.schema as {
-		props?: unknown
-		events?: Record<string, unknown>
-		state?: Record<string, unknown>
-		conflictPolicy?: string
-	}
+export interface ComponentBindingSummary {
+	name: string
+	props: unknown
+	events: Record<string, unknown>
+	state: Record<string, unknown>
+	conflictPolicy: string
+}
+
+export function summarizeComponentBindings(definition: {
+	name: string
+	props: z.ZodTypeAny
+	events: Record<string, z.ZodTypeAny>
+	state: Record<string, z.ZodTypeAny>
+	conflictPolicy?: string
+}): ComponentBindingSummary {
 	return {
-		name: described.entry.name,
-		props: schema.props ?? {},
-		events: schema.events ?? {},
-		state: schema.state ?? {},
-		conflictPolicy: schema.conflictPolicy ?? "ask",
+		name: definition.name,
+		props: toJsonishSchema(definition.props),
+		events: Object.fromEntries(Object.entries(definition.events).map(([key, value]) => [key, toJsonishSchema(value)])),
+		state: Object.fromEntries(Object.entries(definition.state).map(([key, value]) => [key, toJsonishSchema(value)])),
+		conflictPolicy: definition.conflictPolicy ?? "ask",
 	}
 }
 

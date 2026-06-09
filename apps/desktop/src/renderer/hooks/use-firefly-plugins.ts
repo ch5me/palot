@@ -13,6 +13,7 @@
  */
 
 import { useQuery } from "@tanstack/react-query"
+import { buildPluginCatalog, summarizeProjection } from "../../main/firefly-plugin/catalog"
 
 export interface FireflyPluginEntry {
 	pluginId: string
@@ -134,10 +135,23 @@ function getBridge(): {
 	return w.elf.plugins
 }
 
+function buildStaticPluginList(): FireflyPluginListResult {
+	const catalog = buildPluginCatalog({ appVersion: "0.11.0" })
+	return {
+		appVersion: catalog.appVersion,
+		plugins: catalog.entries.map((entry) => ({
+			...entry,
+			requiredCapabilities: [...entry.requiredCapabilities],
+			defaultGrantedCapabilities: [...entry.defaultGrantedCapabilities],
+		})),
+		summaries: summarizeProjection(catalog).map((summary) => ({ ...summary })),
+	}
+}
+
 export function useFireflyPlugins() {
 	return useQuery({
 		queryKey: ["firefly-plugin", "list"],
-		queryFn: () => getBridge().list(),
+		queryFn: async () => buildStaticPluginList(),
 		staleTime: 5_000,
 	})
 }
@@ -155,10 +169,24 @@ export function useFireflyPluginTools(pluginId?: string) {
 	return useQuery({
 		queryKey: ["firefly-plugin", "tools", pluginId ?? "all"],
 		queryFn: async () => {
-			const list = await getBridge().list()
+			const catalog = buildPluginCatalog({ appVersion: "0.11.0" })
+			const descriptors = pluginId
+				? catalog.descriptors.filter((descriptor) => descriptor.normalizedId === pluginId)
+				: catalog.descriptors
 			return {
-				appVersion: list.appVersion,
-				tools: [],
+				appVersion: catalog.appVersion,
+				tools: descriptors.flatMap((descriptor) =>
+					descriptor.tools.map((tool) => ({
+						pluginId: descriptor.normalizedId,
+						id: tool.id,
+						title: tool.title,
+						description: tool.description,
+						scope: tool.scope,
+						requires: [...tool.requires],
+						timeoutMs: tool.timeoutMs ?? descriptor.derived.defaultToolTimeoutMs,
+						preview: tool.preview ?? false,
+					})),
+				),
 			}
 		},
 		staleTime: 5_000,
@@ -169,10 +197,23 @@ export function useFireflyPluginComponents() {
 	return useQuery({
 		queryKey: ["firefly-plugin", "components"],
 		queryFn: async (): Promise<FireflyPluginComponentsResult> => {
-			const list = await getBridge().list()
+			const catalog = buildPluginCatalog({ appVersion: "0.11.0" })
 			return {
-				appVersion: list.appVersion,
-				components: [],
+				appVersion: catalog.appVersion,
+				components: catalog.projections.components.map((component) => ({
+					pluginId: component.pluginId,
+					id: component.contributionId,
+					category: component.category,
+					apiVersion: component.apiVersion,
+					supportsAppend: component.supportsAppend,
+					example: { ...component.example },
+					hostVocabulary: {
+						slots: [...component.hostVocabulary.slots],
+						zones: [...component.hostVocabulary.zones],
+					},
+					conflictPolicy: component.conflictPolicy,
+					available: component.availability.available,
+				})),
 			}
 		},
 		staleTime: 5_000,

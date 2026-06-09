@@ -152,6 +152,7 @@ export const acmeNotebookManifest: PluginManifest = {
 				timeoutMs: 5_000,
 			},
 		],
+		components: [],
 	},
 	capabilities: [
 		"host:bridge.session-read",

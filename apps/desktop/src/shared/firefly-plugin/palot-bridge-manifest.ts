@@ -16,9 +16,28 @@
 
 import { z } from "zod"
 
-import { BUILT_IN_COMPONENTS } from "../../renderer/genui/registry"
-import { FIREFLY_SURFACE_IDS } from "../../renderer/firefly-surface-registry"
-import type { PluginManifest } from "./manifest"
+import type { ComponentContribution, PluginManifest } from "./manifest"
+
+const FIREFLY_SURFACE_IDS = [
+	"review",
+	"browser",
+	"notes",
+	"pulse",
+	"artifacts",
+	"memory",
+	"files",
+	"terminal",
+	"editor",
+	"plugins",
+	"bridges",
+	"crm",
+	"studio",
+	"voice",
+	"oracle",
+	"claude",
+	"ch5pm",
+	"pdf-review",
+] as const
 
 export const palotSidePanelTabSchema = z.enum(FIREFLY_SURFACE_IDS)
 
@@ -40,10 +59,108 @@ const browserActionArgsShape = {
 	action: z.enum(["list", "open", "close", "activate"]).optional(),
 } satisfies z.ZodRawShape
 
-const firstPartyComponentIds = new Set(["decision_card", "dag-sparkline"])
-const palotBridgeComponents = BUILT_IN_COMPONENTS.filter((component) =>
-	firstPartyComponentIds.has(component.contribution.id),
-).map((component) => component.contribution)
+const dagSparklinePropsSchema = z.object({
+	nodes: z.array(
+		z
+			.object({
+				id: z.string().min(1),
+				label: z.string().optional(),
+				tone: z.string().optional(),
+			})
+			.passthrough(),
+	),
+	edges: z.array(
+		z
+			.object({
+				source: z.string().min(1),
+				target: z.string().min(1),
+				tone: z.string().optional(),
+				animated: z.boolean().optional(),
+			})
+			.passthrough(),
+	),
+	dir: z.enum(["LR", "TB"]).optional(),
+	animate: z.enum(["none", "reveal", "flow"]).optional(),
+	height: z.number().finite().optional(),
+	showLabels: z.boolean().optional(),
+	className: z.string().optional(),
+})
+
+const decisionCardPropsSchema = z.object({
+	title: z.string().min(1),
+	options: z.array(
+		z.object({
+			id: z.string().min(1),
+			label: z.string().min(1),
+		}),
+	),
+	selected: z.string().nullable(),
+	notes: z.string().optional(),
+})
+
+const palotBridgeComponents: readonly ComponentContribution[] = [
+	{
+		id: "dag-sparkline",
+		apiVersion: 1,
+		category: "diagram",
+		props: dagSparklinePropsSchema,
+		events: {},
+		state: {},
+		supports_append: true,
+		example: {
+			component: "dag-sparkline",
+			props: {
+				nodes: [
+					{ id: "plan", label: "Plan" },
+					{ id: "build", label: "Build" },
+					{ id: "ship", label: "Ship" },
+				],
+				edges: [
+					{ source: "plan", target: "build" },
+					{ source: "build", target: "ship" },
+				],
+			},
+		},
+		capabilityGates: [],
+		hostVocabulary: {
+			slots: ["chart"],
+			zones: ["loom-tree", "genui-fence"],
+		},
+		conflictPolicy: "ask",
+	},
+	{
+		id: "decision_card",
+		apiVersion: 1,
+		category: "decision",
+		props: decisionCardPropsSchema,
+		events: {
+			submit: z.object({ optionId: z.string().min(1) }),
+		},
+		state: {
+			notes: z.string(),
+			selected: z.string().nullable(),
+		},
+		supports_append: false,
+		example: {
+			component: "decision_card",
+			props: {
+				title: "Pick launch path",
+				options: [
+					{ id: "opt_a", label: "Private beta" },
+					{ id: "opt_b", label: "Public launch" },
+				],
+				selected: null,
+				notes: "",
+			},
+		},
+		capabilityGates: [],
+		hostVocabulary: {
+			slots: ["notes", "actions"],
+			zones: ["loom-tree", "genui-fence", "artifact-widget"],
+		},
+		conflictPolicy: "ask",
+	},
+]
 
 export const palotBridgeManifest: PluginManifest = {
 	apiVersion: "firefly.plugin/v2",
