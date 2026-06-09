@@ -60,6 +60,13 @@ export interface PluginLifecycleStateStore {
 		message: string,
 		options?: { threshold?: number; windowMs?: number },
 	): PluginRuntimeStateSnapshot
+	/**
+	 * Quarantine directly with a host-supplied reason. Used by the worker
+	 * supervisor when the locked supervision reducer decides quarantine
+	 * (crash loop, hang loop, never-ready); UI crashes instead go through
+	 * `reportUiCrash`'s windowed threshold. Same durable store either way.
+	 */
+	quarantine(pluginId: string, detail: string): PluginRuntimeStateSnapshot
 	releaseQuarantine(pluginId: string, note: string): PluginRuntimeStateSnapshot
 	subscribe(listener: () => void): () => void
 }
@@ -229,6 +236,16 @@ export function createPluginLifecycleStateStore(input: {
 				persist()
 			}
 			notify()
+			return snapshot(state)
+		},
+
+		quarantine(pluginId, detail) {
+			const state = mutable(pluginId)
+			state.quarantined = true
+			state.quarantineDetail = detail
+			persist()
+			notify()
+			log.warn("Plugin quarantined by host", { pluginId, detail })
 			return snapshot(state)
 		},
 

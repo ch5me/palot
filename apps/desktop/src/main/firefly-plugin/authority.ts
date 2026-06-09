@@ -40,7 +40,7 @@ function resolveAppVersion(): string {
  * Electron (bun test runner) there are no roots — the catalog is the
  * in-source built-in set only, which keeps tests hermetic.
  */
-function resolvePluginRoots(): string[] {
+export function resolvePluginRoots(): string[] {
 	try {
 		// eslint-disable-next-line @typescript-eslint/no-var-requires
 		const electron = require("electron") as typeof import("electron")

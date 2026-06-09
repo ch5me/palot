@@ -25,6 +25,10 @@ import { startEnvResolution } from "./shell-env"
 import { createTray, destroyTray } from "./tray"
 import { initAutoUpdater, stopAutoUpdater } from "./updater"
 import { registerBuiltInHostCommands } from "./firefly-plugin/dispatch"
+import {
+	bootPluginWorkerSupervisor,
+	disposePluginWorkerSupervisor,
+} from "./firefly-plugin/supervisor-boot"
 
 
 const log = createLogger("app")
@@ -317,6 +321,7 @@ if (!gotLock) {
 		registerIpcHandlers()
 		registerBuiltInHostCommands()
 		registerFireflyPluginIpc()
+		bootPluginWorkerSupervisor()
 		initBrowserLaneManager().catch(console.error)
 		initAutomations().catch(console.error)
 		initNotchCommandFileWatcher()
@@ -346,6 +351,7 @@ if (!gotLock) {
 	app.on("before-quit", () => {
 		destroyTray()
 		shutdownNotchCommandFileWatcher()
+		disposePluginWorkerSupervisor().catch(console.error)
 		shutdownAutomations()
 		shutdownBrowserLaneManager().catch(console.error)
 		stopMdnsScanner()
