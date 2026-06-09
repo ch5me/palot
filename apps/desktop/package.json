@@ -42,6 +42,7 @@
 		"@ch5me/elf-configconv": "workspace:*",
 		"@ch5me/elf-ui": "workspace:*",
 		"@ch5me/firefly-design": "workspace:*",
+		"@ch5me/react-dev-surface": "workspace:*",
 		"@ch5me/workspace": "workspace:*",
 		"@dnd-kit/core": "^6.3.1",
 		"@dnd-kit/sortable": "^10.0.0",

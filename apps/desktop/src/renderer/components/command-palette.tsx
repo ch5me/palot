@@ -45,6 +45,7 @@ import {
 	SunIcon,
 	SunMoonIcon,
 	Undo2Icon,
+	WrenchIcon,
 } from "lucide-react"
 import { useCallback, useEffect, useMemo, useState } from "react"
 import { sessionMetricsFamily } from "../atoms/derived/session-metrics"
@@ -88,6 +89,7 @@ import { getFireflySurfaceTabs, type FireflySurfaceContext } from "../firefly-su
 import { isMockModeAtom, toggleMockModeAtom } from "../atoms/mock-mode"
 import { opaqueWindowsAtom } from "../atoms/preferences"
 import { isReactScanAtom, toggleReactScanAtom } from "../atoms/react-scan"
+import { isDevSurfaceAtom, toggleDevSurfaceAtom } from "../atoms/dev-surface"
 import { openSidePanelTabAtom, sidePanelOpenAtom } from "../atoms/ui"
 import { useSessionRevert } from "../hooks/use-commands"
 import {
@@ -137,6 +139,8 @@ export function CommandPalette({ open, onOpenChange, agents, onForkSession }: Co
 	const toggleMockMode = useSetAtom(toggleMockModeAtom)
 	const isReactScan = useAtomValue(isReactScanAtom)
 	const toggleReactScan = useSetAtom(toggleReactScanAtom)
+	const isDevSurface = useAtomValue(isDevSurfaceAtom)
+	const toggleDevSurface = useSetAtom(toggleDevSurfaceAtom)
 	const automationsEnabled = useAtomValue(automationsEnabledAtom)
 	const toggleAutomations = useSetAtom(toggleAutomationsAtom)
 	const browserPanelEnabled = useAtomValue(browserPanelEnabledAtom)
@@ -694,6 +698,19 @@ export function CommandPalette({ open, onOpenChange, agents, onForkSession }: Co
 							<ScanEyeIcon />
 							<span>{isReactScan ? "Disable React Scan" : "Enable React Scan"}</span>
 							{isReactScan && <CheckIcon className="ml-auto h-4 w-4" />}
+						</CommandItem>
+					)}
+					{import.meta.env.DEV && (
+						<CommandItem
+							keywords={["dev", "surface", "inspect", "props", "toolbar", "debug"]}
+							onSelect={() => {
+								toggleDevSurface()
+								onOpenChange(false)
+							}}
+						>
+							<WrenchIcon />
+							<span>{isDevSurface ? "Disable Dev Surface" : "Enable Dev Surface"}</span>
+							{isDevSurface && <CheckIcon className="ml-auto h-4 w-4" />}
 						</CommandItem>
 					)}
 				</CommandGroup>
