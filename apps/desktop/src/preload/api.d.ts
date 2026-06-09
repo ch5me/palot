@@ -1082,6 +1082,21 @@ export interface ElfAPI {
 		getUiStateSnapshot: () => Promise<PalotUiStateSnapshot>
 		openSidePanel: (tab: SidePanelTabId) => Promise<PalotUiStateSnapshot>
 		openLoomSession: (sessionId: string) => Promise<LoomOpenSessionResult>
+		getArtifact: (sessionId: string, artifactId: string) => Promise<GenUiArtifactRecord | null>
+		listArtifacts: (sessionId: string) => Promise<{ order: string[]; records: Record<string, GenUiArtifactRecord> }>
+		upsertArtifact: (sessionId: string, record: GenUiArtifactRecord) => Promise<GenUiArtifactRecord | null>
+		patchArtifact: (
+			sessionId: string,
+			artifactId: string,
+			input: {
+				propsPatch?: Record<string, unknown>
+				pin?: GenUiArtifactPinState
+				markDirty?: string[]
+				lastAgentPatchAt?: number
+				lastHumanEditAt?: number
+				lastRenderedAt?: number
+			},
+		) => Promise<GenUiArtifactRecord | null>
 		sendLoomEvent: (
 			sessionId: string,
 			event: { type: string; nodeId: string; payload?: Record<string, unknown> },

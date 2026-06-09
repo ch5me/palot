@@ -270,6 +270,46 @@ export async function sendLoomStateDelta(
 	await window.elf.palot.sendLoomStateDelta(sessionId, delta)
 }
 
+
+export async function fetchArtifactRecords(
+	sessionId: string,
+): Promise<import("../atoms/genui-artifacts").SessionGenUiArtifactsState | null> {
+	if (!isElectron) return null
+	return window.elf.palot.listArtifacts(sessionId)
+}
+
+export async function fetchArtifactRecord(
+	sessionId: string,
+	artifactId: string,
+): Promise<import("../lib/types").GenUiArtifactRecord | null> {
+	if (!isElectron) return null
+	return window.elf.palot.getArtifact(sessionId, artifactId)
+}
+
+export async function upsertArtifactRecord(
+	sessionId: string,
+	record: import("../lib/types").GenUiArtifactRecord,
+): Promise<import("../lib/types").GenUiArtifactRecord | null> {
+	if (!isElectron) return record
+	return window.elf.palot.upsertArtifact(sessionId, record)
+}
+
+export async function patchArtifactRecord(
+	sessionId: string,
+	artifactId: string,
+	input: {
+		propsPatch?: Record<string, unknown>
+		pin?: import("../lib/types").GenUiArtifactPinState
+		markDirty?: string[]
+		lastAgentPatchAt?: number
+		lastHumanEditAt?: number
+		lastRenderedAt?: number
+	},
+): Promise<import("../lib/types").GenUiArtifactRecord | null> {
+	if (!isElectron) return null
+	return window.elf.palot.patchArtifact(sessionId, artifactId, input)
+}
+
 export function subscribeToPalotOpenSidePanel(
 	callback: (payload: { tab: import("../../preload/api").SidePanelTabId }) => void,
 ): () => void {

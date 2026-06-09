@@ -1,5 +1,13 @@
 import { atom } from "jotai"
 import { atomFamily, atomWithStorage } from "jotai/utils"
+
+import { mintArtifactId } from "../../shared/loom/artifact-id"
+import {
+	fetchArtifactRecord,
+	fetchArtifactRecords,
+	patchArtifactRecord,
+	upsertArtifactRecord,
+} from "../services/backend"
 import type {
 	GenUiArtifactDescriptor,
 	GenUiArtifactPlacement,
@@ -17,11 +25,6 @@ const EMPTY_SESSION_ARTIFACTS_STATE: SessionGenUiArtifactsState = {
 	records: {},
 }
 
-function createArtifactId(sessionId: string): string {
-	const seed = crypto.randomUUID().replace(/-/g, "").slice(0, 8)
-	return `artifact_${sessionId.slice(0, 6)}_${Date.now().toString(36)}_${seed}`
-}
-
 function buildArtifactTitle(descriptor: GenUiArtifactDescriptor): string {
 	const provided = descriptor.title?.trim()
 	if (provided) {
@@ -35,6 +38,41 @@ function buildArtifactTitle(descriptor: GenUiArtifactDescriptor): string {
 		.join(" ")
 
 	return normalized || "GenUI artifact"
+}
+
+function createArtifactRecord(
+	descriptor: GenUiArtifactDescriptor,
+	source: GenUiArtifactSource,
+	existing?: GenUiArtifactRecord,
+	artifactId?: string,
+): GenUiArtifactRecord {
+	const now = Date.now()
+	return {
+		id: artifactId ?? existing?.id ?? mintArtifactId(),
+		scope: "session",
+		title: buildArtifactTitle(descriptor),
+		component: descriptor.component,
+		props: descriptor.props,
+		source,
+		createdAt: existing?.createdAt ?? now,
+		updatedAt: now,
+		lastRenderedAt: now,
+		pin: existing?.pin ?? {
+			pinned: false,
+			placement: null,
+			pinnedAt: null,
+		},
+		version: existing?.version ?? 1,
+		dirty: existing?.dirty ?? [],
+		lastAgentPatchAt: existing?.lastAgentPatchAt ?? 0,
+		lastHumanEditAt: existing?.lastHumanEditAt ?? 0,
+		schemaVersion: 1,
+	}
+}
+
+async function syncArtifactList(sessionId: string): Promise<SessionGenUiArtifactsState | null> {
+	const remote = await fetchArtifactRecords(sessionId)
+	return remote ?? null
 }
 
 export const sessionGenUiArtifactsStorageAtom = atomWithStorage<Record<string, SessionGenUiArtifactsState>>(
@@ -53,6 +91,12 @@ export const sessionGenUiArtifactsFamily = atomFamily((sessionId: string) =>
 		},
 	),
 )
+
+export const hydrateGenUiArtifactsAtom = atom(null, async (get, set, sessionId: string) => {
+	const synced = await syncArtifactList(sessionId)
+	if (!synced) return
+	set(sessionGenUiArtifactsFamily(sessionId), synced)
+})
 
 export const sessionGenUiArtifactListFamily = atomFamily((sessionId: string) =>
 	atom((get) => {
@@ -73,9 +117,25 @@ export const genUiArtifactByIdFamily = atomFamily((args: { sessionId: string; ar
 	atom((get) => get(sessionGenUiArtifactsFamily(args.sessionId)).records[args.artifactId] ?? null),
 )
 
+export const refreshGenUiArtifactAtom = atom(
+	null,
+	async (get, set, args: { sessionId: string; artifactId: string }) => {
+		const record = await fetchArtifactRecord(args.sessionId, args.artifactId)
+		if (!record) return
+		const state = get(sessionGenUiArtifactsFamily(args.sessionId))
+		set(sessionGenUiArtifactsFamily(args.sessionId), {
+			order: state.order.includes(record.id) ? state.order : [record.id, ...state.order],
+			records: {
+				...state.records,
+				[record.id]: record,
+			},
+		})
+	},
+)
+
 export const upsertGenUiArtifactAtom = atom(
 	null,
-	(
+	async (
 		get,
 		set,
 		args: {
@@ -86,41 +146,23 @@ export const upsertGenUiArtifactAtom = atom(
 		},
 	) => {
 		const state = get(sessionGenUiArtifactsFamily(args.sessionId))
-		const now = Date.now()
-		const artifactId = args.artifactId ?? createArtifactId(args.sessionId)
-		const existing = state.records[artifactId]
-		const nextRecord: GenUiArtifactRecord = {
-			id: artifactId,
-			scope: "session",
-			title: buildArtifactTitle(args.descriptor),
-			component: args.descriptor.component,
-			props: args.descriptor.props,
-			source: args.source,
-			createdAt: existing?.createdAt ?? now,
-			updatedAt: now,
-			lastRenderedAt: now,
-			pin: existing?.pin ?? {
-				pinned: false,
-				placement: null,
-				pinnedAt: null,
-			},
-		}
-
+		const existing = args.artifactId ? state.records[args.artifactId] : undefined
+		const nextRecord = createArtifactRecord(args.descriptor, args.source, existing, args.artifactId)
 		set(sessionGenUiArtifactsFamily(args.sessionId), {
-			order: existing ? state.order : [artifactId, ...state.order],
+			order: existing ? state.order : [nextRecord.id, ...state.order],
 			records: {
 				...state.records,
-				[artifactId]: nextRecord,
+				[nextRecord.id]: nextRecord,
 			},
 		})
-
-		return artifactId
+		await upsertArtifactRecord(args.sessionId, nextRecord)
+		return nextRecord.id
 	},
 )
 
 export const pinGenUiArtifactAtom = atom(
 	null,
-	(
+	async (
 		get,
 		set,
 		args: {
@@ -132,10 +174,13 @@ export const pinGenUiArtifactAtom = atom(
 	) => {
 		const state = get(sessionGenUiArtifactsFamily(args.sessionId))
 		const existing = state.records[args.artifactId]
-		if (!existing) {
-			return
-		}
+		if (!existing) return
 		const now = Date.now()
+		const pin = {
+			pinned: args.pinned,
+			placement: args.pinned ? args.placement : null,
+			pinnedAt: args.pinned ? now : null,
+		}
 		set(sessionGenUiArtifactsFamily(args.sessionId), {
 			...state,
 			records: {
@@ -143,20 +188,17 @@ export const pinGenUiArtifactAtom = atom(
 				[args.artifactId]: {
 					...existing,
 					updatedAt: now,
-					pin: {
-						pinned: args.pinned,
-						placement: args.pinned ? args.placement : null,
-						pinnedAt: args.pinned ? now : null,
-					},
+					pin,
 				},
 			},
 		})
+		await patchArtifactRecord(args.sessionId, args.artifactId, { pin })
 	},
 )
 
 export const patchGenUiArtifactPropsAtom = atom(
 	null,
-	(
+	async (
 		get,
 		set,
 		args: {
@@ -167,9 +209,8 @@ export const patchGenUiArtifactPropsAtom = atom(
 	) => {
 		const state = get(sessionGenUiArtifactsFamily(args.sessionId))
 		const existing = state.records[args.artifactId]
-		if (!existing) {
-			return
-		}
+		if (!existing) return
+		const updatedAt = Date.now()
 		set(sessionGenUiArtifactsFamily(args.sessionId), {
 			...state,
 			records: {
@@ -180,16 +221,21 @@ export const patchGenUiArtifactPropsAtom = atom(
 						...existing.props,
 						...args.propsPatch,
 					},
-					updatedAt: Date.now(),
+					updatedAt,
+					lastHumanEditAt: updatedAt,
 				},
 			},
+		})
+		await patchArtifactRecord(args.sessionId, args.artifactId, {
+			propsPatch: args.propsPatch,
+			lastHumanEditAt: updatedAt,
 		})
 	},
 )
 
 export const unpinAllGenUiArtifactsForPlacementAtom = atom(
 	null,
-	(
+	async (
 		get,
 		set,
 		args: {
@@ -203,9 +249,10 @@ export const unpinAllGenUiArtifactsForPlacementAtom = atom(
 		for (const [artifactId, artifact] of Object.entries(state.records)) {
 			if (artifact.pin.pinned && artifact.pin.placement === args.placement) {
 				changed = true
+				const updatedAt = Date.now()
 				nextRecords[artifactId] = {
 					...artifact,
-					updatedAt: Date.now(),
+					updatedAt,
 					pin: {
 						pinned: false,
 						placement: null,
@@ -216,12 +263,15 @@ export const unpinAllGenUiArtifactsForPlacementAtom = atom(
 				nextRecords[artifactId] = artifact
 			}
 		}
-		if (!changed) {
-			return
-		}
+		if (!changed) return
 		set(sessionGenUiArtifactsFamily(args.sessionId), {
 			...state,
 			records: nextRecords,
 		})
+		await Promise.all(
+			Object.entries(nextRecords)
+				.filter(([, artifact]) => !artifact.pin.pinned)
+				.map(([artifactId, artifact]) => patchArtifactRecord(args.sessionId, artifactId, { pin: artifact.pin })),
+		)
 	},
 )

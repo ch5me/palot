@@ -166,6 +166,11 @@ export interface GenUiArtifactRecord {
 	updatedAt: number
 	lastRenderedAt: number
 	pin: GenUiArtifactPinState
+	version: number
+	dirty: string[]
+	lastAgentPatchAt: number
+	lastHumanEditAt: number
+	schemaVersion: 1
 }
 
 export interface GenUiArtifactDescriptor {
