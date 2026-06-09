@@ -1,6 +1,6 @@
 import { memo } from "react"
-import { GenUiBlock } from "../genui/genui-renderer"
 import type { LoomNode } from "./use-loom-session"
+import { LoomBindingHost } from "./loom-binding-host"
 
 function LoomRendererImpl({ tree }: { tree: LoomNode | null }) {
 	if (!tree) return null
@@ -10,7 +10,7 @@ function LoomRendererImpl({ tree }: { tree: LoomNode | null }) {
 function RenderNode({ node }: { node: LoomNode }) {
 	return (
 		<div data-loom-node-id={node.id}>
-			<GenUiBlock name={node.component} props={node.props ?? {}} />
+			<LoomBindingHost node={node} />
 			{node.children?.map((child) => <RenderNode key={child.id} node={child} />)}
 		</div>
 	)

@@ -1,11 +1,21 @@
 import { decode, encode } from "./toon"
 
+export type LoomConflictPolicy = "agent-wins" | "human-wins" | "merge" | "ask"
+
+export interface LoomNodeBindingDescriptor {
+	events: string[]
+	state: string[]
+	conflictPolicy: LoomConflictPolicy
+}
+
 export interface LoomNode {
 	id: string
 	component: string
 	props?: Record<string, unknown>
 	children?: LoomNode[]
 	meta?: Record<string, unknown>
+	rev?: number
+	dirtyFields?: string[]
 }
 
 export interface LoomPatch {
@@ -27,6 +37,14 @@ export interface LoomEventFrame {
 	payload?: Record<string, unknown>
 }
 
+export interface LoomConflictFrame {
+	nodeId: string
+	field: string
+	humanValue: unknown
+	agentValue: unknown
+	policy: LoomConflictPolicy
+}
+
 export interface LoomPollResult {
 	rev: number
 	events: Array<
@@ -35,6 +53,7 @@ export interface LoomPollResult {
 		| { kind: "event"; rev: number; event: LoomEventFrame }
 	>
 	stateDelta: LoomStateDeltaFrame[]
+	conflicts: LoomConflictFrame[]
 	treeSlice: LoomNode | null
 }
 

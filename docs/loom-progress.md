@@ -26,7 +26,7 @@
 | **0** | Collapse the 7 mirror lists | not started | n/a (refactor) | plan §3 Phase 0 | `wave-00-mirror-lists.md` | prerequisite for everything |
 | **1** | Typed Zod GenUI registry + `list` / `describe` | not started | `loom.componentTools.enabled` | plan §3 Phase 1 | `wave-01-typed-registry.md` | first Loom wave; smallest safe step |
 | **2** | The Loom wire (`session` / `render` / `patch` / `poll`) | blocked | `loom.enabled` | plan §3 Phase 2 | `wave-02-loom-wire.md` | blocked on D1, D3, D4 |
-| **3** | Dual `signal` / `state` bindings + `decision_card` | blocked | `loom.dualBindings` | plan §3 Phase 3 | `wave-03-dual-bindings.md` | blocked on wave 2 |
+| **3** | Dual `signal` / `state` bindings + `decision_card` | complete (2026-06-08) | `loom.dualBindings` | plan §3 Phase 3 | `wave-03-dual-bindings.md` | landed on `atlas/loom`; dirty-field protection included |
 | **4** | Per-node `rev` + dirty-field protection | blocked | `loom.conflictProtection` | plan §3 Phase 4 | `wave-04-dirty-field.md` | blocked on wave 3 |
 | **5** | Durable artifact identity + `append` frame | blocked | `loom.persistence.migrate`, `loom.appendFrame` | plan §3 Phase 5 | `wave-05-durable-identity.md` | blocked on wave 4 |
 | **6** | `contributes.components` in the V2 manifest | blocked | `loom.v2Components` | plan §3 Phase 6 | `wave-06-v2-components.md` | blocked on wave 5; closes the cross-project loop |

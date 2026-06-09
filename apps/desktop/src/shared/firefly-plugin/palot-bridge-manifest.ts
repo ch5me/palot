@@ -233,6 +233,19 @@ export const palotBridgeManifest: PluginManifest = {
 	tags: ["bridge", "browser", "side-panel", "first-party"],
 }
 
+export const PALOT_BRIDGE_DECISION_CARD_COMPONENT = {
+	component: "decision_card",
+	props: {
+		title: "string",
+		options: [{ id: "string", label: "string" }],
+		selected: "string | null",
+		notes: "string",
+	},
+	events: { submit: { optionId: "string" } },
+	state: { notes: "string" },
+	conflictPolicy: "ask",
+} as const
+
 export const PALOT_BRIDGE_PLUGIN_ID = palotBridgeManifest.id
 export const PALOT_BRIDGE_TOOL_IDS = palotBridgeManifest.contributes.tools.map((t) => t.id)
 export const PALOT_BRIDGE_SIDE_PANEL_TABS = palotSidePanelTabSchema.options

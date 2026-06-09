@@ -20,6 +20,7 @@ export * from "./runtime-supervision"
 export * from "./palot-bridge-manifest"
 export * from "./api-versioning"
 export * from "./bridge-projection"
+export * from "./component-zod"
 export {
 	projectSidePanelsFromCatalog,
 	projectSessionWidgetsFromCatalog,

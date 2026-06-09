@@ -16,7 +16,15 @@ import {
 } from "./wire"
 
 // Re-export store functions for callers that import from commands module
-export { openLoomSession, endLoomSession, renderLoomTree, patchLoomTree, pollLoomSession, recordLoomStateDelta as pushLoomStateDelta } from "./session-store"
+export {
+	openLoomSession,
+	endLoomSession,
+	renderLoomTree,
+	patchLoomTree,
+	pollLoomSession,
+	recordLoomStateDelta as pushLoomStateDelta,
+	clearLoomDirtyField,
+} from "./session-store"
 
 export function sessionOpenCommand(sessionId: string, payloadToon: string): { rev: number; title: string } {
 	const payload = decodeWirePayload<LoomSessionOpenPayload>(payloadToon)
@@ -36,7 +44,7 @@ export function renderCommand(sessionId: string, payloadToon: string): { rev: nu
 export function patchCommand(
 	sessionId: string,
 	payloadToon: string,
-): { rev: number; errorCode?: "stale_rev"; delta?: unknown } {
+): { rev: number; errorCode?: "stale_rev" | "dirty_field"; delta?: unknown; held?: unknown } {
 	const payload = decodeWirePayload<LoomPatchPayload>(payloadToon)
 	return patchLoomTree(sessionId, payload.patch)
 }

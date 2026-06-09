@@ -1,6 +1,7 @@
 import type { ComponentType } from "react"
 import { z } from "zod"
 import { DagSparklineEntry } from "./components/dag-sparkline"
+import { DecisionCardEntry } from "./components/decision-card"
 
 export type ParsePropsResult<P> = { ok: true; props: P } | { ok: false; error: string }
 
@@ -8,6 +9,8 @@ export interface GenUiLegacyFence {
 	fence: string
 	parseBody: (body: string) => unknown
 }
+
+export type GenUiConflictPolicy = "agent-wins" | "human-wins" | "merge" | "ask"
 
 export interface GenUiEntry<P = Record<string, unknown>> {
 	name: string
@@ -17,6 +20,8 @@ export interface GenUiEntry<P = Record<string, unknown>> {
 	props: z.ZodType<P>
 	events: Record<string, z.ZodTypeAny>
 	state: Record<string, z.ZodTypeAny>
+	conflictPolicy?: GenUiConflictPolicy
+	merge?: (humanValue: unknown, agentValue: unknown, field: string) => unknown
 	legacyFences?: GenUiLegacyFence[]
 	example: { component: string; props: unknown }
 }
@@ -95,12 +100,21 @@ export function describeGenUiEntry(name: string):
 			one_line: entry.description,
 			category: inferCategory(entry),
 		},
-		schema,
+		schema: {
+			props: schema,
+			events: Object.fromEntries(
+				Object.entries(entry.events).map(([key, value]) => [key, value.toJSONSchema?.({ unrepresentable: "any" }) ?? { type: "object" }]),
+			),
+			state: Object.fromEntries(
+				Object.entries(entry.state).map(([key, value]) => [key, value.toJSONSchema?.({ unrepresentable: "any" }) ?? { type: "object" }]),
+			),
+			conflictPolicy: entry.conflictPolicy ?? "ask",
+		},
 	}
 }
 
 // biome-ignore lint/suspicious/noExplicitAny: registry heterogeneous by design.
-const ENTRIES: GenUiEntry<any>[] = [DagSparklineEntry]
+const ENTRIES: GenUiEntry<any>[] = [DagSparklineEntry, DecisionCardEntry]
 
 export const genUiEntries: ReadonlyArray<GenUiEntry> = ENTRIES
 

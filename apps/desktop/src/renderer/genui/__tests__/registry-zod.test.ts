@@ -11,6 +11,7 @@ const {
 	parseGenUiProps,
 } = await import("../registry")
 const { DagSparklineEntry } = await import("../components/dag-sparkline")
+const { DecisionCardEntry } = await import("../components/decision-card")
 
 test("DagSparklineEntry props uses zod schema", () => {
 	expect(DagSparklineEntry.props).toBeInstanceOf(z.ZodType)
@@ -38,6 +39,12 @@ test("parseGenUiProps rejects invalid dag sparkline props", () => {
 
 test("describeGenUiEntry returns dag sparkline metadata", () => {
 	expect(describeGenUiEntry("dag-sparkline")).toBeDefined()
+})
+
+test("DecisionCardEntry exposes event/state metadata", () => {
+	expect(DecisionCardEntry.events.submit).toBeDefined()
+	expect(DecisionCardEntry.state.notes).toBeDefined()
+	expect(DecisionCardEntry.conflictPolicy).toBe("ask")
 })
 
 test("describeGenUiEntry returns undefined for unknown components", () => {
