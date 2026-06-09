@@ -43,7 +43,6 @@ export interface ArtifactPatchInput {
 }
 
 const ARTIFACT_SCHEMA_VERSION = 1
-const DEFAULT_VERSION = 1
 let artifactStore: ArtifactStore | null = null
 
 function clone<T>(value: T): T {
@@ -82,7 +81,7 @@ function parseRow(row: ArtifactRow): GenUiArtifactRecord {
 		dirty: JSON.parse(row.dirty) as string[],
 		lastAgentPatchAt: row.lastAgentPatchAt,
 		lastHumanEditAt: row.lastHumanEditAt,
-		schemaVersion: row.schemaVersion,
+		schemaVersion: 1,
 	}
 }
 
@@ -166,7 +165,6 @@ export class ArtifactStore {
 	upsertArtifact(sessionId: string, recordLike: Omit<GenUiArtifactRecord, "id"> & { id?: string }): GenUiArtifactRecord {
 		const list = this.listArtifacts(sessionId)
 		const artifactId = recordLike.id && isArtifactId(recordLike.id) ? recordLike.id : mintArtifactId()
-		const now = Date.now()
 		const existing = this.getArtifact(sessionId, artifactId)
 		const orderIndex = existing ? list.order.indexOf(artifactId) : list.order.length
 		const record: GenUiArtifactRecord = {
@@ -180,7 +178,7 @@ export class ArtifactStore {
 			updatedAt: recordLike.updatedAt,
 			lastRenderedAt: recordLike.lastRenderedAt,
 			pin: clone(recordLike.pin),
-			version: existing ? existing.version + 1 : (recordLike.version ?? DEFAULT_VERSION),
+			version: existing ? existing.version + 1 : (recordLike.version ?? 1),
 			dirty: clone(recordLike.dirty ?? []),
 			lastAgentPatchAt: recordLike.lastAgentPatchAt ?? 0,
 			lastHumanEditAt: recordLike.lastHumanEditAt ?? 0,
@@ -228,7 +226,7 @@ export class ArtifactStore {
 				row.lastHumanEditAt,
 				row.dirty,
 			)
-		this.appendJsonl({ type: existing ? "upsert" : "create", sessionId, artifactId, at: now })
+		this.appendJsonl({ type: existing ? "upsert" : "create", sessionId, artifactId, at: Date.now() })
 		return record
 	}
 

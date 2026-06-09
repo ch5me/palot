@@ -6,6 +6,7 @@ import { getArtifactStore } from "./artifact-store"
 export const PALOT_ARTIFACT_IPC_CHANNELS = {
 	get: "palot-artifact:get",
 	list: "palot-artifact:list",
+	upsert: "palot-artifact:upsert",
 	patch: "palot-artifact:patch",
 } as const
 

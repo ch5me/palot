@@ -127,6 +127,7 @@ import {
 } from "./palot-browser-ipc"
 import { openLoomSession as resolveLoomSession } from "./palot-resolver"
 import { sessionOpenCommand, stateCommand } from "./palot-runtime/commands"
+import { registerPalotArtifactIpc } from "./palot-runtime/ipc"
 import { getLoomSessionState, queueLoomEvent } from "./palot-runtime/session-store"
 import { encodeWirePayload } from "./palot-runtime/wire"
 import { getOpaqueWindows, getSettings, onSettingsChanged, updateSettings } from "./settings-store"
@@ -273,6 +274,8 @@ function withLogging<TArgs extends unknown[], TResult>(
  * main process, communicating via IPC instead of HTTP.
  */
 export function registerIpcHandlers(): void {
+	registerPalotArtifactIpc(ipcMain)
+
 	// --- App info ---
 
 	ipcMain.handle("app:info", () => ({

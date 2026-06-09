@@ -92,7 +92,7 @@ export const sessionGenUiArtifactsFamily = atomFamily((sessionId: string) =>
 	),
 )
 
-export const hydrateGenUiArtifactsAtom = atom(null, async (get, set, sessionId: string) => {
+export const hydrateGenUiArtifactsAtom = atom(null, async (_get, set, sessionId: string) => {
 	const synced = await syncArtifactList(sessionId)
 	if (!synced) return
 	set(sessionGenUiArtifactsFamily(sessionId), synced)

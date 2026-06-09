@@ -237,7 +237,8 @@ function GenUiArtifactCapture({ sessionId, messageId, partId, descriptor, rawFen
 	const artifactIdRef = useRef<string | null>(null)
 
 	useEffect(() => {
-		const artifactId = upsertArtifact({
+		let disposed = false
+		void upsertArtifact({
 			sessionId,
 			descriptor,
 			source: {
@@ -248,8 +249,13 @@ function GenUiArtifactCapture({ sessionId, messageId, partId, descriptor, rawFen
 				rawFence,
 			},
 			artifactId: artifactIdRef.current ?? undefined,
+		}).then((artifactId) => {
+			if (disposed) return
+			artifactIdRef.current = artifactId
 		})
-		artifactIdRef.current = artifactId
+		return () => {
+			disposed = true
+		}
 	}, [descriptor, messageId, partId, rawFence, sessionId, upsertArtifact])
 
 	if (!artifactIdRef.current) {

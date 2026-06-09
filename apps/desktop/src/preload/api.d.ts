@@ -56,6 +56,40 @@ export interface BrowserLane {
 	health: BrowserLaneHealth
 }
 
+export interface GenUiArtifactSource {
+	sessionId: string
+	messageId: string
+	partId?: string
+	component: string
+	rawFence: string
+}
+
+export type GenUiArtifactPlacement = "inline" | "above-chat" | "chat-inline-right" | "side-panel"
+
+export interface GenUiArtifactPinState {
+	pinned: boolean
+	placement: GenUiArtifactPlacement | null
+	pinnedAt: number | null
+}
+
+export interface GenUiArtifactRecord {
+	id: string
+	scope: "session"
+	title: string
+	component: string
+	props: Record<string, unknown>
+	source: GenUiArtifactSource
+	createdAt: number
+	updatedAt: number
+	lastRenderedAt: number
+	pin: GenUiArtifactPinState
+	version: number
+	dirty: string[]
+	lastAgentPatchAt: number
+	lastHumanEditAt: number
+	schemaVersion: 1
+}
+
 export interface BrowserLaneRecord {
 	id: string
 	label: string
