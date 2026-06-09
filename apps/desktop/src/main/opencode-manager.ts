@@ -14,7 +14,6 @@ import { createOpencodeClient } from "@opencode-ai/sdk/v2/client"
 import { getCredential } from "./credential-store"
 import { ensurePalotBridgeServer } from "./palot-browser-ipc"
 import { loadPalotPluginModule } from "./palot-opencode-plugin-shim"
-import { findFreePort } from "./find-free-port"
 import { createLogger } from "./logger"
 import { ensurePalotPluginConfig } from "./mcp-connections-config"
 import { startNotificationWatcher, stopNotificationWatcher } from "./notification-watcher"
@@ -22,6 +21,7 @@ import { PALOT_PLUGIN_ENTRY_RELATIVE_PATH } from "./palot-plugin-entry"
 import { getListeningProcessOwner, isCurrentUser, isProcessAlive } from "./process-owner"
 import { readLockfile, removeLockfile, writeLockfile } from "./server-lockfile"
 import { getSettings } from "./settings-store"
+import { DEFAULT_LOCAL_SERVER_PORT } from "../shared/server-config"
 import { waitForEnv } from "./shell-env"
 
 const log = createLogger("opencode-manager")
@@ -66,7 +66,21 @@ let activeSessionStablePolls = 0
 let activeSessionConsecutiveErrors = 0
 let lastActiveSessionSnapshotKey: string | null = null
 
-const DEFAULT_PORT = Number(process.env.OPENCODE_PORT) || 4096
+class OpenCodePortConflictError extends Error {
+	constructor(port: number, stderr = "") {
+		const detail = stderr.trim() ? `\n${stderr.trim()}` : ""
+		super(
+			`Palot local OpenCode failed to bind ${port}. Dedicated port ${port} avoids the shared :4096 host after the 2026-06-09 outage.${detail}`,
+		)
+		this.name = "OpenCodePortConflictError"
+	}
+}
+
+function isPortBindConflict(stderr: string): boolean {
+	return stderr.includes("EADDRINUSE") || stderr.includes("address already in use")
+}
+
+const DEFAULT_PORT = Number(process.env.OPENCODE_PORT) || DEFAULT_LOCAL_SERVER_PORT
 const DEFAULT_HOSTNAME = process.env.OPENCODE_HOSTNAME || "127.0.0.1"
 
 function resolvePalotPluginPath(): string {
@@ -98,7 +112,14 @@ const activeSessionInferenceCache = new Map<string, InferenceCacheEntry>()
 function getLocalServerConfig(): LocalServerConfig {
 	const settings = getSettings()
 	const local = settings.servers.servers.find((s) => s.id === "local")
-	return (local as LocalServerConfig) ?? { id: "local", name: "This Mac", type: "local" }
+	return (
+		(local as LocalServerConfig) ?? {
+			id: "local",
+			name: "This Mac",
+			type: "local",
+			port: DEFAULT_LOCAL_SERVER_PORT,
+		}
+	)
 }
 
 /**
@@ -106,8 +127,7 @@ function getLocalServerConfig(): LocalServerConfig {
  * Starts it if not already running. Returns the server info.
  *
  * Performs ownership checks to prevent connecting to a server owned by a
- * different OS user. If a conflict is detected, prompts the user with a
- * dialog offering to start on a different port or connect anyway.
+ * different OS user.
  */
 export async function ensureServer(): Promise<OpenCodeServer> {
 	if (singleServer) {
@@ -118,15 +138,12 @@ export async function ensureServer(): Promise<OpenCodeServer> {
 		return singleServer.server
 	}
 
-	// Ensure the full shell environment is available before spawning the server.
-	// startEnvResolution() fires early in app startup; by the time the renderer
-	// triggers ensureServer() the promise is usually already resolved.
 	await waitForEnv()
 	ensurePalotPluginConfig()
 
 	const config = getLocalServerConfig()
 	const hostname = config.hostname || DEFAULT_HOSTNAME
-	const port = config.port || DEFAULT_PORT
+	const port = config.port ?? DEFAULT_PORT
 
 	// --- Fast-path: check our own lockfile first ---
 	const lockfile = readLockfile()
@@ -148,7 +165,12 @@ export async function ensureServer(): Promise<OpenCodeServer> {
 	}
 
 	if (detection.kind === "conflict") {
-		return handleConflict(detection, hostname, port, config)
+		throw new OpenCodePortConflictError(
+			port,
+			`Detected another OpenCode server at ${detection.url} owned by ${
+				detection.ownerUid === null ? "an unknown user" : `UID ${detection.ownerUid}`
+			}.`,
+		)
 	}
 
 	// --- No existing server: spawn one on the configured port ---
@@ -289,64 +311,6 @@ async function detectExistingServer(
 
 	log.warn("Existing server belongs to a DIFFERENT user", { url, pid: owner.pid, uid: owner.uid })
 	return { kind: "conflict", url, ownerUid: owner.uid }
-}
-
-// ============================================================
-// Internal -- conflict resolution
-// ============================================================
-
-/**
- * Shows a dialog when the server on the target port belongs to a different
- * user. Offers three choices: start on a different port, connect anyway,
- * or cancel.
- */
-async function handleConflict(
-	conflict: { url: string; ownerUid: number | null },
-	hostname: string,
-	_configuredPort: number,
-	config: LocalServerConfig,
-): Promise<OpenCodeServer> {
-	const ownerText =
-		conflict.ownerUid !== null
-			? `It appears to belong to a different user account (UID ${conflict.ownerUid}).`
-			: "Its owner could not be determined."
-
-	const { response } = await electron.dialog.showMessageBox({
-		type: "warning",
-		title: "Server Ownership Conflict",
-		message: "An OpenCode server is already running on the configured port.",
-		detail:
-			`${ownerText}\n\n` +
-			"Connecting to a server owned by another user is a security risk: " +
-			"they could access your sessions and files.\n\n" +
-			"You can start your own server on a different port, or connect anyway " +
-			"if you trust this server.",
-		buttons: ["Start My Own Server", "Connect Anyway", "Cancel"],
-		defaultId: 0,
-		cancelId: 2,
-	})
-
-	if (response === 0) {
-		// Start on a free port
-		log.info("User chose to start own server on a different port")
-		const freePort = await findFreePort(hostname)
-		log.info("Found free port", { freePort })
-		return spawnServer(hostname, freePort, config)
-	}
-
-	if (response === 1) {
-		// Connect anyway (user accepts the risk)
-		log.warn("User chose to connect to foreign server anyway", { url: conflict.url })
-			const server: OpenCodeServer = { url: conflict.url, pid: null, managed: false }
-			singleServer = { server, process: null }
-			startNotificationWatcher(conflict.url)
-			startActiveSessionBroadcast(conflict.url)
-			return server
-
-	}
-
-	// Cancel
-	throw new Error("Server connection cancelled by user due to ownership conflict")
 }
 
 // ============================================================
@@ -798,6 +762,14 @@ async function spawnServer(
 		env: spawnEnv,
 	})
 
+	const stderrChunks: string[] = []
+	proc.stderr?.on("data", (data: Buffer) => {
+		const text = data.toString()
+		stderrChunks.push(text)
+		const trimmed = text.trim()
+		if (trimmed) log.warn(`[stderr] ${trimmed}`)
+	})
+
 	const url = `http://${hostname}:${port}`
 	const server: OpenCodeServer = {
 		url,
@@ -812,11 +784,6 @@ async function spawnServer(
 	proc.stdout?.on("data", (data: Buffer) => {
 		const text = data.toString().trim()
 		if (text) log.debug(`[stdout] ${text}`)
-	})
-
-	proc.stderr?.on("data", (data: Buffer) => {
-		const text = data.toString().trim()
-		if (text) log.warn(`[stderr] ${text}`)
 	})
 
 	// Handle spawn errors (e.g. binary not found)
@@ -839,7 +806,21 @@ async function spawnServer(
 
 
 	// Wait for the server to be ready
-	await waitForReady(url, 15_000)
+	try {
+		await waitForReady(url, 15_000)
+	} catch (error) {
+		const stderr = stderrChunks.join("")
+		if (isPortBindConflict(stderr)) {
+			proc.kill()
+			singleServer = null
+			removeLockfile()
+			throw new OpenCodePortConflictError(port, stderr)
+		}
+		proc.kill()
+		singleServer = null
+		removeLockfile()
+		throw error
+	}
 
 	// Write lockfile after successful start
 	if (proc.pid) {

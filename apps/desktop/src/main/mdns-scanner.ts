@@ -20,7 +20,7 @@ const log = createLogger("mdns")
 export interface DiscoveredMdnsServer {
 	/** Unique key derived from host:port. */
 	id: string
-	/** Service name from mDNS (e.g. "opencode-4096"). */
+	/** Service name from mDNS (e.g. "opencode-<port>"). */
 	name: string
 	/** Resolved hostname or IP address. */
 	host: string

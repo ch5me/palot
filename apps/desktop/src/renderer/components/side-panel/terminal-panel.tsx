@@ -8,6 +8,7 @@ import {
 	TerminalTitle,
 } from "@ch5me/elf-ui/components/ai-elements/terminal"
 import { useEffect, useMemo, useRef, useState } from "react"
+import { DEFAULT_LOCAL_SERVER_PORT } from "../../../shared/server-config"
 import { paneSubmitters, paneWriters } from "../../atoms/pane-bus"
 import type { Agent } from "../../lib/types"
 import {
@@ -60,7 +61,7 @@ export function TerminalPanel({ agent, className }: TerminalPanelProps) {
 
 	const attachCommand = useMemo(
 		() =>
-			`opencode attach ${url ?? "http://127.0.0.1:4096"} --session ${agent.sessionId} --dir ${agent.worktreePath ?? agent.directory}`,
+			`opencode attach ${url ?? `http://127.0.0.1:${DEFAULT_LOCAL_SERVER_PORT}`} --session ${agent.sessionId} --dir ${agent.worktreePath ?? agent.directory}`,
 		[url, agent.sessionId, agent.worktreePath, agent.directory],
 	)
 

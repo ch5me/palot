@@ -66,6 +66,7 @@ ensureSingleServer()
 	})
 	.catch((err) => {
 		console.error("Failed to start OpenCode server on boot:", err)
+		process.exitCode = 1
 	})
 
 export default {

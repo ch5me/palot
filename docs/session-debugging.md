@@ -6,7 +6,7 @@ Use this when Palette/OpenCode sessions look stuck, still moving, or disagree be
 
 ```bash
 bun run debug:sessions -- <session-id> [session-id...]
-OPENCODE_SERVER_URL=http://127.0.0.1:4096 bun run debug:sessions -- <session-id>
+OPENCODE_SERVER_URL=http://127.0.0.1:14096 bun run debug:sessions -- <session-id>
 PALETTE_SERVER_URL=http://127.0.0.1:30206 bun run debug:sessions -- <session-id>
 bun run svc:status
 ```

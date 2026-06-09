@@ -439,7 +439,7 @@ export function EnvironmentCheckStep({ onComplete, onSkip }: EnvironmentCheckSte
 									</Label>
 									<Input
 										id="onboard-url"
-										placeholder="https://opencode.example.com:4096"
+										placeholder="https://opencode.example.com:14096"
 										value={manualUrl}
 										onChange={(e) => {
 											setManualUrl(e.target.value)

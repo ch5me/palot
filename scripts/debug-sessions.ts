@@ -69,7 +69,8 @@ interface ActiveSessionSnapshot {
 const DB_PATH = path.join(os.homedir(), ".local", "share", "opencode", "opencode.db")
 const DEFAULT_MESSAGE_LIMIT = 5
 const DEFAULT_PART_LIMIT = 12
-const DEFAULT_SERVER_URL = process.env.OPENCODE_SERVER_URL || "http://127.0.0.1:4096"
+const DEFAULT_OPENCODE_PORT = 14096
+const DEFAULT_SERVER_URL = process.env.OPENCODE_SERVER_URL || `http://127.0.0.1:${DEFAULT_OPENCODE_PORT}`
 const execFileAsync = promisify(execFile)
 
 function formatTime(ts?: number): string {

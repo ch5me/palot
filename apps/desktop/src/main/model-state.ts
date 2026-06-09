@@ -23,13 +23,14 @@ interface ModelState {
 
 const EMPTY_STATE: ModelState = { recent: [], favorite: [], variant: {} }
 const MAX_RECENT = 10
+const DEFAULT_OPENCODE_PORT = 14096
 
 /**
  * Resolves the OpenCode state directory path.
  * Queries the running server first, falls back to default XDG path.
  */
 async function resolveStatePath(): Promise<string> {
-	const port = Number(process.env.OPENCODE_PORT) || 4096
+	const port = Number(process.env.OPENCODE_PORT) || DEFAULT_OPENCODE_PORT
 	try {
 		const pathRes = await fetch(`http://127.0.0.1:${port}/path`, {
 			signal: AbortSignal.timeout(2000),

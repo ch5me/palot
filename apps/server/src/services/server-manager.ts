@@ -17,7 +17,24 @@ let singleServer: {
 	process: ReturnType<typeof Bun.spawn> | null
 } | null = null
 
-const OPENCODE_PORT = Number(process.env.OPENCODE_PORT) || 4096
+class OpenCodePortConflictError extends Error {
+	constructor(port: number, stderr = "") {
+		const detail = stderr.trim() ? `\n${stderr.trim()}` : ""
+		super(
+			`Palot embedded OpenCode failed to bind ${port}. Dedicated port ${port} avoids the shared :4096 host after the 2026-06-09 outage.${detail}`,
+		)
+		this.name = "OpenCodePortConflictError"
+	}
+}
+
+function isPortBindConflict(stderr: string): boolean {
+	return stderr.includes("EADDRINUSE") || stderr.includes("address already in use")
+}
+
+const DEFAULT_OPENCODE_PORT = 14096
+
+// 4096 is reserved for the shared OpenCode host after the 2026-06-09 outage; palot dev must default elsewhere.
+const OPENCODE_PORT = Number(process.env.OPENCODE_PORT) || DEFAULT_OPENCODE_PORT
 const OPENCODE_HOSTNAME = process.env.OPENCODE_HOSTNAME || "127.0.0.1"
 
 // ============================================================
@@ -53,6 +70,15 @@ export async function ensureSingleServer(): Promise<OpenCodeServer> {
 		},
 	})
 
+	const stderrChunks: string[] = []
+	proc.stderr?.pipeTo(
+		new WritableStream({
+			write(chunk) {
+				stderrChunks.push(Buffer.from(chunk).toString())
+			},
+		}),
+	)
+
 	const url = `http://${OPENCODE_HOSTNAME}:${OPENCODE_PORT}`
 	const server: OpenCodeServer = {
 		url,
@@ -71,7 +97,19 @@ export async function ensureSingleServer(): Promise<OpenCodeServer> {
 	})
 
 	// Wait for the server to be ready
-	await waitForReady(url, 15_000)
+	try {
+		await waitForReady(url, 15_000)
+	} catch (error) {
+		const stderr = stderrChunks.join("")
+		if (isPortBindConflict(stderr)) {
+			proc.kill()
+			singleServer = null
+			throw new OpenCodePortConflictError(OPENCODE_PORT, stderr)
+		}
+		proc.kill()
+		singleServer = null
+		throw error
+	}
 
 	console.log(`OpenCode server started at ${url} (pid ${proc.pid})`)
 	return server

@@ -5,6 +5,8 @@ import {
 	createActiveOpenCodeSessionCollector,
 } from "./opencode-active-sessions"
 
+const DEFAULT_SERVER_URL = "http://127.0.0.1:14096"
+
 function plainProcess(
 	overrides: Partial<ActiveOpenCodeClientProcess> = {},
 ): ActiveOpenCodeClientProcess {
@@ -42,10 +44,10 @@ describe("active OpenCode session collector", () => {
 			now: () => now,
 		})
 
-		const first = await collector.getActiveOpenCodeSessions("http://127.0.0.1:4096")
-		const second = await collector.getActiveOpenCodeSessions("http://127.0.0.1:4096")
+		const first = await collector.getActiveOpenCodeSessions(DEFAULT_SERVER_URL)
+		const second = await collector.getActiveOpenCodeSessions(DEFAULT_SERVER_URL)
 		now += 46_000
-		const third = await collector.getActiveOpenCodeSessions("http://127.0.0.1:4096")
+		const third = await collector.getActiveOpenCodeSessions(DEFAULT_SERVER_URL)
 
 		expect(first.sessions[0]?.sessionId).toBe("ses_cached")
 		expect(second.sessions[0]?.sessionId).toBe("ses_cached")
@@ -63,8 +65,8 @@ describe("active OpenCode session collector", () => {
 			},
 		})
 
-		const first = await collector.getActiveOpenCodeSessions("http://127.0.0.1:4096")
-		const second = await collector.getActiveOpenCodeSessions("http://127.0.0.1:4096")
+		const first = await collector.getActiveOpenCodeSessions(DEFAULT_SERVER_URL)
+		const second = await collector.getActiveOpenCodeSessions(DEFAULT_SERVER_URL)
 
 		expect(first.sessions).toEqual([])
 		expect(second.sessions).toEqual([])

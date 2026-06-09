@@ -9,7 +9,7 @@
 			"dependsOn": [],
 			"env": {
 				"PORT": "30206",
-				"OPENCODE_PORT": "4096",
+				"OPENCODE_PORT": "14096",
 				"OPENCODE_HOSTNAME": "127.0.0.1"
 			}
 		},
@@ -28,7 +28,7 @@
 			"health": { "type": "port", "port": 1420 },
 			"dependsOn": [],
 			"env": {
-				"OPENCODE_PORT": "4096"
+				"OPENCODE_PORT": "14096"
 			}
 		},
 		"desktop-wayland": {
@@ -37,7 +37,7 @@
 			"health": { "type": "port", "port": 1420 },
 			"dependsOn": [],
 			"env": {
-				"OPENCODE_PORT": "4096"
+				"OPENCODE_PORT": "14096"
 			}
 		}
 	}

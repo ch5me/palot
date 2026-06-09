@@ -217,7 +217,7 @@ Elf follows the XDG Base Directory Specification (same convention as OpenCode). 
 
 ### OpenCode default port
 
-Default is **4096**. Both `server-manager.ts` and `opencode-manager.ts` read `OPENCODE_PORT` env var (default 4096). Chris's local OpenCode server runs on 4096.
+Palot defaults its embedded/dev OpenCode server to **14096**. Both `server-manager.ts` and `opencode-manager.ts` read `OPENCODE_PORT` first, so explicit env still wins when you intentionally attach to another host (including the shared 4096 lane).
 
 To connect to an existing server:
 ```bash

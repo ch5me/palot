@@ -6,9 +6,11 @@ import {
 } from "./active-session-presence-service"
 import type { ActiveOpenCodeSessionsSnapshot } from "./opencode-active-sessions"
 
+const DEFAULT_SERVER_URL = "http://127.0.0.1:14096"
+
 function snapshot(sessionIds: string[], refreshedAt = 1000): ActiveOpenCodeSessionsSnapshot {
 	return {
-		serverUrl: "http://127.0.0.1:4096",
+		serverUrl: DEFAULT_SERVER_URL,
 		clientCount: sessionIds.length,
 		sessionCount: sessionIds.length,
 		sessions: sessionIds.map((sessionId, index) => ({
@@ -40,14 +42,14 @@ describe("active session presence service", () => {
 		const seenA: ActiveOpenCodeSessionsSnapshot[] = []
 		const seenB: ActiveOpenCodeSessionsSnapshot[] = []
 
-		const unsubscribeA = service.subscribe("http://127.0.0.1:4096", {
+		const unsubscribeA = service.subscribe(DEFAULT_SERVER_URL, {
 			onSnapshot: (next) => seenA.push(next),
 		})
-		const unsubscribeB = service.subscribe("http://127.0.0.1:4096", {
+		const unsubscribeB = service.subscribe(DEFAULT_SERVER_URL, {
 			onSnapshot: (next) => seenB.push(next),
 		})
 
-		await service.refreshNow("http://127.0.0.1:4096")
+		await service.refreshNow(DEFAULT_SERVER_URL)
 
 		expect(collectCalls).toBe(1)
 		expect(seenA.map((item) => item.sessionCount)).toEqual([1])
@@ -82,11 +84,11 @@ describe("active session presence service", () => {
 			now: () => now,
 		})
 
-		const first = await service.getSnapshot("http://127.0.0.1:4096")
+		const first = await service.getSnapshot(DEFAULT_SERVER_URL)
 		now += 100
-		const second = await service.getSnapshot("http://127.0.0.1:4096")
+		const second = await service.getSnapshot(DEFAULT_SERVER_URL)
 		now += 6000
-		const third = await service.getSnapshot("http://127.0.0.1:4096")
+		const third = await service.getSnapshot(DEFAULT_SERVER_URL)
 
 		expect(first.sessions[0]?.sessionId).toBe("ses_1")
 		expect(second.sessions[0]?.sessionId).toBe("ses_1")

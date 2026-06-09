@@ -37,6 +37,7 @@ import {
 } from "lucide-react"
 import { useCallback, useEffect, useMemo, useState } from "react"
 import type { LocalServerConfig, RemoteServerConfig } from "../../../preload/api"
+import { DEFAULT_LOCAL_SERVER_PORT } from "../../../shared/server-config"
 import { useServerActions, useServers } from "../../hooks/use-servers"
 import { useSettings } from "../../hooks/use-settings"
 import { SettingsRow } from "./settings-row"
@@ -392,10 +393,13 @@ function LocalServerSettings() {
 					/>
 				</SettingsRow>
 
-				<SettingsRow label="Port" description="Port number for the server (default: 4096).">
+				<SettingsRow
+					label="Port"
+					description={`Port number for the server (default: ${DEFAULT_LOCAL_SERVER_PORT}).`}
+				>
 					<Input
 						className="w-[200px]"
-						placeholder="4096"
+						placeholder={String(DEFAULT_LOCAL_SERVER_PORT)}
 						type="number"
 						min={1}
 						max={65535}
@@ -595,7 +599,7 @@ function ServerFormDialog({ mode, server, open, onOpenChange, children }: Server
 					<Label htmlFor="server-url">URL</Label>
 					<Input
 						id="server-url"
-						placeholder="https://opencode.example.com:4096"
+						placeholder="https://opencode.example.com:14096"
 						value={url}
 						onChange={(e) => setUrl(e.target.value)}
 					/>
@@ -666,12 +670,12 @@ function ServerFormDialog({ mode, server, open, onOpenChange, children }: Server
 						<div className="mt-2 space-y-2 rounded-md bg-muted/50 p-3 text-xs text-muted-foreground">
 							<p>Forward the remote port to your machine first:</p>
 							<pre className="overflow-x-auto rounded bg-zinc-950 px-2.5 py-1.5 font-mono text-[11px] text-zinc-300">
-								ssh -L 4096:localhost:4096 user@remote-host
+								ssh -L 14096:localhost:14096 user@remote-host
 							</pre>
 							<p>
 								Then use{" "}
 								<code className="rounded bg-zinc-950 px-1 py-0.5 font-mono text-[11px] text-zinc-300">
-									http://localhost:4096
+									http://localhost:14096
 								</code>{" "}
 								as the server URL above. The tunnel stays open as long as the SSH session is
 								running.

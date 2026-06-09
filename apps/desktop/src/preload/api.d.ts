@@ -726,7 +726,7 @@ export interface LocalServerConfig {
 	type: "local"
 	/** Hostname the local server binds to (default "127.0.0.1"). Use "0.0.0.0" to expose on the network. */
 	hostname?: string
-	/** Port the local server listens on (default 4096). */
+	/** Port the local server listens on (default 14096). */
 	port?: number
 	/** Whether a password is configured for the local server (stored in safeStorage). */
 	hasPassword?: boolean
@@ -741,7 +741,7 @@ export interface RemoteServerConfig {
 	id: string
 	name: string
 	type: "remote"
-	/** Full base URL, e.g. "https://opencode.example.com:4096" */
+	/** Full base URL, e.g. "https://opencode.example.com:<port>" */
 	url: string
 	/** Basic Auth username (defaults to "opencode" if omitted). */
 	username?: string
@@ -777,7 +777,7 @@ export type ServerConfig = LocalServerConfig | RemoteServerConfig | SshServerCon
 export interface DiscoveredMdnsServer {
 	/** Unique key derived from host:port. */
 	id: string
-	/** Service name from mDNS (e.g. "opencode-4096"). */
+	/** Service name from mDNS (e.g. "opencode-<port>"). */
 	name: string
 	/** Resolved hostname or IP address. */
 	host: string
