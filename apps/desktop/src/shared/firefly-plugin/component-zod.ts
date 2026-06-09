@@ -1,5 +1,7 @@
 import { z } from "zod"
 
+import { PALOT_BRIDGE_DECISION_CARD_COMPONENT } from "./palot-bridge-manifest"
+
 function toJsonishSchema(schema: z.ZodTypeAny): unknown {
 	try {
 		return schema.toJSONSchema?.({ unrepresentable: "any" }) ?? { type: "object" }
@@ -16,18 +18,32 @@ export interface ComponentBindingSummary {
 	conflictPolicy: string
 }
 
-export function summarizeComponentBindings(definition: {
+const BRIDGE_COMPONENT_SUMMARIES: Record<string, ComponentBindingSummary> = {
+	decision_card: {
+		name: PALOT_BRIDGE_DECISION_CARD_COMPONENT.component,
+		props: PALOT_BRIDGE_DECISION_CARD_COMPONENT.props,
+		events: PALOT_BRIDGE_DECISION_CARD_COMPONENT.events,
+		state: PALOT_BRIDGE_DECISION_CARD_COMPONENT.state,
+		conflictPolicy: PALOT_BRIDGE_DECISION_CARD_COMPONENT.conflictPolicy,
+	},
+}
+
+export function summarizeComponentBindings(componentId: string): ComponentBindingSummary | undefined {
+	return BRIDGE_COMPONENT_SUMMARIES[componentId]
+}
+
+export function summarizeZodComponentBindings(definition: {
 	name: string
 	props: z.ZodTypeAny
-	events: Record<string, z.ZodTypeAny>
-	state: Record<string, z.ZodTypeAny>
+	events?: Record<string, z.ZodTypeAny>
+	state?: Record<string, z.ZodTypeAny>
 	conflictPolicy?: string
 }): ComponentBindingSummary {
 	return {
 		name: definition.name,
 		props: toJsonishSchema(definition.props),
-		events: Object.fromEntries(Object.entries(definition.events).map(([key, value]) => [key, toJsonishSchema(value)])),
-		state: Object.fromEntries(Object.entries(definition.state).map(([key, value]) => [key, toJsonishSchema(value)])),
+		events: summarizeZodSchemaRecord(definition.events ?? {}),
+		state: summarizeZodSchemaRecord(definition.state ?? {}),
 		conflictPolicy: definition.conflictPolicy ?? "ask",
 	}
 }
