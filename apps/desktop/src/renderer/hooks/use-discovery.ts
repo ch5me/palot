@@ -169,7 +169,7 @@ export function useDiscovery() {
 				log.info("Loading projects from API...")
 				const projects = await loadAllProjects()
 				const focusedProjects = getFocusedProjects(projects)
-				const existingBootstrapDirectories = appStore.get(discoveryAtom).bootstrapDirectories
+				const existingBootstrapDirectories = appStore.get(discoveryAtom).bootstrapDirectories ?? []
 				const projectSandboxMap = new Map<string, Set<string>>()
 				for (const project of projects) {
 					if (!project.worktree || !project.sandboxes?.length) continue

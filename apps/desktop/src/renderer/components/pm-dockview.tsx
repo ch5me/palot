@@ -1,5 +1,5 @@
 import { DockviewReact, type DockviewReadyEvent } from "dockview"
-import { memo, useCallback, useRef } from "react"
+import { memo } from "react"
 import { PmLiveDashboard } from "./pm-live-dashboard"
 
 const PANEL_DENSE = "pm-dense-console"
@@ -25,3 +25,17 @@ const AgentsPanel = memo(function AgentsPanel() {
 		</div>
 	)
 })
+
+function PmDockviewShellImpl({ onReady }: { onReady?: (event: DockviewReadyEvent) => void }) {
+	return (
+		<div className="dockview-theme-light dark:dockview-theme-dark h-full w-full">
+			<DockviewReact
+				className="h-full w-full"
+				components={{ [PANEL_DENSE]: DenseConsolePanel, [PANEL_LINEAGE]: LineagePanel, [PANEL_AGENTS]: AgentsPanel }}
+				onReady={onReady ?? (() => {})}
+			/>
+		</div>
+	)
+}
+
+export const PmDockviewShell = memo(PmDockviewShellImpl)

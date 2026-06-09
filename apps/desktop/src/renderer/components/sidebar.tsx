@@ -84,7 +84,7 @@ const STATUS_COLOR: Record<AgentStatus, string> = {
 }
 
 function isActiveSurfaceAgent(agent: Agent): boolean {
-	return agent.visibilityReason === "visible" && agent.status !== "idle"
+	return (agent.visibilityReason ?? "visible") === "visible" && agent.status !== "idle"
 }
 
 function renderAgentMeta(agent: Agent): string | undefined {
@@ -867,10 +867,12 @@ const SessionItem = memo(function SessionItem({
 	const tooltipLabel = showProject ? agent.project : agent.name
 	const title = isPinned ? `${agent.name} (Pinned)` : agent.name
 	const showDebug = import.meta.env.DEV
+	const visibilityReason = agent.visibilityReason ?? "visible"
+	const driftFlags = Array.isArray(agent.driftFlags) ? agent.driftFlags : []
 	const debugLabel =
-		agent.visibilityReason === "visible" && agent.driftFlags.length === 0
+		visibilityReason === "visible" && driftFlags.length === 0
 			? undefined
-			: [agent.visibilityReason, ...agent.driftFlags].join(" · ")
+			: [visibilityReason, ...driftFlags].join(" · ")
 
 	const btn = (
 		<SidebarMenuItem>

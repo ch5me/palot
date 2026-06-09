@@ -223,7 +223,7 @@ export function CommandPalette({ open, onOpenChange, agents, onForkSession }: Co
 		() =>
 			open
 				? agents
-						.filter((a) => a.visibilityReason === "visible" && a.status !== "idle")
+						.filter((a) => a.status !== "idle")
 						.sort((a, b) => b.lastActiveAt - a.lastActiveAt)
 				: [],
 		[agents, open],
