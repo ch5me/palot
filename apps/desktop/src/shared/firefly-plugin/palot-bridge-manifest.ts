@@ -98,7 +98,7 @@ const decisionCardPropsSchema = z.object({
 	notes: z.string().optional(),
 })
 
-const palotBridgeComponents: readonly ComponentContribution[] = [
+const palotBridgeComponents: ComponentContribution[] = [
 	{
 		id: "dag-sparkline",
 		apiVersion: 1,
