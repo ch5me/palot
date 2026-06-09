@@ -348,7 +348,7 @@ export const buildComponentsDescribeHandler = () => {
 
 function formatPollHelp() {
 	return [
-		"Use `rev` to request changes newer than known revision.",
+		"Use `rev` to request changes newer than known revision. Use append patches for chunked text or markdown updates.",
 		"Returns count: 0 when no events, no state delta, and no tree slice.",
 		"Long-poll cap handled by Loom bridge server at 30s max.",
 	]
@@ -392,7 +392,19 @@ export const buildLoomPatchHandler = () => {
 		if (!context.sessionID) {
 			return encodeToon({ errorCode: "missing_session", help: ["OpenCode session context required."] })
 		}
-		return encodeToon(loomMutationResultSchema.parse(patchCommand(context.sessionID, parsedArgs.patch)))
+		const decodedPatch = decodeToon(parsedArgs.patch)
+		const normalizedPatch = {
+			rev: decodedPatch.rev,
+			nodeId: decodedPatch.nodeId ?? decodedPatch.node_id,
+			field: decodedPatch.field,
+			value: decodedPatch.value ?? decodedPatch.chunk,
+			append: decodedPatch.append ?? false,
+		}
+		return encodeToon(
+			loomMutationResultSchema.parse(
+				patchCommand(context.sessionID, encodeToon({ patch: normalizedPatch })),
+			),
+		)
 	}
 }
 

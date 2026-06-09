@@ -23,6 +23,7 @@ export interface LoomPatch {
 	nodeId: string
 	field: string
 	value: unknown
+	append?: boolean
 }
 
 export interface LoomConflictResolvedEventPayload {
@@ -58,6 +59,7 @@ export interface LoomPollResult {
 	events: Array<
 		| { kind: "tree"; rev: number; tree: LoomNode | null }
 		| { kind: "patch"; rev: number; patch: LoomPatch }
+		| { kind: "append"; rev: number; patch: LoomPatch }
 		| { kind: "event"; rev: number; event: LoomEventFrame }
 	>
 	stateDelta: LoomStateDeltaFrame[]

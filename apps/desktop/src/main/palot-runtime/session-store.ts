@@ -1,6 +1,7 @@
 import { resolveGenUiEntry } from "../../renderer/genui/registry"
 import { attachBindingsToTree, createStateDeltaFrame } from "./bindings"
 import { LoomDirtyTracker } from "./dirty"
+import { deleteSessionSnapshot, readSessionSnapshot, writeSessionSnapshot } from "./persistence"
 import { clearSessionRevision, getSessionRevision, nextSessionRevision, setSessionRevision } from "./revision"
 import type {
 	LoomConflictFrame,
@@ -13,7 +14,7 @@ import type {
 } from "./wire"
 
 export interface LoomFrameBase {
-	kind: "tree" | "patch" | "event"
+	kind: "tree" | "patch" | "append" | "event"
 	rev: number
 }
 
@@ -27,12 +28,17 @@ export interface LoomPatchFrame extends LoomFrameBase {
 	patch: LoomPatch
 }
 
+export interface LoomAppendFrame extends LoomFrameBase {
+	kind: "append"
+	patch: LoomPatch
+}
+
 export interface LoomEventQueueFrame extends LoomFrameBase {
 	kind: "event"
 	event: LoomEventFrame
 }
 
-export type LoomFrame = LoomTreeFrame | LoomPatchFrame | LoomEventQueueFrame
+export type LoomFrame = LoomTreeFrame | LoomPatchFrame | LoomAppendFrame | LoomEventQueueFrame
 
 interface LoomSessionState {
 	tree: LoomNode | null
@@ -54,10 +60,12 @@ function clone<T>(value: T): T {
 function ensureSessionState(sessionId: string): LoomSessionState {
 	const existing = sessionStore.get(sessionId)
 	if (existing) return existing
+	const snapshot = readSessionSnapshot(sessionId)
+	const restoredTree = snapshot?.tree ?? null
 	const created: LoomSessionState = {
-		tree: null,
-		rev: setSessionRevision(sessionId, 0),
-		nodeRevisions: new Map<string, number>(),
+		tree: restoredTree,
+		rev: setSessionRevision(sessionId, snapshot?.rev ?? 0),
+		nodeRevisions: buildNodeRevisionMap(restoredTree),
 		eventQueue: [],
 		stateDelta: [],
 		conflicts: [],
@@ -118,13 +126,24 @@ function patchNodeField(
 	const nextTree = visitNodes(tree, (node) => {
 		if (node.id !== patch.nodeId) return { ...node }
 		matched = true
+		const currentValue =
+			typeof ((node as unknown as Record<string, unknown>)[patch.field]) === "string"
+				? (((node as unknown as Record<string, unknown>)[patch.field]) as string)
+				: typeof node.props?.[patch.field] === "string"
+					? (node.props?.[patch.field] as string)
+					: null
+		const nextValue = patch.append && currentValue !== null ? `${currentValue}${String(value)}` : value
 		return {
-			...writeNodeField(node, patch.field, value),
+			...writeNodeField(node, patch.field, nextValue),
 			rev: typeof nodeRev === "number" ? nodeRev : node.rev,
 		}
 	})
 	if (!matched) throw new Error(`Unknown Loom node: ${patch.nodeId}`)
 	return nextTree
+}
+
+function persistSessionState(sessionId: string, state: LoomSessionState): void {
+	writeSessionSnapshot(sessionId, state.rev, state.tree ? clone(state.tree) : null)
 }
 
 function buildNodeRevisionMap(tree: LoomNode | null): Map<string, number> {
@@ -186,6 +205,7 @@ export function endLoomSession(sessionId: string): { rev: number } {
 	const rev = getSessionRevision(sessionId)
 	sessionStore.delete(sessionId)
 	clearSessionRevision(sessionId)
+	deleteSessionSnapshot(sessionId)
 	return { rev }
 }
 
@@ -197,6 +217,7 @@ export function renderLoomTree(sessionId: string, tree: LoomNode): { rev: number
 	state.rev = rev
 	state.eventQueue.push({ kind: "tree", rev, tree: clone(state.tree) })
 	state.dirty = true
+	persistSessionState(sessionId, state)
 	return { rev }
 }
 
@@ -226,6 +247,7 @@ export function patchLoomTree(
 		state.conflicts.push(clone(resolution.conflict))
 		state.tree = refreshNodeMetadata(state.tree, state.dirtyTracker)
 		state.dirty = true
+		persistSessionState(sessionId, state)
 		return { rev: currentNodeRev, errorCode: "dirty_field", held: resolution.conflict }
 	}
 	const rev = nextSessionRevision(sessionId)
@@ -246,12 +268,13 @@ export function patchLoomTree(
 			}),
 		})
 		state.dirty = true
+		persistSessionState(sessionId, state)
 		return { rev: nextNodeRev }
 	}
 	state.tree = patchNodeField(state.tree, patch, resolution.value, nextNodeRev)
 	state.tree = refreshNodeMetadata(state.tree, state.dirtyTracker)
 	state.eventQueue.push({
-		kind: "patch",
+		kind: patch.append ? "append" : "patch",
 		rev,
 		patch: clone({ ...patch, value: resolution.value, rev: nextNodeRev }),
 	})
@@ -269,6 +292,7 @@ export function patchLoomTree(
 		})
 	}
 	state.dirty = true
+	persistSessionState(sessionId, state)
 	return { rev: nextNodeRev }
 }
 
@@ -307,6 +331,7 @@ export function recordLoomStateDelta(sessionId: string, delta: LoomStateDeltaFra
 	state.stateDelta.push(createStateDeltaFrame(delta))
 	state.tree = refreshNodeMetadata(state.tree, state.dirtyTracker)
 	state.dirty = true
+	persistSessionState(sessionId, state)
 	if (entry?.state[delta.field]) {
 		return { rev: state.rev }
 	}
@@ -317,6 +342,7 @@ export function clearLoomDirtyField(sessionId: string, nodeId: string, field: st
 	const state = ensureSessionState(sessionId)
 	state.dirtyTracker.clearDirty(nodeId, field)
 	state.tree = refreshNodeMetadata(state.tree, state.dirtyTracker)
+	persistSessionState(sessionId, state)
 	return { rev: state.rev }
 }
 

@@ -311,6 +311,34 @@ export const loomSessionEndArgsShape = {} satisfies z.ZodRawShape
 export const loomRenderArgsShape = {
 	tree: z.string().trim().min(1),
 } satisfies z.ZodRawShape
+export const durableArtifactRecordSchema = z.object({
+	id: z.string(),
+	scope: z.literal("session"),
+	title: z.string(),
+	component: z.string(),
+	props: z.record(z.string(), z.unknown()),
+	source: z.object({
+		sessionId: z.string(),
+		messageId: z.string(),
+		partId: z.string().optional(),
+		component: z.string(),
+		rawFence: z.string(),
+	}),
+	createdAt: z.number(),
+	updatedAt: z.number(),
+	lastRenderedAt: z.number(),
+	pin: z.object({
+		pinned: z.boolean(),
+		placement: z.enum(["inline", "above-chat", "chat-inline-right", "side-panel"]).nullable(),
+		pinnedAt: z.number().nullable(),
+	}),
+	version: z.number().int().positive(),
+	dirty: z.array(z.string()),
+	lastAgentPatchAt: z.number(),
+	lastHumanEditAt: z.number(),
+	schemaVersion: z.literal(1),
+})
+
 export const loomPatchArgsShape = {
 	patch: z.string().trim().min(1),
 } satisfies z.ZodRawShape

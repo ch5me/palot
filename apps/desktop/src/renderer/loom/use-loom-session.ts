@@ -1,6 +1,10 @@
 import { useAtomValue } from "jotai"
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
-import { loomDagSparklineDemoAtom, loomDualBindingsAtom } from "../atoms/feature-flags"
+import {
+	loomAppendFrameAtom,
+	loomDagSparklineDemoAtom,
+	loomDualBindingsAtom,
+} from "../atoms/feature-flags"
 
 export interface LoomNode {
 	id: string
@@ -21,13 +25,14 @@ export interface LoomConflictFrame {
 }
 
 interface LoomFrame {
-	kind: "tree" | "patch" | "event"
+	kind: "tree" | "patch" | "append" | "event"
 	rev: number
 	tree?: LoomNode | null
 	patch?: {
 		nodeId: string
 		field: string
 		value: unknown
+		append?: boolean
 	}
 	event?: {
 		type: string
@@ -47,9 +52,17 @@ interface LoomPollPayload {
 function applyPatchToTree(tree: LoomNode | null, patch: LoomFrame["patch"]): LoomNode | null {
 	if (!tree || !patch) return tree
 	if (tree.id === patch.nodeId) {
-		const nextProps = patch.field in tree ? tree.props : { ...(tree.props ?? {}), [patch.field]: patch.value }
+		const currentValue =
+			typeof ((tree as unknown as Record<string, unknown>)[patch.field]) === "string"
+				? (((tree as unknown as Record<string, unknown>)[patch.field]) as string)
+				: typeof tree.props?.[patch.field] === "string"
+					? (tree.props?.[patch.field] as string)
+					: null
+		const nextValue = patch.append && currentValue !== null ? `${currentValue}${String(patch.value)}` : patch.value
+		const nextProps =
+			patch.field in tree ? tree.props : { ...(tree.props ?? {}), [patch.field]: nextValue }
 		return patch.field in tree
-			? { ...tree, [patch.field]: patch.value }
+			? { ...tree, [patch.field]: nextValue }
 			: { ...tree, props: nextProps }
 	}
 	if (!tree.children?.length) return tree
@@ -104,6 +117,7 @@ function buildDecisionCardDemoTree(): LoomNode {
 export function useLoomSession({ sessionId }: { sessionId: string | null }) {
 	const dualBindingsEnabled = useAtomValue(loomDualBindingsAtom)
 	const demoEnabled = useAtomValue(loomDagSparklineDemoAtom)
+	const appendEnabled = useAtomValue(loomAppendFrameAtom)
 	const [tree, setTree] = useState<LoomNode | null>(null)
 	const [rev, setRev] = useState(0)
 	const [conflicts, setConflicts] = useState<LoomConflictFrame[]>([])
@@ -134,6 +148,7 @@ export function useLoomSession({ sessionId }: { sessionId: string | null }) {
 				for (const frame of payload.events) {
 					if (frame.kind === "tree") setTree(frame.tree ?? null)
 					if (frame.kind === "patch") applyPatch(frame.patch)
+					if (frame.kind === "append" && appendEnabled && frame.patch) applyPatch({ ...frame.patch, append: true })
 				}
 			})
 		})
@@ -142,7 +157,7 @@ export function useLoomSession({ sessionId }: { sessionId: string | null }) {
 			socketRef.current?.close()
 			socketRef.current = null
 		}
-	}, [applyPatch, sessionId])
+	}, [appendEnabled, applyPatch, sessionId])
 
 	useEffect(() => {
 		if (!sessionId) return
