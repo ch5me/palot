@@ -26,12 +26,14 @@ export {
 	projectSessionWidgetsFromCatalog,
 	projectCommandsFromCatalog,
 	projectThemesFromCatalog,
+	projectComponentsFromCatalog,
 	projectRendererFamiliesFromCatalog,
 	defaultCapabilityState,
 	getProjectedCommandId,
 	getProjectedWidgetId,
 	getProjectedPanelId,
 	getProjectedThemeId,
+	getProjectedComponentId,
 	RENDERER_PROJECTION_FAMILIES,
 	type RendererProjectionFamily,
 	type RendererContributionState,
@@ -42,6 +44,7 @@ export {
 	type RendererProjectionResult,
 	type CapabilityStateShape,
 	type ProjectionCollision,
+	type ProjectedComponent,
 } from "./renderer-projection"
 export * from "./theme-pipeline"
 export * from "./storage-scopes"

@@ -270,8 +270,8 @@ const themeContributionSchema = z
 		label: z.string().min(1).max(80),
 		kind: z.enum(["light", "dark", "system-adaptive"]).default("system-adaptive"),
 		platforms: z.array(z.enum(["darwin", "linux", "win32"])).min(1).optional(),
-		tokens: z.record(z.string().min(1).max(80), z.string().min(1).max(240)).default({}),
-		darkTokens: z.record(z.string().min(1).max(80), z.string().min(1).max(240)).default({}),
+		tokens: z.record(z.string(), z.string().min(1).max(240)).default({}),
+		darkTokens: z.record(z.string(), z.string().min(1).max(240)).default({}),
 		fontFamily: z.string().max(80).optional(),
 		radius: z.string().max(16).optional(),
 		density: z.enum(["compact", "cozy", "comfortable"]).optional(),
@@ -327,6 +327,47 @@ const toolContributionSchema = z
 		preview: z.boolean().optional(),
 	})
 	.strict()
+
+const componentCategorySchema = z.enum(["diagram", "decision", "form", "viewer", "layout", "custom"])
+const componentConflictPolicySchema = z.enum(["agent-wins", "human-wins", "merge", "ask"])
+const componentHostVocabularySchema = z
+	.object({
+		slots: z.array(z.string().min(1).max(80)).default([]),
+		zones: z.array(z.string().min(1).max(80)).default([]),
+	})
+	.strict()
+	.default({ slots: [], zones: [] })
+const componentExampleSchema = z
+	.object({
+		component: z.string().min(1).max(120),
+		props: z.unknown(),
+	})
+	.strict()
+
+const componentContributionSchema = z
+	.object({
+		id: z.string().min(1).max(120),
+		apiVersion: z.number().int().positive().max(64),
+		category: componentCategorySchema,
+		props: zodRawShapeEntrySchema,
+		events: z.record(z.string().min(1).max(64), zodRawShapeEntrySchema).default({}),
+		state: z.record(z.string().min(1).max(64), zodRawShapeEntrySchema).default({}),
+		supports_append: z.boolean().default(false),
+		example: componentExampleSchema,
+		capabilityGates: z.array(capabilityTokenSchema).default([]),
+		hostVocabulary: componentHostVocabularySchema,
+		conflictPolicy: componentConflictPolicySchema.default("ask"),
+	})
+	.strict()
+	.superRefine((component, ctx) => {
+		if (component.example.component !== component.id) {
+			ctx.addIssue({
+				code: z.ZodIssueCode.custom,
+				path: ["example", "component"],
+				message: `component example.component must equal component id: ${component.id}`,
+			})
+		}
+	})
 
 /**
  * Bridge metadata — the OpenCode / agent-facing surface. `systemContextBlock`
@@ -398,6 +439,7 @@ export const pluginManifestSchema = z
 				commands: z.array(commandContributionSchema).default([]),
 				themes: z.array(themeContributionSchema).default([]),
 				tools: z.array(toolContributionSchema).default([]),
+				components: z.array(componentContributionSchema).default([]),
 			})
 			.strict()
 			.default({
@@ -406,6 +448,7 @@ export const pluginManifestSchema = z
 				commands: [],
 				themes: [],
 				tools: [],
+				components: [],
 			}),
 
 		capabilities: z.array(capabilityTokenSchema).default([]),
@@ -426,6 +469,7 @@ export const pluginManifestSchema = z
 			commands: new Set<string>(),
 			themes: new Set<string>(),
 			tools: new Set<string>(),
+			components: new Set<string>(),
 		}
 		for (const panel of manifest.contributes.panels) {
 			if (seen.panels.has(panel.id)) {
@@ -476,6 +520,16 @@ export const pluginManifestSchema = z
 				})
 			}
 			seen.tools.add(tool.id)
+		}
+		for (const component of manifest.contributes.components) {
+			if (seen.components.has(component.id)) {
+				ctx.addIssue({
+					code: z.ZodIssueCode.custom,
+					path: ["contributes", "components"],
+					message: `duplicate component id: ${component.id}`,
+				})
+			}
+			seen.components.add(component.id)
 		}
 
 		// Activation references must point at declared ids within the
@@ -560,6 +614,7 @@ export type WidgetContribution = z.infer<typeof widgetContributionSchema>
 export type CommandContribution = z.infer<typeof commandContributionSchema>
 export type ThemeContribution = z.infer<typeof themeContributionSchema>
 export type ToolContribution = z.infer<typeof toolContributionSchema>
+export type ComponentContribution = z.infer<typeof componentContributionSchema>
 export type ActivationEvent = z.infer<typeof activationEventSchema>
 export type TrustTier = z.infer<typeof trustTierSchema>
 export type LifecycleHints = z.infer<typeof lifecycleHintsSchema>

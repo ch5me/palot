@@ -16,6 +16,7 @@
 
 import { z } from "zod"
 
+import { BUILT_IN_COMPONENTS } from "../../renderer/genui/registry"
 import { FIREFLY_SURFACE_IDS } from "../../renderer/firefly-surface-registry"
 import type { PluginManifest } from "./manifest"
 
@@ -38,6 +39,11 @@ const browserActionArgsShape = {
 	url: z.string().url().optional(),
 	action: z.enum(["list", "open", "close", "activate"]).optional(),
 } satisfies z.ZodRawShape
+
+const firstPartyComponentIds = new Set(["decision_card", "dag-sparkline"])
+const palotBridgeComponents = BUILT_IN_COMPONENTS.filter((component) =>
+	firstPartyComponentIds.has(component.contribution.id),
+).map((component) => component.contribution)
 
 export const palotBridgeManifest: PluginManifest = {
 	apiVersion: "firefly.plugin/v2",
@@ -212,6 +218,7 @@ export const palotBridgeManifest: PluginManifest = {
 				timeoutMs: 5_000,
 			},
 		],
+		components: palotBridgeComponents,
 	},
 	capabilities: [
 		"host:bridge.session-read",
@@ -246,6 +253,7 @@ export const PALOT_BRIDGE_DECISION_CARD_COMPONENT = {
 	conflictPolicy: "ask",
 } as const
 
+export const PALOT_BRIDGE_COMPONENT_IDS = palotBridgeComponents.map((component) => component.id)
 export const PALOT_BRIDGE_PLUGIN_ID = palotBridgeManifest.id
 export const PALOT_BRIDGE_TOOL_IDS = palotBridgeManifest.contributes.tools.map((t) => t.id)
 export const PALOT_BRIDGE_SIDE_PANEL_TABS = palotSidePanelTabSchema.options

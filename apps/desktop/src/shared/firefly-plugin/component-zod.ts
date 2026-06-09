@@ -1,3 +1,4 @@
+import { z } from "zod"
 import { describeGenUiEntry } from "../../renderer/genui/registry"
 
 export interface ComponentBindingSummary {
@@ -6,6 +7,14 @@ export interface ComponentBindingSummary {
 	events: Record<string, unknown>
 	state: Record<string, unknown>
 	conflictPolicy: string
+}
+
+function toJsonishSchema(schema: z.ZodTypeAny): unknown {
+	try {
+		return schema.toJSONSchema?.({ unrepresentable: "any" }) ?? { type: "object" }
+	} catch {
+		return { type: "object" }
+	}
 }
 
 export function summarizeComponentBindings(name: string): ComponentBindingSummary | undefined {
@@ -24,4 +33,12 @@ export function summarizeComponentBindings(name: string): ComponentBindingSummar
 		state: schema.state ?? {},
 		conflictPolicy: schema.conflictPolicy ?? "ask",
 	}
+}
+
+export function summarizeZodSchema(schema: z.ZodTypeAny): unknown {
+	return toJsonishSchema(schema)
+}
+
+export function summarizeZodSchemaRecord(record: Record<string, z.ZodTypeAny>): Record<string, unknown> {
+	return Object.fromEntries(Object.entries(record).map(([key, value]) => [key, toJsonishSchema(value)]))
 }

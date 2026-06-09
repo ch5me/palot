@@ -1,5 +1,6 @@
 import type { ComponentType } from "react"
 import { z } from "zod"
+import type { ComponentContribution } from "../../shared/firefly-plugin/manifest"
 import { DagSparklineEntry } from "./components/dag-sparkline"
 import { DecisionCardEntry } from "./components/decision-card"
 
@@ -32,6 +33,11 @@ export interface GenUiCatalogItem {
 	category: string
 }
 
+export interface BuiltInComponentDefinition {
+	entry: GenUiEntry
+	contribution: ComponentContribution
+}
+
 const DEFAULT_CATEGORY = "custom"
 const CATEGORY_KEYWORDS: Record<string, string> = {
 	dag: "diagram",
@@ -43,12 +49,41 @@ const CATEGORY_KEYWORDS: Record<string, string> = {
 	layout: "layout",
 }
 
-function inferCategory(entry: GenUiEntry): string {
+function inferCategory(entry: GenUiEntry): ComponentContribution["category"] {
 	const haystack = `${entry.name} ${entry.aliases.join(" ")} ${entry.description}`.toLowerCase()
 	for (const [keyword, category] of Object.entries(CATEGORY_KEYWORDS)) {
-		if (haystack.includes(keyword)) return category
+		if (haystack.includes(keyword)) return category as ComponentContribution["category"]
 	}
 	return DEFAULT_CATEGORY
+}
+
+function inferHostVocabulary(entry: GenUiEntry) {
+	const slots: string[] = []
+	const zones: string[] = ["loom-tree", "genui-fence"]
+	if (entry.name === "decision_card") {
+		slots.push("notes", "actions")
+		zones.push("artifact-widget")
+	}
+	if (entry.name === "dag-sparkline") {
+		slots.push("chart")
+	}
+	return { slots, zones }
+}
+
+function buildBuiltInContribution(entry: GenUiEntry): ComponentContribution {
+	return {
+		id: entry.name,
+		apiVersion: 1,
+		category: inferCategory(entry),
+		props: entry.props,
+		events: entry.events,
+		state: entry.state,
+		supports_append: entry.name === "dag-sparkline",
+		example: entry.example,
+		capabilityGates: [],
+		hostVocabulary: inferHostVocabulary(entry),
+		conflictPolicy: entry.conflictPolicy ?? "ask",
+	}
 }
 
 export function parseGenUiProps<P>(entry: GenUiEntry<P>, raw: unknown): ParsePropsResult<P> {
@@ -117,6 +152,10 @@ export function describeGenUiEntry(name: string):
 const ENTRIES: GenUiEntry<any>[] = [DagSparklineEntry, DecisionCardEntry]
 
 export const genUiEntries: ReadonlyArray<GenUiEntry> = ENTRIES
+export const BUILT_IN_COMPONENTS: readonly BuiltInComponentDefinition[] = ENTRIES.map((entry) => ({
+	entry,
+	contribution: buildBuiltInContribution(entry),
+}))
 
 const byName = new Map<string, GenUiEntry>()
 for (const entry of ENTRIES) {
@@ -133,6 +172,12 @@ export function resolveGenUiEntry(name: string): GenUiEntry | undefined {
 	if (direct) return direct
 	const dashed = raw.replace(/[\s_]+/g, "-")
 	return byName.get(dashed)
+}
+
+export function resolveBuiltInComponent(name: string): BuiltInComponentDefinition | undefined {
+	const entry = resolveGenUiEntry(name)
+	if (!entry) return undefined
+	return BUILT_IN_COMPONENTS.find((component) => component.entry.name === entry.name)
 }
 
 export function buildGenUiCatalog(): string {

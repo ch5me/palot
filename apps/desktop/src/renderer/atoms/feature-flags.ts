@@ -75,6 +75,8 @@ export const loomComponentToolsEnabledAtom = atomWithStorage<boolean>(
 )
 export const loomPersistenceMigrateAtom = atomWithStorage<boolean>("elf:loom.persistence.migrate", false)
 export const loomAppendFrameAtom = atomWithStorage<boolean>("elf:loom.appendFrame", false)
+export const loomV2ComponentsAtom = atomWithStorage<boolean>("elf:loom.v2Components", false)
+export const loomAcmeComponentsAtom = atomWithStorage<boolean>("elf:loom.v2.acmeComponents", false)
 
 export const toggleAutomationsAtom = atom(null, (get, set) => {
 	set(automationsEnabledAtom, !get(automationsEnabledAtom))
@@ -99,6 +101,12 @@ export const toggleLoomPersistenceMigrateAtom = atom(null, (get, set) => {
 })
 export const toggleLoomAppendFrameAtom = atom(null, (get, set) => {
 	set(loomAppendFrameAtom, !get(loomAppendFrameAtom))
+})
+export const toggleLoomV2ComponentsAtom = atom(null, (get, set) => {
+	set(loomV2ComponentsAtom, !get(loomV2ComponentsAtom))
+})
+export const toggleLoomAcmeComponentsAtom = atom(null, (get, set) => {
+	set(loomAcmeComponentsAtom, !get(loomAcmeComponentsAtom))
 })
 
 type SurfaceFlagKey = (typeof FIREFLY_SURFACE_IDS)[number]
