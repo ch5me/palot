@@ -289,12 +289,12 @@ function useSearchableListPopoverSearch() {
 
 export {
 	SearchableListPopover,
-	SearchableListPopoverTrigger,
 	SearchableListPopoverContent,
-	SearchableListPopoverSearch,
-	SearchableListPopoverList,
+	SearchableListPopoverEmpty,
 	SearchableListPopoverGroup,
 	SearchableListPopoverItem,
-	SearchableListPopoverEmpty,
+	SearchableListPopoverList,
+	SearchableListPopoverSearch,
+	SearchableListPopoverTrigger,
 	useSearchableListPopoverSearch,
 }

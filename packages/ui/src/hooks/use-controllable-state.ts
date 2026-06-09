@@ -58,5 +58,5 @@ function useControllableState<T>({
 	return [value, setValue]
 }
 
-export { useControllableState }
 export type { UseControllableStateParams }
+export { useControllableState }
