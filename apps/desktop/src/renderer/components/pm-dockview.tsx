@@ -1,4 +1,4 @@
-import { DockviewReact, type DockviewReadyEvent } from "dockview-react"
+import { DockviewReact, type DockviewReadyEvent } from "dockview"
 import { useCallback, useRef } from "react"
 import { PmLiveDashboard } from "./pm-live-dashboard"
 
