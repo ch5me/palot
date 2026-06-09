@@ -10,6 +10,7 @@
 import type { PluginCatalog, PluginCatalogEntry, PluginProjectionSummary } from "./catalog"
 import { buildPluginCatalog, findDescriptor, getCapabilityState, summarizeProjection } from "./catalog"
 import { decideCapability, type CapabilityDecision } from "./capability-broker"
+import { defaultPluginRoots, discoverDiskManifests } from "./disk-manifests"
 
 let cached: PluginCatalog | null = null
 
@@ -20,6 +21,39 @@ function resolveAppVersion(): string {
 	} catch {
 		return "0.11.0"
 	}
+}
+
+/**
+ * Resolve the on-disk plugin roots for the running process. Outside
+ * Electron (bun test runner) there are no roots — the catalog is the
+ * in-source built-in set only, which keeps tests hermetic.
+ */
+function resolvePluginRoots(): string[] {
+	try {
+		// eslint-disable-next-line @typescript-eslint/no-var-requires
+		const electron = require("electron") as typeof import("electron")
+		if (!electron?.app) return []
+		return defaultPluginRoots({
+			isPackaged: electron.app.isPackaged,
+			resourcesPath: process.resourcesPath ?? null,
+			appRoot: electron.app.getAppPath(),
+		})
+	} catch {
+		return []
+	}
+}
+
+function buildCatalogWithDiskPlugins(): PluginCatalog {
+	const discovery = discoverDiskManifests(resolvePluginRoots())
+	return buildPluginCatalog({
+		appVersion: resolveAppVersion(),
+		diskManifests: discovery.manifests,
+		diskFailures: discovery.failures.map((failure) => ({
+			manifestPath: failure.manifestPath,
+			pluginId: failure.pluginId,
+			issues: failure.issues.map((issue) => ({ path: [...issue.path], message: issue.message })),
+		})),
+	})
 }
 
 const log = {
@@ -48,12 +82,12 @@ export { decideCapability, type CapabilityDecision }
 
 export function getPluginCatalog(): PluginCatalog {
 	if (cached) return cached
-	cached = buildPluginCatalog({ appVersion: resolveAppVersion() })
+	cached = buildCatalogWithDiskPlugins()
 	return cached
 }
 
 export function refreshPluginCatalog(): PluginCatalog {
-	cached = buildPluginCatalog({ appVersion: resolveAppVersion() })
+	cached = buildCatalogWithDiskPlugins()
 	log.info("Refreshed V2 plugin catalog", {
 		pluginCount: cached.descriptors.length,
 	})

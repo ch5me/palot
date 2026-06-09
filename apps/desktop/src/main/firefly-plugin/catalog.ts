@@ -98,6 +98,21 @@ export interface PluginCatalogEntry {
 	readonly appVersion: string
 	readonly requiredCapabilities: readonly string[]
 	readonly defaultGrantedCapabilities: readonly string[]
+	/** Human-readable reason for a non-nominal status (e.g. quarantine cause). */
+	readonly statusDetail?: string
+	/** Where the manifest came from. Built-ins are in-source TS manifests. */
+	readonly source?: "built-in" | "disk"
+}
+
+/**
+ * A disk manifest that failed the JSON-profile parse. The catalog
+ * surfaces these as quarantined entries so the operator UI can show
+ * the failure without the bad manifest blocking the rest of boot.
+ */
+export interface PluginCatalogLoadFailure {
+	readonly manifestPath: string
+	readonly pluginId: string | null
+	readonly issues: readonly { readonly path: (string | number)[]; readonly message: string }[]
 }
 
 const appVersionSchema = z
@@ -135,13 +150,40 @@ export interface PluginCatalog {
  * (`validated` for every entry) until the runtime supervisor
  * upgrades it. That keeps slice 1 auditable.
  */
-export function buildPluginCatalog(input: { appVersion: string }): PluginCatalog {
+export function buildPluginCatalog(input: {
+	appVersion: string
+	/** JSON-profile manifests discovered on disk (already parsed). */
+	diskManifests?: readonly PluginManifest[]
+	/** Disk manifests that failed to parse — surfaced as quarantined entries. */
+	diskFailures?: readonly PluginCatalogLoadFailure[]
+}): PluginCatalog {
 	const appVersion = appVersionSchema.parse(input.appVersion)
 	const descriptors: PluginDescriptor[] = []
 	const entries: PluginCatalogEntry[] = []
 	const capabilityStates: Record<string, CapabilityStateShape> = {}
 
-	for (const manifest of BUILT_IN_MANIFESTS) {
+	const sources: readonly { manifest: PluginManifest; source: "built-in" | "disk" }[] = [
+		...BUILT_IN_MANIFESTS.map((manifest) => ({ manifest, source: "built-in" as const })),
+		...(input.diskManifests ?? []).map((manifest) => ({ manifest, source: "disk" as const })),
+	]
+
+	const quarantineEntry = (pluginId: string, source: "built-in" | "disk", detail: string): void => {
+		entries.push({
+			pluginId,
+			displayName: "(invalid manifest)",
+			version: "0.0.0",
+			trust: "unsigned-third-party",
+			status: "quarantined",
+			manifestRevision: 1,
+			appVersion,
+			requiredCapabilities: [],
+			defaultGrantedCapabilities: [],
+			statusDetail: detail,
+			source,
+		})
+	}
+
+	for (const { manifest, source } of sources) {
 		// Reuse the same parse/derive path the test suite exercises.
 		// Quarantine on parse failure rather than throwing: the
 		// catalog stays the source of truth, and one bad manifest
@@ -150,10 +192,23 @@ export function buildPluginCatalog(input: { appVersion: string }): PluginCatalog
 		try {
 			parsed = parsePluginManifest(manifest)
 		} catch (err) {
+			const reason = err instanceof Error ? err.message : String(err)
 			log.warn("Plugin manifest failed V2 schema parse, quarantining", {
 				pluginId: manifest.id,
-				reason: err instanceof Error ? err.message : String(err),
+				reason,
 			})
+			quarantineEntry(manifest.id, source, `manifest schema parse failed: ${reason}`)
+			continue
+		}
+
+		// Disk-loaded manifests may never claim host trust. A manifest
+		// that ships on the third-party path declaring `built-in` is a
+		// trust escalation attempt — quarantine, fail loud.
+		if (source === "disk" && parsed.trust === "built-in") {
+			log.warn("Disk plugin manifest claims built-in trust, quarantining", {
+				pluginId: parsed.id,
+			})
+			quarantineEntry(parsed.id, source, 'disk-loaded manifests must not declare trust "built-in"')
 			continue
 		}
 
@@ -161,10 +216,12 @@ export function buildPluginCatalog(input: { appVersion: string }): PluginCatalog
 		try {
 			descriptor = derivePluginDescriptor(parsed, { appVersion })
 		} catch (err) {
+			const reason = err instanceof Error ? err.message : String(err)
 			log.warn("Plugin descriptor derivation failed, quarantining", {
 				pluginId: parsed.id,
-				reason: err instanceof Error ? err.message : String(err),
+				reason,
 			})
+			quarantineEntry(parsed.id, source, `descriptor derivation failed: ${reason}`)
 			continue
 		}
 
@@ -182,7 +239,19 @@ export function buildPluginCatalog(input: { appVersion: string }): PluginCatalog
 			defaultGrantedCapabilities: descriptor.trust === "built-in"
 				? [...BUILT_IN_DEFAULT_CAPABILITIES]
 				: [],
+			source,
 		})
+	}
+
+	for (const failure of input.diskFailures ?? []) {
+		const detail = failure.issues
+			.map((issue) => `${issue.path.join(".") || "(root)"}: ${issue.message}`)
+			.join("; ")
+		quarantineEntry(
+			failure.pluginId ?? `invalid.manifest.${entries.length}`,
+			"disk",
+			`manifest.json rejected (${failure.manifestPath}): ${detail}`,
+		)
 	}
 
 	const projectionInput = {
