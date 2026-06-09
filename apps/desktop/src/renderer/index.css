@@ -5,6 +5,7 @@
 @import "@fontsource/ibm-plex-mono/600.css";
 
 @import "@ch5me/elf-ui/styles/globals.css";
+@import "dockview-react/dist/styles/dockview.css";
 @import "./styles/workspace.css";
 
 body {

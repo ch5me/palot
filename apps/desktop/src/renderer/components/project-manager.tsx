@@ -1,11 +1,9 @@
-import { PmLiveDashboard } from "./pm-live-dashboard"
+import { PmDockviewShell } from "./pm-dockview"
 
 export function ProjectManager() {
 	return (
-		<div className="h-full overflow-auto px-0 pb-6 pt-8 sm:px-6">
-			<div className="mx-auto w-full max-w-7xl">
-				<PmLiveDashboard />
-			</div>
+		<div className="h-full w-full overflow-hidden">
+			<PmDockviewShell />
 		</div>
 	)
 }
