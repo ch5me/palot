@@ -18,6 +18,9 @@ import {
 	listPluginThemes,
 	listPluginWidgets,
 	refreshPluginCatalog,
+	releasePluginQuarantine,
+	reportPluginPanelCrash,
+	setPluginEnabled,
 } from "./authority"
 import {
 	invokePluginCommand,
@@ -38,6 +41,9 @@ export const FIREFLY_PLUGIN_IPC_CHANNELS = {
 	themes: "firefly-plugin:themes",
 	refresh: "firefly-plugin:refresh",
 	invoke: "firefly-plugin:invoke",
+	setEnabled: "firefly-plugin:set-enabled",
+	panelCrash: "firefly-plugin:panel-crash",
+	releaseQuarantine: "firefly-plugin:release-quarantine",
 } as const
 
 interface FireflyPluginListResult {
@@ -148,16 +154,42 @@ export function registerFireflyPluginIpc(): void {
 
 	ipcMain.handle(FIREFLY_PLUGIN_IPC_CHANNELS.refresh, () => {
 		const catalog = refreshPluginCatalog()
-		for (const win of BrowserWindow.getAllWindows()) {
-			win.webContents.send("firefly-plugin:changed", {
-				appVersion: catalog.appVersion,
-				pluginCount: catalog.descriptors.length,
-			})
-		}
+		broadcastCatalogChanged()
 		return {
 			appVersion: catalog.appVersion,
 			pluginCount: catalog.descriptors.length,
 		}
+	})
+
+	const lifecycleArgsSchema = z.object({
+		pluginId: z.string().min(1).max(128),
+		enabled: z.boolean().optional(),
+		message: z.string().max(2000).optional(),
+		note: z.string().max(2000).optional(),
+	})
+
+	ipcMain.handle(FIREFLY_PLUGIN_IPC_CHANNELS.setEnabled, (_event, rawArgs: unknown) => {
+		const args = lifecycleArgsSchema.parse(coerceArgs(rawArgs))
+		if (typeof args.enabled !== "boolean") {
+			throw new Error("set-enabled requires { pluginId, enabled }")
+		}
+		const state = setPluginEnabled(args.pluginId, args.enabled)
+		broadcastCatalogChanged()
+		return { pluginId: args.pluginId, ...state }
+	})
+
+	ipcMain.handle(FIREFLY_PLUGIN_IPC_CHANNELS.panelCrash, (_event, rawArgs: unknown) => {
+		const args = lifecycleArgsSchema.parse(coerceArgs(rawArgs))
+		const state = reportPluginPanelCrash(args.pluginId, args.message ?? "panel render crash")
+		broadcastCatalogChanged()
+		return { pluginId: args.pluginId, ...state }
+	})
+
+	ipcMain.handle(FIREFLY_PLUGIN_IPC_CHANNELS.releaseQuarantine, (_event, rawArgs: unknown) => {
+		const args = lifecycleArgsSchema.parse(coerceArgs(rawArgs))
+		const state = releasePluginQuarantine(args.pluginId, args.note ?? "operator release")
+		broadcastCatalogChanged()
+		return { pluginId: args.pluginId, ...state }
 	})
 
 	ipcMain.handle(
@@ -180,6 +212,16 @@ export function registerFireflyPluginIpc(): void {
 	log.info("Registered V2 plugin IPC channels", {
 		channels: Object.values(FIREFLY_PLUGIN_IPC_CHANNELS),
 	})
+}
+
+function broadcastCatalogChanged(): void {
+	const catalog = getPluginCatalog()
+	for (const win of BrowserWindow.getAllWindows()) {
+		win.webContents.send("firefly-plugin:changed", {
+			appVersion: catalog.appVersion,
+			pluginCount: catalog.descriptors.length,
+		})
+	}
 }
 
 function coerceArgs(raw: unknown): unknown {

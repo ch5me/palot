@@ -243,6 +243,12 @@ contextBridge.exposeInMainWorld("elf", {
 		invoke: (input: { pluginId: string; commandId: string; args: Record<string, unknown> }) =>
 			ipcRenderer.invoke("firefly-plugin:invoke", input),
 		refresh: () => ipcRenderer.invoke("firefly-plugin:refresh"),
+		setEnabled: (pluginId: string, enabled: boolean) =>
+			ipcRenderer.invoke("firefly-plugin:set-enabled", { pluginId, enabled }),
+		reportPanelCrash: (pluginId: string, message: string) =>
+			ipcRenderer.invoke("firefly-plugin:panel-crash", { pluginId, message }),
+		releaseQuarantine: (pluginId: string, note: string) =>
+			ipcRenderer.invoke("firefly-plugin:release-quarantine", { pluginId, note }),
 		onChanged: (callback: (payload: { appVersion: string; pluginCount: number }) => void) => {
 			const listener = (
 				_event: unknown,

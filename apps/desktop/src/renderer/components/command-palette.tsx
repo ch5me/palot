@@ -86,6 +86,8 @@ import {
 	toggleVoiceSurfaceAtom,
 } from "../atoms/feature-flags"
 import { getFireflySurfaceTabs, type FireflySurfaceContext } from "../firefly-surface-registry"
+import { mergeSurfaceTabs } from "../firefly-plugin-surface-merge"
+import { useCatalogSurfaceTabs } from "../firefly-plugin-surfaces"
 import { isMockModeAtom, toggleMockModeAtom } from "../atoms/mock-mode"
 import { opaqueWindowsAtom } from "../atoms/preferences"
 import { isReactScanAtom, toggleReactScanAtom } from "../atoms/react-scan"
@@ -279,9 +281,13 @@ export function CommandPalette({ open, onOpenChange, agents, onForkSession }: Co
 		])
 
 
+	const catalogSurfaceTabs = useCatalogSurfaceTabs(activeAgent)
 	const availableSurfaceTabs = useMemo(
-		() => (surfaceContext ? getFireflySurfaceTabs(surfaceContext) : []),
-		[surfaceContext],
+		() =>
+			surfaceContext
+				? mergeSurfaceTabs(getFireflySurfaceTabs(surfaceContext), catalogSurfaceTabs)
+				: [],
+		[surfaceContext, catalogSurfaceTabs],
 	)
 	const hasAvailableSurfaceTab = availableSurfaceTabs.some((surface) => surface.availability.available)
 

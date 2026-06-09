@@ -1382,6 +1382,36 @@ export interface ElfAPI {
 			}>
 		}>
 		refresh: () => Promise<{ appVersion: string; pluginCount: number }>
+		setEnabled: (
+			pluginId: string,
+			enabled: boolean,
+		) => Promise<{
+			pluginId: string
+			enabled: boolean
+			quarantined: boolean
+			quarantineDetail: string | null
+			uiCrashCount: number
+		}>
+		reportPanelCrash: (
+			pluginId: string,
+			message: string,
+		) => Promise<{
+			pluginId: string
+			enabled: boolean
+			quarantined: boolean
+			quarantineDetail: string | null
+			uiCrashCount: number
+		}>
+		releaseQuarantine: (
+			pluginId: string,
+			note: string,
+		) => Promise<{
+			pluginId: string
+			enabled: boolean
+			quarantined: boolean
+			quarantineDetail: string | null
+			uiCrashCount: number
+		}>
 		invoke: (input: {
 			pluginId: string
 			commandId: string

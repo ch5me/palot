@@ -46,6 +46,8 @@ import {
 	getFireflySurfaceTabs,
 	type FireflySurfaceContext,
 } from "../firefly-surface-registry"
+import { mergeSurfaceTabs } from "../firefly-plugin-surface-merge"
+import { useCatalogSurfaceTabs } from "../firefly-plugin-surfaces"
 import {
 	reviewPanelSettingsAtom,
 	sessionDiffStatsFamily,
@@ -235,6 +237,7 @@ export function AgentDetail({
 	const ch5pmSurfaceEnabled = useAtomValue(ch5pmSurfaceEnabledAtom)
 	const pdfReviewSurfaceEnabled = useAtomValue(pdfReviewSurfaceEnabledAtom)
 
+	const catalogSurfaceTabs = useCatalogSurfaceTabs(agent)
 	const sidePanelTabs: SidePanelTabDef[] = useMemo(() => {
 		const ctx: FireflySurfaceContext = {
 			agent,
@@ -260,9 +263,13 @@ export function AgentDetail({
 			},
 			chatTurnCount: chatTurns.length,
 		}
-		return getFireflySurfaceTabs(ctx)
+		// Migration seam: catalog-served surfaces ∪ remaining registry
+		// rows; a catalog surface wins over a registry row with the
+		// same tab id. See .sisyphus/plans/sidebars-as-first-class-plugins.md.
+		return mergeSurfaceTabs(getFireflySurfaceTabs(ctx), catalogSurfaceTabs)
 	}, [
 		agent,
+		catalogSurfaceTabs,
 		diffStats,
 		browserPanelEnabled,
 		reviewSurfaceEnabled,

@@ -150,12 +150,26 @@ export interface PluginCatalog {
  * (`validated` for every entry) until the runtime supervisor
  * upgrades it. That keeps slice 1 auditable.
  */
+/**
+ * Host runtime overlay for one plugin: operator enable/disable and
+ * UI-crash quarantine state owned by the lifecycle store. Applied to
+ * the capability state before projections so availability derives
+ * from the single catalog path.
+ */
+export interface PluginCatalogStateOverride {
+	readonly pluginDisabled?: boolean
+	readonly pluginQuarantined?: boolean
+	readonly quarantineDetail?: string | null
+}
+
 export function buildPluginCatalog(input: {
 	appVersion: string
 	/** JSON-profile manifests discovered on disk (already parsed). */
 	diskManifests?: readonly PluginManifest[]
 	/** Disk manifests that failed to parse — surfaced as quarantined entries. */
 	diskFailures?: readonly PluginCatalogLoadFailure[]
+	/** Host lifecycle overlay (enable/disable + quarantine) by plugin id. */
+	stateOverrides?: Readonly<Record<string, PluginCatalogStateOverride>>
 }): PluginCatalog {
 	const appVersion = appVersionSchema.parse(input.appVersion)
 	const descriptors: PluginDescriptor[] = []
@@ -226,19 +240,33 @@ export function buildPluginCatalog(input: {
 		}
 
 		descriptors.push(descriptor)
-		capabilityStates[descriptor.normalizedId] = defaultCapabilityState(descriptor)
+		const override = input.stateOverrides?.[descriptor.normalizedId]
+		const baseState = defaultCapabilityState(descriptor)
+		capabilityStates[descriptor.normalizedId] = override
+			? {
+					...baseState,
+					pluginDisabled: override.pluginDisabled ?? false,
+					pluginQuarantined: override.pluginQuarantined ?? false,
+			  }
+			: baseState
+		const status: PluginCatalogStatus = override?.pluginQuarantined
+			? "quarantined"
+			: override?.pluginDisabled
+				? "disabled"
+				: "validated"
 		entries.push({
 			pluginId: descriptor.normalizedId,
 			displayName: descriptor.manifest.displayName,
 			version: descriptor.manifest.version,
 			trust: descriptor.trust,
-			status: "validated",
+			status,
 			manifestRevision: descriptor.manifest.manifestRevision,
 			appVersion: descriptor.derived.appVersion,
 			requiredCapabilities: [...descriptor.capabilities],
 			defaultGrantedCapabilities: descriptor.trust === "built-in"
 				? [...BUILT_IN_DEFAULT_CAPABILITIES]
 				: [],
+			statusDetail: override?.quarantineDetail ?? undefined,
 			source,
 		})
 	}
