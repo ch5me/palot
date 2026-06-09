@@ -96,9 +96,10 @@ export async function ensureSingleServer(): Promise<OpenCodeServer> {
 		}
 	})
 
-	// Wait for the server to be ready
+	// Wait for the server to be ready. Cold start can exceed 50s before
+	// /session responds (plugin + project index warmup), so wait generously.
 	try {
-		await waitForReady(url, 15_000)
+		await waitForReady(url, 120_000)
 	} catch (error) {
 		const stderr = stderrChunks.join("")
 		if (isPortBindConflict(stderr)) {
