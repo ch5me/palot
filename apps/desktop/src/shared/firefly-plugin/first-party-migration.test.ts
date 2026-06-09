@@ -1,6 +1,7 @@
 import { describe, expect, test } from "bun:test"
 
 import {
+	AmbiguousMigrationRowError,
 	builtInPluginIdsInMatrix,
 	findFirstPartyMigrationRow,
 	FIRST_PARTY_MIGRATION_MATRIX,
@@ -76,6 +77,33 @@ describe("FIRST_PARTY_MIGRATION_MATRIX", () => {
 			expect(row.currentFile.length).toBeGreaterThan(0)
 		}
 	})
+
+	test("(currentId, currentFamily) pairs are unique — no doubled rows", () => {
+		const seen = new Set<string>()
+		for (const row of FIRST_PARTY_MIGRATION_MATRIX) {
+			const key = `${row.currentFamily}::${row.currentId}`
+			expect(seen.has(key)).toBe(false)
+			seen.add(key)
+		}
+	})
+
+	test("covers the four main-pane surfaces", () => {
+		const ids = FIRST_PARTY_MIGRATION_MATRIX.map((r) => r.currentId)
+		expect(ids).toContain("chat")
+		expect(ids).toContain("project-manager")
+		expect(ids).toContain("automations")
+		expect(ids).toContain("settings")
+	})
+
+	test("chat (core loop) migrates last — phase 4", () => {
+		const row = findFirstPartyMigrationRow("chat")
+		expect(row?.rolloutPhase).toBe("phase-4")
+	})
+
+	test("migrated notes row points at the plugin directory, not the deleted registry row", () => {
+		const row = findFirstPartyMigrationRow("notes")
+		expect(row?.currentFile).toBe("apps/desktop/plugins/notes/manifest.ts")
+	})
 })
 
 describe("groupFirstPartyMigrationByPhase", () => {
@@ -108,6 +136,20 @@ describe("findFirstPartyMigrationRow", () => {
 
 	test("returns null for an unknown id", () => {
 		expect(findFirstPartyMigrationRow("ghost-surface")).toBeNull()
+	})
+
+	test("family filter narrows the lookup", () => {
+		const row = findFirstPartyMigrationRow("default", "theme")
+		expect(row?.currentFamily).toBe("theme")
+		expect(findFirstPartyMigrationRow("default", "panel")).toBeNull()
+	})
+
+	test("exports the ambiguity error type for cross-family collisions", () => {
+		// No cross-family collision exists in the locked matrix today; the
+		// error class is the contract for when one appears.
+		expect(new AmbiguousMigrationRowError("x", ["panel", "theme"]).name).toBe(
+			"AmbiguousMigrationRowError",
+		)
 	})
 })
 

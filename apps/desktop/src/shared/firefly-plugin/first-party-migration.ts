@@ -114,7 +114,7 @@ export const FIRST_PARTY_MIGRATION_MATRIX: readonly FirstPartyMigrationRow[] = [
 	},
 	{
 		currentId: "notes",
-		currentFile: "apps/desktop/src/renderer/firefly-surface-registry.tsx",
+		currentFile: "apps/desktop/plugins/notes/manifest.ts",
 		currentFamily: "panel",
 		owner: { kind: "built-in-plugin", pluginId: "firefly.built-in.surface.notes" },
 		targetFamily: "panels",
@@ -123,24 +123,7 @@ export const FIRST_PARTY_MIGRATION_MATRIX: readonly FirstPartyMigrationRow[] = [
 		trust: "built-in",
 		rolloutPhase: "phase-1",
 		teardown: ["close-surface", "dismiss-widget"],
-		notes: "Notes surface is lightweight; no in-flight tool calls to cancel.",
-	},
-	{
-		currentId: "browser",
-		currentFile: "apps/desktop/src/renderer/firefly-surface-registry.tsx",
-		currentFamily: "panel",
-		owner: { kind: "built-in-plugin", pluginId: "firefly.built-in.surface.browser" },
-		targetFamily: "panels",
-		targetToolId: "plugin.firefly.built-in.surface.browser.open",
-		requiredCapabilities: [
-			"host:panel.register",
-			"host:browser.lane-control",
-			"host:tool.register",
-		],
-		trust: "built-in",
-		rolloutPhase: "phase-1",
-		teardown: ["close-surface", "cancel-in-flight-tool", "deregister-command"],
-		notes: "Browser surface is gated by the palot-bridge v2 manifest; the browser plugin re-exports the lane tools.",
+		notes: "MIGRATED (slice 1, 2026-06-09): Notes is served from the plugin catalog; its registry row and feature-flag atom are deleted. No in-flight tool calls to cancel.",
 	},
 	{
 		currentId: "pulse",
@@ -403,6 +386,62 @@ export const FIRST_PARTY_MIGRATION_MATRIX: readonly FirstPartyMigrationRow[] = [
 		notes: "Liquid Glass theme is darwin-only; the contribution declares platforms.",
 	},
 	{
+		currentId: "chat",
+		currentFile: "apps/desktop/src/renderer/components/session-view.tsx",
+		currentFamily: "panel",
+		owner: { kind: "built-in-plugin", pluginId: "firefly.built-in.main-pane.chat" },
+		targetFamily: "panels",
+		targetToolId: null,
+		requiredCapabilities: ["host:panel.register", "host:command.register"],
+		trust: "built-in",
+		rolloutPhase: "phase-4",
+		teardown: ["close-surface", "preserve-state"],
+		notes: "Main-pane surface (formFactor: main-pane). The product's core chat loop migrates LAST — only after the side-panel tier has proven the platform on 20+ surfaces.",
+	},
+	{
+		currentId: "project-manager",
+		currentFile: "apps/desktop/src/renderer/components/project-manager.tsx",
+		currentFamily: "panel",
+		owner: { kind: "built-in-plugin", pluginId: "firefly.built-in.main-pane.project-manager" },
+		targetFamily: "panels",
+		targetToolId: "plugin.firefly.built-in.main-pane.project-manager.open",
+		requiredCapabilities: ["host:panel.register", "host:command.register"],
+		trust: "built-in",
+		rolloutPhase: "phase-3",
+		teardown: ["close-surface", "preserve-state"],
+		notes: "Main-pane surface (formFactor: main-pane). PM dashboard route (/project-manager); phase 3 alongside the other main-pane candidates.",
+	},
+	{
+		currentId: "automations",
+		currentFile: "apps/desktop/src/renderer/components/automations/automations-page.tsx",
+		currentFamily: "panel",
+		owner: { kind: "built-in-plugin", pluginId: "firefly.built-in.main-pane.automations" },
+		targetFamily: "panels",
+		targetToolId: "plugin.firefly.built-in.main-pane.automations.open",
+		requiredCapabilities: ["host:panel.register", "host:command.register"],
+		trust: "built-in",
+		rolloutPhase: "phase-3",
+		teardown: ["close-surface", "preserve-state"],
+		notes: "Main-pane surface (formFactor: main-pane). Automations routes (/automations + detail/runs); phase 3.",
+	},
+	{
+		currentId: "settings",
+		currentFile: "apps/desktop/src/renderer/components/settings",
+		currentFamily: "panel",
+		owner: {
+			kind: "host-only",
+			rationale:
+				"the settings SHELL hosts plugin and permission UX (same self-reference class as the plugins panel); individual settings sections become plugin contributions later via a contributes.settings family",
+		},
+		targetFamily: "panels",
+		targetToolId: null,
+		requiredCapabilities: [],
+		trust: "built-in",
+		rolloutPhase: "defer",
+		teardown: ["close-surface"],
+		notes: "Host-only exception (main-pane). The shell stays host-owned; a future contributes.settings family lets plugins contribute sections.",
+	},
+	{
 		currentId: "palot-bridge",
 		currentFile: "apps/desktop/src/main/palot-plugin/plugin.js",
 		currentFamily: "command",
@@ -439,16 +478,39 @@ export function groupFirstPartyMigrationByPhase(): Readonly<Record<RolloutPhase,
 	return out
 }
 
+/** Thrown when a currentId matches rows in more than one family and no family was given. */
+export class AmbiguousMigrationRowError extends Error {
+	constructor(currentId: string, families: readonly string[]) {
+		super(
+			`migration row lookup for "${currentId}" is ambiguous across families [${families.join(", ")}]; pass currentFamily to disambiguate`,
+		)
+		this.name = "AmbiguousMigrationRowError"
+	}
+}
+
 /**
  * Look up the migration row for a current surface id. Returns `null`
  * when the surface is not in the matrix (e.g. a third-party extension
  * added it).
+ *
+ * Fail-fast on ambiguity: if the id matches rows in MORE than one
+ * family and no `currentFamily` filter was given, this throws instead
+ * of silently returning the first match (the old first-match behavior
+ * masked the doubled `browser` row bug).
  */
-export function findFirstPartyMigrationRow(currentId: string): FirstPartyMigrationRow | null {
-	for (const row of FIRST_PARTY_MIGRATION_MATRIX) {
-		if (row.currentId === currentId) return row
+export function findFirstPartyMigrationRow(
+	currentId: string,
+	currentFamily?: FirstPartyMigrationRow["currentFamily"],
+): FirstPartyMigrationRow | null {
+	const matches = FIRST_PARTY_MIGRATION_MATRIX.filter(
+		(row) => row.currentId === currentId && (currentFamily === undefined || row.currentFamily === currentFamily),
+	)
+	if (matches.length === 0) return null
+	const families = [...new Set(matches.map((row) => row.currentFamily))]
+	if (families.length > 1) {
+		throw new AmbiguousMigrationRowError(currentId, families)
 	}
-	return null
+	return matches[0] ?? null
 }
 
 /**
