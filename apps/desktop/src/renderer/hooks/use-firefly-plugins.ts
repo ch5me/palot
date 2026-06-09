@@ -24,6 +24,17 @@ export interface FireflyPluginEntry {
 	appVersion: string
 	requiredCapabilities: string[]
 	defaultGrantedCapabilities: string[]
+	/** Human-readable reason for a non-nominal status (e.g. quarantine cause). */
+	statusDetail?: string
+	source?: "built-in" | "disk"
+}
+
+export interface FireflyPluginLifecycleSnapshot {
+	pluginId: string
+	enabled: boolean
+	quarantined: boolean
+	quarantineDetail: string | null
+	uiCrashCount: number
 }
 
 export interface FireflyPluginProjectionSummary {
@@ -101,6 +112,8 @@ function getBridge(): {
 	capabilities: (pluginId: string) => Promise<FireflyPluginCapabilitiesResult>
 	tools: (pluginId?: string) => Promise<FireflyPluginToolsResult>
 	invoke: (input: FireflyPluginInvokeInput) => Promise<FireflyPluginInvokeResult>
+	setEnabled: (pluginId: string, enabled: boolean) => Promise<FireflyPluginLifecycleSnapshot>
+	releaseQuarantine: (pluginId: string, note: string) => Promise<FireflyPluginLifecycleSnapshot>
 	onChanged: (cb: (p: { appVersion: string; pluginCount: number }) => void) => () => void
 } {
 	if (typeof window === "undefined") {
@@ -142,6 +155,22 @@ export async function invokePluginCommand(
 	input: FireflyPluginInvokeInput,
 ): Promise<FireflyPluginInvokeResult> {
 	return getBridge().invoke(input)
+}
+
+/** Operator action: enable or disable a plugin at runtime. */
+export async function setPluginEnabled(
+	pluginId: string,
+	enabled: boolean,
+): Promise<FireflyPluginLifecycleSnapshot> {
+	return getBridge().setEnabled(pluginId, enabled)
+}
+
+/** Operator action: release a quarantined plugin back to service. */
+export async function releasePluginQuarantine(
+	pluginId: string,
+	note: string,
+): Promise<FireflyPluginLifecycleSnapshot> {
+	return getBridge().releaseQuarantine(pluginId, note)
 }
 
 export function useFireflyPluginCatalogChanged(
