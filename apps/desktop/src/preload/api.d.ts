@@ -237,6 +237,12 @@ export interface PalotUiStateSnapshot {
 	sidePanel: PalotSidePanelSnapshot
 }
 
+export interface LoomOpenSessionResult {
+	sessionId: string
+	surfaceUrl: string
+	rev: number
+}
+
 export type BrowserActionSource =
 	| "tool_request"
 	| "automation_runtime"
@@ -1075,6 +1081,15 @@ export interface ElfAPI {
 		releaseBinding: (sessionId: string) => Promise<SessionBinding | null>
 		getUiStateSnapshot: () => Promise<PalotUiStateSnapshot>
 		openSidePanel: (tab: SidePanelTabId) => Promise<PalotUiStateSnapshot>
+		openLoomSession: (sessionId: string) => Promise<LoomOpenSessionResult>
+		sendLoomEvent: (
+			sessionId: string,
+			event: { type: string; nodeId: string; payload?: Record<string, unknown> },
+		) => Promise<void>
+		sendLoomStateDelta: (
+			sessionId: string,
+			delta: { nodeId: string; field: string; value: unknown },
+		) => Promise<void>
 		onOpenSidePanel: (callback: (payload: { tab: SidePanelTabId }) => void) => () => void
 		onBrowserActions: (callback: (event: BrowserActionEvent) => void) => () => void
 	}
