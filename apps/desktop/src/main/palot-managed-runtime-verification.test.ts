@@ -107,3 +107,84 @@ test("real plugin over real bridge server proves managed runtime contract end-to
 		cleanup()
 	}
 })
+
+test("catalog tools project dynamically into the real plugin and dispatch through invokePluginTool", async () => {
+	const cleanup = setupTempXdg()
+	try {
+		const ipcMod = await import("./palot-browser-ipc")
+		const dispatchMod = await import("./firefly-plugin/dispatch")
+		const pluginSource = await import("./palot-plugin-entry.js")
+
+		// Host side: notes handlers registered exactly like main/index.ts does.
+		dispatchMod.registerBuiltInHostCommands()
+		ipcMod.registerPalotBrowserWindows(() => [])
+		ipcMod.setUiStateSnapshot({
+			sidePanel: { open: false, activeTab: null, availableTabs: ["notes", "review"] },
+		})
+
+		const bridge = await ipcMod.ensurePalotBridgeServer()
+		const bridgeRequest = await pluginSource.createBridgeClient({
+			env: {
+				PALOT_BRIDGE_URL: `http://${bridge.host}:${bridge.port}${bridge.path}`,
+				PALOT_BRIDGE_TOKEN: bridge.token,
+			},
+		})
+		assert.ok(bridgeRequest)
+
+		// Instantiate the REAL plugin over the REAL bridge: catalog tools
+		// must appear next to the static palot tools.
+		const server = await pluginSource.createPalotPlugin({}, { bridgeRequest })
+		const hooks = await (server as () => Promise<Record<string, unknown>>)()
+		const tools = hooks.tool as Record<string, PluginToolHandler>
+
+		// Static tools still present (no regression from the merge).
+		assert.ok(tools.browser_status)
+		assert.ok(tools.open_side_panel)
+
+		// Slice-1 criterion: the notes catalog tools are REAL OpenCode tools.
+		assert.ok(tools["plugin.firefly.built-in.surface.notes.open"])
+		assert.ok(tools["plugin.firefly.built-in.surface.notes.state"])
+
+		const opened = JSON.parse(
+			await tools["plugin.firefly.built-in.surface.notes.open"].execute(
+				{},
+				{ sessionID: "ses_catalog" },
+			),
+		)
+		assert.equal(opened.status, "completed")
+		assert.equal(opened.pluginId, "firefly.built-in.surface.notes")
+		assert.equal(opened.data.opened, true)
+		assert.equal(opened.data.tab, "notes")
+
+		const state = JSON.parse(
+			await tools["plugin.firefly.built-in.surface.notes.state"].execute(
+				{ sessionId: "ses_catalog" },
+				{ sessionID: "ses_catalog" },
+			),
+		)
+		assert.equal(state.status, "completed")
+		assert.equal(state.data.tab, "notes")
+		assert.equal(state.data.available, true)
+
+		// Disabled plugins drop out of the projection on the next plugin init…
+		const authority = await import("./firefly-plugin/authority")
+		authority.setPluginEnabled("firefly.built-in.surface.notes", false)
+		const hooksAfterDisable = await (server as () => Promise<Record<string, unknown>>)()
+		const toolsAfterDisable = hooksAfterDisable.tool as Record<string, PluginToolHandler>
+		assert.equal(toolsAfterDisable["plugin.firefly.built-in.surface.notes.open"], undefined)
+
+		// …and an ALREADY-projected tool is refused at invoke time by the host.
+		const disabledEnvelope = JSON.parse(
+			await tools["plugin.firefly.built-in.surface.notes.open"].execute(
+				{},
+				{ sessionID: "ses_catalog" },
+			),
+		)
+		assert.equal(disabledEnvelope.status, "unavailable")
+		assert.equal(disabledEnvelope.errorCode, "plugin_disabled")
+
+		authority.setPluginEnabled("firefly.built-in.surface.notes", true)
+	} finally {
+		cleanup()
+	}
+})

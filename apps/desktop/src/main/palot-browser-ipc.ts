@@ -1,5 +1,6 @@
 import { randomBytes } from "node:crypto"
 import { createServer, type IncomingMessage, type Server, type ServerResponse } from "node:http"
+import { z } from "zod"
 import type {
 	BrowserActionEvent,
 	BrowserLaneHealth,
@@ -285,7 +286,98 @@ async function handleBridgePayload(payload: unknown): Promise<unknown> {
 	if (action === "dispatch-browser-tool") return await dispatchBridgeBrowserTool(payload)
 	if (action === "open-side-panel") return await openBridgeSidePanel(payload)
 	if (action === "get-ui-state") return getUiStateSnapshot()
+	if (action === "list-plugin-tools") return await listBridgePluginTools()
+	if (action === "invoke-plugin-tool") return await invokeBridgePluginTool(payload)
 	throw new Error("Unsupported Palot bridge action")
+}
+
+// ---------------------------------------------------------------------------
+// V2 plugin catalog tool projection over the bridge
+//
+// The OpenCode plugin (`palot-plugin/plugin.js`) runs in the OpenCode
+// process and cannot read the catalog directly. These two actions are
+// the seam: `list-plugin-tools` projects every available catalog tool
+// (`plugin.<id>.*`) with a JSON-Schema args description, and
+// `invoke-plugin-tool` routes execution back through the host's
+// `invokePluginTool` (manifest lookup → broker → Zod validation →
+// registered host handler). Disabled/quarantined plugins are filtered
+// at list time AND re-checked at invoke time by the dispatcher.
+// ---------------------------------------------------------------------------
+
+export interface BridgePluginToolDefinition {
+	readonly pluginId: string
+	readonly toolId: string
+	readonly title: string
+	readonly description: string
+	readonly scope: "session" | "project" | "app"
+	readonly timeoutMs: number
+	readonly argsJsonSchema: Record<string, unknown>
+}
+
+export async function listBridgePluginTools(): Promise<{
+	tools: BridgePluginToolDefinition[]
+}> {
+	// Dynamic imports: firefly-plugin/dispatch lazily imports THIS module
+	// for the notes host handlers, so a static import would be a cycle.
+	const { getPluginCatalog } = await import("./firefly-plugin/authority")
+	const { projectBridgeToolDefinitions } = await import(
+		"../shared/firefly-plugin/bridge-projection"
+	)
+	const catalog = getPluginCatalog()
+	const tools: BridgePluginToolDefinition[] = []
+	for (const descriptor of catalog.descriptors) {
+		const state = catalog.capabilityStates[descriptor.normalizedId]
+		if (state?.pluginDisabled || state?.pluginQuarantined) continue
+		for (const def of projectBridgeToolDefinitions(descriptor)) {
+			let argsJsonSchema: Record<string, unknown>
+			try {
+				argsJsonSchema = z.toJSONSchema(def.argsSchema, { io: "input" }) as Record<
+					string,
+					unknown
+				>
+			} catch (err) {
+				// One unrepresentable arg schema must not hide every other
+				// catalog tool — skip THIS tool, loudly. The manifest author
+				// sees the omission in the OpenCode tool list and this log.
+				const { createLogger } = await import("./logger")
+				createLogger("palot-bridge").warn("Skipping plugin tool: args schema is not JSON-Schema representable", {
+					pluginId: def.pluginId,
+					toolId: def.id,
+					reason: err instanceof Error ? err.message : String(err),
+				})
+				continue
+			}
+			tools.push({
+				pluginId: def.pluginId,
+				toolId: def.id,
+				title: def.title,
+				description: def.description,
+				scope: def.scope,
+				timeoutMs: def.timeoutMs,
+				argsJsonSchema,
+			})
+		}
+	}
+	return { tools }
+}
+
+const invokeBridgePluginToolSchema = z.object({
+	action: z.literal("invoke-plugin-tool"),
+	pluginId: z.string().min(1).max(128),
+	toolId: z.string().min(1).max(256),
+	args: z.record(z.string(), z.unknown()).optional(),
+	sessionId: z.string().nullable().optional(),
+})
+
+async function invokeBridgePluginTool(payload: unknown): Promise<unknown> {
+	const input = invokeBridgePluginToolSchema.parse(payload)
+	const { invokePluginTool } = await import("./firefly-plugin/dispatch")
+	return invokePluginTool({
+		pluginId: input.pluginId,
+		toolId: input.toolId,
+		args: input.args ?? {},
+		sessionId: input.sessionId ?? null,
+	})
 }
 
 function resolveBridgeBinding(payload: unknown): unknown {

@@ -278,12 +278,103 @@ export const buildUiStateHandler = ({ bridgeRequest, getUiState }) => {
 	}
 }
 
+// ---------------------------------------------------------------------------
+// V2 plugin catalog → dynamic OpenCode tool projection
+//
+// At plugin init we ask the host bridge for every available catalog tool
+// (`plugin.<id>.*`) and register each one as a real OpenCode tool. The
+// host re-validates args and re-checks enable/quarantine state on every
+// invoke (`invokePluginTool`), so this projection is a view, not an
+// authority. Catalog tool names never collide with the static palot
+// tools (they are namespaced `plugin.<plugin-id>.<verb>`).
+// ---------------------------------------------------------------------------
+
+const jsonSchemaNodeToZod = (node) => {
+	if (!node || typeof node !== "object") return z.unknown()
+	if (Array.isArray(node.enum) && node.enum.length > 0) {
+		const literals = node.enum.map((value) => z.literal(value))
+		return literals.length === 1 ? literals[0] : z.union(literals)
+	}
+	switch (node.type) {
+		case "string":
+			return z.string()
+		case "number":
+			return z.number()
+		case "integer":
+			return z.number().int()
+		case "boolean":
+			return z.boolean()
+		case "null":
+			return z.null()
+		case "array":
+			return z.array(jsonSchemaNodeToZod(node.items))
+		case "object": {
+			const shape = jsonSchemaShapeFromObjectSchema(node)
+			return z.object(shape).passthrough()
+		}
+		default:
+			return z.unknown()
+	}
+}
+
+export const jsonSchemaShapeFromObjectSchema = (objectSchema) => {
+	const shape = {}
+	const properties =
+		objectSchema && typeof objectSchema === "object" && objectSchema.properties &&
+		typeof objectSchema.properties === "object"
+			? objectSchema.properties
+			: {}
+	const required = new Set(Array.isArray(objectSchema?.required) ? objectSchema.required : [])
+	for (const [key, propertySchema] of Object.entries(properties)) {
+		const zodType = jsonSchemaNodeToZod(propertySchema)
+		shape[key] = required.has(key) ? zodType : zodType.optional()
+	}
+	return shape
+}
+
+export const buildCatalogToolEntries = async ({ bridgeRequest }) => {
+	if (!bridgeRequest) return {}
+	let listing
+	try {
+		listing = await bridgeRequest({ action: "list-plugin-tools" })
+	} catch (error) {
+		// Catalog projection failing must not take down the static bridge
+		// tools — degrade loudly to static-only.
+		console.error(
+			"[palot-plugin] plugin catalog tool listing failed; continuing with static tools only:",
+			error instanceof Error ? error.message : error,
+		)
+		return {}
+	}
+	const tools = {}
+	for (const def of Array.isArray(listing?.tools) ? listing.tools : []) {
+		if (typeof def?.toolId !== "string" || typeof def?.pluginId !== "string") continue
+		tools[def.toolId] = {
+			description: typeof def.description === "string" ? def.description : def.toolId,
+			args: jsonSchemaShapeFromObjectSchema(def.argsJsonSchema),
+			execute: async (args = {}, context = {}) => {
+				const envelope = await bridgeRequest({
+					action: "invoke-plugin-tool",
+					pluginId: def.pluginId,
+					toolId: def.toolId,
+					args: args ?? {},
+					sessionId: context.sessionID ?? null,
+				})
+				return JSON.stringify(envelope)
+			},
+		}
+	}
+	return tools
+}
+
 export const createPalotPlugin = (
 	{ resolve, dispatch, getUiState, openSidePanel, listConnections } = {},
 	{ bridgeRequest = createBridgeClient() } = {},
 ) => {
 	const resolveBinding = createResolver({ resolve, bridgeRequest, listConnections })
-	return async () => ({
+	return async () => {
+		const catalogTools = await buildCatalogToolEntries({ bridgeRequest })
+		return {
 		"experimental.chat.system.transform": async (input, output) => {
 			if (!input?.sessionID) return
 			const resolved = await resolveBinding(input.sessionID)
@@ -298,6 +389,9 @@ export const createPalotPlugin = (
 			}
 		},
 		tool: {
+			// Catalog-projected tools first: static palot tools keep priority
+			// on a (never expected) name collision.
+			...catalogTools,
 			search_tools: {
 				description: "Search connected app capabilities without hydrating every tool schema",
 				args: { query: z.string().optional() },
@@ -465,7 +559,8 @@ export const createPalotPlugin = (
 				execute: buildUiStateHandler({ bridgeRequest, getUiState }),
 			},
 		},
-	})
+		}
+	}
 }
 
 const server = createPalotPlugin()

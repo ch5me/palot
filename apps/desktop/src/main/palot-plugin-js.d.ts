@@ -8,6 +8,10 @@ declare module "./palot-plugin/plugin.js" {
 
 	export function createBridgeClient(options?: PalotBridgeClientOptions): PalotBridgeRequest | null
 	export function createPalotPlugin(...args: unknown[]): unknown
+	export function buildCatalogToolEntries(input: {
+		bridgeRequest: PalotBridgeRequest | null
+	}): Promise<Record<string, unknown>>
+	export function jsonSchemaShapeFromObjectSchema(objectSchema: unknown): Record<string, unknown>
 	export function buildProductContextBlock(resolved: unknown): string | null
 	export function buildBrowserToolHandler(input: unknown): unknown
 	export function buildOpenSidePanelHandler(input: unknown): unknown
