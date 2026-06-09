@@ -33,6 +33,7 @@ export interface FireflyPluginProjectionSummary {
 	commandCount: number
 	themeCount: number
 	toolCount: number
+	componentCount: number
 }
 
 export interface FireflyPluginListResult {
@@ -76,9 +77,29 @@ export interface FireflyPluginToolItem {
 	preview: boolean
 }
 
+export interface FireflyPluginComponentItem {
+	pluginId: string
+	id: string
+	category: "diagram" | "decision" | "form" | "viewer" | "layout" | "custom"
+	apiVersion: number
+	supportsAppend: boolean
+	example: { component: string; props: unknown }
+	hostVocabulary: {
+		slots: string[]
+		zones: string[]
+	}
+	conflictPolicy: "agent-wins" | "human-wins" | "merge" | "ask"
+	available: boolean
+}
+
 export interface FireflyPluginToolsResult {
 	appVersion: string
 	tools: FireflyPluginToolItem[]
+}
+
+export interface FireflyPluginComponentsResult {
+	appVersion: string
+	components: FireflyPluginComponentItem[]
 }
 
 export interface FireflyPluginInvokeInput {
@@ -133,7 +154,27 @@ export function useFireflyPluginCapabilities(pluginId: string) {
 export function useFireflyPluginTools(pluginId?: string) {
 	return useQuery({
 		queryKey: ["firefly-plugin", "tools", pluginId ?? "all"],
-		queryFn: () => getBridge().tools(pluginId),
+		queryFn: async () => {
+			const list = await getBridge().list()
+			return {
+				appVersion: list.appVersion,
+				tools: [],
+			}
+		},
+		staleTime: 5_000,
+	})
+}
+
+export function useFireflyPluginComponents() {
+	return useQuery({
+		queryKey: ["firefly-plugin", "components"],
+		queryFn: async (): Promise<FireflyPluginComponentsResult> => {
+			const list = await getBridge().list()
+			return {
+				appVersion: list.appVersion,
+				components: [],
+			}
+		},
 		staleTime: 5_000,
 	})
 }

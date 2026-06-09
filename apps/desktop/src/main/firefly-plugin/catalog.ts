@@ -33,6 +33,7 @@ import { type PluginDescriptor } from "../../shared/firefly-plugin/descriptor"
 import {
 	defaultCapabilityState,
 	projectCommandsFromCatalog,
+	projectComponentsFromCatalog,
 	projectSidePanelsFromCatalog,
 	projectSessionWidgetsFromCatalog,
 	projectThemesFromCatalog,
@@ -40,11 +41,16 @@ import {
 } from "../../shared/firefly-plugin/index"
 import {
 	type ProjectedCommand,
+	type ProjectedComponent,
 	type ProjectedSessionWidget,
 	type ProjectedSidePanel,
 	type ProjectedTheme,
 } from "../../shared/firefly-plugin/renderer-projection"
 import { type PluginManifest } from "../../shared/firefly-plugin/manifest"
+import {
+	acmeComponentsExemplarManifest,
+	ACME_COMPONENTS_PLUGIN_ID,
+} from "../../shared/firefly-plugin/exemplars/acme-components-exemplar"
 import { palotBridgeManifest, PALOT_BRIDGE_PLUGIN_ID } from "../../shared/firefly-plugin/palot-bridge-manifest"
 
 import { derivePluginDescriptor, parsePluginManifest } from "../../shared/firefly-plugin/index"
@@ -65,6 +71,7 @@ const log = createLogger("firefly-plugin-catalog")
 const BUILT_IN_MANIFESTS: readonly PluginManifest[] = [
 	palotBridgeManifest,
 	acmeNotebookManifest,
+	acmeComponentsExemplarManifest,
 ]
 
 /**
@@ -110,7 +117,7 @@ const appVersionSchema = z
  * The single in-process catalog. Hosts:
  *   - the parsed `PluginDescriptor[]` (one per built-in manifest)
  *   - the per-plugin capability state the renderer reads
- *   - the latest projections (panels/widgets/commands/themes)
+ *   - the latest projections (panels/widgets/commands/themes/components)
  *
  * Pure functions, no fs. Persistence is handled by the runtime
  * supervisor and the storage scopes layer (see
@@ -126,6 +133,7 @@ export interface PluginCatalog {
 		readonly widgets: readonly ProjectedSessionWidget[]
 		readonly commands: readonly ProjectedCommand[]
 		readonly themes: readonly ProjectedTheme[]
+		readonly components: readonly ProjectedComponent[]
 	}
 }
 
@@ -179,34 +187,19 @@ export function buildPluginCatalog(input: { appVersion: string }): PluginCatalog
 			manifestRevision: descriptor.manifest.manifestRevision,
 			appVersion: descriptor.derived.appVersion,
 			requiredCapabilities: [...descriptor.capabilities],
-			defaultGrantedCapabilities: descriptor.trust === "built-in"
-				? [...BUILT_IN_DEFAULT_CAPABILITIES]
-				: [],
+			defaultGrantedCapabilities:
+				descriptor.trust === "built-in"
+					? [...BUILT_IN_DEFAULT_CAPABILITIES]
+					: [],
 		})
 	}
 
-	const projectionInput = {
-		descriptors,
-		stateByPluginId: capabilityStates,
-	}
-	const panels = projectSidePanelsFromCatalog(
-		descriptors,
-		capabilityStates,
-	).items
-	const widgets = projectSessionWidgetsFromCatalog(
-		descriptors,
-		capabilityStates,
-	).items
-	const commands = projectCommandsFromCatalog(
-		descriptors,
-		capabilityStates,
-	).items
-	const themes = projectThemesFromCatalog(
-		descriptors,
-		capabilityStates,
-	).items
+	const panels = projectSidePanelsFromCatalog(descriptors, capabilityStates).items
+	const widgets = projectSessionWidgetsFromCatalog(descriptors, capabilityStates).items
+	const commands = projectCommandsFromCatalog(descriptors, capabilityStates).items
+	const themes = projectThemesFromCatalog(descriptors, capabilityStates).items
+	const components = projectComponentsFromCatalog(descriptors, capabilityStates).items
 
-	void projectionInput
 	log.info("Built V2 plugin catalog", {
 		appVersion,
 		pluginCount: descriptors.length,
@@ -218,7 +211,7 @@ export function buildPluginCatalog(input: { appVersion: string }): PluginCatalog
 		descriptors,
 		entries,
 		capabilityStates,
-		projections: { panels, widgets, commands, themes },
+		projections: { panels, widgets, commands, themes, components },
 	}
 }
 
@@ -234,6 +227,7 @@ export interface PluginProjectionSummary {
 	readonly commandCount: number
 	readonly themeCount: number
 	readonly toolCount: number
+	readonly componentCount: number
 }
 
 export function summarizeProjection(catalog: PluginCatalog): readonly PluginProjectionSummary[] {
@@ -252,6 +246,9 @@ export function summarizeProjection(catalog: PluginCatalog): readonly PluginProj
 				(t) => t.pluginId === descriptor.normalizedId,
 			).length,
 			toolCount: descriptor.tools.length,
+			componentCount: catalog.projections.components.filter(
+				(component) => component.pluginId === descriptor.normalizedId,
+			).length,
 		}
 		return { pluginId: descriptor.normalizedId, ...projected }
 	})
@@ -309,4 +306,5 @@ function defaultCapabilityStateForId(pluginId: string): CapabilityStateShape {
 export const KNOWN_PLUGIN_IDS = {
 	palotBridge: PALOT_BRIDGE_PLUGIN_ID,
 	acmeNotebook: ACME_NOTEBOOK_PLUGIN_ID,
+	acmeComponents: ACME_COMPONENTS_PLUGIN_ID,
 } as const

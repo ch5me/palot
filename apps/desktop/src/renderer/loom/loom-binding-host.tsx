@@ -1,5 +1,6 @@
 import { memo } from "react"
-import { resolveGenUiEntry } from "../genui/registry"
+import { useFireflyPluginComponents } from "../hooks/use-firefly-plugins"
+import { LoomComponentMount } from "../components/loom/component-mount"
 import { useLoomContext } from "./loom-context"
 import type { LoomNode } from "./use-loom-session"
 
@@ -9,12 +10,11 @@ interface LoomBindingHostProps {
 
 function LoomBindingHostImpl({ node }: LoomBindingHostProps) {
 	const loom = useLoomContext()
-	const entry = resolveGenUiEntry(node.component)
-	if (!entry) return null
-	const Component = entry.Component as React.ComponentType<Record<string, unknown>>
+	const projectedComponents = useFireflyPluginComponents().data?.components ?? []
+	const projectedComponent = projectedComponents.find((component) => component.id === node.component) ?? null
 	const props = { ...(node.props ?? {}) }
 
-	if (entry.name === "decision_card" && loom) {
+	if (node.component === "decision_card" && loom) {
 		props.onSelect = (optionId: string) => {
 			loom.sendStateDelta({ nodeId: node.id, field: "selected", value: optionId })
 		}
@@ -26,7 +26,7 @@ function LoomBindingHostImpl({ node }: LoomBindingHostProps) {
 		}
 	}
 
-	return <Component {...props} />
+	return <LoomComponentMount componentId={node.component} props={props} projectedComponent={projectedComponent} />
 }
 
 export const LoomBindingHost = memo(LoomBindingHostImpl)
