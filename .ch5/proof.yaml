@@ -1,0 +1,11 @@
+version: 1
+commands:
+  workflowProof: "ch5 coverage {projectId} --root /Users/hassoncs/src/ch5 --out artifacts/workflow-proof/latest/status.json --workflow-proof-out artifacts/workflow-proof/latest/index.html"
+  fallbackCoverage: "ch5 coverage {projectId} --root /Users/hassoncs/src/ch5"
+requiredProofs:
+  - id: workflow-proof
+    command: workflowProof
+    evidence: artifacts/workflow-proof/latest/status.json
+  - id: fallback-coverage
+    command: fallbackCoverage
+    evidence: artifacts/coverage/latest/status.json

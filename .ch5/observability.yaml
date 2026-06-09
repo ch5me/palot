@@ -1,0 +1,52 @@
+version: 1
+project: elf
+service: elf-desktop
+runtime: electron-vite-browser-runtime
+hq_plane: logs.ch5.me
+project_slug: elf
+service_slug: elf-desktop
+telemetry_onboarding:
+  state: pending
+  ingestion_path: https://logs.ch5.me/ingest
+  auth:
+    method: cf-access-service-token
+    env_keys:
+      - CF_ACCESS_CH5_INTERNAL_AGENT_CLIENT_ID
+      - CF_ACCESS_CH5_INTERNAL_AGENT_CLIENT_SECRET
+  public_log_keys:
+    - CH5_LOG_INGEST_URL
+    - CH5_BROWSER_LOG_PUBLIC_KEY
+  token_class: agent
+hq_integration_gates:
+  telemetry:
+    required: true
+    status: pending
+    notes: "Electron renderer must set CH5_LOG_INGEST_URL + CH5_BROWSER_LOG_PUBLIC_KEY"
+  logging:
+    required: true
+    status: pending
+    notes: "browser log client wiring pending"
+  analytics:
+    required: true
+    status: pending
+    notes: "PostHog-compatible routes pending tokenized ingest"
+  eventing:
+    required: true
+    status: pending
+    notes: "RunEvent family wiring pending"
+  deploy_depot:
+    required: true
+    status: pending
+    notes: ".ch5/environments.yaml will be canonical source for promotion"
+required_runtime_keys:
+  api:
+    - CH5_LOG_INGEST_URL
+  web:
+    - CH5_BROWSER_LOG_PUBLIC_KEY
+    - CH5_LOG_INGEST_URL
+contracts:
+  - .ch5/proof.yaml
+  - .ch5/observability.yaml
+meta:
+  last_updated_by: sisyphus
+  last_updated_at: 2026-06-08T20:50:00Z
