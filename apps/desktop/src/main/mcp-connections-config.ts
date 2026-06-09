@@ -8,8 +8,37 @@ import { getSettings, updateSettings } from "./settings-store"
 const log = createLogger("mcp-connections-config")
 const OPENCODE_CONFIG_CANDIDATES = ["opencode.jsonc", "opencode.json"] as const
 
+export function resolvePalotPluginEntryPath(): string {
+	// cwd differs by launch style: repo root (devmux/turbo) vs apps/desktop
+	// (electron-vite dev). __dirname lands in apps/desktop/out/main for built output.
+	const candidates = [
+		path.resolve(process.cwd(), PALOT_PLUGIN_ENTRY_RELATIVE_PATH),
+		path.resolve(process.cwd(), "src", "main", "palot-plugin-entry.js"),
+		path.resolve(__dirname, "..", "..", "src", "main", "palot-plugin-entry.js"),
+	]
+	const found = candidates.find((candidate) => fs.existsSync(candidate))
+	if (!found) {
+		throw new Error(`Palot plugin entry not found. Checked: ${candidates.join(", ")}`)
+	}
+	return found
+}
+
 function resolvePalotPluginUrl(): string {
-	return `file://${path.resolve(process.cwd(), PALOT_PLUGIN_ENTRY_RELATIVE_PATH)}`
+	return `file://${resolvePalotPluginEntryPath()}`
+}
+
+function isPalotPluginEntry(entry: string): boolean {
+	return entry.includes("palot-plugin-entry") || entry.includes("palot-bridge")
+}
+
+function isBrokenPalotPluginEntry(entry: string): boolean {
+	if (!isPalotPluginEntry(entry)) return false
+	if (!entry.startsWith("file://")) return false
+	try {
+		return !fs.existsSync(decodeURIComponent(new URL(entry).pathname))
+	} catch {
+		return true
+	}
 }
 
 function resolveManagedConfigPaths(settings: AppSettings): string[] {
@@ -53,11 +82,16 @@ function uniqueStrings(values: string[]): string[] {
 function ensurePluginEntry(configPath: string): void {
 	const pluginUrl = resolvePalotPluginUrl()
 	const current = readManagedConfig(configPath)
-	const plugin = Array.isArray(current.plugin)
-		? uniqueStrings(
-			current.plugin.filter((entry): entry is string => typeof entry === "string").concat(pluginUrl),
-		)
-		: [pluginUrl]
+	const existing = Array.isArray(current.plugin)
+		? current.plugin.filter((entry): entry is string => typeof entry === "string")
+		: []
+	const stale = existing.filter((entry) => isBrokenPalotPluginEntry(entry))
+	if (stale.length > 0) {
+		log.warn("Removing Palot plugin entries pointing at missing files", { configPath, stale })
+	}
+	const plugin = uniqueStrings(
+		existing.filter((entry) => !isBrokenPalotPluginEntry(entry)).concat(pluginUrl),
+	)
 	const next = { ...current, plugin }
 	writeManagedConfig(configPath, next)
 	log.info("Ensured Palot bridge plugin entry", { configPath, pluginUrl })

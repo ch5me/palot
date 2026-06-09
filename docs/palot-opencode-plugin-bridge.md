@@ -84,10 +84,15 @@ When Palot detects an already-running same-user server, it attaches to it instea
 
 Current limitation:
 - no code path edits the environment of an already-running server process
-- no code path writes plugin config into a global OpenCode config file for out-of-process reuse
-- attached/pre-existing OpenCode servers are therefore intentionally unsupported for Palot bridge features today
+- `ensurePalotPluginConfig()` (`apps/desktop/src/main/mcp-connections-config.ts`) DOES write the plugin file URL into the global OpenCode config (`~/.config/opencode/opencode.jsonc` or `.json`), so externally-started servers (the shared host on :4096, the embedded server `apps/server/src/services/server-manager.ts` starts on :14096) load the plugin module
+- but those servers have no `PALOT_BRIDGE_URL`/`PALOT_BRIDGE_TOKEN` env, so the plugin runs WITHOUT authority: no context injection (resolver returns null), browser tools answer `unbound_session`, `open_side_panel` answers "bridge is unavailable", and the stub discovery tools still appear
+- full Palot bridge features therefore work only on Palot-spawned managed servers today
 
-This is the most important operational caveat in the current design.
+This is the most important operational caveat in the current design: "plugin loaded" and "plugin powered" are different states, and only managed spawn produces the powered state.
+
+Known hazards in this path:
+- `ensurePalotPluginConfig()` historically resolved the plugin path against `process.cwd()`, which wrote broken doubled paths (e.g. `.../apps/desktop/apps/desktop/...`) into the global config when Electron dev ran with cwd=`apps/desktop`. Resolution now probes cwd variants plus `__dirname` and fails fast if none exist; `ensurePluginEntry` also self-heals by dropping palot entries that point at missing files.
+- `readManagedConfig()` uses `JSON.parse` on `.jsonc`: a config with comments will throw inside `ensureServer()`, and rewrites strip comments. Treat `~/.config/opencode/opencode.jsonc` as machine-managed JSON when Palot owns it.
 
 ## Plugin module contract <!-- oc:id=sec_ag -->
 
@@ -132,19 +137,25 @@ Hook name:
 Behavior:
 1. OpenCode calls the hook with `input.sessionID` <!-- oc:id=item_ak -->
 1. plugin calls `resolveBinding(input.sessionID)` <!-- oc:id=item_al -->
-1. plugin builds a compact `<palot-browser-context>` block <!-- oc:id=item_am -->
+1. plugin builds a compact `<elf-context>` block <!-- oc:id=item_am -->
 1. plugin appends it to `output.system` <!-- oc:id=item_an -->
 
-Context block fields today:
+Context block fields today (`buildProductContextBlock` in `apps/desktop/src/main/palot-plugin/plugin.js`):
 - `session_id`
-- `binding_status`
-- `lane_id`
-- `magic_browser_session_id`
-- `viewer_url_hint`
-- `current_url`
+- `browser_binding_status`
+- `browser_lane_id`
+- `browser_session_id` (the magic-browser session id from the binding)
+- `browser_viewer_url`
+- `browser_current_url`
 - `side_panel_open`
 - `side_panel_tab`
 - `side_panel_tabs`
+- `connected_apps` (one summary line per connection)
+- `connected_app_discovery_tools`
+- `product_control_tools`
+- `tool_routing_rule` / `tool_naming_rule` / `tool_mapping_rule` (model guidance lines)
+
+The block is omitted entirely when there is no binding, no snapshot, and no connections.
 
 Implementation:
 - builder: `apps/desktop/src/main/palot-plugin/plugin.js`
@@ -172,6 +183,8 @@ The plugin currently exposes these tools:
 - `tools_status`: `apps/desktop/src/main/palot-plugin/plugin.js`
 
 These discovery tools stay separate from browser and UI control, but the injected system context now surfaces connected app names and tells the model to use them by product/capability rather than low-level transport terms.
+
+IMPORTANT current truth: all four discovery tools return HARDCODED STUB data (fake `github`/`notion` candidates, fake schemas, `status: "ready"`). They are contract placeholders, not live MCP discovery. Any session that loads this plugin sees these stub tools, including sessions on servers that have no Palot authority at all.
 
 ### Browser tools <!-- oc:id=sec_am -->
 - `browser_status`: `apps/desktop/src/main/palot-plugin/plugin.js`
@@ -209,7 +222,8 @@ Important truth:
 - standalone OpenCode plugin runtime still cannot import live Electron main callbacks directly
 - Palot now solves this with a localhost bridge started in Electron main and passed into spawned OpenCode env as `PALOT_BRIDGE_URL` + `PALOT_BRIDGE_TOKEN`
 - plugin first uses direct injected callbacks when present, else falls back to HTTP bridge transport
-- `apps/desktop/src/main/palot-opencode-plugin-shim.ts` still hydrates local test/runtime callbacks when factory seam is available, but live standalone authority now comes from bridge transport
+- `apps/desktop/src/main/palot-opencode-plugin-shim.ts` only validates module shape; it does not hydrate callbacks. Live standalone authority comes from bridge transport exclusively.
+- the bridge implementation history: it was first written on the `atlas/loom` branch and the `opencode-manager.ts` import landed on main without it, leaving main's managed spawn broken until the implementation was ported to main (2026-06-09). If `ensurePalotBridgeServer` is ever missing again, managed spawn throws at `appendPalotPlugin()`.
 
 This means `ui_state`, `open_side_panel`, and `browser_*` no longer depend on undocumented host callback hydration inside OpenCode runtime.
 
@@ -325,19 +339,47 @@ Implementation note:
 
 ## Magic Browser seam <!-- oc:id=sec_at -->
 
-Magic Browser bootstrap helper:
-- `apps/desktop/src/main/palot-magic-browser.ts:25`
+### Current truth: NOT wired to the real magic-browser <!-- oc:id=sec_at1 -->
 
-What it does:
-- derives deterministic `magicBrowserSessionId`
-- derives viewer token
-- derives `viewerUrl`
+`apps/desktop/src/main/palot-magic-browser.ts:25` does NOT invoke the magic-browser CLI or library at all. It:
+- fabricates a deterministic `magicBrowserSessionId` as `mb_<sha1(bindingId)[0:12]>` — this id does not exist in magic-browser's session registry
+- derives a viewer token and `viewerUrl` pointing at the lane stream route
 - persists only non-secret session binding fields back to binding store
-- keeps token in main-only secret cache
+- keeps the token in the main-only secret cache
 
-Key rule:
+The magic-browser repo (`~/src/ch5/magic-browser`) has zero references to palot/elf/browser-lane. Browser tool calls today ride Palot's own browser-lane CDP helpers (`browser-lane-cdp.ts`), not magic-browser. The `browser_session_id` in the injected `<elf-context>` is therefore decorative until the integration below lands.
+
+Key rule (unchanged):
 - secrets stay in main-only secret cache
 - tokens do not go into tool output, renderer state, or persisted binding JSON
+
+### Intended integration contract (magic-browser `remote-cdp` adapter) <!-- oc:id=sec_at2 -->
+
+Magic-browser already exposes the exact seam a browser lane needs — attach to an externally-owned Chromium over CDP, detach-only lifecycle:
+
+```bash
+magic-browser session start <workflow-id> \
+  --adapter remote-cdp \
+  --remote-cdp-url "ws://127.0.0.1:<cdp-port>/devtools/browser/<uuid>" \
+  --remote-session-id "<lane-id>" \
+  --remote-live-url "http://elf-browser-lane.local/browser/<lane-id>/" \
+  --knowledge-mode local-only
+```
+
+Contract facts (source: `magic-browser/src/adapters/remote-cdp.ts`, `src/session/providers/direct-remote-cdp.ts`):
+- `--remote-cdp-url` must be the browser-level CDP WEBSOCKET URL, not the HTTP endpoint. Palot must fetch the lane's `http://127.0.0.1:<cdp-port>/json/version` and pass `webSocketDebuggerUrl`.
+- env fallbacks: `REMOTE_CDP_WEBSOCKET_URL`, `MAGIC_BROWSER_REMOTE_SESSION_ID`, `REMOTE_CDP_LIVE_URL`.
+- magic-browser generates its own UUID session id (returned in JSON); the binding store should persist THAT as `magicBrowserSessionId` instead of the fabricated `mb_*` hash.
+- `session stop` is detach-only (`stopStrategy: "detach-only"`): it never kills the lane container.
+- provider descriptor: `providerKind: "remote-managed"`, `transportKind: "remote-cdp"`, `profile.ownership: "external-attached"`, `profile.lockRequired: false`.
+- lifecycle/tab commands: `session tabs <id>`, `session open <id> <url>`, `session open-live <id>`, `session status <id>`, `session list`.
+- session records persist under magic-browser's state root (`.state/sessions/<uuid>.json`); they hold the CDP URL immutably — a lane restart (new port) makes the magic-browser session stale and requires re-attach.
+- magic-browser assumes an UNAUTHENTICATED CDP websocket. Lane CDP is exposed via socat relay without auth, so this matches today.
+
+Gap list for wiring it up:
+1. `ensureMagicBrowserSessionForBinding` should shell out (or import the library entry) to `session start --adapter remote-cdp ...` and persist the returned UUID.
+2. Lane restart must invalidate/re-create the magic-browser session (CDP URL is immutable per session record).
+3. `browser_*` plugin tools can then optionally dispatch through magic-browser's higher-level runtime instead of raw lane CDP, which is the long-term "browser tab powered by magic-browser" goal.
 
 ## IPC / preload / renderer seam <!-- oc:id=sec_au -->
 
@@ -477,10 +519,11 @@ These are the important known gaps to document honestly:
 - only guaranteed for Palot-spawned managed servers
 - attached/pre-existing OpenCode servers are intentionally unsupported for Palot bridge features today
 
-1. Callback hydration path is documented as absent <!-- oc:id=item_ba -->
-- plugin code expects `resolve` / `dispatch` / `getUiState` / `openSidePanel`
-- spawn path loads the plugin file, but this repo still does not expose a host-runtime site that instantiates the plugin with those callbacks inside OpenCode
-- current truth is documentation plus proof of absence, not a hidden implementation
+1. Bridge transport is real; direct callback hydration is not <!-- oc:id=item_ba -->
+- plugin code accepts injected `resolve` / `dispatch` / `getUiState` / `openSidePanel` callbacks, but no OpenCode-side host instantiates it with them
+- the live transport is the localhost bridge: `ensurePalotBridgeServer()` in `apps/desktop/src/main/palot-browser-ipc.ts` plus `createBridgeClient()` in the plugin
+- bridge `dispatch-browser-tool` routes through the real `dispatchBrowserTool(...)` (`palot-browser-dispatcher.ts`), so plugin browser tools hit actual browser-lane CDP operations
+- proven end-to-end (real plugin, real bridge server, no fixture) by `apps/desktop/src/main/palot-managed-runtime-verification.test.ts`
 
 1. Browser action tools are live over CDP <!-- oc:id=item_bb -->
 - navigate/open/tabs are real
@@ -497,12 +540,14 @@ These are the important known gaps to document honestly:
 ## Tests and supporting evidence <!-- oc:id=sec_bj -->
 
 Primary tests:
+- end-to-end managed runtime contract (real plugin + real bridge server + real dispatcher): `apps/desktop/src/main/palot-managed-runtime-verification.test.ts`
 - plugin shim: `apps/desktop/src/main/palot-opencode-plugin-shim.test.ts`
 - canonical plugin behavior tests: `apps/desktop/.opencode/plugins/palot-bridge.test.js`
-- canonical implementation behavior test: `apps/desktop/.opencode/plugins/palot-bridge.test.js`
 - resolver: `apps/desktop/src/main/palot-resolver.test.ts`
 - browser IPC snapshot: `apps/desktop/src/main/palot-browser-ipc.test.ts`
 - browser dispatcher: `apps/desktop/src/main/palot-browser-dispatcher.test.ts`
+
+Known test caveat: per-file XDG isolation uses `process.env`, which races when bun interleaves async `node:test` files in one process — run seam test files individually if a combined run flakes (`releaseSessionBinding` order-dependence).
 
 Planning and prior architecture:
 - master plan: `.sisyphus/plans/palot-browser-side-panel-opencode-magic-browser-cursor.md`

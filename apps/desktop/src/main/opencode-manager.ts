@@ -15,9 +15,8 @@ import { getCredential } from "./credential-store"
 import { ensurePalotBridgeServer } from "./palot-browser-ipc"
 import { loadPalotPluginModule } from "./palot-opencode-plugin-shim"
 import { createLogger } from "./logger"
-import { ensurePalotPluginConfig } from "./mcp-connections-config"
+import { ensurePalotPluginConfig, resolvePalotPluginEntryPath } from "./mcp-connections-config"
 import { startNotificationWatcher, stopNotificationWatcher } from "./notification-watcher"
-import { PALOT_PLUGIN_ENTRY_RELATIVE_PATH } from "./palot-plugin-entry"
 import { getListeningProcessOwner, isCurrentUser, isProcessAlive } from "./process-owner"
 import { readLockfile, removeLockfile, writeLockfile } from "./server-lockfile"
 import { getSettings } from "./settings-store"
@@ -84,7 +83,7 @@ const DEFAULT_PORT = Number(process.env.OPENCODE_PORT) || DEFAULT_LOCAL_SERVER_P
 const DEFAULT_HOSTNAME = process.env.OPENCODE_HOSTNAME || "127.0.0.1"
 
 function resolvePalotPluginPath(): string {
-	return path.resolve(process.cwd(), PALOT_PLUGIN_ENTRY_RELATIVE_PATH)
+	return resolvePalotPluginEntryPath()
 }
 
 interface ClientProcess {

@@ -38,3 +38,11 @@ export async function createBridgeClient(
 	const plugin = await loadPalotPluginEntry()
 	return plugin.createBridgeClient?.(options) ?? null
 }
+
+export async function createPalotPlugin(...args: unknown[]): Promise<unknown> {
+	const plugin = await loadPalotPluginEntry()
+	if (!plugin.createPalotPlugin) {
+		throw new Error("Palot plugin entry does not expose createPalotPlugin")
+	}
+	return plugin.createPalotPlugin(...args)
+}
