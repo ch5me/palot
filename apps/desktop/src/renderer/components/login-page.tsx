@@ -10,8 +10,14 @@ const FIREFLY_DESKTOP_CLIENT_ID = "firefly-desktop"
 type SignInPhase = "idle" | "pending" | "error"
 
 interface ErrorInfo {
-	kind: "denied" | "expired"
+	kind: "denied" | "expired" | "signin_failed" | "poll_failed"
 	message: string
+}
+
+function errorMessage(err: unknown, fallback: string): string {
+	if (err instanceof Error && err.message) return err.message
+	if (typeof err === "string" && err.length > 0) return err
+	return fallback
 }
 
 export function LoginPage() {
@@ -54,8 +60,12 @@ export function LoginPage() {
 			setDeviceCode(code)
 			setPhase("pending")
 			await pollForToken()
-		} catch {
-			setPhase("idle")
+		} catch (err) {
+			setError({
+				kind: "signin_failed",
+				message: errorMessage(err, "Could not start sign-in. Please try again."),
+			})
+			setPhase("error")
 			setDeviceCode(null)
 		}
 	}
@@ -72,6 +82,12 @@ export function LoginPage() {
 				setPhase("error")
 			} else if (msg === "sign_in_expired") {
 				setError({ kind: "expired", message: "Code expired. Please try again." })
+				setPhase("error")
+			} else {
+				setError({
+					kind: "poll_failed",
+					message: errorMessage(err, "Sign-in was interrupted. Please try again."),
+				})
 				setPhase("error")
 			}
 		} finally {
