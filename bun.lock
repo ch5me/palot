@@ -398,9 +398,6 @@
         "typescript": "^5.8.3",
       },
     },
-    "packages/mcp-runtime-shared": {
-      "name": "@ch5me/mcp-runtime-shared",
-    },
     "packages/ui": {
       "name": "@ch5me/elf-ui",
       "version": "0.6.0",
@@ -704,8 +701,6 @@
     "@ch5me/firefly-design": ["@ch5me/firefly-design@workspace:../ch5-packages/packages/firefly/design"],
 
     "@ch5me/html-react-inspector": ["@ch5me/html-react-inspector@workspace:../ch5-packages/packages/web/html-react-inspector"],
-
-    "@ch5me/mcp-runtime-shared": ["@ch5me/mcp-runtime-shared@workspace:packages/mcp-runtime-shared"],
 
     "@ch5me/motion": ["@ch5me/motion@workspace:../ch5-packages/packages/motion/motion"],
 
