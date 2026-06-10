@@ -17,8 +17,9 @@
 	"scripts": {
 		"lint": "biome check .",
 		"check-types": "bunx tsgo --noEmit",
-		"storybook": "bunx storybook dev -p 6006",
+		"storybook": "bunx storybook dev -p ${PORT:-11001} --host 0.0.0.0",
 		"build-storybook": "bunx storybook build",
+
 		"clean": "rm -rf dist node_modules .turbo storybook-static"
 	},
 	"dependencies": {

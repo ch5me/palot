@@ -24,6 +24,7 @@
 		"dev:desktop:wayland": "bunx devmux ensure desktop-wayland",
 		"dev:web": "bunx devmux ensure web",
 		"dev:server": "bunx devmux ensure server",
+		"dev:storybook": "bunx devmux ensure storybook",
 		"svc:status": "bunx devmux status",
 		"svc:attach": "bunx devmux attach",
 		"svc:stop": "bunx devmux stop",

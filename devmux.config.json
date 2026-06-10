@@ -40,6 +40,15 @@
 			"env": {
 				"OPENCODE_PORT": "4096"
 			}
+		},
+		"storybook": {
+			"cwd": "packages/ui",
+			"command": "bun run storybook",
+			"health": { "type": "port", "port": 11001 },
+			"dependsOn": [],
+			"env": {
+				"PORT": "11001"
+			}
 		}
 	}
 }
