@@ -40,6 +40,6 @@ This plan adds: `auth:getState`, `auth:signIn`, `auth:poll`, `auth:cancelSignIn`
 
 ## Known gaps flagged in plan <!-- oc:id=sec_ag -->
 
-- `api.staging.elf.dance` is unresolved (CG6). Desktop auth flows now require `FIREFLY_AUTH_HOST`/`VITE_FIREFLY_AUTH_HOST` instead of falling back to `auth.elf.dance`.
+- CG6 resolved: `device-auth-client.ts` and `sign-in-to-editor-handler.ts` now default to `https://app.elf.dance` (production app host) per the service-topology env contract. Staging override: `FIREFLY_AUTH_HOST=https://staging.app.elf.dance`.
 - `GET /api/device-auth/codes/:code` polling endpoint confirmed present in firefly-cloud.
 - `POST /api/device-auth/tokens` for editor handoff confirmed present in firefly-cloud.
