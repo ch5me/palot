@@ -31,6 +31,10 @@ function statePath(): string {
 	return path.join(app.getPath("userData"), AUTH_STATE_FILE)
 }
 
+function isExpired(state: ElfAuthState, nowSec = Math.floor(Date.now() / 1000)): boolean {
+	return state.expiresAt <= nowSec
+}
+
 export function createElfTokenStore(): ElfTokenStoreShape {
 	const listeners = new Set<ChangeListener>()
 	let cached: ElfAuthState | null = null
@@ -43,7 +47,13 @@ export function createElfTokenStore(): ElfTokenStoreShape {
 		try {
 			const raw = fs.readFileSync(p)
 			const decrypted = await decrypt(Buffer.from(raw))
-			return JSON.parse(decrypted) as ElfAuthState
+			const state = JSON.parse(decrypted) as ElfAuthState
+			if (isExpired(state)) {
+				log.info("Dropping expired auth state from disk", { expiresAt: state.expiresAt })
+				await persist(null)
+				return null
+			}
+			return state
 		} catch (err) {
 			log.error("Failed to load auth state, treating as absent", err)
 			return null
@@ -76,10 +86,27 @@ export function createElfTokenStore(): ElfTokenStoreShape {
 				cached = await loadState()
 				initialized = true
 			}
+			if (cached && isExpired(cached)) {
+				log.info("Dropping expired cached auth state", { expiresAt: cached.expiresAt })
+				cached = null
+				await persist(null)
+				for (const cb of listeners) {
+					cb(null)
+				}
+			}
 			return cached
 		},
 
 		async setState(state: ElfAuthState) {
+			if (isExpired(state)) {
+				log.warn("Refusing to cache expired auth state", { expiresAt: state.expiresAt })
+				cached = null
+				await persist(null)
+				for (const cb of listeners) {
+					cb(null)
+				}
+				return
+			}
 			cached = state
 			await persist(state)
 			for (const cb of listeners) {
