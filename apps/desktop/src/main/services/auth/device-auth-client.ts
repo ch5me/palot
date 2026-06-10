@@ -60,9 +60,13 @@ export class SlowDownError extends Error {
 	}
 }
 
-async function post<T>(path: string, body: Record<string, unknown>): Promise<T> {
+async function post<T>(
+	path: string,
+	body: Record<string, unknown>,
+	fetchImpl: typeof fetch = globalThis.fetch
+): Promise<T> {
 	const authBaseUrl = resolveAuthBaseUrl()
-	const res = await fetch(`${authBaseUrl}${path}`, {
+	const res = await fetchImpl(`${authBaseUrl}${path}`, {
 		method: "POST",
 		headers: { "Content-Type": "application/json" },
 		body: JSON.stringify(body),
@@ -81,9 +85,9 @@ async function post<T>(path: string, body: Record<string, unknown>): Promise<T> 
 	return res.json() as T
 }
 
-async function get<T>(path: string): Promise<T> {
+async function get<T>(path: string, fetchImpl: typeof fetch = globalThis.fetch): Promise<T> {
 	const authBaseUrl = resolveAuthBaseUrl()
-	const res = await fetch(`${authBaseUrl}${path}`)
+	const res = await fetchImpl(`${authBaseUrl}${path}`)
 
 	if (!res.ok) {
 		const body = await res.json().catch(() => ({ error: res.statusText }))
@@ -114,11 +118,16 @@ async function get<T>(path: string): Promise<T> {
 export async function requestDeviceCode(params: {
 	clientId: string
 	scope?: string
+	fetchImpl?: typeof fetch
 }): Promise<DeviceCodeResponse> {
-	return post<DeviceCodeResponse>("/api/device-auth/codes", {
-		client_id: params.clientId,
-		...(params.scope ? { scope: params.scope } : {}),
-	})
+	return post<DeviceCodeResponse>(
+		"/api/device-auth/codes",
+		{
+			client_id: params.clientId,
+			...(params.scope ? { scope: params.scope } : {}),
+		},
+		params.fetchImpl
+	)
 }
 
 export async function pollForApproval(params: {
@@ -126,15 +135,20 @@ export async function pollForApproval(params: {
 	intervalSec?: number
 	expiresAtSec?: number
 	signal?: AbortSignal
+	fetchImpl?: typeof fetch
 }): Promise<TokenResponse> {
 	const intervalMs = (params.intervalSec ?? 3) * 1000
 	const deadline = params.expiresAtSec ? params.expiresAtSec * 1000 : Date.now() + 600_000
+	const fetchImpl = params.fetchImpl ?? globalThis.fetch
 
 	while (!params.signal?.aborted && Date.now() < deadline) {
 		await new Promise((r) => setTimeout(r, intervalMs))
 
 		try {
-			const result = await get<TokenResponse>(`/api/device-auth/codes/${params.deviceCode}`)
+			const result = await get<TokenResponse>(
+				`/api/device-auth/codes/${params.deviceCode}`,
+				fetchImpl
+			)
 			return result
 		} catch (err) {
 			if (err instanceof AccessDeniedError || err instanceof ExpiredTokenError) throw err
