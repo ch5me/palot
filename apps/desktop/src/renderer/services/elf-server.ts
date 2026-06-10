@@ -7,6 +7,10 @@
  */
 
 import { createClient } from "@ch5me/elf-server/client"
+import {
+	Ch5PmAttentionActionError,
+	extractAttentionErrorMessage,
+} from "../ch5pm-dashboard/attention"
 
 export const ELF_SERVER_BASE_URL = "http://127.0.0.1:30206"
 const BASE_URL = ELF_SERVER_BASE_URL
@@ -396,6 +400,48 @@ export async function fetchCh5PmState() {
 		throw new Error(await readError(res, `CH5PM state fetch failed: ${res.status} ${res.statusText}`))
 	}
 	return res.json()
+}
+
+async function postCh5PmAttentionAction(
+	action: "resolve" | "cancel",
+	body: Record<string, unknown>,
+): Promise<void> {
+	const res =
+		action === "resolve"
+			? await client.api.ch5pm.attention.resolve.$post({ json: body })
+			: await client.api.ch5pm.attention.cancel.$post({ json: body })
+	if (!res.ok) {
+		let payload: unknown = null
+		try {
+			payload = await res.json()
+		} catch {
+			// Non-JSON failure body — fall through to the status-based message.
+		}
+		throw new Ch5PmAttentionActionError(
+			res.status,
+			extractAttentionErrorMessage(
+				payload,
+				`CH5PM attention ${action} failed: ${res.status} ${res.statusText}`,
+			),
+		)
+	}
+}
+
+/** Answer an AskHuman attention item (daemon `/mutations/attention/resolve`). */
+export async function resolveCh5PmAttentionItem(input: {
+	id: string
+	chosenLabel: string
+	note?: string
+}): Promise<void> {
+	await postCh5PmAttentionAction("resolve", input)
+}
+
+/** Dismiss an AskHuman attention item (daemon `/mutations/attention/cancel`). */
+export async function cancelCh5PmAttentionItem(input: {
+	id: string
+	note?: string
+}): Promise<void> {
+	await postCh5PmAttentionAction("cancel", input)
 }
 
 /**

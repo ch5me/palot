@@ -390,6 +390,57 @@ export interface Ch5PmLineageItem {
 	edges: Ch5PmLineageEdge[]
 }
 
+/**
+ * AskHuman attention queue (CH5COMPAC4C-305) — mirrors
+ * ch5-company `packages/ch5pm-daemon/src/attention/attention-item.ts`.
+ */
+export type Ch5PmAttentionPriority = "p0" | "p1" | "p2"
+
+export type Ch5PmAttentionItemState = "open" | "answered" | "cancelled"
+
+export interface Ch5PmAttentionOption {
+	label: string
+	pros?: string[]
+	cons?: string[]
+}
+
+export interface Ch5PmAttentionDecision {
+	chosenLabel: string
+	note?: string
+	/** Epoch milliseconds. */
+	decidedAt: number
+}
+
+export interface Ch5PmAttentionItem {
+	id: string
+	/** Epoch milliseconds. */
+	createdAt: number
+	/** Epoch milliseconds. */
+	updatedAt: number
+	priority: Ch5PmAttentionPriority
+	state: Ch5PmAttentionItemState
+	what: string
+	whyNow: string
+	options: Ch5PmAttentionOption[]
+	/** When present, matches one of the option labels. */
+	recommendation?: string
+	ticketId?: string
+	sessionID?: string
+	repoId?: string
+	decision?: Ch5PmAttentionDecision
+}
+
+export interface Ch5PmAttentionQueue {
+	/** Open items, newest first. */
+	open: Ch5PmAttentionItem[]
+	counts: {
+		total: number
+		p0: number
+		p1: number
+		p2: number
+	}
+}
+
 export interface Ch5PmLiveState {
 	_doc?: string
 	schemaVersion?: number
@@ -406,6 +457,7 @@ export interface Ch5PmLiveState {
 	followUps?: Ch5PmFollowUp[]
 	babysitter?: Ch5PmBabysitter
 	lineage?: Ch5PmLineageItem[]
+	attentionQueue?: Ch5PmAttentionQueue
 }
 
 export interface Ch5PmEventStreamHandlers {

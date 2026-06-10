@@ -675,6 +675,61 @@ export async function fetchCh5PmState(): Promise<Ch5PmLiveState> {
 	return httpFetch() as Promise<Ch5PmLiveState>
 }
 
+async function postCh5PmAttentionActionViaElectron(
+	action: "resolve" | "cancel",
+	body: Record<string, unknown>,
+): Promise<void> {
+	const { Ch5PmAttentionActionError, extractAttentionErrorMessage } = await import(
+		"../ch5pm-dashboard/attention"
+	)
+	const result = await window.elf.fetch({
+		url: `${ELF_SERVER_BASE_URL}/api/ch5pm/attention/${action}`,
+		method: "POST",
+		headers: { "content-type": "application/json", accept: "application/json" },
+		body: JSON.stringify(body),
+	})
+	if (result.status < 200 || result.status >= 300) {
+		let payload: unknown = null
+		try {
+			payload = JSON.parse(result.body ?? "null")
+		} catch {
+			// Non-JSON failure body — fall through to the status-based message.
+		}
+		throw new Ch5PmAttentionActionError(
+			result.status,
+			extractAttentionErrorMessage(
+				payload,
+				`CH5PM attention ${action} failed: ${result.status} ${result.statusText}`,
+			),
+		)
+	}
+}
+
+/** Answer an AskHuman attention item (CH5COMPAC4C-305). */
+export async function resolveCh5PmAttentionItem(input: {
+	id: string
+	chosenLabel: string
+	note?: string
+}): Promise<void> {
+	if (isElectron) {
+		return postCh5PmAttentionActionViaElectron("resolve", input)
+	}
+	const { resolveCh5PmAttentionItem: httpResolve } = await import("./elf-server")
+	return httpResolve(input)
+}
+
+/** Dismiss an AskHuman attention item (CH5COMPAC4C-305). */
+export async function cancelCh5PmAttentionItem(input: {
+	id: string
+	note?: string
+}): Promise<void> {
+	if (isElectron) {
+		return postCh5PmAttentionActionViaElectron("cancel", input)
+	}
+	const { cancelCh5PmAttentionItem: httpCancel } = await import("./elf-server")
+	return httpCancel(input)
+}
+
 export async function writeTextFile(filePath: string, content: string): Promise<void> {
 	if (isElectron) {
 		return window.elf.writeTextFile(filePath, content)

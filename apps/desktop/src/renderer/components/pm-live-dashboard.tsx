@@ -16,6 +16,7 @@ import type {
 } from "../ch5pm-dashboard/types"
 import { createLogger } from "../lib/logger"
 import { fetchCh5PmState, openExternalUrl } from "../services/backend"
+import { PmAttentionQueue } from "./pm-attention-queue"
 
 const log = createLogger("pm-live-dashboard")
 
@@ -300,6 +301,7 @@ export function PmLiveDashboard() {
 
 	const workingCount = (data?.lanes ?? []).filter((lane) => normalizeLaneStatus(lane.status) === "working").length
 	const needsCount = (data?.needsChris.length ?? 0) || (data?.plane.humanGated?.count ?? 0)
+	const askCount = data?.attentionQueue?.counts.total ?? 0
 	const readyCount = data?.plane.readyFrontier.length ?? 0
 	const errMsg = query.error instanceof Error ? query.error.message : query.error ? "load failed" : null
 
@@ -353,6 +355,7 @@ export function PmLiveDashboard() {
 				<StatPill label="work" value={workingCount} tone="text-emerald-400" />
 				<StatPill label="ready" value={readyCount} tone="text-sky-400" />
 				<StatPill label="needs" value={needsCount} tone={needsCount > 0 ? "text-red-400" : undefined} />
+				<StatPill label="ask" value={askCount} tone={askCount > 0 ? "text-red-400" : undefined} />
 				<StatPill label="schema" value={state.schemaVersion ?? "?"} />
 				<StatPill label="followups" value={followups.length} />
 				<div className="ml-auto flex h-full items-center border-l border-neutral-300 px-1.5 dark:border-neutral-700">
@@ -362,6 +365,8 @@ export function PmLiveDashboard() {
 					</Button>
 				</div>
 			</div>
+
+			<PmAttentionQueue queue={state.attentionQueue} onMutated={() => void query.refetch()} />
 
 			{lineage.length > 0 ? (
 				<div className="flex min-h-0 flex-col border-b border-neutral-300 dark:border-neutral-700">
@@ -456,7 +461,7 @@ export function PmLiveDashboard() {
 			</div>
 
 			<div className="flex h-4 items-center justify-between border-t border-neutral-300 bg-neutral-50 px-2 text-[9px] text-neutral-400 dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-500">
-				<span className="truncate">pm-state.json via firefly</span>
+				<span className="truncate">ch5pm daemon /pm/state via firefly</span>
 				<span className="truncate">{asText(state.generatedBy) || "--"}</span>
 			</div>
 		</div>
