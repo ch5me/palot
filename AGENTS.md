@@ -64,7 +64,7 @@ generic knowledge.
 - **Electron dev**: use devmux service `desktop` / `desktop-wayland`; do not run `cd apps/desktop && bun run dev:electron-local` manually unless editing that service definition
 - **Browser-only dev**: devmux service `web` runs Vite on `20883`; do not run `cd apps/desktop && bun run dev:web` manually unless editing that service definition
 - **Backend server** (browser mode only): devmux service `server` runs Bun server on `30206`; do not run `cd apps/server && bun run dev` manually unless editing that service definition
-- **Storybook**: devmux service `storybook` runs UI Storybook on `11001`; start it with `bun run dev:storybook` and do not run `cd packages/ui && bun run storybook` manually unless editing that service definition
+- **Storybook**: `packages/ui` no longer owns a local Storybook. Generic UI stories live in `~/src/ch5/ch5-packages` (`pnpm run storybook` for main, `pnpm run storybook:fx` for effects).
 - **Session debug**: `bun run debug:sessions -- <session-id> [session-id...]`
 
 - **Lint check**: `bun run lint` (from root)

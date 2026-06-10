@@ -17,9 +17,6 @@
 	"scripts": {
 		"lint": "biome check .",
 		"check-types": "bunx tsgo --noEmit",
-		"storybook": "bunx storybook dev -p ${PORT:-11001} --host 0.0.0.0",
-		"build-storybook": "bunx storybook build",
-
 		"clean": "rm -rf dist node_modules .turbo storybook-static"
 	},
 	"dependencies": {
@@ -67,13 +64,9 @@
 		"zod": "^4.3.6"
 	},
 	"devDependencies": {
-		"@storybook/addon-a11y": "^9",
-		"@storybook/react-vite": "^9",
-		"@tailwindcss/vite": "^4.0.0",
 		"@types/react": "^19.0.0",
 		"@types/react-dom": "^19.0.0",
 		"@typescript/native-preview": "^7.0.0-dev.20260207.1",
-		"storybook": "^9",
 		"tailwindcss": "^4.0.0",
 		"typescript": "^5.7.0"
 	}

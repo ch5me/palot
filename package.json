@@ -16,7 +16,6 @@
 		"../ch5-packages/packages/web/html-react-inspector",
 		"../ch5-packages/packages/web/react-dev-surface"
 	],
-
 	"scripts": {
 		"build": "bunx turbo build",
 		"dev": "bunx devmux ensure web",
@@ -24,7 +23,6 @@
 		"dev:desktop:wayland": "bunx devmux ensure desktop-wayland",
 		"dev:web": "bunx devmux ensure web",
 		"dev:server": "bunx devmux ensure server",
-		"dev:storybook": "bunx devmux ensure storybook",
 		"svc:status": "bunx devmux status",
 		"svc:attach": "bunx devmux attach",
 		"svc:stop": "bunx devmux stop",
