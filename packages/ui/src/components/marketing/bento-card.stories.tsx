@@ -126,7 +126,7 @@ export const Playground: Story = {}
 export const ActivePanes: Story = {
 	parameters: { controls: { disable: true } },
 	render: () => (
-		<div className="flex flex-wrap gap-4">
+		<div className="flex min-w-[76rem] flex-wrap gap-4 rounded-[2rem] border border-border/50 bg-background/80 p-4 shadow-[var(--ff-shadow-sm)]">
 			{tabs.map((tab) => (
 				<div key={tab.value} className="flex flex-col gap-1.5">
 					<span className="text-xs text-muted-foreground">{tab.value}</span>

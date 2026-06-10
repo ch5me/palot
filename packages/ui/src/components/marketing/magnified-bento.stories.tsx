@@ -63,12 +63,12 @@ export const CustomRowsAndPalette: Story = {
 		],
 		lensSize: 120,
 		lensPalette: {
-			rim: "#cdb4f6",
-			rimShade: "#9a7ad1",
-			rimStroke: "#5e4196",
-			handle: "#2a1b45",
-			handleShade: "#4c3573",
-			glare: "rgb(205 180 246 / 0.15)",
+			rim: "var(--color-primary)",
+			rimShade: "color-mix(in srgb, var(--color-primary) 70%, var(--color-background))",
+			rimStroke: "color-mix(in srgb, var(--color-primary) 45%, var(--color-foreground))",
+			handle: "color-mix(in srgb, var(--color-primary) 30%, var(--color-foreground))",
+			handleShade: "color-mix(in srgb, var(--color-primary) 55%, var(--color-background))",
+			glare: "color-mix(in srgb, var(--color-primary) 18%, transparent)",
 		},
 	},
 }

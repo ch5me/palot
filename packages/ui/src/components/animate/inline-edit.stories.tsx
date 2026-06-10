@@ -31,13 +31,17 @@ function StatefulInlineEdit(props: React.ComponentProps<typeof InlineEdit>) {
 }
 
 export const Playground: Story = {
-	render: (args) => <StatefulInlineEdit key={args.value} {...args} />,
+	render: (args) => (
+		<div className="w-80 rounded-full border border-border/50 bg-background/80 p-2 shadow-[var(--ff-shadow-sm)]">
+			<StatefulInlineEdit key={args.value} {...args} />
+		</div>
+	),
 }
 
 export const States: Story = {
 	parameters: { controls: { disable: true } },
 	render: () => (
-		<div className="flex w-72 flex-col gap-6">
+		<div className="flex w-80 flex-col gap-6 rounded-[2rem] border border-border/50 bg-background/80 p-4 py-2 shadow-[var(--ff-shadow-sm)]">
 			<div className="flex flex-col gap-1.5">
 				<span className="text-muted-foreground text-xs">Filled</span>
 				<StatefulInlineEdit value="Team standup notes" />

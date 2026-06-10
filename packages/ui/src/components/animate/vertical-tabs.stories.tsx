@@ -73,7 +73,7 @@ const meta = {
 		onValueChange: { control: false },
 	},
 	render: (args) => (
-		<div className="w-full max-w-3xl">
+		<div className="w-full max-w-3xl rounded-[2rem] border border-border/50 bg-background/80 p-4 shadow-[var(--ff-shadow-sm)]">
 			<VerticalTabs {...args} />
 		</div>
 	),
@@ -95,7 +95,7 @@ const sizes = ["sm", "default", "lg"] as const
 export const Sizes: Story = {
 	parameters: { controls: { disable: true } },
 	render: () => (
-		<div className="flex w-full max-w-3xl flex-col gap-12">
+		<div className="flex w-full min-w-[52rem] max-w-5xl flex-col gap-12 rounded-[2rem] border border-border/50 bg-background/80 p-4 shadow-[var(--ff-shadow-sm)]">
 			{sizes.map((size) => (
 				<VerticalTabs
 					key={size}

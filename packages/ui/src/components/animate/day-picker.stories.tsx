@@ -12,6 +12,7 @@ const meta = {
 		defaultDay: 1,
 		dayStripOption: "Weekly",
 		confirmLabel: "Confirm",
+		className: "max-w-[20rem]",
 	},
 	argTypes: {
 		options: { control: "object" },
@@ -32,17 +33,27 @@ export const Playground: Story = {}
 
 export const Configurations: Story = {
 	parameters: { controls: { disable: true } },
+	args: {
+		defaultValue: "Weekly",
+		dayStripOption: "Weekly",
+	},
 	render: () => (
 		<div className="flex w-80 flex-col gap-4">
-			<DayPicker />
+			<DayPicker defaultValue="Weekly" dayStripOption="Weekly" />
 			<DayPicker
 				label="Repeat"
 				options={["Once", "Weekdays", "Weekly"]}
 				defaultValue="Weekly"
+				dayStripOption="Weekly"
 				dayLabels={["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"]}
 				defaultDay={5}
 			/>
-			<DayPicker label="Backup" options={["Hourly", "Nightly", "Weekly"]} defaultValue="Nightly" />
+			<DayPicker
+				label="Backup"
+				options={["Hourly", "Nightly", "Weekly"]}
+				defaultValue="Weekly"
+				dayStripOption="Weekly"
+			/>
 		</div>
 	),
 }

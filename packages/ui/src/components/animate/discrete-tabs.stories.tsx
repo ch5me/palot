@@ -22,20 +22,22 @@ const meta = {
 		onValueChange: { control: false },
 	},
 	render: (args) => (
-		<DiscreteTabs {...args}>
-			<DiscreteTab value="inbox" icon={<Inbox />}>
-				Inbox
-			</DiscreteTab>
-			<DiscreteTab value="planner" icon={<Calendar />}>
-				Planner
-			</DiscreteTab>
-			<DiscreteTab value="alerts" icon={<Bell />}>
-				Alerts
-			</DiscreteTab>
-			<DiscreteTab value="search" icon={<Search />}>
-				Search
-			</DiscreteTab>
-		</DiscreteTabs>
+		<div className="w-fit rounded-full border border-border/50 bg-background/80 p-2 shadow-[var(--ff-shadow-sm)]">
+			<DiscreteTabs {...args}>
+				<DiscreteTab value="inbox" icon={<Inbox />}>
+					Inbox
+				</DiscreteTab>
+				<DiscreteTab value="planner" icon={<Calendar />}>
+					Planner
+				</DiscreteTab>
+				<DiscreteTab value="alerts" icon={<Bell />}>
+					Alerts
+				</DiscreteTab>
+				<DiscreteTab value="search" icon={<Search />}>
+					Search
+				</DiscreteTab>
+			</DiscreteTabs>
+		</div>
 	),
 } satisfies Meta<typeof DiscreteTabs>
 
@@ -49,19 +51,24 @@ const sizes = ["sm", "default", "lg"] as const
 export const Sizes: Story = {
 	parameters: { controls: { disable: true } },
 	render: () => (
-		<div className="flex flex-col items-start gap-4">
+		<div className="flex min-w-80 flex-col items-start gap-4">
 			{sizes.map((size) => (
-				<DiscreteTabs key={size} size={size} defaultValue="inbox">
-					<DiscreteTab value="inbox" icon={<Inbox />}>
-						Inbox
-					</DiscreteTab>
-					<DiscreteTab value="planner" icon={<Calendar />}>
-						Planner
-					</DiscreteTab>
-					<DiscreteTab value="alerts" icon={<Bell />}>
-						Alerts
-					</DiscreteTab>
-				</DiscreteTabs>
+				<div
+					key={size}
+					className="w-fit rounded-full border border-border/50 bg-background/80 p-2 shadow-[var(--ff-shadow-sm)]"
+				>
+					<DiscreteTabs size={size} defaultValue="inbox">
+						<DiscreteTab value="inbox" icon={<Inbox />}>
+							Inbox
+						</DiscreteTab>
+						<DiscreteTab value="planner" icon={<Calendar />}>
+							Planner
+						</DiscreteTab>
+						<DiscreteTab value="alerts" icon={<Bell />}>
+							Alerts
+						</DiscreteTab>
+					</DiscreteTabs>
+				</div>
 			))}
 		</div>
 	),

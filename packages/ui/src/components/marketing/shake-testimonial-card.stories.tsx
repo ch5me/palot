@@ -81,7 +81,7 @@ export const Tones: Story = {
 	parameters: { controls: { disable: true } },
 	decorators: [],
 	render: () => (
-		<div className="grid grid-cols-1 gap-6 lg:grid-cols-2 xl:grid-cols-3">
+		<div className="grid min-w-[72rem] grid-cols-1 gap-6 rounded-[2rem] border border-border/50 bg-background/80 p-4 shadow-[var(--ff-shadow-sm)] lg:grid-cols-2 xl:grid-cols-3">
 			{tones.map((tone) => {
 				const item = items[0]
 				if (!item) return null

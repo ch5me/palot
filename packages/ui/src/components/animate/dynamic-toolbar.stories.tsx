@@ -78,7 +78,7 @@ export const Playground: Story = {
 export const States: Story = {
 	parameters: { controls: { disable: true } },
 	render: () => (
-		<div className="flex flex-col items-start gap-3">
+		<div className="flex min-w-[22rem] flex-col items-start gap-3 rounded-[2rem] border border-border/50 bg-background/80 p-4 py-2 shadow-[var(--ff-shadow-sm)]">
 			<span className="text-muted-foreground text-xs">collapsed</span>
 			<DynamicToolbar>
 				<ToolbarContents />

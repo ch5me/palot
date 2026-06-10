@@ -53,7 +53,7 @@ export const Playground: Story = {}
 export const States: Story = {
 	parameters: { controls: { disable: true } },
 	render: () => (
-		<div className="flex gap-56">
+		<div className="flex min-h-80 flex-wrap items-start gap-12 rounded-[2rem] border border-border/50 bg-background/80 p-6 shadow-[var(--ff-shadow-sm)]">
 			<SmoothDropdown items={items} />
 			<SmoothDropdown items={items} open value="settings" />
 			<SmoothDropdown
