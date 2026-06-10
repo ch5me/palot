@@ -30,7 +30,7 @@ import { BrowserPanel } from "./components/side-panel/browser-panel"
 import { BridgesPanel } from "./components/side-panel/bridges-panel"
 import { ClaudePanel } from "./components/side-panel/claude-panel"
 import { CrmPanel } from "./components/side-panel/crm-panel"
-import { MemoryPanel } from "./components/side-panel/memory-panel"
+import { PluginPanelBoundary } from "./components/side-panel/plugin-panel-boundary"
 import { OraclePanel } from "./components/side-panel/oracle-panel"
 import { PdfReviewPanel } from "./components/side-panel/pdf-review-panel"
 import { StudioPanel } from "./components/side-panel/studio-panel"
@@ -42,6 +42,12 @@ import { V2PluginsPanel } from "./components/side-panel/v2-plugins-panel"
 import { PulsePanel } from "./components/side-panel/pulse-panel"
 import { TerminalPanel } from "./components/side-panel/terminal-panel"
 import type { Agent, FireflySurfaceTarget } from "./lib/types"
+
+const MemoryPanelHost = (({ className }: { agent: Agent; className?: string }) => (
+	<div className={`flex h-full min-h-0 items-center justify-center px-4 text-center text-xs text-muted-foreground ${className ?? ""}`}>
+		Loading Memory surface...
+	</div>
+))
 
 export type FireflySurfaceFormFactor = "side-panel-tab" | "main-pane"
 
@@ -214,7 +220,19 @@ export const FIREFLY_SURFACE_REGISTRY: FireflySurfaceDef[] = [
 		persistenceKey: "side-panel.memory",
 		telemetryNamespace: "firefly.surface.memory",
 		target: { kind: "side-panel", tab: "memory" },
-		spawn: (ctx) => <MemoryPanel agent={ctx.agent} />,
+		spawn: (ctx) => (
+			<PluginPanelBoundary
+				pluginId="firefly.built-in.surface.memory"
+				contributionId="memory"
+				hostComponent={MemoryPanelHost}
+				hostLazyImport={() =>
+					import("./components/side-panel/memory-panel").then((module) => ({
+						default: module.MemoryPanel,
+					}))
+				}
+				agent={ctx.agent}
+			/>
+		),
 	},
 	{
 		id: "files",

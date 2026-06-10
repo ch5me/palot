@@ -9,6 +9,7 @@ describe("firefly-plugin v2 catalog authority", () => {
 		const catalog = buildPluginCatalog({ appVersion: "0.11.0" })
 		const ids = catalog.entries.map((entry) => entry.pluginId)
 		expect(ids).toContain(KNOWN_PLUGIN_IDS.palotBridge)
+		expect(ids).toContain(KNOWN_PLUGIN_IDS.memorySurface)
 		expect(ids).toContain(KNOWN_PLUGIN_IDS.acmeNotebook)
 	})
 
@@ -30,6 +31,11 @@ describe("firefly-plugin v2 catalog authority", () => {
 			).length
 			expect(summary?.panelCount).toBe(expectedPanelCount)
 		}
+		const memory = catalog.projections.panels.find(
+			(panel) => panel.pluginId === KNOWN_PLUGIN_IDS.memorySurface,
+		)
+		expect(memory?.contributionId).toBe("memory")
+		expect(memory?.renderMode).toBe("host-reconciler")
 	})
 
 	test("capability broker denies a third-party plugin trying to claim a high-risk host capability", () => {

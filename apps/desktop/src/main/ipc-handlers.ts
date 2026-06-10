@@ -129,6 +129,7 @@ import {
 	getSessionBinding,
 	getUiStateSnapshot,
 	publishBrowserAction,
+	registerPalotBrowserWindows,
 	releaseSessionBindingBySessionId,
 	setSessionBinding,
 	setUiStateSnapshot,
@@ -149,6 +150,8 @@ import {
 	registerMcpConnection,
 	testMcpConnection,
 } from "./mcp-connections-runtime"
+
+registerPalotBrowserWindows(() => BrowserWindow.getAllWindows())
 
 const log = createLogger("ipc")
 const ptyController = createPtyController({

@@ -41,6 +41,71 @@ export interface FireflyPluginListResult {
 	summaries: FireflyPluginProjectionSummary[]
 }
 
+export interface FireflyPluginPanelItem {
+	pluginId: string
+	contributionId: string
+	projectedId: string
+	title: string
+	icon: string | null
+	formFactor: "side-panel-tab" | "main-pane"
+	hostSlot: "side-panel" | "main-pane"
+	hostTarget: { kind: "side-panel" | "main-pane"; slot: "side-panel" | "main-pane" }
+	defaultOn: boolean
+	commandIds: string[]
+	persistenceKey: string | null
+	telemetryNamespace: string | null
+	renderMode: "host-reconciler" | "declarative-props" | "iframe"
+	declarativeSchemaRef: string | null
+	iframeSandbox: string | null
+	capabilityGates: {
+		token: string
+		knownToHost: boolean
+		granted: boolean
+		risk: "low" | "medium" | "high" | "critical" | null
+		source: "plugin" | "contribution"
+		reason: string
+	}[]
+	availability: {
+		available: boolean
+		state: "ready" | "loading" | "disabled" | "quarantined" | "error"
+		reason: {
+			code:
+				| "available"
+				| "loading"
+				| "plugin-disabled"
+				| "plugin-quarantined"
+				| "plugin-error"
+				| "plugin-capability-missing"
+				| "contribution-capability-missing"
+				| "reserved-command-prefix"
+				| "host-capability-unknown"
+			message: string
+			hostCapabilityState: {
+				trust: "built-in" | "local-dev" | "signed-third-party" | "unsigned-third-party"
+				sessionScope: "session" | "project" | "app"
+				grantedTokens: string[]
+				loading?: boolean
+				pluginDisabled?: boolean
+				pluginQuarantined?: boolean
+				pluginError?: { code: string; message: string } | null
+			}
+			missingCapabilities: {
+				token: string
+				knownToHost: boolean
+				granted: boolean
+				risk: "low" | "medium" | "high" | "critical" | null
+				source: "plugin" | "contribution"
+				reason: string
+			}[]
+		} | null
+	}
+}
+
+export interface FireflyPluginPanelsResult {
+	appVersion: string
+	items: FireflyPluginPanelItem[]
+}
+
 export interface FireflyPluginCapabilitiesState {
 	trust: "built-in" | "local-dev" | "signed-third-party" | "unsigned-third-party"
 	sessionScope: "session" | "project" | "app"
@@ -98,6 +163,12 @@ export interface FireflyPluginInvokeResult {
 
 function getBridge(): {
 	list: () => Promise<FireflyPluginListResult>
+	panels: () => Promise<FireflyPluginPanelsResult>
+	describe: (pluginId: string) => Promise<unknown>
+	widgets: () => Promise<{ appVersion: string; items: unknown[] }>
+	commands: () => Promise<{ appVersion: string; items: unknown[] }>
+	themes: () => Promise<{ appVersion: string; items: unknown[] }>
+	refresh: () => Promise<{ appVersion: string; pluginCount: number }>
 	capabilities: (pluginId: string) => Promise<FireflyPluginCapabilitiesResult>
 	tools: (pluginId?: string) => Promise<FireflyPluginToolsResult>
 	invoke: (input: FireflyPluginInvokeInput) => Promise<FireflyPluginInvokeResult>
@@ -117,6 +188,14 @@ export function useFireflyPlugins() {
 	return useQuery({
 		queryKey: ["firefly-plugin", "list"],
 		queryFn: () => getBridge().list(),
+		staleTime: 5_000,
+	})
+}
+
+export function useFireflyPluginPanels() {
+	return useQuery({
+		queryKey: ["firefly-plugin", "panels"],
+		queryFn: () => getBridge().panels(),
 		staleTime: 5_000,
 	})
 }

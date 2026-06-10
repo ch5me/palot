@@ -18,6 +18,7 @@ export {
 export * from "./hot-reload"
 export * from "./runtime-supervision"
 export * from "./palot-bridge-manifest"
+export * from "./memory-surface-manifest"
 export * from "./api-versioning"
 export * from "./bridge-projection"
 export {

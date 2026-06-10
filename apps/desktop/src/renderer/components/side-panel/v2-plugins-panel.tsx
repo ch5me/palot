@@ -13,8 +13,9 @@
 
 import { useQuery, useQueryClient } from "@tanstack/react-query"
 import { AlertTriangleIcon, Loader2Icon, PlugIcon, RefreshCwIcon, ShieldCheckIcon, ShieldOffIcon, SparklesIcon } from "lucide-react"
+import { useEffect } from "react"
 
-import { useFireflyPlugins, type FireflyPluginEntry, type FireflyPluginProjectionSummary } from "../../hooks/use-firefly-plugins"
+import { useFireflyPluginCatalogChanged, useFireflyPlugins, type FireflyPluginEntry, type FireflyPluginProjectionSummary } from "../../hooks/use-firefly-plugins"
 import { Button } from "@ch5me/elf-ui/components/button"
 
 interface V2PluginsPanelProps {
@@ -63,10 +64,18 @@ function TrustBadge({ trust }: { trust: FireflyPluginEntry["trust"] }) {
 
 function useV2PluginCatalog(agentDirectory: string) {
 	const query = useFireflyPlugins()
-	const invalidate = useQueryClient()
+	const queryClient = useQueryClient()
+
+	useEffect(() => {
+		return useFireflyPluginCatalogChanged(() => {
+			void queryClient.invalidateQueries({ queryKey: ["firefly-plugin"] })
+		})
+	}, [queryClient])
+
 	const refresh = () => {
 		void query.refetch()
-		void invalidate.invalidateQueries({ queryKey: ["firefly-plugin", "list"] })
+		void queryClient.invalidateQueries({ queryKey: ["firefly-plugin"] })
+		void window.elf?.plugins.refresh()
 	}
 	return { ...query, refresh, agentDirectory }
 }
