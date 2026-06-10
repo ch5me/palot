@@ -1,7 +1,11 @@
-const AUTH_HOST =
-	process.env.FIREFLY_AUTH_HOST ??
-	process.env.VITE_FIREFLY_AUTH_HOST ??
-	"auth.elf.dance"
+const AUTH_HOST = process.env.FIREFLY_AUTH_HOST ?? process.env.VITE_FIREFLY_AUTH_HOST
+
+function getAuthHost(): string {
+	if (!AUTH_HOST) {
+		throw new Error("FIREFLY_AUTH_HOST is required for desktop auth flows")
+	}
+	return AUTH_HOST
+}
 
 export interface DeviceCodeResponse {
 	deviceCode: string
@@ -43,7 +47,7 @@ export class SlowDownError extends Error {
 }
 
 async function post<T>(path: string, body: Record<string, unknown>): Promise<T> {
-	const res = await fetch(`${AUTH_HOST}${path}`, {
+	const res = await fetch(`${getAuthHost()}${path}`, {
 		method: "POST",
 		headers: { "Content-Type": "application/json" },
 		body: JSON.stringify(body),
@@ -63,7 +67,7 @@ async function post<T>(path: string, body: Record<string, unknown>): Promise<T> 
 }
 
 async function get<T>(path: string): Promise<T> {
-	const res = await fetch(`${AUTH_HOST}${path}`)
+	const res = await fetch(`${getAuthHost()}${path}`)
 
 	if (!res.ok) {
 		const body = await res.json().catch(() => ({ error: res.statusText }))

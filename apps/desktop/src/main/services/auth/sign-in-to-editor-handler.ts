@@ -15,10 +15,14 @@ declare global {
 	var __elfAuthStore: ReturnType<typeof import("./token-store").createElfTokenStore> | undefined
 }
 
-const EDITOR_HANDOFF_HOST =
-	process.env.FIREFLY_AUTH_HOST ??
-	process.env.VITE_FIREFLY_AUTH_HOST ??
-	"auth.elf.dance"
+const EDITOR_HANDOFF_HOST = process.env.FIREFLY_AUTH_HOST ?? process.env.VITE_FIREFLY_AUTH_HOST
+
+function getEditorHandoffHost(): string {
+	if (!EDITOR_HANDOFF_HOST) {
+		throw new Error("FIREFLY_AUTH_HOST is required for desktop auth flows")
+	}
+	return EDITOR_HANDOFF_HOST
+}
 
 export function parseCallbackUrl(raw: string): { token: string } | null {
 	try {
@@ -39,7 +43,7 @@ export async function completeSignInFromCallback(raw: string): Promise<ElfAuthSt
 		throw new Error("Invalid firefly-client:// callback URL")
 	}
 
-	const res = await fetch(`${EDITOR_HANDOFF_HOST}/api/device-auth/tokens`, {
+	const res = await fetch(`${getEditorHandoffHost()}/api/device-auth/tokens`, {
 		method: "POST",
 		headers: { "Content-Type": "application/json" },
 		body: JSON.stringify({ grant_type: "editor_handoff", token: parsed.token }),
