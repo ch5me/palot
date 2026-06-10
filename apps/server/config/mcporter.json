@@ -1,0 +1,8 @@
+{
+	"mcpServers": {
+		"notion": {
+			"baseUrl": "https://mcp.notion.com/mcp",
+			"auth": "oauth"
+		}
+	}
+}
