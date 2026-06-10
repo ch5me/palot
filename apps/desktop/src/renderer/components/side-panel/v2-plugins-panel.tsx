@@ -13,10 +13,12 @@
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { AlertTriangleIcon, Loader2Icon, PlugIcon, PowerIcon, PowerOffIcon, RefreshCwIcon, ShieldCheckIcon, ShieldOffIcon, SparklesIcon, UnlockIcon } from "lucide-react"
+import { useEffect } from "react"
 
 import {
 	releasePluginQuarantine,
 	setPluginEnabled,
+	useFireflyPluginCatalogChanged,
 	useFireflyPlugins,
 	type FireflyPluginEntry,
 	type FireflyPluginProjectionSummary,
@@ -69,10 +71,18 @@ function TrustBadge({ trust }: { trust: FireflyPluginEntry["trust"] }) {
 
 function useV2PluginCatalog(agentDirectory: string) {
 	const query = useFireflyPlugins()
-	const invalidate = useQueryClient()
+	const queryClient = useQueryClient()
+
+	useEffect(() => {
+		return useFireflyPluginCatalogChanged(() => {
+			void queryClient.invalidateQueries({ queryKey: ["firefly-plugin"] })
+		})
+	}, [queryClient])
+
 	const refresh = () => {
 		void query.refetch()
-		void invalidate.invalidateQueries({ queryKey: ["firefly-plugin", "list"] })
+		void queryClient.invalidateQueries({ queryKey: ["firefly-plugin"] })
+		void window.elf?.plugins.refresh()
 	}
 	return { ...query, refresh, agentDirectory }
 }
