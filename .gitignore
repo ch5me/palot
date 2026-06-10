@@ -47,3 +47,6 @@ AGENTS.local.md
 
 # Local working directory
 .local/
+
+# Storybook build output
+storybook-static/
