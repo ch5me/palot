@@ -1,0 +1,42 @@
+#!/usr/bin/env bash
+# Bundle the palot OpenCode bridge plugin into a stable artifact so the
+# shared OpenCode host never loads this repo's live working tree.
+#
+# Why: the global ~/.config/opencode/opencode.jsonc plugin list used to point
+# at apps/desktop/.opencode/plugins/palot-bridge.js directly. Every cold
+# instance bootstrap then transpiled the whole TS import graph (~30s of
+# blocked event loop on the shared host) and any mid-edit broken state in
+# this repo shipped fleet-wide instantly. The bundled artifact is plain JS,
+# loads fast, and only changes when this script is run.
+#
+# Usage: scripts/build-opencode-bridge-plugin
+# Idempotent. The shared host picks the new artifact up on its next restart
+# (oc-killall --restart) or next cold instance bootstrap of a new directory.
+set -euo pipefail
+
+REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+ENTRY="$REPO_ROOT/apps/desktop/.opencode/plugins/palot-bridge.js"
+ARTIFACT_DIR="$HOME/.local/share/palot/opencode-plugin"
+ARTIFACT="$ARTIFACT_DIR/palot-bridge.js"
+
+mkdir -p "$ARTIFACT_DIR"
+
+bun build "$ENTRY" --target=bun --outfile="$ARTIFACT" >/dev/null
+
+# Smoke: the bundle must import cleanly and expose the plugin surface.
+bun -e "
+const m = await import('$ARTIFACT')
+if (typeof m.createPalotPlugin !== 'function' || !m.default) {
+  console.error('palot-bridge bundle missing expected exports')
+  process.exit(1)
+}
+"
+
+echo "built $ARTIFACT ($(du -h "$ARTIFACT" | cut -f1 | tr -d ' '))"
+
+EXPECTED="file://$ARTIFACT"
+CONFIG="$HOME/.config/opencode/opencode.jsonc"
+if [ -f "$CONFIG" ] && ! grep -qF "$EXPECTED" "$CONFIG"; then
+  echo "NOTE: $CONFIG does not reference $EXPECTED" >&2
+  echo "      Update its plugin[] entry (replace any file://.../palot/... working-tree path)." >&2
+fi
