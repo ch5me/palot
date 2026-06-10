@@ -952,7 +952,7 @@ export function registerIpcHandlers(): void {
 		return getAuthState()
 	})
 
-	ipcMain.handle("auth:sign-in", async (_, clientId: string) => {
+	ipcMain.handle("auth:sign-in", async (_, clientId?: string) => {
 		return startSignIn(clientId)
 	})
 

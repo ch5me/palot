@@ -41,8 +41,14 @@ export async function getAuthState(): Promise<ElfAuthStateDto> {
 	return toDto(state)
 }
 
-export async function startSignIn(clientId: string): Promise<DeviceCodeUi> {
-	const result = await requestDeviceCode({ clientId })
+export async function startSignIn(clientId?: string): Promise<DeviceCodeUi> {
+	const resolvedClientId = clientId?.trim()
+	if (!resolvedClientId) {
+		throw new Error(
+			"Firefly auth client id is required. Pass one explicitly from the calling surface before starting sign-in.",
+		)
+	}
+	const result = await requestDeviceCode({ clientId: resolvedClientId })
 	pendingDeviceCode = result.deviceCode
 	abortController = new AbortController()
 	return {

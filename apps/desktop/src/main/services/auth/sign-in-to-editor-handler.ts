@@ -15,10 +15,26 @@ declare global {
 	var __elfAuthStore: ReturnType<typeof import("./token-store").createElfTokenStore> | undefined
 }
 
-const EDITOR_HANDOFF_HOST =
-	process.env.FIREFLY_AUTH_HOST ??
-	process.env.VITE_FIREFLY_AUTH_HOST ??
-	"auth.elf.dance"
+function normalizeAuthBaseUrl(value: string): string {
+	const trimmed = value.trim()
+	if (!trimmed) {
+		throw new Error("FIREFLY_AUTH_HOST is set but empty")
+	}
+	if (/^https?:\/\//i.test(trimmed)) {
+		return trimmed.replace(/\/+$/, "")
+	}
+	return `https://${trimmed.replace(/\/+$/, "")}`
+}
+
+function resolveEditorHandoffBaseUrl(): string {
+	const configured = process.env.FIREFLY_AUTH_HOST ?? process.env.VITE_FIREFLY_AUTH_HOST
+	if (!configured) {
+		throw new Error(
+			"FIREFLY_AUTH_HOST is required. Set it to the canonical Firefly auth app host (for example https://staging.app.elf.dance).",
+		)
+	}
+	return normalizeAuthBaseUrl(configured)
+}
 
 export function parseCallbackUrl(raw: string): { token: string } | null {
 	try {
@@ -39,7 +55,8 @@ export async function completeSignInFromCallback(raw: string): Promise<ElfAuthSt
 		throw new Error("Invalid firefly-client:// callback URL")
 	}
 
-	const res = await fetch(`${EDITOR_HANDOFF_HOST}/api/device-auth/tokens`, {
+	const authBaseUrl = resolveEditorHandoffBaseUrl()
+	const res = await fetch(`${authBaseUrl}/api/device-auth/tokens`, {
 		method: "POST",
 		headers: { "Content-Type": "application/json" },
 		body: JSON.stringify({ grant_type: "editor_handoff", token: parsed.token }),
