@@ -9,9 +9,10 @@ import {
 	usePromptInputAttachments,
 	usePromptInputController,
 } from "@ch5me/elf-ui/components/ai-elements/prompt-input"
+import { useAtomValue } from "jotai"
 import { PlusIcon } from "lucide-react"
-import { useCallback, useEffect, useRef, useState, useTransition } from "react"
-import { setProjectModelAtom } from "../../atoms/preferences"
+import { useCallback, useEffect, useMemo, useRef, useState, useTransition } from "react"
+import { activeFireflyProfileAtom, setProjectModelAtom } from "../../atoms/preferences"
 import { appStore } from "../../atoms/store"
 import { useDraftActions, useDraftSnapshot } from "../../hooks/use-draft"
 import type { ConfigData, ModelRef, ProvidersData, SdkAgent } from "../../hooks/use-opencode-data"
@@ -21,6 +22,7 @@ import {
 	useModelState,
 } from "../../hooks/use-opencode-data"
 
+import { gateAgentSelection, resolveToolbarGating } from "../../lib/profile"
 import type { Agent, FileAttachment } from "../../lib/types"
 import { ContextItems } from "./context-items"
 import { type MentionOption, MentionPopover, type MentionPopoverHandle } from "./mention-popover"
@@ -180,11 +182,27 @@ export function ChatInput({
 
 	const { recentModels, addRecent: addRecentModel } = useModelState()
 
+	// Gate the agent override by the active profile's mode preset, so a
+	// selection made under a permissive mode never leaks through a
+	// restrictive one (consumer → server default, simple → main/plan only).
+	const activeProfile = useAtomValue(activeFireflyProfileAtom)
+	const gatedAgent = useMemo(
+		() =>
+			gateAgentSelection(
+				resolveToolbarGating(
+					activeProfile,
+					(openCodeAgents ?? []).map((a) => a.name),
+				),
+				selectedAgent,
+			),
+		[activeProfile, openCodeAgents, selectedAgent],
+	)
+
 	// Resolve effective model
 
 	const effectiveModel = resolveEffectiveModel(
 		selectedModel,
-		openCodeAgents?.find((a) => a.name === (selectedAgent ?? config?.defaultAgent)) ?? null,
+		openCodeAgents?.find((a) => a.name === (gatedAgent ?? config?.defaultAgent)) ?? null,
 		config?.model,
 		providers?.defaults ?? {},
 		providers?.providers ?? [],
@@ -226,13 +244,13 @@ export function ChatInput({
 						model: {
 							...effectiveModel,
 							variant: selectedVariant,
-							agent: selectedAgent || undefined,
+							agent: gatedAgent || undefined,
 						},
 					})
 				}
 				await onSendMessage(agent, text.trim(), {
 					model: effectiveModel ?? undefined,
-					agentName: selectedAgent || undefined,
+					agentName: gatedAgent || undefined,
 					variant: selectedVariant,
 					files,
 				})
@@ -248,7 +266,7 @@ export function ChatInput({
 			sending,
 			agent,
 			effectiveModel,
-			selectedAgent,
+			gatedAgent,
 			selectedVariant,
 			clearDraft,
 			onScrollToBottom,

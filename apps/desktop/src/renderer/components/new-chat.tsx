@@ -26,7 +26,11 @@ import {
 } from "lucide-react"
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { primeSessionGenUi } from "../atoms/chat"
-import { projectModelsAtom, setProjectModelAtom } from "../atoms/preferences"
+import {
+	activeFireflyProfileAtom,
+	projectModelsAtom,
+	setProjectModelAtom,
+} from "../atoms/preferences"
 import {
 	removeSessionAtom,
 	setSessionBranchAtom,
@@ -49,6 +53,7 @@ import {
 	useVcs,
 } from "../hooks/use-opencode-data"
 import { useAgentActions } from "../hooks/use-server"
+import { gateAgentSelection, resolveToolbarGating } from "../lib/profile"
 import type { FileAttachment } from "../lib/types"
 import { createWorktree, randomWorktreeName } from "../services/worktree-service"
 import { BranchPicker } from "./branch-picker"
@@ -332,11 +337,27 @@ export function NewChat() {
 		[],
 	)
 
+	// Gate the agent override by the active profile's mode preset, so a
+	// selection made under a permissive mode never leaks through a
+	// restrictive one (consumer → server default, simple → main/plan only).
+	const activeProfile = useAtomValue(activeFireflyProfileAtom)
+	const gatedAgent = useMemo(
+		() =>
+			gateAgentSelection(
+				resolveToolbarGating(
+					activeProfile,
+					(openCodeAgents ?? []).map((a) => a.name),
+				),
+				selectedAgent,
+			),
+		[activeProfile, openCodeAgents, selectedAgent],
+	)
+
 	// Resolve active agent for model resolution
 	const activeOpenCodeAgent = useMemo(() => {
-		const agentName = selectedAgent ?? config?.defaultAgent
+		const agentName = gatedAgent ?? config?.defaultAgent
 		return openCodeAgents?.find((a) => a.name === agentName) ?? null
-	}, [selectedAgent, config?.defaultAgent, openCodeAgents])
+	}, [gatedAgent, config?.defaultAgent, openCodeAgents])
 
 	// Resolve effective model — selectedModel is seeded from the persisted project model
 	// on mount/project switch (above), so it already wins at step 1 of the resolution chain.
@@ -400,10 +421,10 @@ export function NewChat() {
 			model: {
 				...effectiveModel,
 				variant: selectedVariant,
-				agent: selectedAgent ?? undefined,
+				agent: gatedAgent ?? undefined,
 			},
 		})
-	}, [effectiveModel, selectedDirectory, selectedVariant, selectedAgent])
+	}, [effectiveModel, selectedDirectory, selectedVariant, gatedAgent])
 
 	/** Navigate to the chat view for a given session. */
 	const navigateToSession = useCallback(
@@ -436,7 +457,7 @@ export function NewChat() {
 
 			await sendPrompt(selectedDirectory, session.id, finalText, {
 				model: effectiveModel ?? undefined,
-				agent: selectedAgent ?? undefined,
+				agent: gatedAgent ?? undefined,
 				variant: selectedVariant,
 				files,
 			})
@@ -448,7 +469,7 @@ export function NewChat() {
 			createSession,
 			sendPrompt,
 			effectiveModel,
-			selectedAgent,
+			gatedAgent,
 			selectedVariant,
 			clearDraft,
 			persistProjectModel,
@@ -535,7 +556,7 @@ export function NewChat() {
 					// Phase 3: Send the prompt
 					await sendPrompt(sdkDirectory, session.id, finalText, {
 						model: effectiveModel ?? undefined,
-						agent: selectedAgent ?? undefined,
+						agent: gatedAgent ?? undefined,
 						variant: selectedVariant,
 						files,
 					})
@@ -555,7 +576,7 @@ export function NewChat() {
 			createSession,
 			sendPrompt,
 			effectiveModel,
-			selectedAgent,
+			gatedAgent,
 			selectedVariant,
 			clearDraft,
 			persistProjectModel,

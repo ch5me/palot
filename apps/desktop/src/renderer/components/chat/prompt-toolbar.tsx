@@ -32,7 +32,7 @@ import {
 } from "lucide-react"
 import { useCallback, useMemo, useState } from "react"
 import { messagesFamily } from "../../atoms/messages"
-import type { DisplayMode } from "../../atoms/preferences"
+import { activeFireflyProfileAtom, type DisplayMode } from "../../atoms/preferences"
 import { useDisplayMode, useSetDisplayMode } from "../../hooks/use-agents"
 import type {
 	CompactionConfig,
@@ -43,6 +43,11 @@ import type {
 	VcsData,
 } from "../../hooks/use-opencode-data"
 import { getModelVariants, parseModelRef } from "../../hooks/use-opencode-data"
+import {
+	resolveToolbarGating,
+	SIMPLE_MODE_MAIN_AGENT,
+	SIMPLE_MODE_PLAN_AGENT,
+} from "../../lib/profile"
 import {
 	computeContextUsage,
 	formatPercentage,
@@ -132,6 +137,71 @@ export function AgentSelector({
 				))}
 			</SelectContent>
 		</Select>
+	)
+}
+
+// ============================================================
+// Main/Plan Toggle (simple mode)
+// ============================================================
+
+interface MainPlanToggleProps {
+	/** Currently selected agent name (null = server default, i.e. main) */
+	selectedAgent: string | null
+	onSelectAgent: (agentName: string) => void
+	disabled?: boolean
+}
+
+/**
+ * Compact two-state agent control for simple mode: Main for building,
+ * Plan for planning. Replaces the full agent dropdown; anything other
+ * than an explicit "plan" selection counts as Main.
+ */
+function MainPlanToggle({ selectedAgent, onSelectAgent, disabled }: MainPlanToggleProps) {
+	const planActive = selectedAgent === SIMPLE_MODE_PLAN_AGENT
+
+	const segmentCn = (active: boolean) =>
+		cn(
+			"px-2 py-0.5 text-xs transition-colors disabled:cursor-not-allowed disabled:opacity-50",
+			active
+				? "bg-muted/80 text-foreground"
+				: "text-muted-foreground/60 hover:text-muted-foreground",
+		)
+
+	return (
+		<div className="flex h-7 items-center overflow-hidden rounded-md border border-border/40">
+			<Tooltip>
+				<TooltipTrigger
+					render={
+						<button
+							type="button"
+							disabled={disabled}
+							aria-pressed={!planActive}
+							onClick={() => onSelectAgent(SIMPLE_MODE_MAIN_AGENT)}
+							className={cn(segmentCn(!planActive), "rounded-l-md")}
+						/>
+					}
+				>
+					Main
+				</TooltipTrigger>
+				<TooltipContent side="top">Build and execute with the main agent</TooltipContent>
+			</Tooltip>
+			<Tooltip>
+				<TooltipTrigger
+					render={
+						<button
+							type="button"
+							disabled={disabled}
+							aria-pressed={planActive}
+							onClick={() => onSelectAgent(SIMPLE_MODE_PLAN_AGENT)}
+							className={cn(segmentCn(planActive), "rounded-r-md")}
+						/>
+					}
+				>
+					Plan
+				</TooltipTrigger>
+				<TooltipContent side="top">Think through an approach with the plan agent</TooltipContent>
+			</Tooltip>
+		</div>
 	)
 }
 
@@ -540,6 +610,9 @@ export interface PromptToolbarProps {
 /**
  * Combined toolbar with agent, model, variant, and plan-mode selectors.
  * Renders inside the PromptInputFooter > PromptInputTools slot.
+ *
+ * What is revealed is gated by the active Firefly profile's mode preset
+ * (consumer/simple/power/custom) — see resolveToolbarGating in lib/profile.
  */
 export function PromptToolbar({
 	agents,
@@ -558,21 +631,39 @@ export function PromptToolbar({
 	onTogglePlanMode,
 	disabled,
 }: PromptToolbarProps) {
+	const activeProfile = useAtomValue(activeFireflyProfileAtom)
+
+	const gating = useMemo(
+		() =>
+			resolveToolbarGating(
+				activeProfile,
+				agents.map((agent) => agent.name),
+			),
+		[activeProfile, agents],
+	)
+
+	const visibleAgents = useMemo(
+		() => agents.filter((agent) => gating.visibleAgentNames.includes(agent.name)),
+		[agents, gating.visibleAgentNames],
+	)
+
 	// Compute variants for the current effective model
 	const variants = useMemo(() => {
 		if (!effectiveModel || !providers) return []
 		return getModelVariants(effectiveModel.providerID, effectiveModel.modelID, providers.providers)
 	}, [effectiveModel, providers])
 
-	const hasAgents = agents.length > 0
-	const hasVariants = variants.length > 0
+	const showAgentDropdown = gating.agentControl === "dropdown" && visibleAgents.length > 0
+	const showMainPlanToggle = gating.agentControl === "main-plan-toggle"
+	const hasAgentControl = showAgentDropdown || showMainPlanToggle
+	const showVariants = gating.showVariantSelector && variants.length > 0
 	const showPlanToggle = planMode !== undefined && onTogglePlanMode !== undefined
 
 	return (
 		<div className="flex min-w-0 flex-wrap items-center gap-0.5">
-			{hasAgents && (
+			{showAgentDropdown && (
 				<AgentSelector
-					agents={agents}
+					agents={visibleAgents}
 					selectedAgent={selectedAgent}
 					defaultAgent={defaultAgent}
 					onSelectAgent={onSelectAgent}
@@ -580,20 +671,32 @@ export function PromptToolbar({
 				/>
 			)}
 
-			{hasAgents && <Separator orientation="vertical" className="mx-0.5 my-2 self-stretch" />}
+			{showMainPlanToggle && (
+				<MainPlanToggle
+					selectedAgent={selectedAgent}
+					onSelectAgent={onSelectAgent}
+					disabled={disabled}
+				/>
+			)}
 
-			<ModelSelector
-				providers={providers}
-				effectiveModel={effectiveModel}
-				hasOverride={hasModelOverride}
-				onSelectModel={onSelectModel}
-				recentModels={recentModels}
-				disabled={disabled}
-			/>
+			{hasAgentControl && gating.showModelSelector && (
+				<Separator orientation="vertical" className="mx-0.5 my-2 self-stretch" />
+			)}
 
-			{hasVariants && <Separator orientation="vertical" className="mx-0.5 my-2 self-stretch" />}
+			{gating.showModelSelector && (
+				<ModelSelector
+					providers={providers}
+					effectiveModel={effectiveModel}
+					hasOverride={hasModelOverride}
+					onSelectModel={onSelectModel}
+					recentModels={recentModels}
+					disabled={disabled}
+				/>
+			)}
 
-			{hasVariants && (
+			{showVariants && <Separator orientation="vertical" className="mx-0.5 my-2 self-stretch" />}
+
+			{showVariants && (
 				<VariantSelector
 					variants={variants}
 					selectedVariant={selectedVariant}
@@ -604,7 +707,9 @@ export function PromptToolbar({
 
 			{showPlanToggle && (
 				<>
-					<Separator orientation="vertical" className="mx-0.5 my-2 self-stretch" />
+					{(hasAgentControl || gating.showModelSelector) && (
+						<Separator orientation="vertical" className="mx-0.5 my-2 self-stretch" />
+					)}
 					<PlanModeToggle
 						enabled={!!planMode}
 						primed={!!planModePrimed}
