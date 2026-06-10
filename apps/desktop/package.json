@@ -19,7 +19,8 @@
 		"dev:web": "node ../../node_modules/vite/bin/vite.js --config src/renderer/vite.web.config.ts --port $PORT",
 		"dev:electron-local": "node ../../node_modules/electron-vite/bin/electron-vite.js dev",
 		"dev:electron-wayland-local": "node ../../node_modules/electron-vite/bin/electron-vite.js dev -- --ozone-platform=wayland --enable-features=WaylandWindowDecorations --disable-features=WaylandFractionalScaleV1",
-		"build": "node ../../node_modules/electron-vite/bin/electron-vite.js build",
+		"build": "bun ../../scripts/build-plugins.ts && node ../../node_modules/electron-vite/bin/electron-vite.js build",
+		"build:plugins": "bun ../../scripts/build-plugins.ts",
 		"preview": "node ../../node_modules/electron-vite/bin/electron-vite.js preview",
 		"package": "bun run build && electron-builder --config electron-builder.yml --publish never",
 		"package:linux": "bun run build && electron-builder --linux --config electron-builder.yml --publish never",
@@ -32,13 +33,12 @@
 		"eb:mac": "electron-builder --mac --config electron-builder.yml --publish never",
 		"eb:win": "electron-builder --win --config electron-builder.yml --publish never",
 		"rebuild": "electron-rebuild",
-		"lint": "biome check .",
+		"lint": "bun ../../scripts/validate-plugin-manifests.ts && biome check .",
 		"check-types": "bunx tsgo --noEmit",
 		"clean": "rm -rf out release dist node_modules .turbo"
 	},
 	"dependencies": {
 		"@ch5me/dag-sparkline": "workspace:*",
-		"@ch5me/effects": "workspace:*",
 		"@ch5me/elf-configconv": "workspace:*",
 		"@ch5me/elf-ui": "workspace:*",
 		"@ch5me/firefly-design": "workspace:*",
@@ -86,8 +86,9 @@
 		"electron-liquid-glass": "^1.1.1"
 	},
 	"devDependencies": {
-		"@electron/rebuild": "^4.0.3",
+		"@ch5me/effects": "workspace:*",
 		"@ch5me/elf-server": "workspace:*",
+		"@electron/rebuild": "^4.0.3",
 		"@tailwindcss/vite": "^4.0.0",
 		"@types/node": "^24.0.0",
 		"@types/react": "^19.0.0",

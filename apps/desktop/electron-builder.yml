@@ -20,6 +20,12 @@ extraResources:
     to: bin
     filter:
       - "**/*"
+  # V2 plugin catalog disk artifacts (scripts/build-plugins.ts) — the
+  # packaged root the disk manifest loader + worker supervisor scan.
+  - from: out/plugins
+    to: plugins
+    filter:
+      - "**/*"
   # Tray icon assets — must be at the root of process.resourcesPath
   # so tray.ts can find them via path.join(process.resourcesPath, "iconTemplate.png")
   - from: resources/iconTemplate.png
