@@ -154,7 +154,11 @@ let mainWindow: BrowserWindow | null = null
 // Enable Chrome DevTools Protocol (CDP) in dev mode so external tools
 // (agent-browser, Playwright, etc.) can connect for visual testing.
 // Usage: `agent-browser connect 9222` or Playwright's `connectOverCDP`.
-if (isDev) {
+// An explicit `--remote-debugging-port=<port>` CLI flag wins: appendSwitch
+// would silently OVERRIDE it, and the browser-lane Chrome wrapper also
+// claims 9222, which otherwise leaves the app's CDP permanently unbindable
+// while a lane Chrome is running.
+if (isDev && !app.commandLine.hasSwitch("remote-debugging-port")) {
 	app.commandLine.appendSwitch("remote-debugging-port", "9222")
 }
 

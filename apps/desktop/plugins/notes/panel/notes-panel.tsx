@@ -24,6 +24,14 @@ interface NotesPanelProps {
 
 const MAX_NOTE_LENGTH = 20_000
 
+/**
+ * Dev-only crash drill hook (plan slice-1 live drill): typing this exact
+ * marker into the notes field throws during render so the live app can
+ * demonstrate PluginPanelBoundary containment, crash reporting, and the
+ * 3-crash quarantine path. Compiled out of production builds.
+ */
+const CRASH_DRILL_MARKER = "__crash-notes-panel__"
+
 export function NotesPanel({ agent, className }: NotesPanelProps) {
 	const draftKey = `notes:${agent.sessionId}`
 	const draftSnapshot = useDraftSnapshot(draftKey)
@@ -39,6 +47,9 @@ export function NotesPanel({ agent, className }: NotesPanelProps) {
 	}, [draftSnapshot])
 
 	const trimmed = notes.trim()
+	if (import.meta.env.DEV && trimmed === CRASH_DRILL_MARKER) {
+		throw new Error("notes panel crash drill (dev hook)")
+	}
 	const summary = trimmed
 		? `${trimmed.split("\n").filter((line) => line.trim().length > 0).length} note${trimmed.split("\n").filter((line) => line.trim().length > 0).length === 1 ? "" : "s"} captured for ${agent.project}.`
 		: `No notes captured yet for ${agent.project}. Type below -- drafts autosave per session.`
