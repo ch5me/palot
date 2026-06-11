@@ -635,7 +635,7 @@ export function BrowserPanel({ agent: _agent, className }: BrowserPanelProps) {
 									className="h-8"
 								/>
 							</label>
-														<label className="flex flex-col gap-1 text-foreground sm:col-span-2">
+							<label className="flex flex-col gap-1 text-foreground sm:col-span-2">
 								<span className="text-[11px] text-muted-foreground">Surface kind</span>
 								<select
 									value={createForm.surfaceKind}
@@ -730,10 +730,8 @@ export function BrowserPanel({ agent: _agent, className }: BrowserPanelProps) {
 								size="sm"
 								onClick={() => {
 									setIsCreateOpen(false)
-							setCreateError(null)
-							setCreateForm((form) => ({ ...form, surfaceKind: defaultSurfaceKindForCreateForm(form.streamBackendUrl, form.cdpEndpoint) }))
-						}}
-
+									setCreateError(null)
+								}}
 								disabled={createBusy}
 							>
 								Cancel
