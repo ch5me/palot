@@ -22,26 +22,31 @@ export interface PersistedModelRef {
 	agent?: string
 }
 
+export type LastSidePanelTabId =
+	| "review"
+	| "browser"
+	| "notes"
+	| "pulse"
+	| "memory"
+	| "files"
+	| "terminal"
+	| "editor"
+	| "plugins"
+	| "bridges"
+	| "crm"
+	| "studio"
+	| "voice"
+	| "oracle"
+	| "claude"
+	| "ch5pm"
+	| "artifacts"
+	| "pdf-review"
+
+export type NavSidebarTabId = "built-in" | "built-in-duplicate"
+
 export interface FireflySurfacePreferences {
-	lastSidePanelTab:
-		| "review"
-		| "browser"
-		| "notes"
-		| "pulse"
-		| "memory"
-		| "files"
-		| "terminal"
-		| "editor"
-		| "plugins"
-		| "bridges"
-		| "crm"
-		| "studio"
-		| "voice"
-		| "oracle"
-		| "claude"
-		| "ch5pm"
-		| "artifacts"
-		| "pdf-review"
+	lastSidePanelTab: LastSidePanelTabId
+	lastNavSidebarTab: NavSidebarTabId
 }
 
 export interface BrowserPanelState {
@@ -154,7 +159,7 @@ export const automationsBannerDismissedAtom = atomWithStorage<boolean>(
 
 export const fireflySurfacePreferencesAtom = atomWithStorage<FireflySurfacePreferences>(
 	"elf:firefly-surface-preferences",
-	{ lastSidePanelTab: "review" },
+	{ lastSidePanelTab: "review", lastNavSidebarTab: "built-in" },
 )
 
 export const browserPanelStateAtom = atomWithStorage<Record<string, BrowserPanelState>>(

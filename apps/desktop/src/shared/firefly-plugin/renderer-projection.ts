@@ -1,6 +1,7 @@
 import type { PluginDescriptor, HostPanelSlot, HostWidgetZone } from "./descriptor"
 import {
 	COMMAND_CONTRACT,
+	NAV_SIDEBAR_CONTRACT,
 	PANEL_CONTRACT,
 	THEME_CONTRACT,
 	WIDGET_CONTRACT,
@@ -10,7 +11,7 @@ import {
 } from "./family-contracts"
 import { evaluateBrokerRequest, lookupCapability, type CapabilityRisk } from "./capabilities"
 
-export const RENDERER_PROJECTION_FAMILIES = ["panels", "widgets", "commands", "themes"] as const
+export const RENDERER_PROJECTION_FAMILIES = ["panels", "navSidebars", "widgets", "commands", "themes"] as const
 export type RendererProjectionFamily = (typeof RENDERER_PROJECTION_FAMILIES)[number]
 
 export type RendererContributionState =

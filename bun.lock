@@ -71,7 +71,7 @@
       "name": "@ch5me/firefly-design",
       "version": "0.1.0",
       "dependencies": {
-        "@types/react-dom": "^19.2.3",
+        "@ch5me/motion": "workspace:*",
       },
       "devDependencies": {
         "typescript": "^6.0.3",
@@ -86,7 +86,6 @@
         "@react-spring/core": "^10.1.0",
         "@react-spring/shared": "^10.1.0",
         "@react-spring/web": "^10.1.0",
-        "@types/react-dom": "^19.2.3",
       },
       "devDependencies": {
         "@testing-library/react": "^16.3.0",
@@ -333,9 +332,6 @@
         "@typescript/native-preview": "^7.0.0-dev.20260207.1",
         "typescript": "^5.8.3",
       },
-    },
-    "packages/mcp-runtime-shared": {
-      "name": "@ch5me/mcp-runtime-shared",
     },
     "packages/ui": {
       "name": "@ch5me/elf-ui",
@@ -634,8 +630,6 @@
     "@ch5me/firefly-design": ["@ch5me/firefly-design@workspace:../ch5-packages/packages/firefly/design"],
 
     "@ch5me/html-react-inspector": ["@ch5me/html-react-inspector@workspace:../ch5-packages/packages/web/html-react-inspector"],
-
-    "@ch5me/mcp-runtime-shared": ["@ch5me/mcp-runtime-shared@workspace:packages/mcp-runtime-shared"],
 
     "@ch5me/motion": ["@ch5me/motion@workspace:../ch5-packages/packages/motion/motion"],
 

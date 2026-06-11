@@ -1,6 +1,6 @@
 import { z } from "zod"
 
-export const CONTRIBUTION_FAMILIES = ["panels", "widgets", "commands", "themes"] as const
+export const CONTRIBUTION_FAMILIES = ["panels", "navSidebars", "widgets", "commands", "themes"] as const
 export type ContributionFamily = (typeof CONTRIBUTION_FAMILIES)[number]
 
 export const escapeHatchTransportSchema = z.enum(["iframe", "webview"])
@@ -21,6 +21,19 @@ export const panelPersistenceStrategySchema = z.enum([
 	"panel-layout-preference",
 ])
 export type PanelPersistenceStrategy = z.infer<typeof panelPersistenceStrategySchema>
+
+export const navSidebarPlacementSurfaceSchema = z.enum(["nav-sidebar"])
+export type NavSidebarPlacementSurface = z.infer<typeof navSidebarPlacementSurfaceSchema>
+
+export const navSidebarActivationTriggerSchema = z.enum([
+	"command",
+	"nav-sidebar-open",
+	"host-restore",
+])
+export type NavSidebarActivationTrigger = z.infer<typeof navSidebarActivationTriggerSchema>
+
+export const navSidebarPersistenceStrategySchema = z.enum(["nav-sidebar-selection"])
+export type NavSidebarPersistenceStrategy = z.infer<typeof navSidebarPersistenceStrategySchema>
 
 export const widgetPlacementZoneSchema = z.enum(["above-chat", "chat-inline-right"])
 export type WidgetPlacementZone = z.infer<typeof widgetPlacementZoneSchema>
@@ -199,6 +212,48 @@ export const PANEL_CONTRACT = contributionFamilyContractSchema.parse({
 	},
 })
 
+export const NAV_SIDEBAR_CONTRACT = contributionFamilyContractSchema.parse({
+	family: "navSidebars",
+	hostVocabulary: navSidebarPlacementSurfaceSchema.options,
+	placementSurfaces: navSidebarPlacementSurfaceSchema.options,
+	activationTriggers: navSidebarActivationTriggerSchema.options,
+	defaultState: { mode: "default-off" },
+	availability: {
+		staticRequiresCapabilities: true,
+		hostEvaluatesLiveAvailability: true,
+		hostOwnsReasonStrings: true,
+	},
+	persistence: {
+		strategy: navSidebarPersistenceStrategySchema.enum["nav-sidebar-selection"],
+		hostOwnsStorage: true,
+		pluginMayProvidePersistenceKey: true,
+		scope: "app",
+	},
+	hostRendering: {
+		hostOwnsContainer: true,
+		hostOwnsPlacementVocabulary: true,
+		hostOwnsActivationLifecycle: true,
+		allowedModes: ["host-reconciler", "declarative-props"],
+		dataOnly: false,
+		hostMayPreviewWithoutApply: false,
+		hostMayApplyWithoutPluginRuntime: false,
+	},
+	escapeHatch: {
+		policy: "forbidden",
+		allowedTransports: [],
+		requiresExplicitPolicyField: false,
+		hostOwnedSandbox: true,
+	},
+	mutationGuard: {
+		mayDirectlyMutateHostChrome: false,
+		requiresWrapperToolsOrCapabilities: true,
+		notes: [
+			"Nav-sidebar contributions render inside a host-owned header/content outlet only.",
+			"Plugins cannot replace the nav-sidebar shell, settings footer, or app chrome.",
+		],
+	},
+})
+
 export const WIDGET_CONTRACT = contributionFamilyContractSchema.parse({
 	family: "widgets",
 	hostVocabulary: widgetPlacementZoneSchema.options,
@@ -327,6 +382,7 @@ export const THEME_CONTRACT = contributionFamilyContractSchema.parse({
 
 export const CONTRIBUTION_FAMILY_CONTRACTS = {
 	panels: PANEL_CONTRACT,
+	navSidebars: NAV_SIDEBAR_CONTRACT,
 	widgets: WIDGET_CONTRACT,
 	commands: COMMAND_CONTRACT,
 	themes: THEME_CONTRACT,

@@ -179,7 +179,7 @@ export function SidebarLayout() {
 							onOpenChange={setLeftPanelOpen}
 						>
 							<div
-								className="flex h-full flex-col overflow-y-auto"
+								className="flex h-full flex-col overflow-hidden"
 								style={{ background: "hsl(var(--sidebar, var(--card)))" }}
 							>
 								<div
@@ -190,7 +190,7 @@ export function SidebarLayout() {
 										WebkitAppRegion: "drag",
 									}}
 								/>
-								{sidebarContent}
+								<div className="min-h-0 flex-1 overflow-hidden">{sidebarContent}</div>
 								{slotFooter !== false && slotFooter}
 							</div>
 						</SidebarProvider>

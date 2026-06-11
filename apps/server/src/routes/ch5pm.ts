@@ -23,10 +23,7 @@ const routes = app.get("/state", async (c) => {
 	try {
 		const file = Bun.file(resolvePmStatePath())
 		if (!(await file.exists())) {
-			return c.json(
-				{ error: `CH5PM state file not found: ${resolvePmStatePath()}` },
-				404,
-			)
+			return c.json({ error: `CH5PM state file not found: ${resolvePmStatePath()}` }, 404)
 		}
 		const payload = await file.json()
 		return c.json(payload, 200)
