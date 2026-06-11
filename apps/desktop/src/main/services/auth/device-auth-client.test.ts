@@ -1,11 +1,24 @@
 import { describe, expect, it } from "bun:test"
 
-// device-auth-client functions use the global fetch without Electron dependencies.
-// Bun's ESM evaluation captures fetch as a closure at module import time,
-// so globalThis.fetch injection does not reach the module's binding.
-// Tested implicitly via IPC integration tests that run in the Electron main process.
-describe.skip("device-auth-client", () => {
-	it("placeholder — tested in Electron IPC integration test", () => {
-		expect(true).toBe(true)
+describe("device-auth-client env contract", () => {
+	it("requires an auth host env var", async () => {
+		const originalHost = process.env.FIREFLY_AUTH_HOST
+		const originalViteHost = process.env.VITE_FIREFLY_AUTH_HOST
+
+		try {
+			delete process.env.FIREFLY_AUTH_HOST
+			delete process.env.VITE_FIREFLY_AUTH_HOST
+			const modulePath = new URL("./device-auth-client.ts", import.meta.url).href
+			const imported = await import(`${modulePath}?missing-host=${Date.now()}`)
+
+			await expect(imported.requestDeviceCode({ clientId: "desktop" })).rejects.toThrow(
+				"FIREFLY_AUTH_HOST is required for desktop auth flows",
+			)
+		} finally {
+			if (originalHost === undefined) delete process.env.FIREFLY_AUTH_HOST
+			else process.env.FIREFLY_AUTH_HOST = originalHost
+			if (originalViteHost === undefined) delete process.env.VITE_FIREFLY_AUTH_HOST
+			else process.env.VITE_FIREFLY_AUTH_HOST = originalViteHost
+		}
 	})
 })
