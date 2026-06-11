@@ -73,4 +73,15 @@ describe("buildBrowserLaneDisplayUrl", () => {
 			}),
 		).toBe("http://127.0.0.1:30206/browser/default/")
 	})
+
+	test("uses direct iframe target for direct-iframe lanes", () => {
+		expect(
+			buildBrowserLaneDisplayUrl({
+				streamPath: "/browser/direct/",
+				desktopStreamUrl: "http://elf-browser-lane.local/browser/direct/",
+				streamBackendUrl: "http://127.0.0.1:8077",
+				surfaceKind: "direct-iframe",
+			}),
+		).toBe("http://127.0.0.1:8077")
+	})
 })

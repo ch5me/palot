@@ -40,7 +40,10 @@ import {
 	startBrowserLane,
 	writeHostClipboardText,
 } from "../../services/backend"
-import { summarizeBrowserLaneHealth } from "../../../shared/browser-lanes"
+import {
+	summarizeBrowserLaneHealth,
+	type BrowserLaneSurfaceKind,
+} from "../../../shared/browser-lanes"
 import type { Agent, BrowserLane, BrowserLaneHealth } from "../../lib/types"
 
 interface BrowserPanelProps {
@@ -52,6 +55,10 @@ const FALLBACK_URL = "about:blank"
 const USER_DEFAULT_URL = "https://example.com"
 const STARTUP_HEALTH_POLL_INTERVAL_MS = 1000
 const STARTUP_HEALTH_MAX_POLLS = 60
+
+function defaultSurfaceKindForCreateForm(streamBackendUrl: string, cdpEndpoint: string): BrowserLaneSurfaceKind {
+	return cdpEndpoint.trim() ? "selkies-stream" : streamBackendUrl.trim() ? "direct-iframe" : "selkies-stream"
+}
 
 function pickInitialUserUrl(persisted: string | undefined): string {
 	if (!persisted || persisted === FALLBACK_URL) return USER_DEFAULT_URL
@@ -79,9 +86,18 @@ export function BrowserPanel({ agent: _agent, className }: BrowserPanelProps) {
 	const [isLoading, setIsLoading] = useState(false)
 	const [loadFailure, setLoadFailure] = useState<string | null>(null)
 	const [isCreateOpen, setIsCreateOpen] = useState(false)
-	const [createForm, setCreateForm] = useState({
+	const [createForm, setCreateForm] = useState<{
+		id: string
+		label: string
+		surfaceKind: BrowserLaneSurfaceKind
+		streamBackendUrl: string
+		cdpEndpoint: string
+		host: string
+		profilePath: string
+	}>({
 		id: "",
 		label: "",
+		surfaceKind: "selkies-stream",
 		streamBackendUrl: "",
 		cdpEndpoint: "",
 		host: "",
@@ -112,14 +128,17 @@ export function BrowserPanel({ agent: _agent, className }: BrowserPanelProps) {
 		if (!activeLane) {
 			return {
 				title: "No browser lane ready",
-				detail: "Create or start a browser lane to render streamed browser surface.",
+				detail: "Create or start a browser lane to render the browser surface.",
 				showFrame: false,
 			}
 		}
 		if (!laneHealth) {
 			return {
 				title: "Checking browser lane",
-				detail: "Waiting for stream and CDP status.",
+				detail:
+					activeLane.surfaceKind === "direct-iframe"
+						? "Waiting for iframe reachability."
+						: "Waiting for stream and CDP status.",
 				showFrame: false,
 			}
 		}
@@ -132,7 +151,7 @@ export function BrowserPanel({ agent: _agent, className }: BrowserPanelProps) {
 		}
 		if (laneHealth.stream.state === "ready") {
 			return {
-				title: "Stream live",
+				title: activeLane.surfaceKind === "direct-iframe" ? "Iframe live" : "Stream live",
 				detail: healthSummary,
 				showFrame: true,
 			}
@@ -201,13 +220,19 @@ export function BrowserPanel({ agent: _agent, className }: BrowserPanelProps) {
 				autoStartAttemptedRef.current.delete(activeLane.id)
 			}
 		})
+		if (activeLane.surfaceKind === "direct-iframe") {
+			const nextUrl = persistedUrl && persistedUrl !== FALLBACK_URL ? persistedUrl : streamUrl
+			setCurrentUrl(nextUrl)
+			setInputValue(nextUrl)
+		}
 		return () => {
 			cancelled = true
 		}
-	}, [activeLane])
+	}, [activeLane, persistedUrl, streamUrl])
 
 	useEffect(() => {
 		if (!activeLane) return
+		if (activeLane.surfaceKind === "direct-iframe") return
 		if (activeLane.mode !== "local" || activeLane.runtime !== "docker-chromium") return
 		if (autoStartAttemptedRef.current.has(activeLane.id)) return
 		const health = laneHealth
@@ -240,6 +265,7 @@ export function BrowserPanel({ agent: _agent, className }: BrowserPanelProps) {
 
 	useEffect(() => {
 		if (!activeLane) return
+		if (activeLane.surfaceKind === "direct-iframe") return
 		if (activeLane.mode !== "local" || activeLane.runtime !== "docker-chromium") return
 		if (!laneHealth) return
 		if (laneHealth.status === "error") return
@@ -289,6 +315,15 @@ export function BrowserPanel({ agent: _agent, className }: BrowserPanelProps) {
 		setLoadFailure(null)
 		setIsLoading(true)
 		try {
+			if (activeLane.surfaceKind === "direct-iframe") {
+				setCurrentUrl(nextUrl)
+				setInputValue(nextUrl)
+				setPersistedUrl(nextUrl)
+				setHistory((current) => pushBrowserHistory(current, nextUrl))
+				const health = await fetchBrowserLaneHealth(activeLane.id)
+				setLaneHealth(health)
+				return
+			}
 			await navigateBrowserLane(activeLane.id, nextUrl)
 			const navigatedUrl = nextUrl
 			setCurrentUrl(navigatedUrl)
@@ -415,12 +450,17 @@ export function BrowserPanel({ agent: _agent, className }: BrowserPanelProps) {
 		const id = createForm.id.trim()
 		const label = createForm.label.trim() || id
 		const streamBackendUrl = createForm.streamBackendUrl.trim()
+		const cdpEndpoint = createForm.cdpEndpoint.trim() || null
 		if (!id) {
 			setCreateError("Lane id is required")
 			return
 		}
 		if (!streamBackendUrl) {
-			setCreateError("Stream backend URL is required")
+			setCreateError(
+				createForm.surfaceKind === "direct-iframe"
+					? "Target URL is required"
+					: "Stream backend URL is required",
+			)
 			return
 		}
 		setCreateBusy(true)
@@ -428,19 +468,28 @@ export function BrowserPanel({ agent: _agent, className }: BrowserPanelProps) {
 			const lane = await createRemoteBrowserLane({
 				id,
 				label,
+				surfaceKind: createForm.surfaceKind,
 				streamBackendUrl,
-				cdpEndpoint: createForm.cdpEndpoint.trim() || null,
+				cdpEndpoint,
 				host: createForm.host.trim() || null,
 				profilePath: createForm.profilePath.trim() || null,
 			})
-							setLaneList((current) => {
-								const filtered = current.filter((entry) => entry.id !== lane.id)
-								return [...filtered, lane]
-							})
-							setActiveLaneId(lane.id)
-							setIsCreateOpen(false)
+			setLaneList((current) => {
+				const filtered = current.filter((entry) => entry.id !== lane.id)
+				return [...filtered, lane]
+			})
+			setActiveLaneId(lane.id)
+			setIsCreateOpen(false)
 
-			setCreateForm({ id: "", label: "", streamBackendUrl: "", cdpEndpoint: "", host: "", profilePath: "" })
+			setCreateForm({
+				id: "",
+				label: "",
+				surfaceKind: "selkies-stream",
+				streamBackendUrl: "",
+				cdpEndpoint: "",
+				host: "",
+				profilePath: "",
+			})
 		} catch (error) {
 			setCreateError(error instanceof Error ? error.message : String(error))
 		} finally {
@@ -586,14 +635,45 @@ export function BrowserPanel({ agent: _agent, className }: BrowserPanelProps) {
 									className="h-8"
 								/>
 							</label>
+														<label className="flex flex-col gap-1 text-foreground sm:col-span-2">
+								<span className="text-[11px] text-muted-foreground">Surface kind</span>
+								<select
+									value={createForm.surfaceKind}
+									onChange={(event) =>
+										setCreateForm((form) => ({
+											...form,
+											surfaceKind: event.target.value as BrowserLaneSurfaceKind,
+										}))
+									}
+									className="h-8 w-full rounded-md border border-border bg-background px-2 text-xs text-foreground"
+								>
+									<option value="selkies-stream">Selkies stream</option>
+									<option value="direct-iframe">Direct iframe</option>
+								</select>
+							</label>
 							<label className="flex flex-col gap-1 text-foreground sm:col-span-2">
-								<span className="text-[11px] text-muted-foreground">Stream backend URL (required)</span>
+								<span className="text-[11px] text-muted-foreground">
+									{createForm.surfaceKind === "direct-iframe"
+										? "Target URL (required)"
+										: "Stream backend URL (required)"}
+								</span>
 								<Input
 									value={createForm.streamBackendUrl}
 									onChange={(event) =>
-										setCreateForm((form) => ({ ...form, streamBackendUrl: event.target.value }))
+										setCreateForm((form) => ({
+											...form,
+											streamBackendUrl: event.target.value,
+											surfaceKind: defaultSurfaceKindForCreateForm(
+												event.target.value,
+												form.cdpEndpoint,
+											),
+										}))
 									}
-									placeholder="http://host:3000"
+									placeholder={
+										createForm.surfaceKind === "direct-iframe"
+											? "http://127.0.0.1:8077"
+											: "http://host:3000"
+									}
 									className="h-8"
 									required
 								/>
@@ -603,7 +683,14 @@ export function BrowserPanel({ agent: _agent, className }: BrowserPanelProps) {
 								<Input
 									value={createForm.cdpEndpoint}
 									onChange={(event) =>
-										setCreateForm((form) => ({ ...form, cdpEndpoint: event.target.value }))
+										setCreateForm((form) => ({
+											...form,
+											cdpEndpoint: event.target.value,
+											surfaceKind: defaultSurfaceKindForCreateForm(
+												form.streamBackendUrl,
+												event.target.value,
+											),
+										}))
 									}
 									placeholder="http://host:9222"
 									className="h-8"
@@ -643,8 +730,10 @@ export function BrowserPanel({ agent: _agent, className }: BrowserPanelProps) {
 								size="sm"
 								onClick={() => {
 									setIsCreateOpen(false)
-									setCreateError(null)
-								}}
+							setCreateError(null)
+							setCreateForm((form) => ({ ...form, surfaceKind: defaultSurfaceKindForCreateForm(form.streamBackendUrl, form.cdpEndpoint) }))
+						}}
+
 								disabled={createBusy}
 							>
 								Cancel
@@ -670,7 +759,7 @@ export function BrowserPanel({ agent: _agent, className }: BrowserPanelProps) {
 				>
 					{activeLane && panelState.showFrame ? (
 						<iframe
-							src={streamUrl}
+							src={activeLane.surfaceKind === "direct-iframe" ? currentUrl : streamUrl}
 							title={`Browser lane ${activeLane.label}`}
 							className="h-full w-full rounded-lg border-0 bg-background"
 						/>

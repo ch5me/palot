@@ -4,6 +4,7 @@ import {
 	createEmptyBrowserLaneHealth,
 	getBrowserLaneStoragePaths,
 	getBrowserLaneStreamPath,
+	getBrowserLaneSurfaceKind,
 	inflateBrowserLane,
 	summarizeBrowserLaneHealth,
 } from "./browser-lanes"
@@ -53,5 +54,19 @@ describe("browser lane health summary", () => {
 		expect(lane.streamPath).toBe("/browser/default/")
 		expect(lane.cdpEndpoint).toBeNull()
 		expect(lane.streamBackendUrl).toBe("http://127.0.0.1:3901")
+		expect(lane.surfaceKind).toBe("selkies-stream")
+	})
+
+	test("treats remote lanes without cdp as direct iframe", () => {
+		expect(getBrowserLaneSurfaceKind({ runtime: "remote-attached", cdpEndpoint: null })).toBe(
+			"direct-iframe",
+		)
+	})
+
+	test("summarizes direct iframe readiness", () => {
+		const health = createEmptyBrowserLaneHealth("running")
+		health.stream.state = "ready"
+		health.cdp.state = "not-applicable"
+		expect(summarizeBrowserLaneHealth(health)).toBe("Direct iframe ready")
 	})
 })
