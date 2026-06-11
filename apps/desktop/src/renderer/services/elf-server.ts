@@ -402,6 +402,30 @@ export async function fetchCh5PmState() {
 	return res.json()
 }
 
+export async function fetchCh5PmSideAgentFeed() {
+	const res = await client.api.ch5pm.babysitter.$get()
+	if (!res.ok) {
+		throw new Error(await readError(res, `CH5PM side-agent feed fetch failed: ${res.status} ${res.statusText}`))
+	}
+	return res.json()
+}
+
+export async function fetchCh5PmSideAgentQueue() {
+	const res = await client.api.ch5pm.queue.$get()
+	if (!res.ok) {
+		throw new Error(await readError(res, `CH5PM side-agent queue fetch failed: ${res.status} ${res.statusText}`))
+	}
+	return res.json()
+}
+
+export async function fetchCh5PmSideAgentHealth() {
+	const res = await client.api.ch5pm.health.$get()
+	if (!res.ok) {
+		throw new Error(await readError(res, `CH5PM side-agent health fetch failed: ${res.status} ${res.statusText}`))
+	}
+	return res.json()
+}
+
 async function postCh5PmAttentionAction(
 	action: "resolve" | "cancel",
 	body: Record<string, unknown>,

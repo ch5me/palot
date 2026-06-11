@@ -1,0 +1,278 @@
+# Task 1: Live PM Source Contract Audit
+## Date: 2026-06-11
+## Branch: rescue/pm-side-agents-seam
+
+---
+
+## 1. Service Status (bun run svc:status)
+
+- server (port 30206): Running (tmux: omo-elf-server)
+- web (port 20883): Running (tmux: omo-elf-web)
+- desktop: Not running (browser-mode proof path is canonical)
+
+---
+
+## 2. Live Endpoint Contracts (curl proof)
+
+### GET /api/ch5pm/state → daemon /pm/state
+Proxy: apps/server/src/routes/ch5pm.ts:75
+
+Top-level envelope keys observed:
+- schemaVersion: "1"
+- boxes[]: array of box objects (boxId, hubId, generatedAt, snapshotVersion, healthy, opencodeDbRecent, sessions[], freeDiskGiB, fleet, metadata)
+- sessions[]: array of session objects
+- lanes[]: array of lane objects
+- backgroundAgents[]: array of agent objects
+- planeSummary: {projects, epics, ...}
+- needsChris: number
+- attentionQueue: array
+- degradedReasons: string[]
+- updatedAt: ISO timestamp
+- cluster, dataAges, judgment, lastTick, recentCompletions, generatedBy
+
+Observed live counts: boxes=3, sessions=66 (in metadata.sessionCount), lanes=54, backgroundAgents=4, needsChris=2
+
+### GET /api/ch5pm/babysitter → daemon /pm/babysitter
+Proxy: apps/server/src/routes/ch5pm.ts:76
+
+Top-level envelope keys observed:
+- ok: boolean
+- health: string ("healthy"|"degraded")
+- helper: string ("pm-babysitter")
+- generatedAt: ISO timestamp
+- hubBoxId: string
+- boxes[]: array of box digest objects
+  - boxId, generatedAt, intervalSeconds, sessions[], actions[], notes[], modelPassRan
+  - session rows: sessionId, title, dir, classification, ageMin, gist, reason, parked, manualOwned, severity
+- recentActions[]: array of action objects
+- attention[]: array of attention rows
+- babysitterLoop: {enabled, running, intervalSeconds, lastRunAt, lastDigestAt, passes, lastError} | null
+- degradedReasons: string[]
+- dataAges: {feed: string} | null
+
+Observed live counts: boxes=2, recentActions=200, attention=34, degradedReasons=0
+
+### GET /api/ch5pm/queue → daemon /queue
+Proxy: apps/server/src/routes/ch5pm.ts:77
+
+Top-level envelope keys observed:
+- ok: boolean
+- health: string ("healthy"|"degraded")
+- helper: string ("inbox")
+- rows: OBJECT (not array)
+  - jobs[]: array of job objects
+  - claims[]: array of claim objects
+- generatedAt: ISO timestamp
+- degradedReasons: string[]
+- dataAges: object
+
+CRITICAL: Queue payload is ENVELOPE with rows.jobs[] and rows.claims[], NOT flat top-level jobs/claims.
+
+Job object fields observed:
+- jobId, ticketId, repoId, boxId, workerId, sessionId, state, enqueuedAt, startedAt, endedAt
+- completedSteps[], failedStep, failedStepReason, rollbackSteps[]
+- metadata: {kind, tmuxSession, workerLogPath, verifyPending, verifyReason, agent, prompt, ...}
+
+Claim object fields: not yet observed in detail (need separate curl with claims filter).
+
+Observed live: health="degraded", degradedReasons includes "terminal-jobs-need-reconcile:29"
+
+### GET /api/ch5pm/health → daemon /health
+Proxy: apps/server/src/routes/ch5pm.ts:78
+
+Top-level envelope keys observed:
+- ok: boolean
+- health: string
+- helper: string ("inbox")
+- runtimeStateFile: string (SQLite path)
+- generatedAt: ISO timestamp
+- version: {commit, boxId}
+- babysitterLoop: {running, lastRunAt, lastDigestAt, enabled, intervalSeconds, passes, lastError}
+- dataAges: object
+- degradedReasons: string[]
+
+Observed live: ok=true, health="healthy", babysitterLoop.running=true, degradedReasons=[]
+
+---
+
+## 3. Renderer Consumers by Source
+
+### Dense Console (pm-live-dashboard.tsx)
+Source: /api/ch5pm/state ONLY (via fetchCh5PmState from backend.ts)
+Sections rendered:
+- Sessions table (state.sessions)
+- Lanes (state.lanes)
+- Background Agents (state.backgroundAgents)
+- Needs Chris (state.needsChris + state.attentionQueue)
+- Ready Frontier (state.planeSummary)
+- Follow-ups (state.followUps)
+- Boxes (state.boxes)
+- Completions (state.recentCompletions)
+- Attention Queue (PmAttentionQueue component, state.attentionQueue)
+
+### Side Agents Panel (pm-dockview.tsx)
+Source: PLACEHOLDER — no live data fetched yet
+Status: Static text "Background agents will be exposed as their own dockable panel in a follow-up slice."
+
+### Lineage Panel (pm-dockview.tsx)
+Source: PLACEHOLDER — static text only
+Status: "See the lineage strip at the top of the Dense Console panel."
+
+### Legacy Dashboard (ch5pm-dashboard/panel.tsx)
+Source: fetchCh5PmDashboard from ch5pm-dashboard/client.ts
+Note: This is a SEPARATE older dashboard surface using different daemon endpoints (snapshot/pressure/system).
+Status: Audit/reference only — NOT used by Project Manager route.
+
+---
+
+## 4. Service Layer (backend.ts + elf-server.ts)
+
+### Exported PM fetch functions (consistent naming):
+- fetchCh5PmState() → /api/ch5pm/state
+- fetchCh5PmSideAgentFeed() → /api/ch5pm/babysitter
+- fetchCh5PmSideAgentQueue() → /api/ch5pm/queue
+- fetchCh5PmSideAgentHealth() → /api/ch5pm/health
+
+### Backend routing:
+- backend.ts: detects Electron vs browser, routes to IPC or HTTP
+- elf-server.ts: Hono RPC client for browser mode
+- Both export same function names with consistent signatures
+
+---
+
+## 5. Queue Contract Mismatch (CRITICAL BUG)
+
+### types.ts (pm-side-agents/types.ts:155-160):
+```typescript
+export interface Ch5PmSideAgentQueuePayload {
+  jobs?: Ch5PmSideAgentQueueJob[];
+  claims?: Ch5PmSideAgentQueueClaim[];
+  updatedAt?: string | null;
+  generatedAt?: string | null;
+}
+```
+Assumes FLAT shape: payload.jobs, payload.claims
+
+### ACTUAL live payload (curl proof):
+```json
+{
+  "ok": true,
+  "health": "degraded",
+  "helper": "inbox",
+  "rows": {
+    "jobs": [...],
+    "claims": [...]
+  },
+  "generatedAt": "...",
+  "degradedReasons": [...],
+  "dataAges": {...}
+}
+```
+Real shape: ENVELOPE with payload.rows.jobs, payload.rows.claims
+
+### composition.ts (pm-side-agents/composition.ts:251-259):
+```typescript
+const jobs = Array.isArray(payload.jobs) ? payload.jobs : []
+const claims = Array.isArray(payload.claims) ? payload.claims : []
+const partial = !Array.isArray(payload.jobs) || !Array.isArray(payload.claims)
+```
+WRONG: reads payload.jobs and payload.claims directly, but live payload has payload.rows.jobs and payload.rows.claims.
+
+### Impact:
+- composition.ts will always see jobs=[] and claims=[] (empty arrays)
+- partial flag will always be true (triggers "queue-partial" degraded reason)
+- Side Agents queue panel will show empty even when jobs/claims exist
+
+### Fix required:
+- Update Ch5PmSideAgentQueuePayload type to match live envelope shape
+- Update composition.ts buildQueueSource to read payload.rows.jobs and payload.rows.claims
+- Add regression test with fixture matching live envelope shape
+
+---
+
+## 6. composition.ts Status: DEAD CODE
+
+### Grep result:
+```
+grep "import.*composition|from.*composition" → No matches found
+```
+
+### Finding:
+- No file in apps/desktop/src/renderer imports from pm-side-agents/composition.ts
+- composition.ts is unwired/dead code
+- composePmSideAgentsModel() is never called
+- All view model types (Ch5PmSideAgentsViewModel, etc.) are unused
+
+### Implication:
+- composition.ts can be rehabilitated or replaced without breaking anything
+- Plan should deliberately decide: fix composition.ts or write new mapper
+- If fixing: must correct queue envelope shape bug first
+- If replacing: delete composition.ts to avoid confusion
+
+---
+
+## 7. PM UI Source Matrix
+
+| UI Section | Source Endpoint | Current Status |
+|---|---|---|
+| Dense Console (all sections) | /api/ch5pm/state | LIVE, working |
+| Side Agents panel | (none yet) | PLACEHOLDER |
+| Lineage panel | (none yet) | PLACEHOLDER |
+| Legacy dashboard | fetchCh5PmDashboard (old endpoints) | SEPARATE surface, not PM route |
+
+### Side Agents panel needs (from plan):
+- /api/ch5pm/babysitter → loop health, per-box digests, decision-needed rows, recent actions
+- /api/ch5pm/queue → merge queue jobs/claims (MUST FIX envelope shape)
+- /api/ch5pm/health → daemon health, babysitter loop status
+- /api/ch5pm/state → attention queue (already in Dense Console, but may need cross-ref)
+
+---
+
+## 8. Type Contracts Summary
+
+### Ch5PmLiveState (ch5pm-dashboard/types.ts)
+Used by: pm-live-dashboard.tsx
+Source: /api/ch5pm/state
+Status: Correct, matches live payload
+
+### Ch5PmSideAgentPayload (pm-side-agents/types.ts:106-120)
+Used by: composition.ts (dead code), backend.ts (return type)
+Source: /api/ch5pm/babysitter
+Status: Correct, matches live payload
+
+### Ch5PmSideAgentQueuePayload (pm-side-agents/types.ts:155-160)
+Used by: composition.ts (dead code), backend.ts (return type)
+Source: /api/ch5pm/queue
+Status: WRONG — assumes flat shape, live is envelope with rows.jobs/rows.claims
+
+### Ch5PmSideAgentHealthPayload (pm-side-agents/types.ts:122-128)
+Used by: composition.ts (dead code), backend.ts (return type)
+Source: /api/ch5pm/health
+Status: Correct, matches live payload
+
+---
+
+## 9. Verification Commands
+
+```bash
+# Service status
+bun run svc:status
+
+# Live endpoint curls
+curl -s http://127.0.0.1:30206/api/ch5pm/state | jq 'keys'
+curl -s http://127.0.0.1:30206/api/ch5pm/babysitter | jq 'keys'
+curl -s http://127.0.0.1:30206/api/ch5pm/queue | jq 'keys, .rows | keys'
+curl -s http://127.0.0.1:30206/api/ch5pm/health | jq 'keys'
+```
+
+---
+
+## 10. Key Findings for Implementation
+
+1. Queue payload shape is WRONG in types.ts and composition.ts — must fix before Side Agents panel can show real queue data
+2. composition.ts is dead code — no consumers, can be fixed or replaced
+3. Dense Console already works from /api/ch5pm/state alone — no changes needed
+4. Side Agents panel must fetch from babysitter + queue + health endpoints
+5. Service naming is consistent (fetchCh5PmSideAgentFeed/Queue/Health) — no rename project
+6. Legacy ch5pm-dashboard/panel.tsx is separate surface — do not make PM depend on it
+7. Server proxy routes (apps/server/src/routes/ch5pm.ts) are correct and need no changes

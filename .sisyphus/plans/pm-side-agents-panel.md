@@ -2,1173 +2,1063 @@
 
 ## TL;DR <!-- oc:id=sec_ab -->
 
-> **Quick Summary**: Extend palot's existing PM page so it keeps its current `/api/ch5pm/state` view, adds a new live Side Agents panel backed by daemon `GET /pm/babysitter`, and clearly separates local snapshot data from live daemon health/attention data.
+> **Quick Summary**: Finish `/#/project-manager` by keeping current live `/api/ch5pm/state` Dense Console, replacing placeholder Side Agents tab with daemon-backed side-agent + queue panels, and moving all PM normalization into one tested mapper so source truth stays explicit and degraded states fail loud.
 >
 > **Deliverables**:
-> - typed client/server contract for daemon babysitter feed and queue extras
-> - PM page data composition layer merging `/api/ch5pm/state` with new daemon-backed side-agent data
-> - dockable Side Agents panel and supporting UI states in the PM route
-> - regression tests for contracts, mapping, and degraded/offline behavior
+> - shared PM composition module for `/api/ch5pm/state`, `/api/ch5pm/babysitter`, `/api/ch5pm/queue`, `/api/ch5pm/health`, and static registry metadata
+> - real `Side Agents` dockview panel with live loop health, per-box digests, decision-needed rows, recent actions, degraded reasons, feed freshness, and queue/terminal groupings
+> - freshness/source badges and deep links proving what is live-fed vs detected-from-state vs static-known
+> - regression tests and live proof steps for browser mode at `http://localhost:20883/#/project-manager`
 >
 > **Estimated Effort**: Medium
-> **Parallel Execution**: YES - 4 waves
-> **Critical Path**: contract/proxy -> typed client + composition -> panel UI -> verification
+> **Parallel Execution**: YES - 4 waves + final verification
+> **Critical Path**: audit/source rules -> shared mapper -> Side Agents panel -> proof + tests
 
 ---
 
 ## Context
 
 ### Original Request
-Build a full plan for palot / Firefly-client PM UI work around CH5PM side/accessory agents, their responsibilities, prompt management, and UI hook points, with the new distributed babysitter feed as a primary live source.
+Audit live Palette Project Manager page and CH5 daemon / PM state, then finish decision-complete plan for visually displaying all PM-relevant information in Project Manager UI.
 
-### Interview Summary
-**Key Discussions**:
-- Existing PM page already reads CH5PM live state through the Firefly proxy route at `/api/ch5pm/state` and renders boxes, sessions, lanes, needs-Chris, attention queue, follow-ups, frontier, and background agents.
-- New work should treat `GET http://127.0.0.1:43130/pm/babysitter` as the durable live side-agent feed, not as an internal-only operator tool.
-- Canonical side-agent inventory source is `~/src/ch5/ch5-company/docs/ch5pm/ch5pm-daemon-subsystem-catalog.md`.
-- Desired PM information architecture remains: Boxes -> Lanes -> Side agents -> Attention queue -> Merge queue.
+### Why this stays in existing lineage
+Use existing plan artifact: `.sisyphus/plans/pm-side-agents-panel.md`.
+Reason: requested remaining work is direct continuation of same seam — same route, same placeholder Side Agents tab, same daemon babysitter feed, same source-truth problem. New plan would split one UI slice across artifacts and lose prior audit context.
 
-**Research Findings**:
-- Palot PM route is `apps/desktop/src/renderer/router.tsx:150` and renders `ProjectManager`, which is a thin shell over `PmDockviewShell` in `apps/desktop/src/renderer/components/project-manager.tsx:1` and `apps/desktop/src/renderer/components/pm-dockview.tsx:1`.
-- Dense PM UI today is `apps/desktop/src/renderer/components/pm-live-dashboard.tsx:278` using `fetchCh5PmState()` from `apps/desktop/src/renderer/services/backend.ts:659`.
-- Firefly server proxy for CH5PM today only exposes `/api/ch5pm/state` and attention mutations in `apps/server/src/routes/ch5pm.ts:11`.
-- Existing dockview `AgentsPanel` is still placeholder text in `apps/desktop/src/renderer/components/pm-dockview.tsx:21`.
-- Existing dashboard-side types for `/api/ch5pm/state` and attention queue live in `apps/desktop/src/renderer/ch5pm-dashboard/types.ts:286` and `apps/desktop/src/renderer/ch5pm-dashboard/types.ts:393`.
-- Live daemon `GET /pm/babysitter` is wired by `packages/ch5pm-daemon/src/babysitter/http.ts:159` and returns `hubBoxId`, `boxes`, `attention`, `babysitterLoop`, `degradedReasons`, `dataAges`, plus loop status.
-- Babysitter wire types are canonical in `~/src/ch5/ch5-company/packages/ch5pm-daemon/src/babysitter/types.ts:16`.
-- Server proxy doctrine explicitly says no stale `pm-state.json` fallback when daemon is unreachable: fail loud instead (`apps/server/src/routes/ch5pm.ts:15`).
+### Repo / branch / recent proof
+- Repo: `palot`
+- Branch: `rescue/pm-side-agents-seam`
+- Recent pushed fix: `083e5765` `fix(pm): render live project manager dashboard`
+- Live browser proof already reported: `http://localhost:20883/#/project-manager` renders Dense Console with daemon-backed counters from `/api/ch5pm/state`
+- Devmux now: `server` up on `30206`, `web` up on `20883`, desktop down — browser-mode proof path is canonical for this slice
 
-### Metis Review
-**Identified Gaps** (addressed in this plan):
-- Need explicit source-of-truth rules between `/api/ch5pm/state`, `/pm/babysitter`, `/queue`, and `/health`.
-- Need explicit guardrail to avoid daemon-contract redesign during UI slice.
-- Need acceptance criteria for degraded/offline behavior, zero-state behavior, and freshness mismatches.
-- Need action-scope decision: this slice should be read-focused first, with recovery actions gated as a separate task and defaulting to hidden unless fully wired.
+### Audit Findings
+- `apps/desktop/src/renderer/components/project-manager.tsx` is now only dockview shell wrapper for PM route.
+- `apps/desktop/src/renderer/components/pm-dockview.tsx` still ships placeholder `AgentsPanel` and placeholder lineage text.
+- `apps/desktop/src/renderer/components/pm-live-dashboard.tsx` already fetches only `/api/ch5pm/state`, renders Dense Console, and still owns lots of local normalization inline.
+- `apps/server/src/routes/ch5pm.ts` already proxies `GET /state`, `GET /babysitter`, `GET /queue`, `GET /health`, and attention mutations. No new backend route family needed unless type/test gaps found.
+- `apps/desktop/src/renderer/services/backend.ts` and `apps/desktop/src/renderer/services/elf-server.ts` already expose state/babysitter/queue/health fetch seams with consistent naming. No rename project needed; only keep naming aligned as work expands.
+- `apps/desktop/src/renderer/pm-side-agents/types.ts` and `apps/desktop/src/renderer/pm-side-agents/composition.ts` already exist, but `composition.ts` is currently unwired/dead code and current queue model still assumes wrong payload fields. Atlas should rehabilitate or replace this seam deliberately, not assume it is already authoritative.
+- Legacy `apps/desktop/src/renderer/ch5pm-dashboard/panel.tsx` remains separate older dashboard surface. Treat as audit/reference only; do not make Project Manager depend on it.
+- `apps/desktop/src/renderer/project-manager.test.ts` exists as focused Bun test file, but there is no broad established renderer component-test harness in this slice. Plan should prefer pure mapper tests first and keep component tests narrow.
+- Current dirty tree includes unrelated files (`apps/desktop/src/renderer/services/backend.ts`, `bun.lock`, many `.sisyphus/*`, generated shared files). Atlas must pathscope changes and must not attribute unrelated status to PM slice.
+
+### Live endpoint audit
+- `/api/ch5pm/state`: keys include `boxes`, `sessions`, `lanes`, `backgroundAgents`, `planeSummary`, `needsChris`, `attentionQueue`, `degradedReasons`, `updatedAt`, plus other useful fields like `cluster`, `dataAges`, `judgment`, `lastTick`, `recentCompletions`, `schemaVersion`; live counts observed: boxes=3, sessions=59, lanes=54, backgroundAgents=4, needsChris=2, attentionOpen=0.
+- `/api/ch5pm/babysitter`: keys include `ok`, `health`, `helper`, `hubBoxId`, `generatedAt`, `boxes`, `recentActions`, `attention`, `babysitterLoop`, `degradedReasons`, `dataAges`; observed counts: boxes=2, recentActions=200, attention=34, degradedReasons=0.
+- `/api/ch5pm/babysitter` box rows contain `actions`, `sessions`, `notes`, `modelPassRan`, `intervalSeconds`; session rows contain `ageMin`, `classification`, `gist`, `manualOwned`, `parked`, `reason`, `severity`, `title`.
+- `/api/ch5pm/queue`: actual live payload is queue envelope with top-level `ok`, `health`, `helper`, `rows`, `generatedAt`, `degradedReasons`, `dataAges`. `rows` is object-shaped with `jobs[]` and `claims[]` inside — not top-level `jobs`/`claims`, and not flat row array. Observed degraded reason: `terminal-jobs-need-reconcile:29`.
+- Live queue `jobs[]` use fields like `jobId`, `ticketId`, `repoId`, `state`, `sessionId`, `workerId`, `enqueuedAt`, `startedAt`, `endedAt`, `completedSteps`, `rollbackSteps`, `failedStep`, `failedStepReason`, `metadata`.
+- `/api/ch5pm/health`: healthy; includes `ok`, `health`, `helper`, `runtimeStateFile`, `generatedAt`, `version`, `babysitterLoop`, `dataAges`, `degradedReasons`.
+
+### Existing unrelated verification blocker
+- Repo docs already record unrelated typecheck blocker outside this slice: `docs/genui-artifact-architecture.md:412` says repo-wide typecheck is blocked by merge conflict in `../ch5-packages/packages/motion/motion/package.json`.
+- Atlas must call this out when running repo-wide checks so PM slice is not blamed for foreign failure.
 
 ---
 
 ## Work Objectives <!-- oc:id=sec_ac -->
 
 ### Core Objective <!-- oc:id=sec_ad -->
-Add a production-ready Side Agents surface to palot's PM page that exposes CH5PM side-agent state from the daemon without hiding failures, duplicating daemon contracts, or destabilizing the current PM dashboard.
+Make `/#/project-manager` visually complete for PM operations by turning Side Agents into first-class live surfaces while preserving current Dense Console and making source authority unmistakable.
 
 ### Concrete Deliverables <!-- oc:id=sec_ae -->
-- Extend the Firefly server CH5PM proxy to expose read-only daemon side-agent endpoints needed by the renderer.
-- Add renderer-side TypeScript contracts for daemon babysitter and queue-side side-agent data with provenance comments pointing at ch5-company source files.
-- Add a PM-side composition layer that merges existing `/api/ch5pm/state` data with side-agent/live-daemon data.
-- Replace the placeholder dockview Agents panel with a real Side Agents panel.
-- Surface side-agent prompt-management status (versioned charter vs spawn-brief-only) using a deterministic local mapping, not freeform prose in the component.
-- Add tests for contract parsing, composition logic, UI zero/degraded states, and proxy fail-loud behavior.
+- Replace placeholder Side Agents dockview tab with live daemon-fed panel.
+- Add queue/terminal panel rows grouped from `/api/ch5pm/queue` into failed, timed-out, retry, merge-ready, and needs-human buckets.
+- Extract all reusable PM normalization into one tested composition module consumed by both Dense Console and Side Agents panel.
+- Add freshness + source badges for `/pm/state`, `/pm/babysitter`, `/queue`, `/health`, and static registry metadata.
+- Add direct links to session / Plane only where source truth supports concrete ids/urls.
+- Keep degraded/offline rendering loud. No stale fallback.
 
-### Renderer Placement <!-- oc:id=sec_placement -->
-
-All side-agent logic lives in one new module directory; both the dockview panel and the dense summary consume the same pure composition output. No inline merging in either component.
-
-**New files** (all under `apps/desktop/src/renderer/pm-side-agents/`):
-- `types.ts` — renderer-side TypeScript contracts for daemon side-agent payloads, with provenance comments pointing at ch5-company source files.
-- `registry.ts` — renderer-local metadata registry keyed by subsystem id: label, charter doc path, prompt-management mode, owner surface.
-- `mapper.ts` — pure utilities that transform daemon payloads + registry into panel rows.
-- `compose.ts` — pure function that merges `Ch5PmLiveState` + side-agent payloads into one `PmSideAgentsViewModel`.
-
-**New components** (under `apps/desktop/src/renderer/components/`):
-- `pm-side-agents-panel.tsx` — full Side Agents panel, replaces `AgentsPanel` placeholder in `pm-dockview.tsx`.
-- `pm-side-agents-summary.tsx` — compact summary strip for `PmLiveDashboard` dense console.
-
-**Modified files**:
-- `apps/desktop/src/renderer/components/pm-dockview.tsx:21` — replace `AgentsPanel` placeholder with `<PmSideAgentsPanel />`.
-- `apps/desktop/src/renderer/components/pm-live-dashboard.tsx` — add `<PmSideAgentsSummary />` strip alongside existing sections (does not replace any existing section).
-- `apps/desktop/src/renderer/services/backend.ts` — add fetch helpers for new proxy routes.
-- `apps/desktop/src/renderer/services/elf-server.ts` — add browser-mode fetch helpers.
-- `apps/server/src/routes/ch5pm.ts` — add read-only proxy routes for side-agent endpoints.
-
-### Definition of Done <!-- oc:id=sec_af -->
-- [ ] PM route shows a non-placeholder Side Agents panel driven by live daemon data and existing PM state.
-- [ ] Daemon unreachable / stale / degraded states are visible in the UI and do not silently fall back to stale file data.
-- [ ] Panel shows **live** for: distributed babysitter (per-box digests), attention rows, babysitter loop health/stall status.
-- [ ] Panel shows **detected-from-PM-state** (session-title match, "active session detected" not "subsystem healthy") for: MergeQueue v3, Frontier Curator v2.
-- [ ] Panel shows **known-but-not-live** (no heartbeat claim) for: tick babysitter, PM watchdog, deterministic scanners.
-- [ ] Panel does NOT claim subsystem health for any agent not directly fed by a live endpoint.
-- [ ] Existing attention queue interactions still work.
-- [ ] Existing dense dashboard boxes / sessions / frontier sections still render with no regression.
-- [ ] Automated contract + component tests cover happy path and degraded path.
+### Source-of-Truth Rules <!-- oc:id=sec_af -->
+- **Live-fed**: `/api/ch5pm/babysitter`, `/api/ch5pm/queue`, `/api/ch5pm/health`.
+- **Detected-from-PM-state**: `/api/ch5pm/state` fields like boxes, sessions, lanes, `backgroundAgents`, `needsChris`, `attentionQueue`, `planeSummary`.
+- **Static-known**: renderer-local side-agent registry metadata only — display names, expected responsibilities, expected prompt-charter status, docs links, known box role descriptions.
+- Dense Console stays operational when only `/api/ch5pm/state` succeeds. Side-agent fetch failure must degrade only side-agent surfaces, not blank core PM state.
+- Never show green/live health badge for anything sourced only from PM state or static registry.
+- Never infer daemon health from static/detected-only data.
+- Plane/session links only when payload has concrete `ticketId`, `planeUrl`, `sessionId`, or resolvable route slug.
 
 ### Must Have <!-- oc:id=sec_ag -->
-- Clear source-of-truth split: `/api/ch5pm/state` stays the PM snapshot source; daemon side-agent endpoints provide live side-agent details.
-- Canonical subsystem vocabulary must derive from `ch5pm-daemon-subsystem-catalog.md` and daemon babysitter wire types.
-- Read-only side-agent rendering must land before any recovery action buttons are enabled.
-- UI must expose freshness / degraded indicators for live daemon feeds.
+- Side Agents tab shows live loop state, feed freshness, box digests, decision-needed rows, recent actions, degraded reasons.
+- Queue panel shows grouped queue/terminal rows from actual queue payload shape.
+- Shared mapper handles payload mismatch between current queue types and actual live queue `rows` shape.
+- Dense Console keeps current design language and benefits from extracted state mapper, not duplicate inline parsing.
+- All failure states render visible red/amber source badges and banner text naming broken upstream.
 
-### Must NOT Have (Guardrails) <!-- oc:id=sec_ah -->
-- No daemon-side schema or behavior redesign unless a hard blocker is proven and isolated.
-- No silent fallback to stale `pm-state.json` when live daemon feed fails.
-- No broad re-architecture of the PM dashboard unrelated to side-agent integration.
-- No hand-written duplicated contracts without provenance or tests.
-- No merging of Attention Queue and Side Agents into one indistinct list.
+### Must NOT Have <!-- oc:id=sec_ah -->
+- No daemon schema redesign unless hard blocker proven with exact field gap.
+- No silent fallback to stale files or mock data in production route.
+- No claims that static-known or PM-state-detected agents are live-fed.
+- No design-system departure unless needed for readability inside existing PM visual language.
+- No dependency on legacy `ch5pm-dashboard/panel.tsx` runtime.
 
 ---
 
 ## Verification Strategy
 
-> **ZERO HUMAN INTERVENTION** — all verification agent-executed.
+> Zero human-only acceptance. Atlas must prove with commands, tests, and browser route.
 
 ### Test Decision
 - **Infrastructure exists**: YES
 - **Automated tests**: Tests-after
-- **Framework**: Bun / existing renderer tests
+- **Framework**: `bun test`
+- **Component test note**: repo has focused Bun/unit tests, not broad renderer-component infra in this slice. Prefer pure mapper tests first; add component rendering tests only where current setup already supports them.
+- **Render proof bias**: browser proof is higher-value than building new component-test scaffolding for this slice.
 
-### QA Policy
-Every task below includes direct agent-executed verification. Use existing renderer/unit test flows where available. For HTTP verification, use daemon proxy and direct curl. For UI verification, use local renderer component tests plus browser/manual automation only if already present and bounded.
+### Required proof lanes
+- `bun run svc:status` — `server` and `web` must be running; `desktop` may stay down.
+- `curl http://127.0.0.1:30206/api/ch5pm/state`
+- `curl http://127.0.0.1:30206/api/ch5pm/babysitter`
+- `curl http://127.0.0.1:30206/api/ch5pm/queue`
+- `curl http://127.0.0.1:30206/api/ch5pm/health`
+- targeted `bun test` for mapper / route / component tests
+- browser proof at `http://localhost:20883/#/project-manager`
+- if browser automation lane is unavailable, fallback proof is screenshot/manual DOM capture via existing local browser plus saved notes — but only for proof collection, not for product behavior decisions
+
+### Evidence policy
+- UI screenshots or textual DOM capture under `.sisyphus/evidence/pm-side-agents/`
+- Curl payload summaries under same folder
+- If repo-wide `bun run check-types` fails on known external blocker, capture failure and annotate blocker source explicitly
 
 ---
 
 ## Execution Strategy <!-- oc:id=sec_ai -->
 
-### Source-of-Truth Rules <!-- oc:id=sec_aj -->
-- `/api/ch5pm/state` remains the existing PM summary source for boxes, sessions, lanes, `needsChris`, `attentionQueue`, `plane.readyFrontier`, follow-ups, completions, and current `backgroundAgents`.
-- New read-only side-agent data comes from daemon-backed proxy endpoints for `GET /pm/babysitter`, `GET /queue`, and `GET /health`.
-- If multiple sources mention the same session, side-agent panel shows daemon live-state copy and links back to session/lane rows from `/api/ch5pm/state` using session id / box id / ticket id joins.
-- Fail-loud is mandatory: live side-agent fetch failures render explicit degraded cards/banners; they do not mutate existing state rows into fake health.
+### UI layout plan <!-- oc:id=sec_aj -->
+- Keep existing dockview shell with tabs: `Dense Console`, `Side Agents`, `Lineage`.
+- Dense Console remains default first tab.
+- Side Agents tab becomes split vertical stack:
+  - top header strip: overall live severity, per-source freshness badges, last update stamps, quick open links
+  - upper body: babysitter loop card, degraded reasons banner, per-box digests, decision-needed sessions table
+  - lower body: recent actions feed and queue/terminal grouped buckets
+- Start stacked, not forced two-column. Dockview width is variable; stacked sections are safer default and can still become columns if browser proof shows enough room.
+- Optional compact cross-link chips inside Dense Console header/footer for side-agent freshness and queue severity. Do not duplicate whole side-agent panel inside Dense Console.
 
-### Field-Level Authority Table <!-- oc:id=sec_authority -->
+### Component boundaries <!-- oc:id=sec_ak -->
+- `apps/desktop/src/renderer/pm-side-agents/types.ts`
+  - canonical renderer types for live PM side-agent sources
+  - fix queue typing to actual `rows` payload shape; keep old names only behind adapter types if needed
+- `apps/desktop/src/renderer/pm-side-agents/composition.ts`
+  - single source for PM UI normalization
+  - own source snapshots, freshness, severity, queue grouping, per-box digests, agent provenance labels, deep-link derivation
+  - absorb reusable normalization now living in `pm-live-dashboard.tsx`
+  - may expose smaller pure helpers for queue grouping / badge derivation if that keeps tests narrow
+- `apps/desktop/src/renderer/pm-side-agents/registry.ts` (new or keep existing if present after audit)
+  - static-known agent metadata only
+- `apps/desktop/src/renderer/pm-side-agents/links.ts` (new if cleaner)
+  - resolvers for session route / Plane URL / daemon source docs links
+- `apps/desktop/src/renderer/components/pm-live-dashboard.tsx`
+  - fetch state via shared hook/query path
+  - stop owning bespoke inline normalization where mapper now covers same fields
+  - keep layout mostly same
+  - explicitly stays state-first; do not make it depend on successful babysitter/queue fetch before rendering core PM state
+- `apps/desktop/src/renderer/components/pm-dockview.tsx`
+  - replace placeholder `AgentsPanel` with real panel component wired to shared model
+  - keep panel registration structure unchanged unless dockview behavior forces adjustment
+  - preserve current simple `onReady -> addPanel` pattern instead of inventing a new dockview state layer for this slice
+- `apps/desktop/src/renderer/components/pm-side-agents-panel.tsx` (new)
+  - presentational component for Side Agents tab
+- `apps/desktop/src/renderer/components/pm-source-badge.tsx` (new or inline shared subcomponent)
+  - reusable badge for live-fed / detected / static + freshness + degraded text
+- `apps/server/src/routes/ch5pm.ts`
+  - likely no new routes; only tighten comments/tests if needed
+- `apps/desktop/src/renderer/services/backend.ts` and `apps/desktop/src/renderer/services/elf-server.ts`
+  - align naming so state/feed/queue/health fetch seams match one vocabulary
 
-| Data | Primary source | Fallback / supplement | Renderer handling |
-|------|----------------|------------------------|-------------------|
-| Boxes, sessions, lanes, needsChris, attentionQueue, plane.readyFrontier, follow-ups, completions, backgroundAgents | `/api/ch5pm/state` | — | Existing dashboard surfaces |
-| Live distributed babysitter box digests (per-box sessions with classification, ageMin, gist) | `GET /pm/babysitter` → `boxes[]` | — | Distributed-babysitter card per boxId |
-| Distributed-babysitter actions log | `GET /pm/babysitter` → `boxes[].actions[]` | — | Action-log sub-section per box |
-| Decision-needed attention rows from distributed loop | `GET /pm/babysitter` → `attention[]` | Cross-reference `needsChris` from PM state for title/ticket joins | Attention row in panel + badge in summary |
-| Babysitter loop health (running, lastRunAt, passes, lastError) | `GET /health` → `babysitterLoop` and `GET /pm/babysitter` → `babysitterLoop` | — | Loop-status indicator; stalled/failed triggers amber/red banner |
-| Degraded reasons string list | `GET /health` → `degradedReasons` and `GET /pm/babysitter` → `degradedReasons` | — | Top-of-panel degraded banner |
-| Feed freshness timestamp | `GET /pm/babysitter` → `dataAges.feed` | `GET /status.json` → `dataAges.status`, `dataAges.snapshot` | Stale badge when >5 minutes old |
-| Dispatch queue rows (jobs, claims, failedStep, ticket/repo/box) | `GET /queue` | `lanes[]` from `/api/ch5pm/state` for join only | Merge Queue sub-section in panel |
-| Prompt-management charter status for standing agents (versioned-charter vs spawn-brief-only) | Renderer-local static metadata keyed by agent id (`registry.ts`) | — | Badge on each subsystem card |
-| Known-but-not-live agents (Tick babysitter daemon, PM watchdog, deterministic scanners, MergeQueue/Frontier Curator themselves as agents) | Renderer-local static metadata keyed by agent id (`registry.ts`) | — | Row rendered with "static registry" tag and no live-health dot |
-| Daemon connectivity | HTTP status code from proxy route | — | Unreachable banner on proxy failure; never fall back to `pm-state.json` |
+### Queue grouping plan <!-- oc:id=sec_al -->
+Actual live queue payload exposes top-level `rows`, where `rows.jobs[]` and `rows.claims[]` carry the actionable data. Mapper must preserve this envelope and derive buckets from job `state`, `failedStep`, `failedStepReason`, metadata, and claim status.
+- **failed**: `rows.jobs[].state === "failed"`
+- **timed-out**: `rows.jobs[].state === "timed-out"`
+- **retry**: failed/timed-out jobs with explicit recoverable reason and not yet released/closed
+- **merge-ready**: jobs with concrete durable-success evidence only — explicit `READY-TO-INTEGRATE`, equivalent verified-success marker, or other source-truth field Atlas can point to. Absence of failure is not enough.
+- **needs-human**: jobs or claims with blocked plane state, reconcile warnings, cap-exceeded/escalation, verify ambiguity, or any terminal state Atlas cannot classify with high confidence
+- If a row fits multiple buckets, precedence is: `needs-human` > `merge-ready` > `retry` > `timed-out` > `failed`.
+- Current wrong assumptions to remove: top-level `jobs`/`claims`, `id` instead of `jobId`, `status` instead of `state`, `ticket` instead of `ticketId`, `repo` instead of `repoId`.
+- Keep raw `rows` envelope accessible for future debug drawer; do not destroy source fidelity
 
-**Conflict rule**: If a session appears both in `/api/ch5pm/state` (as a lane/session) and in `/pm/babysitter` (as a classified row), display the daemon classification/gist in the Side Agents panel and link to the lane row using `sessionId`. Do NOT synthesize a different classification locally.
+### Freshness + severity rules <!-- oc:id=sec_am -->
+- `pm/state`: fresh if `updatedAt` <= 2m old; stale amber after 2m; missing red.
+- `babysitter`: fresh if `generatedAt` or `dataAges.feed` resolves to <= 5m effective age; stale amber after 5m; missing red.
+- `queue`: fresh if `generatedAt` <= 2m; stale amber after 2m; degraded when `degradedReasons` non-empty even if fresh.
+- `health`: fresh if `generatedAt` or equivalent timestamp <= 2m; degraded if `health !== "healthy"` or `degradedReasons` non-empty.
+- static registry: always neutral `static` badge. Never green.
+- detected-from-state: neutral/amber based on state freshness, labeled `detected`, never `live`.
+- If timestamp semantics from daemon are ambiguous during implementation, Atlas must codify one parser in mapper tests and document fallback order instead of letting components guess.
 
-### Agent Observability Matrix <!-- oc:id=sec_observability -->
 
-| Agent / Subsystem | How it shows up in this slice | Evidence requirement |
-|-------------------|-------------------------------|----------------------|
-| **Distributed babysitter** (macmini, laptop, dell) | Live-fed card with real-time status per box | `boxes[].boxId` match in `/pm/babysitter` |
-| **Babysitter loop health** | Live-fed indicator (running/stalled/failed) | `babysitterLoop.running`, `lastRunAt`, `lastError` |
-| **MergeQueue v3** | Detected session + work items shown; **no live-health claim** | Session title detected from `/api/ch5pm/state.sessions[]`; jobs matched via `metadata.kind === "worker-launch"` and ticket title hints in `/queue`. Tagged `"known-but-not-live"` in `registry.ts`. |
-| **Frontier Curator v2** | Detected session shown; **no live-health claim** | Session title detected from `/api/ch5pm/state.sessions[]`. Tagged `"known-but-not-live"` in `registry.ts`. |
-| **Tick babysitter daemon** | Static entry only; **no live feed in this slice** | No endpoint returns tick-babysitter liveness. Rendered as `"known-but-not-live"` with charter link from `docs/ch5pm/ch5pm-babysitter-charter.md`. |
-| **PM watchdog** | Static entry only; **no live feed in this slice** | Cron-driven Claude Code session, not in daemon feed. Rendered as `"known-but-not-live"` with charter link from `~/.claude/skills/pm/SKILL.md`. |
-| **Deterministic scanners** (oc-session-scan, oc-child-liveness, oc-pending-human, oc-watch-answers) | Static entry listing scanner names; **no live feed in this slice** | Scripts at `~/.local/bin/oc-*`. Rendered as `"deterministic/no-prompt"` with script paths from `registry.ts`. |
-| **AskHuman attention queue** | Live-fed from existing surface | Reuse existing `attentionQueue` from `/api/ch5pm/state`. Not new in this slice. |
+### Link policy <!-- oc:id=sec_an -->
+- Session route link only when session id maps to current app route slug or direct session route candidate.
+- Plane link only when payload already includes `planeUrl` or ticket id can safely map to Plane URL format already used elsewhere in repo.
+- Daemon docs/source links may point to local docs or subsystem catalog for static-known agents.
 
-**Hard rule**: The panel must NEVER render a colored health dot or live timestamp for an agent whose observability column says "static entry only" or "detected session only". Those agents get a neutral icon and a "static registry" chip.
-
-### Parallel Execution Waves <!-- oc:id=sec_ak -->
-
-Wave 1 (start immediately — contract + seam prep):
-- Task 1: inventory current PM route seams and placeholder panel replacement target
-- Task 2: specify renderer-side types for daemon side-agent payloads
-- Task 3: specify Firefly server proxy additions for side-agent read endpoints
-- Task 4: define source-composition and freshness rules
-
-Wave 2 (after Wave 1 — data plumbing):
-- Task 5: implement daemon proxy read routes + backend service fetchers
-- Task 6: implement renderer-side side-agent client / mapper utilities
-- Task 7: add prompt-management metadata mapping for standing agents
-- Task 8: add merged PM query / view-model composition
-
-Wave 3 (after Wave 2 — UI surfaces):
-- Task 9: replace dockview placeholder Agents panel with real Side Agents panel
-- Task 10: integrate side-agent summary strip / status indicators into dense dashboard where needed
-- Task 11: add degraded, empty, and mismatch UI states
-
-Wave 4 (after Wave 3 — regression and proof):
-- Task 12: contract tests for proxy + client parsing
-- Task 13: component tests for panel rendering and degraded states
-- Task 14: end-to-end local proof against live daemon endpoints
-
-Wave FINAL:
-- Task F1: plan compliance audit
-- Task F2: code quality + types/tests review
-- Task F3: real QA replay of live daemon + PM route
-- Task F4: scope fidelity check
-
-### Dependency Matrix <!-- oc:id=sec_al -->
-- **1**: none -> 8, 9
-- **2**: none -> 5, 6, 8, 12
-- **3**: none -> 5, 12
-- **4**: none -> 6, 8, 11, 13
-- **5**: 2, 3 -> 8, 12, 14
-- **6**: 2, 4 -> 8, 9, 10, 13
-- **7**: 2 -> 9, 10, 13
-- **8**: 1, 4, 5, 6 -> 9, 10, 11, 13
-- **9**: 1, 6, 7, 8 -> 14
-- **10**: 6, 7, 8 -> 14
-- **11**: 4, 8 -> 13, 14
-- **12**: 2, 3, 5 -> FINAL
-- **13**: 4, 6, 7, 8, 11 -> FINAL
-- **14**: 5, 9, 10, 11 -> FINAL
-
-### Agent Dispatch Summary <!-- oc:id=sec_am -->
-- **Wave 1**: 4 tasks — `quick` / `deep`
-- **Wave 2**: 4 tasks — `quick` / `frontend-ui-ux`
-- **Wave 3**: 3 tasks — `visual-engineering`
-- **Wave 4**: 3 tasks — `quick` / `unspecified-high`
-- **Final**: 4 tasks — `oracle`, `unspecified-high`, `deep`
+### Dirty-tree handling for Atlas <!-- oc:id=sec_ao -->
+- Start by classifying current unrelated dirt before editing.
+- Pathscope only PM files listed in tasks.
+- Do not touch unrelated `bun.lock`, generated shared d.ts/js, or `.sisyphus` evidence unless task explicitly writes new PM evidence.
 
 ---
 
 ## TODOs
 
-- [ ] 1. Lock current PM page seams and replacement targets
+- [x] 1. Audit and lock PM source contracts
 
   **What to do**:
-  - Confirm route, shell, dockview, dense dashboard, attention queue, and server proxy seams currently used by the PM page.
-  - Produce an implementation target map for the Side Agents panel: route shell, dock panel slot, shared state seams, and any existing placeholder content to replace.
+  - Re-read actual live payloads for `/api/ch5pm/state`, `/api/ch5pm/babysitter`, `/api/ch5pm/queue`, `/api/ch5pm/health` and compare them against current renderer types and mapper assumptions.
+  - Document exact field ownership: which PM UI widgets read from state, babysitter, queue, health, or static registry.
+  - Fix plan-time contract assumptions now: queue uses `rows[]`, not `jobs[]`/`claims[]`, unless Atlas proves backend changed during execution.
+  - Record current dirty-tree exclusions so implementation stays pathscoped.
 
   **Must NOT do**:
-  - Do not redesign routing or replace the overall PM dockview shell.
-  - Do not move unrelated dashboard sections.
+  - Do not start coding around guessed queue shapes.
+  - Do not broaden scope into daemon schema redesign.
 
   **Recommended Agent Profile**:
   - **Category**: `quick`
-    - Reason: focused seam inventory and file targeting.
+    - Reason: audit + contract locking is bounded and decisive.
   - **Skills**: [`caveman`]
-    - `caveman`: keep notes/output tight and implementation-facing.
+    - `caveman`: keeps audit notes and mapper rules crisp.
   - **Skills Evaluated but Omitted**:
-    - `react-best-practices`: helpful later, but not needed for seam inventory.
+    - `research-pm`: unnecessary; source surfaces already local and live.
 
   **Parallelization**:
-  - **Can Run In Parallel**: YES
-  - **Parallel Group**: Wave 1
-  - **Blocks**: 8, 9
+  - **Can Run In Parallel**: NO
+  - **Parallel Group**: Sequential foundation
+  - **Blocks**: 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12
   - **Blocked By**: None
 
   **References**:
-  - `apps/desktop/src/renderer/router.tsx:150` - PM route entry.
-  - `apps/desktop/src/renderer/components/project-manager.tsx:1` - route shell delegates to dockview.
-  - `apps/desktop/src/renderer/components/pm-dockview.tsx:5` - panel ids and placeholder Agents panel.
-  - `apps/desktop/src/renderer/components/pm-live-dashboard.tsx:387` - current dense console layout.
+  - `apps/server/src/routes/ch5pm.ts:11` - exact proxy route contract already exposed to renderer.
+  - `apps/desktop/src/renderer/services/backend.ts:664` - current fetch seams for state, babysitter, queue, health.
+  - `apps/desktop/src/renderer/services/elf-server.ts:397` - browser-mode RPC contract names.
+  - `apps/desktop/src/renderer/pm-side-agents/types.ts:105` - current babysitter/queue type assumptions needing audit.
+  - `apps/desktop/src/renderer/pm-side-agents/composition.ts:116` - current shared mapper seam.
+  - `apps/desktop/src/renderer/components/pm-live-dashboard.tsx:67` - inline normalization currently bypassing shared mapper.
+  - `apps/desktop/src/renderer/components/pm-dockview.tsx:21` - placeholder Side Agents panel to replace.
 
   **Acceptance Criteria**:
-  - [ ] Exact target files for panel replacement and state injection are documented in code comments / handoff artifacts if needed.
-  - [ ] No route or shell ambiguity remains.
+  - [ ] Contract audit lists every PM data source and consumer.
+  - [ ] Queue payload mismatch is explicitly resolved in plan implementation notes.
+  - [ ] Dirty-tree exclusions are written into implementation notes/evidence.
 
   **QA Scenarios**:
   ```text
-  Scenario: Route seam confirmed
-    Tool: Read + grep
-    Preconditions: repo checkout present
+  Scenario: Live contract audit matches current daemon outputs
+    Tool: Bash (curl)
+    Preconditions: `bun run svc:status` shows `server` and `web` running
     Steps:
-      1. Read `apps/desktop/src/renderer/router.tsx` around project-manager route.
-      2. Read `project-manager.tsx` and `pm-dockview.tsx`.
-      3. Assert there is a dedicated placeholder `AgentsPanel` to replace.
-    Expected Result: exact route + shell + panel ids identified.
-    Failure Indicators: PM route uses a different shell or no dedicated panel exists.
-    Evidence: .sisyphus/evidence/task-1-route-seam.txt
+      1. `curl -sS http://127.0.0.1:30206/api/ch5pm/state`
+      2. `curl -sS http://127.0.0.1:30206/api/ch5pm/babysitter`
+      3. `curl -sS http://127.0.0.1:30206/api/ch5pm/queue`
+      4. `curl -sS http://127.0.0.1:30206/api/ch5pm/health`
+      5. Assert queue payload exposes `rows` and babysitter payload exposes `boxes`, `recentActions`, `attention`, `babysitterLoop`
+    Expected Result: audit notes reflect real payload keys, not stale assumptions
+    Failure Indicators: mapper still assumes `jobs`/`claims` without adapter proof
+    Evidence: .sisyphus/evidence/pm-side-agents/task-1-live-contract-audit.txt
 
-  Scenario: Dense dashboard seam confirmed
-    Tool: Read
-    Preconditions: repo checkout present
+  Scenario: Dirty tree classified before edits
+    Tool: Bash (git status)
+    Preconditions: repo has unrelated changes
     Steps:
-      1. Read `pm-live-dashboard.tsx` around grid layout and current agents section.
-      2. Assert current `backgroundAgents` section exists and is distinct from `PmAttentionQueue`.
-    Expected Result: panel can extend without collapsing attention and agents together.
-    Evidence: .sisyphus/evidence/task-1-dashboard-seam.txt
+      1. Run `git status --short --branch`
+      2. Record unrelated paths outside PM slice
+      3. Assert implementation pathscope excludes unrelated files like `bun.lock`
+    Expected Result: PM work plan names safe edit set and excluded dirt
+    Evidence: .sisyphus/evidence/pm-side-agents/task-1-dirty-tree-scope.txt
   ```
 
   **Commit**: NO
 
-- [ ] 2. Define renderer-side type contract for side-agent live data
+- [x] 2. Tighten shared PM types around real source payloads
 
   **What to do**:
-  - Introduce renderer TypeScript types for daemon side-agent payloads: babysitter session reports, box digests, action log rows, attention rows, loop status, and queue-derived side-agent entries if needed.
-  - Keep provenance comments pointing back to ch5-company daemon files.
-  - Decide whether to extend `apps/desktop/src/renderer/ch5pm-dashboard/types.ts` or add a focused sibling module for side-agent contracts.
+  - Update `apps/desktop/src/renderer/pm-side-agents/types.ts` to reflect real babysitter and queue payloads.
+  - Introduce explicit queue row types for terminal/claim status instead of fake `jobs`/`claims` top-level payload unless adapter layer intentionally derives them.
+  - Add provenance comments for every source family: state, babysitter, queue, health, static registry.
+  - Align fetch function names/types between `backend.ts` and `elf-server.ts` so implementation reads as one vocabulary.
 
   **Must NOT do**:
-  - Do not copy daemon types with renamed semantics.
-  - Do not mix read-only live daemon types into existing `Ch5PmLiveState` without explicit namespacing.
+  - Do not make every field optional to hide drift.
+  - Do not duplicate `Ch5PmLiveState` semantics inside side-agent types.
 
   **Recommended Agent Profile**:
   - **Category**: `quick`
-    - Reason: type-definition work with clear source contract.
+    - Reason: bounded type-authority work.
   - **Skills**: [`caveman`]
-    - `caveman`: keep provenance comments terse.
+    - `caveman`: concise provenance comments.
   - **Skills Evaluated but Omitted**:
-    - `software-design-principles`: overkill for a narrow typed mirror.
+    - `omo-agents`: not needed for raw data contract work.
 
   **Parallelization**:
   - **Can Run In Parallel**: YES
   - **Parallel Group**: Wave 1
-  - **Blocks**: 5, 6, 8, 12
-  - **Blocked By**: None
+  - **Blocks**: 4, 5, 6, 8, 10, 12
+  - **Blocked By**: 1
 
   **References**:
-  - `~/src/ch5/ch5-company/packages/ch5pm-daemon/src/babysitter/types.ts:16` - canonical distributed babysitter wire schema.
-  - `apps/desktop/src/renderer/ch5pm-dashboard/types.ts:286` - existing PM live-state types.
-  - `apps/desktop/src/renderer/ch5pm-dashboard/types.ts:393` - existing attention queue contract style.
+  - `apps/desktop/src/renderer/pm-side-agents/types.ts:1` - current contract file to tighten.
+  - `apps/desktop/src/renderer/ch5pm-dashboard/types.ts:444` - existing PM state types to reuse, not clone.
+  - `apps/desktop/src/renderer/services/backend.ts:683` - typed fetch return types currently wired.
+  - `apps/desktop/src/renderer/services/elf-server.ts:405` - browser-mode fetch naming for side-agent sources.
 
   **Acceptance Criteria**:
-  - [ ] New side-agent types cover all fields currently used from `/pm/babysitter`.
-  - [ ] Type names clearly distinguish daemon live feed vs existing PM snapshot state.
-  - [ ] Every type has a provenance comment naming source file/path.
+  - [ ] Queue payload typing matches real response shape.
+  - [ ] Shared fetch seam names are consistent enough that atlas can consume them without alias confusion.
+  - [ ] Type provenance comments point to actual local source seams.
 
   **QA Scenarios**:
   ```text
-  Scenario: Type contract matches daemon feed
-    Tool: Read + typecheck
-    Preconditions: type module added
+  Scenario: Type fixtures compile against real payload samples
+    Tool: bun test
+    Preconditions: sample payload fixtures captured from live curl output
     Steps:
-      1. Compare local side-agent types against `packages/ch5pm-daemon/src/babysitter/types.ts`.
-      2. Run repo typecheck.
-    Expected Result: no missing required fields and no typecheck errors.
-    Failure Indicators: renderer types omit `attention`, `actions`, or loop status fields; typecheck fails.
-    Evidence: .sisyphus/evidence/task-2-type-contract.txt
+      1. Run targeted type/fixture tests for PM side-agent payload parsing
+      2. Assert queue fixture uses `rows` shape and babysitter fixture uses `boxes` digests
+    Expected Result: tests fail if payload shape drifts
+    Evidence: .sisyphus/evidence/pm-side-agents/task-2-type-fixtures.txt
 
-  Scenario: Existing PM state types remain stable
-    Tool: typecheck
-    Preconditions: existing `Ch5PmLiveState` consumers compile
+  Scenario: Naming seam consistent across browser and electron service layers
+    Tool: Read + bun test
+    Preconditions: updated service wrappers
     Steps:
-      1. Run typecheck after adding side-agent contracts.
-      2. Verify no unrelated `pm-live-dashboard` type regressions occur.
-    Expected Result: existing PM dashboard code still compiles.
-    Evidence: .sisyphus/evidence/task-2-typecheck.txt
+      1. Inspect `backend.ts` and `elf-server.ts` exported fetch names
+      2. Run targeted import test if added
+    Expected Result: one consistent fetch vocabulary for state/feed/queue/health
+    Evidence: .sisyphus/evidence/pm-side-agents/task-2-service-vocabulary.txt
   ```
 
   **Commit**: NO
 
-- [ ] 3. Add Firefly server proxy routes for side-agent read endpoints
+- [x] 3. Define static-known side-agent registry and provenance metadata
 
   **What to do**:
-  - Extend `apps/server/src/routes/ch5pm.ts` to proxy read-only daemon endpoints needed by the renderer: at minimum `/pm/babysitter`, `/queue`, and `/health`; add `/status.json` only if renderer needs extra derived fields not already available elsewhere.
-  - Preserve the current fail-loud proxy behavior and timeout policy.
-  - Keep response passthrough verbatim JSON with `cache-control: no-store`.
+  - Create or tighten a registry module listing known PM-relevant agent families, labels, responsibilities, expected source (`live-fed`, `detected`, `static`), and docs links.
+  - Mark which agents can have live babysitter rows vs which are inferred only from PM state or registry.
+  - Add prompt-charter metadata fields: durable charter doc present, spawn-brief-only, or unknown.
 
   **Must NOT do**:
-  - Do not add file-based fallback to `pm-state.json`.
-  - Do not proxy write endpoints for recovery actions in this same slice unless the later task explicitly enables them.
+  - Do not infer runtime health from registry presence.
+  - Do not bury provenance in JSX literals.
 
   **Recommended Agent Profile**:
-  - **Category**: `quick`
-    - Reason: narrow server seam extension.
+  - **Category**: `writing`
+    - Reason: mostly metadata and crisp labeling rules.
   - **Skills**: [`caveman`]
-    - `caveman`: keep proxy route docs concise.
+    - `caveman`: keeps registry labels short and explicit.
   - **Skills Evaluated but Omitted**:
-    - `api-design`: route design already constrained by existing daemon surface.
+    - `research-pm`: use only if local docs prove insufficient.
 
   **Parallelization**:
   - **Can Run In Parallel**: YES
   - **Parallel Group**: Wave 1
-  - **Blocks**: 5, 12
-  - **Blocked By**: None
+  - **Blocks**: 5, 6, 7, 8
+  - **Blocked By**: 1
 
   **References**:
-  - `apps/server/src/routes/ch5pm.ts:3` - current proxy doctrine and fail-loud policy.
-  - `~/src/ch5/ch5-company/packages/ch5pm-daemon/src/babysitter/http.ts:159` - `/pm/babysitter` response wrapper.
-  - `~/src/ch5/ch5-company/docs/ch5pm/ch5pm-start-here.md:112` - daemon API contract.
+  - `.sisyphus/drafts/pm-side-agents-panel.md:6` - original side-agent scope and source doctrine.
+  - `apps/desktop/src/renderer/pm-side-agents/types.ts:14` - current classification vocabulary.
+  - `apps/desktop/src/renderer/components/pm-dockview.tsx:37` - target panel slot for registry-backed labels.
 
   **Acceptance Criteria**:
-  - [ ] New proxy endpoints exist and map 1:1 to daemon read routes.
-  - [ ] Proxy still returns 502 with daemon URL in message on upstream failure.
-  - [ ] Existing `/api/ch5pm/state` and attention routes remain unchanged.
+  - [ ] Every static-known agent card declares provenance class.
+  - [ ] Prompt-charter status is represented as data, not prose in render logic.
+  - [ ] Registry includes docs/deep-link metadata where source truth exists.
 
   **QA Scenarios**:
   ```text
-  Scenario: Side-agent proxy routes succeed
-    Tool: curl
-    Preconditions: local daemon reachable on `127.0.0.1:43130`
+  Scenario: Static registry never renders as live
+    Tool: bun test
+    Preconditions: registry metadata + mapper tests
     Steps:
-      1. Start/ensure app server route layer available.
-      2. Call `/api/ch5pm/<new-route>` for each added read endpoint.
-      3. Compare payload top-level keys to direct daemon curl.
-    Expected Result: proxy returns 200 and top-level keys match daemon response.
-    Failure Indicators: 404 route missing, 500 proxy error, or shape mismatch.
-    Evidence: .sisyphus/evidence/task-3-proxy-success.txt
+      1. Feed mapper registry-only entry with no live payload rows
+      2. Assert badge says `static` or `detected`, never `live`
+    Expected Result: false-live regression blocked
+    Evidence: .sisyphus/evidence/pm-side-agents/task-3-registry-provenance.txt
 
-  Scenario: Proxy fails loud when daemon absent
-    Tool: test or bounded local override
-    Preconditions: daemon URL overridden to dead host in test harness / mocked fetch
+  Scenario: Charter status visible for each known family
+    Tool: bun test
+    Preconditions: registry includes charter metadata
     Steps:
-      1. Hit new proxy route with unreachable daemon.
-      2. Assert 502 and explicit `CH5PM daemon unreachable` message.
-    Expected Result: no silent fallback.
-    Evidence: .sisyphus/evidence/task-3-proxy-fail-loud.txt
+      1. Render/inspect mapped registry output
+      2. Assert each row includes one of `durable-charter`, `spawn-brief-only`, `unknown`
+    Expected Result: prompt-management state deterministic
+    Evidence: .sisyphus/evidence/pm-side-agents/task-3-charter-status.txt
   ```
 
   **Commit**: NO
 
-- [ ] 4. Define composed data model and freshness/degraded rules
+- [x] 4. Promote one PM composition module to source authority
 
   **What to do**:
-  - Define a renderer-side view-model that merges current `Ch5PmLiveState` with side-agent feed and queue/health extras.
-  - Encode precedence rules for freshness badges, degraded banners, and missing-source cases.
-  - Decide where merge logic lives (`services`, `components`, or a dedicated `pm-side-agents` module) and keep it pure/testable.
+  - Refactor `apps/desktop/src/renderer/pm-side-agents/composition.ts` into sole normalization authority for PM route.
+  - Move reusable normalization out of `pm-live-dashboard.tsx`: age formatting inputs, lane/session/source severity derivation, box/session digestion, queue grouping, freshness/source badges, link derivation.
+  - Keep module pure: inputs are raw payloads + optional registry + now timestamp; outputs are view models only.
+  - Make output structure cover both Dense Console and Side Agents tab so no panel re-parses raw JSON.
 
   **Must NOT do**:
-  - Do not perform ad hoc merging in JSX.
-  - Do not overwrite source-specific timestamps or health statuses.
+  - Do not leave duplicate queue/box/session parsing in `pm-live-dashboard.tsx`.
+  - Do not mix fetch side effects into mapper.
 
   **Recommended Agent Profile**:
   - **Category**: `deep`
-    - Reason: this is the seam that prevents UI ambiguity and source confusion.
-  - **Skills**: [`caveman`]
-    - `caveman`: concise merge rules.
+    - Reason: this is central seam controlling many UI consumers.
+  - **Skills**: [`react-best-practices`, `caveman`]
+    - `react-best-practices`: clean view-model boundary for renderer.
+    - `caveman`: concise naming and badge semantics.
   - **Skills Evaluated but Omitted**:
-    - `react-best-practices`: useful later in UI, not for pure merge policy.
+    - `software-design-principles`: optional, but current seam is small enough without extra doctrine loading.
 
   **Parallelization**:
-  - **Can Run In Parallel**: YES
-  - **Parallel Group**: Wave 1
-  - **Blocks**: 6, 8, 11, 13
-  - **Blocked By**: None
-
-  **References**:
-  - `apps/desktop/src/renderer/services/backend.ts:659` - existing PM state fetch seam.
-  - `apps/desktop/src/renderer/components/pm-live-dashboard.tsx:278` - current single-query consumer.
-  - `~/src/ch5/ch5-company/docs/ch5pm/ch5pm-daemon-subsystem-catalog.md:13` - subsystem categories to render.
-  - `~/src/ch5/ch5-company/docs/ch5pm/ch5pm-human-attention.md:23` - attention loop semantics.
-
-  **Acceptance Criteria**:
-  - [ ] A pure merge function / view-model contract exists with clear input/output types.
-  - [ ] Rules for stale feed, missing feed, and partially missing queue data are explicit.
-  - [ ] Panel can render with only PM state, only side-agent state unavailable, without crashing.
-
-  **QA Scenarios**:
-  ```text
-  Scenario: Merge handles healthy live data
-    Tool: unit test
-    Preconditions: fixtures for PM state + babysitter feed + queue
-    Steps:
-      1. Build merged model from healthy payloads.
-      2. Assert side-agent rows include source, health, freshness, and related ticket/session links.
-    Expected Result: merged model exposes all panel sections with no ambiguity.
-    Evidence: .sisyphus/evidence/task-4-merge-healthy.txt
-
-  Scenario: Merge handles stale or missing daemon feed
-    Tool: unit test
-    Preconditions: PM state fixture with daemon fetch failure or stale timestamp fixture
-    Steps:
-      1. Build merged model with absent/failed side-agent payload.
-      2. Assert degraded banner and empty side-agent rows render model safely.
-    Expected Result: UI can fail loud without breaking main dashboard.
-    Evidence: .sisyphus/evidence/task-4-merge-degraded.txt
-  ```
-
-  **Commit**: NO
-
-- [ ] 5. Implement renderer/backend fetchers for side-agent endpoints
-
-  **What to do**:
-  - Add `backend.ts` and `elf-server.ts` fetch functions for each new side-agent proxy route.
-  - Mirror existing Electron/browser-mode split so Electron uses `window.elf.fetch` and browser mode uses typed server client calls.
-  - Use no-store semantics and consistent error handling.
-
-  **Must NOT do**:
-  - Do not inline fetches directly inside components.
-  - Do not special-case Electron with different payload semantics.
-
-  **Recommended Agent Profile**:
-  - **Category**: `quick`
-    - Reason: mechanical fetch seam work.
-  - **Skills**: [`caveman`]
-    - `caveman`: keep helper names and comments crisp.
-  - **Skills Evaluated but Omitted**:
-    - `bun-runtime`: unnecessary for this narrow client/server seam.
-
-  **Parallelization**:
-  - **Can Run In Parallel**: YES
-  - **Parallel Group**: Wave 2
-  - **Blocks**: 8, 12, 14
+  - **Can Run In Parallel**: NO
+  - **Parallel Group**: Critical path
+  - **Blocks**: 6, 7, 8, 9, 10, 11, 12
   - **Blocked By**: 2, 3
 
   **References**:
-  - `apps/desktop/src/renderer/services/backend.ts:659` - existing fetch helper pattern.
-  - `apps/desktop/src/renderer/services/elf-server.ts:397` - browser-mode fetch seam.
-  - `apps/server/src/routes/ch5pm.ts:71` - proxy routes to mirror.
+  - `apps/desktop/src/renderer/pm-side-agents/composition.ts:116` - current composition entry point.
+  - `apps/desktop/src/renderer/components/pm-live-dashboard.tsx:131` - current inline box normalization.
+  - `apps/desktop/src/renderer/components/pm-live-dashboard.tsx:67` - current lane status normalization.
+  - `apps/desktop/src/renderer/components/pm-live-dashboard.tsx:76` - current age formatting logic.
+  - `apps/desktop/src/renderer/project-manager-cards.ts:27` - existing pure PM mapping style worth mirroring.
 
   **Acceptance Criteria**:
-  - [ ] Each new route has one backend helper in renderer services.
-  - [ ] Browser mode and Electron mode both use the same payload shape.
-  - [ ] Errors are surfaced as thrown exceptions, not swallowed values.
+  - [ ] Dense Console and Side Agents panel can consume one mapper output.
+  - [ ] Mapper output separates `live-fed`, `detected`, and `static` provenance.
+  - [ ] Queue groupings, freshness, severity, and links derive in one place.
 
   **QA Scenarios**:
   ```text
-  Scenario: Electron fetch helper parses live payload
-    Tool: unit test or bounded runtime call
-    Preconditions: daemon/proxy reachable
+  Scenario: Shared mapper drives both PM surfaces
+    Tool: bun test
+    Preconditions: mapper exposes combined view-model fixture
     Steps:
-      1. Call new backend helper through Electron-compatible fetch path.
-      2. Assert parsed object has expected top-level keys.
-    Expected Result: parsed side-agent payload available to renderer.
-    Evidence: .sisyphus/evidence/task-5-electron-fetch.txt
+      1. Build one fixture using state + babysitter + queue + health + registry
+      2. Assert output contains dense-console-ready rows and side-agent-ready groups without raw JSON parsing in components
+    Expected Result: one view model powers both surfaces
+    Evidence: .sisyphus/evidence/pm-side-agents/task-4-shared-mapper.txt
 
-  Scenario: Browser helper fails consistently on bad response
-    Tool: unit test with mocked non-2xx response
-    Preconditions: mocked client route returns failure
+  Scenario: Loud degraded output when babysitter missing
+    Tool: bun test
+    Preconditions: state present, babysitter null, queue/health optional
     Steps:
-      1. Call new helper against mocked failure.
-      2. Assert it throws a meaningful error.
-    Expected Result: renderer error path stays explicit.
-    Evidence: .sisyphus/evidence/task-5-browser-error.txt
+      1. Compose model with missing babysitter payload
+      2. Assert severity becomes degraded/offline, banner reasons mention broken upstream, source badge shows missing live feed
+    Expected Result: no silent disappearance or fake healthy state
+    Evidence: .sisyphus/evidence/pm-side-agents/task-4-degraded-severity.txt
   ```
 
   **Commit**: NO
 
-- [ ] 6. Build side-agent mapper utilities from daemon payloads
+- [x] 5. Rewire Dense Console to consume shared mapper outputs
 
   **What to do**:
-  - Create pure utilities that transform babysitter feed + queue + health data into panel rows grouped by subsystem/agent.
-  - Normalize live side-agent cards for: distributed babysitter, tick babysitter summary, MergeQueue, Frontier Curator, PM watchdog, deterministic scanners / attention support rows where directly observable.
-  - Encode prompt-management metadata flags (`versioned-charter`, `spawn-brief-only`, `deterministic/no-prompt`).
+  - Keep current Dense Console visual language and section order.
+  - Replace only overlapping local parsing in `pm-live-dashboard.tsx` with mapped values from shared composition module.
+  - Leave PM-state-specific presentation local where extraction would create artificial abstraction with no second consumer.
+  - Add compact source/freshness badges at section header/footer where they clarify data origin without clutter.
+  - Preserve existing `needsChris`, sessions, lanes, followups, boxes, and attention queue behavior unless source-truth change demands precise label update.
 
   **Must NOT do**:
-  - Do not infer unsupported data from prose-only assumptions.
-  - Do not claim a subsystem heartbeat when the source payload lacks evidence.
-
-  **Recommended Agent Profile**:
-  - **Category**: `frontend-ui-ux`
-    - Reason: mapping data into stable, renderer-friendly UI rows.
-  - **Skills**: [`caveman`]
-    - `caveman`: keep mapping names and row semantics direct.
-  - **Skills Evaluated but Omitted**:
-    - `brainstorming`: idea work no longer needed; contract is fixed.
-
-  **Parallelization**:
-  - **Can Run In Parallel**: YES
-  - **Parallel Group**: Wave 2
-  - **Blocks**: 8, 9, 10, 13
-  - **Blocked By**: 2, 4
-
-  **References**:
-  - `~/src/ch5/ch5-company/docs/ch5pm/ch5pm-daemon-subsystem-catalog.md:13` - canonical subsystem list.
-  - `~/src/ch5/ch5-company/packages/ch5pm-daemon/src/babysitter/types.ts:28` - feed row types.
-  - `~/src/ch5/ch5-company/docs/ch5pm/ch5pm-babysitter-charter.md:46` - tick babysitter digest semantics.
-  - `~/src/ch5/ch5-company/docs/ch5pm/ch5pm-human-attention.md:48` - AskHuman / agent-help semantics.
-  - `apps/desktop/src/renderer/components/pm-live-dashboard.tsx:330` - current truncation and row style patterns.
-
-  **Acceptance Criteria**:
-  - [ ] Mapping utilities output stable side-agent rows with ids, labels, status, source, freshness, related session/ticket references, prompt-management status.
-  - [ ] Unsupported subsystems are surfaced as `known-but-not-live` or equivalent, not silently omitted.
-  - [ ] No UI component needs raw daemon JSON shape knowledge beyond typed mapper input.
-
-  **QA Scenarios**:
-  ```text
-  Scenario: Mapper builds rows from live babysitter feed
-    Tool: unit test with captured live payload fixture
-    Preconditions: saved `/pm/babysitter` sample
-    Steps:
-      1. Feed captured payload into mapper.
-      2. Assert output includes macmini distributed babysitter card and decision-needed attention row.
-    Expected Result: mapper produces deterministic rows with expected labels and status.
-    Evidence: .sisyphus/evidence/task-6-mapper-live.txt
-
-  Scenario: Mapper marks prompt-management gaps correctly
-    Tool: unit test
-    Preconditions: hardcoded metadata mapping for MergeQueue / Frontier Curator / babysitters
-    Steps:
-      1. Map known standing agents.
-      2. Assert MergeQueue and Frontier Curator show spawn-brief-only status; babysitter shows versioned prompt.
-    Expected Result: prompt-management audit visible in panel data.
-    Evidence: .sisyphus/evidence/task-6-prompt-audit.txt
-  ```
-
-  **Commit**: NO
-
-- [ ] 7. Encode standing-agent metadata registry for UI rendering
-
-  **What to do**:
-  - Add a small renderer-local registry keyed by subsystem/agent id with label, charter doc path, prompt-management mode, and owner surface.
-  - This registry should be a presentational contract, not a control-plane duplicate.
-  - Use it to enrich daemon/live rows with stable human-facing names and doc links.
-
-  **Must NOT do**:
-  - Do not hardcode operational state into the registry.
-  - Do not embed long prose charters into code.
-
-  **Recommended Agent Profile**:
-  - **Category**: `quick`
-    - Reason: compact metadata definition.
-  - **Skills**: [`caveman`]
-    - `caveman`: keep registry small and exact.
-  - **Skills Evaluated but Omitted**:
-    - `content-strategy`: not needed; this is not copywriting.
-
-  **Parallelization**:
-  - **Can Run In Parallel**: YES
-  - **Parallel Group**: Wave 2
-  - **Blocks**: 9, 10, 13
-  - **Blocked By**: 2
-
-  **References**:
-  - `~/src/ch5/ch5-company/docs/ch5pm/ch5pm-daemon-subsystem-catalog.md:13` - subsystem names.
-  - `~/src/ch5/ch5-company/docs/ch5pm/ch5pm-babysitter-charter.md:28` - tick babysitter purpose.
-  - `~/src/ch5/ch5-company/docs/ch5pm/ch5pm-distributed-babysitter.md:11` - distributed babysitter purpose.
-  - `~/src/ch5/ch5-company/docs/ch5pm/ch5pm-human-attention.md:48` - attention/ask-human role.
-
-  **Acceptance Criteria**:
-  - [ ] Registry includes all agents the panel intends to render.
-  - [ ] Each entry includes doc provenance and prompt-management mode.
-  - [ ] Registry is used by mapper/UI rather than ad hoc string logic.
-
-  **QA Scenarios**:
-  ```text
-  Scenario: Registry coverage matches intended panel set
-    Tool: unit test / read check
-    Preconditions: registry added
-    Steps:
-      1. Compare registry ids to panel sections and mapper outputs.
-      2. Assert all intended rendered agents resolve metadata.
-    Expected Result: no unknown-agent fallback in happy path.
-    Evidence: .sisyphus/evidence/task-7-registry-coverage.txt
-
-  Scenario: Registry doc links valid
-    Tool: read/path existence check
-    Preconditions: registry doc paths recorded
-    Steps:
-      1. Check each referenced repo doc path exists.
-      2. Assert no broken local-doc references.
-    Expected Result: docs links are valid.
-    Evidence: .sisyphus/evidence/task-7-registry-docs.txt
-  ```
-
-  **Commit**: NO
-
-- [ ] 8. Create merged PM-side query/view-model layer
-
-  **What to do**:
-  - Replace the single-query assumption in `PmLiveDashboard` with a composed query layer that fetches PM state plus side-agent endpoints and returns one view model.
-  - Keep React Query boundaries explicit so refresh cadence can differ by source if needed.
-  - Reconcile manual refresh behavior to refetch all participating sources.
-
-  **Must NOT do**:
-  - Do not push merge logic down into row components.
-  - Do not give all sources identical stale times if their contracts differ materially.
-
-  **Recommended Agent Profile**:
-  - **Category**: `deep`
-    - Reason: this is the main state-orchestration seam.
-  - **Skills**: [`react-best-practices`, `caveman`]
-    - `react-best-practices`: helps avoid refetch/render churn and tangled component state.
-    - `caveman`: keep orchestration comments short.
-  - **Skills Evaluated but Omitted**:
-    - `frontend-ui-ux`: more useful in presentation layer than query orchestration.
-
-  **Parallelization**:
-  - **Can Run In Parallel**: YES
-  - **Parallel Group**: Wave 2
-  - **Blocks**: 9, 10, 11, 13
-  - **Blocked By**: 1, 4, 5, 6
-
-  **References**:
-  - `apps/desktop/src/renderer/components/pm-live-dashboard.tsx:278` - current single-query state fetch.
-  - `apps/desktop/src/renderer/components/pm-attention-queue.tsx:260` - queue mutation callback expects query refresh.
-  - `apps/desktop/src/renderer/ch5pm-dashboard/client.ts:86` - existing multi-source composition pattern.
-
-  **Acceptance Criteria**:
-  - [ ] PM page can render with combined PM state + side-agent view model.
-  - [ ] Manual refresh refetches all relevant sources.
-  - [ ] One failing live side-agent fetch does not erase existing PM state, but does surface a degraded side-agent state.
-
-  **QA Scenarios**:
-  ```text
-  Scenario: Combined query loads all sources
-    Tool: unit/integration test
-    Preconditions: mocked PM state + side-agent endpoints
-    Steps:
-      1. Render dashboard with successful mocks.
-      2. Assert both existing PM sections and side-agent sections populate.
-    Expected Result: one screen shows both old and new data.
-    Evidence: .sisyphus/evidence/task-8-combined-query.txt
-
-  Scenario: One live source fails while PM state succeeds
-    Tool: unit/integration test
-    Preconditions: mocked PM state success, side-agent route failure
-    Steps:
-      1. Render dashboard under partial failure.
-      2. Assert PM data still visible and side-agent section shows degraded banner.
-    Expected Result: no crash, no silent disappearance.
-    Evidence: .sisyphus/evidence/task-8-partial-failure.txt
-  ```
-
-  **Commit**: NO
-
-- [ ] 9. Replace placeholder Agents dock panel with real Side Agents panel
-
-  **What to do**:
-  - Replace `AgentsPanel` placeholder in `pm-dockview.tsx` with a real component rendering side-agent sections.
-  - Render at minimum: live subsystem cards, distributed babysitter box rows, attention/escalation rows, prompt-management badges, and doc/source links.
-  - Keep visual language aligned with current PM dashboard and dockview shell.
-
-  **Must NOT do**:
-  - Do not collapse the panel into a wall of raw JSON.
-  - Do not mix action buttons into the first version unless later task explicitly enables them with proof.
+  - Do not redesign Dense Console layout unless mapper integration forces tiny cosmetic adjustments.
+  - Do not regress current state-only proof path.
 
   **Recommended Agent Profile**:
   - **Category**: `visual-engineering`
-    - Reason: dock panel UX and hierarchy work.
+    - Reason: UI integration without changing product language.
   - **Skills**: [`react-best-practices`, `caveman`]
-    - `react-best-practices`: component boundaries and render hygiene.
-    - `caveman`: keep labels terse and operator-friendly.
+    - `react-best-practices`: avoid unnecessary rerenders / prop churn.
+    - `caveman`: concise badge copy.
   - **Skills Evaluated but Omitted**:
-    - `frontend-ui-ux`: useful, but this panel is constrained by existing PM visual system rather than greenfield design.
+    - `visual-tdd`: no pixel-diff requirement here.
 
   **Parallelization**:
   - **Can Run In Parallel**: YES
-  - **Parallel Group**: Wave 3
-  - **Blocks**: 14
-  - **Blocked By**: 1, 6, 7, 8
+  - **Parallel Group**: Wave 2
+  - **Blocks**: 10, 11, 12
+  - **Blocked By**: 4
+
+  **References**:
+  - `apps/desktop/src/renderer/components/pm-live-dashboard.tsx:554` - current top-level grid layout.
+  - `apps/desktop/src/renderer/components/pm-live-dashboard.tsx:630` - current footer provenance text.
+  - `apps/desktop/src/renderer/components/pm-attention-queue.tsx:260` - current AskHuman queue component already embedded in PM flow.
+
+  **Acceptance Criteria**:
+  - [ ] Dense Console still renders current live `/api/ch5pm/state` sections.
+  - [ ] Shared mapper removes duplicate local normalization.
+  - [ ] Added badges do not falsely mark state-derived rows as live-fed daemon data.
+
+  **QA Scenarios**:
+  ```text
+  Scenario: Dense Console still shows current counters and rows
+    Tool: Browser
+    Preconditions: devmux `server` and `web` running
+    Steps:
+      1. Open `http://localhost:20883/#/project-manager`
+      2. Verify `Dense Console` tab selected by default
+      3. Assert visible counters still reflect live state (`boxes=3`, `sessions=59`, `ready=10`, `needs=2`, schema badge if present)
+    Expected Result: existing dashboard proof preserved
+    Evidence: .sisyphus/evidence/pm-side-agents/task-5-dense-console-browser.png
+
+  Scenario: State-derived sections labeled as detected/state, not live side-agent feed
+    Tool: Browser or component test
+    Preconditions: mapper-backed badges wired into section chrome
+    Steps:
+      1. Inspect sessions/needs/boxes sections
+      2. Assert badges identify source as `pm/state` or `detected`
+      3. Assert no green `live` label appears on purely state-derived data
+    Expected Result: provenance line explicit and correct
+    Evidence: .sisyphus/evidence/pm-side-agents/task-5-provenance-badges.txt
+  ```
+
+  **Commit**: NO
+
+- [x] 6. Build real Side Agents dockview panel shell
+
+  **What to do**:
+  - Add presentational Side Agents panel component and wire it into `pm-dockview.tsx` in place of placeholder copy.
+  - Use existing dockview/tab language; no new layout framework.
+  - Panel shell should include header strip, scroll regions, empty state, degraded state, and content sections for loop, boxes, decisions, actions, and queue groups.
+  - Fetch side-agent-specific sources in panel/query layer without making `PmLiveDashboard` wait on them. State route must stay independently renderable.
+
+  **Must NOT do**:
+  - Do not leave placeholder text anywhere in Side Agents tab.
+  - Do not make panel depend on legacy `ch5pm-dashboard/panel.tsx`.
+
+  **Recommended Agent Profile**:
+  - **Category**: `visual-engineering`
+    - Reason: component composition + layout work.
+  - **Skills**: [`react-best-practices`, `caveman`]
+    - `react-best-practices`: split presentational subcomponents cleanly.
+    - `caveman`: terse labels for dense ops UI.
+  - **Skills Evaluated but Omitted**:
+    - `agent-browser`: useful later for proof, not for component authoring.
+
+  **Parallelization**:
+  - **Can Run In Parallel**: YES
+  - **Parallel Group**: Wave 2
+  - **Blocks**: 10, 11, 12
+  - **Blocked By**: 4
 
   **References**:
   - `apps/desktop/src/renderer/components/pm-dockview.tsx:21` - placeholder to replace.
-  - `apps/desktop/src/renderer/components/pm-live-dashboard.tsx:100` - compact header/cell primitives that can inspire panel styling.
-  - `~/src/ch5/ch5-company/docs/ch5pm/ch5pm-daemon-subsystem-catalog.md:13` - panel section spine.
+  - `apps/desktop/src/renderer/components/project-manager.tsx:3` - PM route wrapper.
+  - `apps/desktop/src/renderer/ch5pm-dashboard/panel.tsx:35` - reference for stat/section card vocabulary only, not dependency.
 
   **Acceptance Criteria**:
-  - [ ] Agents panel is no longer placeholder copy.
-  - [ ] Panel displays live side-agent data and explicit no-data/degraded states.
-  - [ ] Prompt-management status is visible for each standing agent row/group.
-  - [ ] Panel links related ticket/session identifiers where available.
+  - [ ] Side Agents tab is a real component with scrollable sections.
+  - [ ] Header shows overall live severity and source badges.
+  - [ ] Empty/degraded states are explicit and loud.
+  - [ ] Panel can render in narrow dockview widths without horizontal-breakage becoming default behavior.
 
   **QA Scenarios**:
   ```text
-  Scenario: Side Agents panel renders live feed rows
-    Tool: component test
-    Preconditions: merged view model fixture with live babysitter rows
+  Scenario: Side Agents tab opens and renders non-placeholder shell
+    Tool: Browser
+    Preconditions: PM page loaded
     Steps:
-      1. Render dock panel.
-      2. Assert subsystem headers and macmini row appear.
-      3. Assert decision-needed row and prompt badge text appear.
-    Expected Result: panel shows structured, readable side-agent surface.
-    Evidence: .sisyphus/evidence/task-9-render-live.txt
+      1. Click `Side Agents` tab
+      2. Assert placeholder sentence is gone
+      3. Assert panel shows sections for loop, boxes, recent actions, queue, or degraded/empty states
+    Expected Result: real dockview panel visible
+    Evidence: .sisyphus/evidence/pm-side-agents/task-6-side-agents-shell.png
 
-  Scenario: Side Agents panel renders empty/degraded states
+  Scenario: Offline shell renders loud banner
     Tool: component test
-    Preconditions: empty feed fixture and degraded feed fixture
+    Preconditions: mapper severity set to offline
     Steps:
-      1. Render with zero rows.
-      2. Render with degraded error state.
-      3. Assert explicit empty and degraded messages.
-    Expected Result: operators can distinguish clear vs broken.
-    Evidence: .sisyphus/evidence/task-9-render-degraded.txt
+      1. Render panel with missing feed/health payloads
+      2. Assert red banner names broken upstream and panel body remains mounted
+    Expected Result: fail-loud offline state
+    Evidence: .sisyphus/evidence/pm-side-agents/task-6-offline-shell.txt
   ```
 
   **Commit**: NO
 
-- [ ] 10. Integrate compact side-agent status into dense PM dashboard
+- [x] 7. Render live babysitter loop, per-box digests, and decision-needed rows
 
   **What to do**:
-  - Add a compact side-agent summary strip or section inside `PmLiveDashboard` so the dense console reflects side-agent health without requiring the dock panel to be open.
-  - Reuse existing status-pill / section-row idioms.
-  - Include clear counts: live side-agent issues, decision-needed rows, degraded feeds.
+  - Use shared mapper output to render babysitter loop card: running/stalled/failed, interval, passes, last run, last digest, last error.
+  - Render per-box digests with source box id, generated age, model-pass-ran, notes, degraded tags, and compact session counts by classification.
+  - Render decision-needed table from babysitter `attention[]` plus per-session rows from box digests when classification or severity warrants visibility.
+  - Expose direct session links only when session route resolution is real.
 
   **Must NOT do**:
-  - Do not crowd out `needsChris`, frontier, or existing attention queue sections.
-  - Do not duplicate the full Side Agents panel inside the dense console.
+  - Do not claim decision-needed rows come from AskHuman queue when they come from babysitter attention.
+  - Do not flatten away box boundaries.
 
   **Recommended Agent Profile**:
   - **Category**: `visual-engineering`
-    - Reason: tight information-density work within an existing console surface.
+    - Reason: rich state display in existing ops UI language.
   - **Skills**: [`react-best-practices`, `caveman`]
-    - `react-best-practices`: avoid layout churn and prop spaghetti.
-    - `caveman`: terse labels suitable for dense console.
+    - `react-best-practices`: dense tables/cards without messy state.
+    - `caveman`: keeps cell copy short.
   - **Skills Evaluated but Omitted**:
-    - `frontend-ui-ux`: existing console already constrains style strongly.
+    - `grafana-dashboards`: not relevant; this is in-product UI, not metrics dashboarding.
 
   **Parallelization**:
   - **Can Run In Parallel**: YES
-  - **Parallel Group**: Wave 3
-  - **Blocks**: 14
-  - **Blocked By**: 6, 7, 8
+  - **Parallel Group**: Wave 2
+  - **Blocks**: 10, 11, 12
+  - **Blocked By**: 4, 6
 
   **References**:
-  - `apps/desktop/src/renderer/components/pm-live-dashboard.tsx:304` - current top-level counts.
-  - `apps/desktop/src/renderer/components/pm-live-dashboard.tsx:398` - current agents section location.
-  - `apps/desktop/src/renderer/components/pm-live-dashboard.tsx:422` - `needsChris` section to preserve.
+  - `apps/desktop/src/renderer/pm-side-agents/types.ts:75` - loop status type.
+  - `apps/desktop/src/renderer/pm-side-agents/types.ts:64` - per-box digest type.
+  - `apps/desktop/src/renderer/pm-side-agents/types.ts:86` - babysitter attention row type.
+  - `apps/desktop/src/renderer/project-manager-cards.ts:44` - route-resolution pattern for deep links.
 
   **Acceptance Criteria**:
-  - [ ] Dense dashboard shows side-agent summary counts/status without replacing existing sections.
-  - [ ] Users can tell whether the live side-agent feed is healthy, degraded, or has pending attention.
+  - [ ] Loop card shows real live loop status with freshness/severity.
+  - [ ] Box digests show per-box summary and session counts.
+  - [ ] Decision-needed rows display babysitter attention with box/session context.
 
   **QA Scenarios**:
   ```text
-  Scenario: Dense dashboard shows side-agent summary
-    Tool: component test
-    Preconditions: merged view model with side-agent counts
+  Scenario: Healthy babysitter feed renders live loop and box digests
+    Tool: Browser
+    Preconditions: live `/api/ch5pm/babysitter` healthy
     Steps:
-      1. Render `PmLiveDashboard`.
-      2. Assert summary strip/section includes live feed counts and degraded status indicator.
-    Expected Result: dense console exposes side-agent health at a glance.
-    Evidence: .sisyphus/evidence/task-10-dense-summary.txt
+      1. Open `/#/project-manager` -> `Side Agents`
+      2. Assert loop card shows running state, interval `180s`, and recent digest time
+      3. Assert two box digests render from live feed and at least one decision-needed row appears if feed attention non-empty
+    Expected Result: live babysitter data visible and source-labeled
+    Evidence: .sisyphus/evidence/pm-side-agents/task-7-live-babysitter.png
 
-  Scenario: Existing key sections remain visible
+  Scenario: Loop failure renders degraded reasons
     Tool: component test
-    Preconditions: same render
+    Preconditions: mapper fixture with `babysitterLoop.lastError` set
     Steps:
-      1. Assert `needs chris`, `ready frontier`, and `PmAttentionQueue` are still present.
-    Expected Result: side-agent summary does not regress existing priority sections.
-    Evidence: .sisyphus/evidence/task-10-no-regression.txt
+      1. Render side-agent panel with failed loop fixture
+      2. Assert loop card status `failed`, last error text, and degraded badge visible
+    Expected Result: stalled/failed loop cannot appear healthy
+    Evidence: .sisyphus/evidence/pm-side-agents/task-7-loop-failure.txt
   ```
 
   **Commit**: NO
 
-- [ ] 11. Add degraded, stale, empty, and mismatch UX states
+- [x] 8. Add queue / terminal groups from live `/api/ch5pm/queue`
 
   **What to do**:
-  - Implement explicit UI messaging for: daemon unreachable, daemon degraded, babysitter loop stalled, zero side-agent rows, and source freshness mismatch (`pm-state` fresh but `/pm/babysitter` stale, etc.).
-  - Expose `dataAges`, `degradedReasons`, and `babysitterLoop` semantics to the operator.
+  - Map actual queue `rows[]` into grouped buckets: failed, timed-out, retry, merge-ready, needs-human.
+  - Surface failed step, failed-step reason, plane state, verify-pending/reconcile hints, and repo/box/session metadata.
+  - Add quick links or labels to sessions / Plane comments only when row metadata supports it.
+  - Keep raw-source badge on queue panel to show this is terminal queue truth, not daemon babysitter truth.
 
   **Must NOT do**:
-  - Do not hide stale or degraded states behind generic “no data”.
-  - Do not infer health from row count alone.
+  - Do not fabricate merge-ready from weak heuristics; require concrete metadata or plane state markers.
+  - Do not hide degraded queue reasons like `terminal-jobs-need-reconcile:29`.
+
+  **Recommended Agent Profile**:
+  - **Category**: `unspecified-high`
+    - Reason: tricky status grouping and terminal-state semantics.
+  - **Skills**: [`caveman`]
+    - `caveman`: concise grouping labels for dense queue rows.
+  - **Skills Evaluated but Omitted**:
+    - `research-pm`: only needed if queue semantics remain unclear after local source read.
+
+  **Parallelization**:
+  - **Can Run In Parallel**: YES
+  - **Parallel Group**: Wave 2
+  - **Blocks**: 10, 11, 12
+  - **Blocked By**: 2, 4, 6
+
+  **References**:
+  - `apps/server/src/routes/ch5pm.ts:77` - queue route proxy seam.
+  - `apps/desktop/src/renderer/services/backend.ts:701` - queue fetch seam.
+  - live queue audit: actual payload uses `rows[]`, `degradedReasons`, `generatedAt`, `dataAges`.
+
+  **Acceptance Criteria**:
+  - [ ] Queue panel shows all five requested groupings.
+  - [ ] Rows include failure/reconcile context needed for PM action.
+  - [ ] Queue degraded reasons are visible in panel chrome.
+
+  **QA Scenarios**:
+  ```text
+  Scenario: Queue rows group into terminal buckets
+    Tool: bun test
+    Preconditions: captured queue fixture with mixed row states
+    Steps:
+      1. Run queue grouping tests
+      2. Assert failed/timed-out/retry/merge-ready/needs-human buckets get expected rows
+    Expected Result: grouping logic deterministic and tested
+    Evidence: .sisyphus/evidence/pm-side-agents/task-8-queue-groups.txt
+
+  Scenario: Live queue degraded banner visible
+    Tool: Browser
+    Preconditions: live queue endpoint returns `degradedReasons` with `terminal-jobs-need-reconcile:29`
+    Steps:
+      1. Open `Side Agents` tab
+      2. Inspect queue panel header
+      3. Assert degraded banner/chip includes reconcile warning and queue freshness badge
+    Expected Result: queue trouble visible, not buried
+    Evidence: .sisyphus/evidence/pm-side-agents/task-8-live-queue.png
+  ```
+
+  **Commit**: NO
+
+- [x] 9. Add freshness/source badges and deep-link affordances
+
+  **What to do**:
+  - Add reusable badge component or helper for source authority: `live`, `detected`, `static`, `missing`, freshness age, degraded reason count.
+  - Show badges for `/pm/state`, `/pm/babysitter`, `/queue`, `/health`, and static registry references.
+  - Add session/Plane/source-doc links where supported.
+  - Ensure badge copy distinguishes data-source authority from health state.
+
+  **Must NOT do**:
+  - Do not overload one badge to imply both source and health without readable text.
+  - Do not create broken links for rows lacking route authority.
 
   **Recommended Agent Profile**:
   - **Category**: `visual-engineering`
-    - Reason: state-design and operator messaging.
-  - **Skills**: [`caveman`]
-    - `caveman`: terse operator copy.
+    - Reason: shared UI affordance across sections.
+  - **Skills**: [`react-best-practices`, `caveman`]
+    - `react-best-practices`: reusable, low-churn badge component.
+    - `caveman`: terse badge labels.
   - **Skills Evaluated but Omitted**:
-    - `content-strategy`: not necessary for operational microcopy.
+    - `agent-browser`: proof only.
 
   **Parallelization**:
   - **Can Run In Parallel**: YES
   - **Parallel Group**: Wave 3
-  - **Blocks**: 13, 14
-  - **Blocked By**: 4, 8
+  - **Blocks**: 10, 11, 12
+  - **Blocked By**: 4, 5, 6, 7, 8
 
   **References**:
-  - `~/src/ch5/ch5-company/packages/ch5pm-daemon/src/babysitter/http.ts:162` - `/pm/babysitter` top-level response wrapper.
-  - `~/src/ch5/ch5-company/docs/ch5pm/ch5pm-distributed-babysitter.md:66` - loop health and degraded semantics.
-  - `apps/server/src/routes/ch5pm.ts:15` - fail-loud doctrine.
+  - `apps/desktop/src/renderer/components/pm-live-dashboard.tsx:631` - current coarse provenance footer.
+  - `apps/desktop/src/renderer/project-manager-cards.ts:44` - project/session slug resolution seam for links.
+  - `apps/desktop/src/renderer/project-manager-types.ts:26` - existing Plane/session link fields on ticket cards.
 
   **Acceptance Criteria**:
-  - [ ] Every degraded/missing state has distinct copy.
-  - [ ] Operators can tell difference between “clear”, “unreachable”, “stale”, and “loop stalled”.
+  - [ ] Every major PM section shows explicit source authority.
+  - [ ] Static/detected-only rows never show live-health styling.
+  - [ ] Links only render when concrete authority exists.
 
-  **QA Scenarios — Exact Assertions Per Failure Mode**:
+  **QA Scenarios**:
   ```text
-  Scenario: Daemon unreachable
-    Server response: proxy returns 502 with `{ok:false, error:"CH5PM daemon unreachable at <url>: <message>"}`
-    UI assertions:
-      - Side Agents panel shows red banner with text "CH5PM daemon unreachable" containing daemon URL.
-      - Dense summary shows red dot indicator.
-      - No silent empty state; no fallback to stale file data.
-      - PM dashboard sections (boxes, sessions, frontier) still render if `/api/ch5pm/state` succeeded.
-    Evidence: .sisyphus/evidence/task-11-unreachable.txt
+  Scenario: Source badges distinguish live vs detected vs static
+    Tool: component test
+    Preconditions: mixed-source fixture
+    Steps:
+      1. Render badges for state-only, babysitter-live, registry-only, and missing-source cases
+      2. Assert labels and tones differ appropriately
+    Expected Result: authority semantics unambiguous
+    Evidence: .sisyphus/evidence/pm-side-agents/task-9-source-badges.txt
 
-  Scenario: Babysitter loop not running
-    Server response: `/pm/babysitter` returns 200 with `babysitterLoop.running=false`
-    UI assertions:
-      - Panel shows amber indicator "Babysitter loop not running".
-      - Box rows still render if `boxes[]` is non-empty.
-      - No red error banner (feed is reachable, just not running).
-    Evidence: .sisyphus/evidence/task-11-loop-not-running.txt
-
-  Scenario: Babysitter loop stalled
-    Server response: `/pm/babysitter` returns 200 with `degradedReasons` includes `"babysitter-loop-stalled"`
-    UI assertions:
-      - Panel shows amber indicator "Babysitter loop stalled" with `babysitterLoop.lastRunAt` timestamp.
-      - Box rows still render if present.
-    Evidence: .sisyphus/evidence/task-11-loop-stalled.txt
-
-  Scenario: Empty box digests
-    Server response: `/pm/babysitter` returns 200 with `boxes:[]`
-    UI assertions:
-      - Panel shows "No box digests reported" empty state text.
-      - No error banner; no red indicator.
-    Evidence: .sisyphus/evidence/task-11-empty-boxes.txt
-
-  Scenario: Empty dispatch queue
-    Server response: `/queue` returns 200 with `jobs:[]`
-    UI assertions:
-      - Merge queue section shows "No dispatch jobs" empty state.
-    Evidence: .sisyphus/evidence/task-11-empty-queue.txt
-
-  Scenario: Partial failure — PM state succeeds, side-agent feed fails
-    Server response: `/api/ch5pm/state` 200, `/pm/babysitter` 502
-    UI assertions:
-      - PM dashboard sections render normally with live data.
-      - Side Agents panel shows red degraded banner "CH5PM daemon unreachable".
-      - Dense summary shows amber/red dot for side-agent health.
-      - No crash; no silent disappearance of side-agent section.
-    Evidence: .sisyphus/evidence/task-11-partial-failure.txt
-
-  Scenario: PM state fails entirely
-    Server response: `/api/ch5pm/state` returns 502
-    UI assertions:
-      - Entire PM page shows fail-loud error with daemon URL.
-      - No partial render of dashboard sections.
-    Evidence: .sisyphus/evidence/task-11-pm-state-fails.txt
-
-  Scenario: Stale feed
-    Server response: `/pm/babysitter` returns 200 but `dataAges.feed` is >10 minutes old
-    UI assertions:
-      - Panel shows "Stale feed" indicator with age (e.g. "15m old").
-      - Box rows still render but with stale indicator.
-    Evidence: .sisyphus/evidence/task-11-stale-feed.txt
+  Scenario: Links render only with resolvable authority
+    Tool: bun test or browser
+    Preconditions: fixtures with and without session/plane ids
+    Steps:
+      1. Render row with real session/ticket ids
+      2. Render row without ids
+      3. Assert first gets clickable link, second gets plain text
+    Expected Result: no dead-link UI
+    Evidence: .sisyphus/evidence/pm-side-agents/task-9-links.txt
   ```
 
   **Commit**: NO
 
-- [ ] 12. Add contract tests for proxy and client parsing
+- [x] 10. Add mapper and contract regression tests
 
   **What to do**:
-  - Add tests for new CH5PM server proxy routes and renderer client fetch/parsing helpers.
-  - Add captured fixtures for `/pm/babysitter`, `/queue`, and `/health` (safe, redacted where needed).
-  - Ensure tests fail loudly if canonical required fields disappear.
+  - Add focused Bun tests for side-agent type fixtures, mapper composition, queue grouping, provenance rules, freshness rules, degraded-state derivation, and bucket precedence.
+  - Add route/proxy tests if current backend route suite exists or add narrow tests proving fail-loud 502 behavior for ch5pm proxy endpoints.
+  - Capture representative redacted live fixtures for state, babysitter, queue, health.
+  - Prefer pure test files near mapper/types over inventing a broad renderer harness for this slice.
 
   **Must NOT do**:
-  - Do not rely only on hand-tested live curls.
-  - Do not accept optional-everything typing that makes contract loss invisible.
+  - Do not rely on screenshots alone.
+  - Do not hide contract drift behind permissive parsing.
 
   **Recommended Agent Profile**:
   - **Category**: `quick`
-    - Reason: contract/proxy tests are focused and mechanical.
+    - Reason: mostly deterministic regression coverage.
   - **Skills**: [`caveman`]
-    - `caveman`: concise fixture provenance comments.
+    - `caveman`: concise test fixture names.
   - **Skills Evaluated but Omitted**:
-    - `test-scenarios`: nice-to-have, but test structure is already conventional here.
+    - `test-scenarios`: overkill for current local test style.
 
   **Parallelization**:
   - **Can Run In Parallel**: YES
-  - **Parallel Group**: Wave 4
+  - **Parallel Group**: Wave 3
   - **Blocks**: FINAL
-  - **Blocked By**: 2, 3, 5
+  - **Blocked By**: 2, 4, 8, 9
 
   **References**:
-  - `apps/desktop/src/renderer/ch5pm-dashboard/contract.test.ts:43` - current contract-test style.
-  - `apps/server/src/routes/ch5pm.ts:71` - route surface to test.
-  - `apps/desktop/src/renderer/ch5pm-dashboard/client.ts:60` - existing client fetch helper style.
+  - `apps/desktop/src/renderer/project-manager.test.ts:32` - existing Bun test file style in same area.
+  - `apps/desktop/src/renderer/pm-side-agents/composition.ts:116` - mapper entrypoint needing direct coverage.
+  - `apps/server/src/routes/ch5pm.ts:46` - fail-loud proxy helper to protect.
 
   **Acceptance Criteria**:
-  - [ ] Tests assert required top-level keys for side-agent payloads.
-  - [ ] Proxy failure behavior is tested.
-  - [ ] Client parsing tests cover happy path and failure path.
+  - [ ] Mapper tests cover healthy, stale, partial, offline, and queue-degraded cases.
+  - [ ] Contract tests fail when queue shape or babysitter shape drifts.
+  - [ ] Fail-loud no-fallback behavior is protected by tests or explicit narrow route proof.
 
   **QA Scenarios**:
   ```text
-  Scenario: Contract fixtures validate required fields
+  Scenario: Mapper regression suite passes on mixed fixtures
     Tool: bun test
-    Preconditions: fixtures/test file added
+    Preconditions: fixture files added
     Steps:
-      1. Run side-agent contract tests.
-      2. Assert tests verify keys like `hubBoxId`, `boxes`, `attention`, `babysitterLoop`.
-    Expected Result: contract drift breaks tests.
-    Evidence: .sisyphus/evidence/task-12-contract-tests.txt
+      1. Run PM side-agent test files
+      2. Assert coverage includes source badges, queue grouping, freshness, degraded reasons
+    Expected Result: all mapper semantics locked by tests
+    Evidence: .sisyphus/evidence/pm-side-agents/task-10-mapper-tests.txt
 
-  Scenario: Proxy route tests catch fallback regressions
-    Tool: bun test
-    Preconditions: mocked daemon unavailable
+  Scenario: Proxy fails loud when daemon unreachable
+    Tool: bun test or curl against mocked/offline route
+    Preconditions: route test harness or mock fetch stub
     Steps:
-      1. Run proxy route tests.
-      2. Assert 502 and no fallback body from stale local files.
-    Expected Result: fail-loud doctrine protected.
-    Evidence: .sisyphus/evidence/task-12-proxy-tests.txt
+      1. Simulate daemon fetch throw
+      2. Assert route returns 502 with daemon URL in error body
+    Expected Result: no stale fallback path
+    Evidence: .sisyphus/evidence/pm-side-agents/task-10-fail-loud.txt
   ```
 
   **Commit**: NO
 
-- [ ] 13. Add component tests for panel rendering and degraded states
+- [x] 11. Add component/browser proof for PM route
 
   **What to do**:
-  - Add renderer tests for the new Side Agents panel and any new dense summary components.
-  - Cover healthy live state, no-data state, degraded state, and prompt-management badges.
-  - Keep tests component-level and pure where possible.
+  - Add component-level tests only where current Bun/renderer setup supports them for Side Agents panel degraded/healthy render states.
+  - Capture live browser proof at `http://localhost:20883/#/project-manager` for Dense Console and Side Agents tab.
+  - Verify dockview tab switching, source badges, queue groups, and degraded banners.
+  - If component harness friction is high, prefer stronger mapper tests plus browser proof over building new test infrastructure inside this slice.
 
   **Must NOT do**:
-  - Do not rely on brittle snapshot-only tests.
-  - Do not skip partial-failure cases.
+  - Do not require desktop app launch; browser-mode route is accepted proof lane.
+  - Do not skip negative-path browser validation.
 
   **Recommended Agent Profile**:
-  - **Category**: `unspecified-high`
-    - Reason: slightly more involved renderer proof work.
-  - **Skills**: [`react-best-practices`, `caveman`]
-    - `react-best-practices`: keeps test seams clean and component-friendly.
-    - `caveman`: concise test names / fixtures.
+  - **Category**: `visual-engineering`
+    - Reason: end-to-end UI verification focus.
+  - **Skills**: [`agent-browser`, `react-best-practices`, `caveman`]
+    - `agent-browser`: browser proof and DOM assertions.
+    - `react-best-practices`: stable test seams.
+    - `caveman`: concise evidence notes.
   - **Skills Evaluated but Omitted**:
-    - `visual-tdd`: not necessary; this is structure/state rendering, not pixel diffing.
+    - `ghost-browser`: use only if local browser binding requires it.
 
   **Parallelization**:
   - **Can Run In Parallel**: YES
   - **Parallel Group**: Wave 4
   - **Blocks**: FINAL
-  - **Blocked By**: 4, 6, 7, 8, 11
+  - **Blocked By**: 5, 6, 7, 8, 9
 
   **References**:
-  - `apps/desktop/src/renderer/components/pm-attention-queue.tsx:260` - existing component test target style and responsibilities.
-  - `apps/desktop/src/renderer/ch5pm-dashboard/attention.ts:23` - pattern for pure helper testing.
+  - `apps/desktop/src/renderer/components/project-manager.tsx:3` - route root to prove.
+  - `apps/desktop/src/renderer/router.tsx:150` - URL path registration.
+  - current live proof URL: `http://localhost:20883/#/project-manager`
 
   **Acceptance Criteria**:
-  - [ ] Side Agents panel tests cover happy path + degraded path + empty path.
-  - [ ] Dense summary tests prove no regression to attention/needsChris rendering.
-
-  **QA Scenarios — Exact Assertions Per Failure Mode**:
-  ```text
-  Scenario: Daemon unreachable
-    Server response: proxy returns 502 with `{ok:false, error:"CH5PM daemon unreachable at <url>: <message>"}`
-    UI assertions:
-      - Side Agents panel shows red banner with text "CH5PM daemon unreachable" containing daemon URL.
-      - Dense summary shows red dot indicator.
-      - No silent empty state; no fallback to stale file data.
-      - PM dashboard sections (boxes, sessions, frontier) still render if `/api/ch5pm/state` succeeded.
-    Evidence: .sisyphus/evidence/task-11-unreachable.txt
-
-  Scenario: Babysitter loop not running
-    Server response: `/pm/babysitter` returns 200 with `babysitterLoop.running: false`
-    UI assertions:
-      - Panel shows amber indicator "Babysitter loop not running".
-      - Box rows still render if `boxes[]` is non-empty.
-      - No red error banner (feed is reachable, just not running).
-    Evidence: .sisyphus/evidence/task-11-loop-not-running.txt
-
-  Scenario: Babysitter loop stalled
-    Server response: `/pm/babysitter` returns 200 with `degradedReasons` includes `"babysitter-loop-stalled"`
-    UI assertions:
-      - Panel shows amber indicator "Babysitter loop stalled" with `babysitterLoop.lastRunAt` timestamp.
-      - Box rows still render if present.
-    Evidence: .sisyphus/evidence/task-11-loop-stalled.txt
-
-  Scenario: Empty box digests
-    Server response: `/pm/babysitter` returns 200 with `boxes:[]`
-    UI assertions:
-      - Panel shows "No box digests reported" empty state text.
-      - No error banner; no red indicator.
-    Evidence: .sisyphus/evidence/task-11-empty-boxes.txt
-
-  Scenario: Empty dispatch queue
-    Server response: `/queue` returns 200 with `jobs:[]`
-    UI assertions:
-      - Merge queue section shows "No dispatch jobs" empty state.
-    Evidence: .sisyphus/evidence/task-11-empty-queue.txt
-
-  Scenario: Partial failure — PM state succeeds, side-agent feed fails
-    Server response: `/api/ch5pm/state` 200, `/pm/babysitter` 502
-    UI assertions:
-      - PM dashboard sections render normally with live data.
-      - Side Agents panel shows red degraded banner "CH5PM daemon unreachable".
-      - Dense summary shows amber/red dot for side-agent health.
-      - No crash; no silent disappearance of side-agent section.
-    Evidence: .sisyphus/evidence/task-11-partial-failure.txt
-
-  Scenario: PM state fails entirely
-    Server response: `/api/ch5pm/state` returns 502
-    UI assertions:
-      - Entire PM page shows fail-loud error with daemon URL.
-      - No partial render of dashboard sections.
-    Evidence: .sisyphus/evidence/task-11-pm-state-fails.txt
-
-  Scenario: Stale feed
-    Server response: `/pm/babysitter` returns 200 but `dataAges.feed` is >10 minutes old
-    UI assertions:
-      - Panel shows "Stale feed" indicator with age (e.g. "15m old").
-      - Box rows still render but with stale indicator.
-    Evidence: .sisyphus/evidence/task-11-stale-feed.txt
-  ```
-
-  **Commit**: NO
-
-- [ ] 14. Prove live integration against daemon and PM route
-
-  **What to do**:
-  - Run local proof against live `127.0.0.1:43130` daemon and Firefly client proxy route.
-  - Verify panel/summary consumes the mini digest row, at least one attention/escalation row if present, and current degraded metadata correctly.
-  - Capture evidence files for live endpoint payloads and UI/render proof.
-
-  **Must NOT do**:
-  - Do not treat mocked tests as the only proof.
-  - Do not claim success if live daemon feed is unavailable.
-
-  **Recommended Agent Profile**:
-  - **Category**: `unspecified-high`
-    - Reason: final integration proof across layers.
-  - **Skills**: [`react-best-practices`, `caveman`]
-    - `react-best-practices`: useful for debugging any integration mismatch.
-    - `caveman`: concise proof notes.
-  - **Skills Evaluated but Omitted**:
-    - `smoke-agent-gen-ui-browser`: only needed if browser-run proof becomes necessary; start with local bounded proof.
-
-  **Parallelization**:
-  - **Can Run In Parallel**: YES
-  - **Parallel Group**: Wave 4
-  - **Blocks**: FINAL
-  - **Blocked By**: 5, 9, 10, 11
-
-  **References**:
-  - `~/src/ch5/ch5-company/docs/ch5pm/ch5pm-distributed-babysitter.md:121` - live curl/operator proof guidance.
-  - `~/src/ch5/ch5-company/docs/ch5pm/ch5pm-human-attention.md:144` - attention runtime API equivalents.
-  - Live source: `http://127.0.0.1:43130/pm/babysitter`, `http://127.0.0.1:43130/queue`, `http://127.0.0.1:43130/health`.
-
-  **Acceptance Criteria**:
-  - [ ] Live daemon data appears in UI through Firefly client path, not just direct curl.
-  - [ ] Degraded/loop metadata from live daemon is surfaced correctly.
-  - [ ] Evidence captured for both raw endpoint payload and UI proof.
+  - [ ] Browser proof captures default Dense Console and Side Agents tab.
+  - [ ] Live counts still match current state feed.
+  - [ ] Side Agents panel shows babysitter/queue source badges and live content or loud degraded state.
 
   **QA Scenarios**:
   ```text
-  Scenario: Live side-agent feed visible through app seam
-    Tool: bounded app/local proof + curl
-    Preconditions: daemon running; app server path available
+  Scenario: Browser proof for default PM route
+    Tool: Browser
+    Preconditions: `bun run svc:status` shows `server` and `web` up
     Steps:
-      1. Curl direct daemon endpoints and proxied app endpoints.
-      2. Open PM route and inspect rendered side-agent panel/summary.
-      3. Assert macmini row and current live attention/degraded status match source payloads.
-    Expected Result: end-to-end UI reflects live daemon feed.
-    Failure Indicators: UI shows stale placeholder content, omits macmini, or hides degraded state.
-    Evidence: .sisyphus/evidence/task-14-live-proof.txt
+      1. Navigate to `http://localhost:20883/#/project-manager`
+      2. Assert `Dense Console` visible by default
+      3. Assert current live counters still show expected state-fed values
+      4. Click `Side Agents`
+      5. Assert loop card, queue panel, source badges, and at least one live/degraded content region visible
+    Expected Result: PM route complete enough for live operator use
+    Evidence: .sisyphus/evidence/pm-side-agents/task-11-browser-proof.png
 
-  Scenario: Attention queue still works after side-agent changes
-    Tool: UI/component/integration proof
-    Preconditions: at least one attention item available or mutation mocked
+  Scenario: Partial upstream failure still renders loud Side Agents state
+    Tool: component test or browser against mocked endpoint
+    Preconditions: babysitter or queue endpoint forced 502 while state endpoint stays healthy
     Steps:
-      1. Verify `PmAttentionQueue` still renders and mutation path still refetches correctly.
-      2. Assert no side-agent integration broke answer/dismiss flow.
-    Expected Result: old attention workflow preserved.
-    Evidence: .sisyphus/evidence/task-14-attention-regression.txt
+      1. Open PM route
+      2. Assert Dense Console still renders state-fed sections
+      3. Assert Side Agents tab shows degraded banner naming failed upstream
+    Expected Result: partial failure visible, no crash
+    Evidence: .sisyphus/evidence/pm-side-agents/task-11-partial-upstream-failure.txt
   ```
 
   **Commit**: NO
 
+- [x] 12. Final cleanup, blockers note, and handoff packet
+
+  **What to do**:
+  - Run targeted verification commands.
+  - Run repo-wide verification if reasonable, but explicitly annotate unrelated blocker if `bun run check-types` still fails because of cross-repo motion package conflict.
+  - Ensure new evidence paths and any durable PM notes are committed if repo policy wants them.
+  - Produce concise handoff note for PM slice with exact proof and explicit non-slice blockers.
+
+  **Must NOT do**:
+  - Do not claim repo-wide green if known unrelated blocker remains.
+  - Do not leave PM slice mixed with unrelated dirty-tree edits.
+
+  **Recommended Agent Profile**:
+  - **Category**: `unspecified-high`
+    - Reason: verification and repo-state hygiene.
+  - **Skills**: [`git-master`, `caveman`]
+    - `git-master`: scoped staging/commit hygiene in dirty repo.
+    - `caveman`: compact blocker and proof packet.
+  - **Skills Evaluated but Omitted**:
+    - `ship`: not needed unless release/push flow expands.
+
+  **Parallelization**:
+  - **Can Run In Parallel**: NO
+  - **Parallel Group**: Final implementation task
+  - **Blocks**: FINAL
+  - **Blocked By**: 10, 11
+
+  **References**:
+  - `AGENTS.md:72` - repo verification commands.
+  - `docs/genui-artifact-architecture.md:412` - known unrelated typecheck blocker to cite if still present.
+  - current dirty-tree audit from Task 1.
+
+  **Acceptance Criteria**:
+  - [ ] Targeted PM tests pass.
+  - [ ] Browser proof captured.
+  - [ ] Any repo-wide failure is explicitly labeled unrelated if blocker persists.
+  - [ ] Final handoff lists changed PM files and proof artifacts only.
+
+  **QA Scenarios**:
+  ```text
+  Scenario: Targeted PM verification passes
+    Tool: Bash
+    Preconditions: implementation complete
+    Steps:
+      1. Run targeted `bun test` for PM side-agent files
+      2. Run `bun run lint` or narrow lint on changed files if repo flow supports it
+      3. Run `bun run check-types` and annotate whether failure is unrelated blocker
+    Expected Result: PM slice proof packet complete and blocker attribution correct
+    Evidence: .sisyphus/evidence/pm-side-agents/task-12-verification.txt
+
+  Scenario: Final git scope excludes unrelated dirt
+    Tool: Bash (git status)
+    Preconditions: PM slice staged/ready
+    Steps:
+      1. Run `git status --short`
+      2. Confirm only intended PM files staged/committed or explicitly listed as unrelated leftovers
+    Expected Result: Atlas does not ship unrelated changes accidentally
+    Evidence: .sisyphus/evidence/pm-side-agents/task-12-git-scope.txt
+  ```
+
+  **Commit**: YES
+  - Message: `fix(pm): complete side agents project manager panel`
+  - Files: `apps/desktop/src/renderer/components/pm-dockview.tsx`, `apps/desktop/src/renderer/components/pm-live-dashboard.tsx`, `apps/desktop/src/renderer/components/pm-side-agents-panel.tsx`, `apps/desktop/src/renderer/pm-side-agents/*`, `apps/desktop/src/renderer/services/backend.ts`, `apps/desktop/src/renderer/services/elf-server.ts`, `apps/server/src/routes/ch5pm.ts`, targeted tests/evidence
+  - Pre-commit: targeted `bun test`, `bun run lint`, `bun run check-types` with blocker annotation if external failure persists
+
 ---
 
-## Final Verification Wave <!-- oc:id=sec_an -->
+## Final Verification Wave
 
-- [ ] F1. **Plan Compliance Audit** — `oracle`
-  Verify implementation covers all required slices: proxy routes, types, composition, side-agent panel, dense summary, degraded states, tests, live proof. Reject if any section of this plan was silently dropped.
+- [ ] F1. **Plan compliance audit** — `deep`
+  Read plan + final diff. Confirm all eight required request bullets landed: live babysitter tab, queue panel, extracted mapper, source/freshness badges, audited surfaces/routes/dirty-tree, live/detected/static separation, verification path, unrelated blocker annotation.
+  Output: `Request bullets [8/8] | Missing [list or none] | VERDICT`
 
-- [ ] F2. **Code Quality Review** — `unspecified-high`
-  Run repo typecheck and relevant tests. Review for duplicated daemon contracts, hidden fallbacks, tangled JSX-level merge logic, and untested degraded states.
+- [ ] F2. **Code quality review** — `unspecified-high`
+  Run targeted PM tests, lint, and typecheck proof. Search changed files for duplicate parsing, fake healthy labels, placeholder Side Agents copy, and silent fallback behavior.
+  Output: `Tests [PASS/FAIL] | Lint [PASS/FAIL] | Typecheck [PASS/FAIL or unrelated blocker] | VERDICT`
 
-- [ ] F3. **Real QA** — `unspecified-high`
-  Replay live daemon proof with actual `/pm/babysitter`, `/queue`, `/health`, and PM route rendering. Verify live and degraded cases.
+- [ ] F3. **Real browser QA** — `visual-engineering` + `agent-browser`
+  Open `http://localhost:20883/#/project-manager`. Verify default Dense Console, Side Agents tab, queue groups, provenance badges, degraded banners, and links. Save evidence under `.sisyphus/evidence/pm-side-agents/final-browser/`.
+  Output: `Dense Console [PASS/FAIL] | Side Agents [PASS/FAIL] | Queue [PASS/FAIL] | Provenance [PASS/FAIL] | VERDICT`
 
-- [ ] F4. **Scope Fidelity Check** — `deep`
-  Ensure work stayed on Side Agents panel + supporting PM plumbing. Reject opportunistic dashboard redesign or daemon behavior changes outside explicit scope.
+- [ ] F4. **Scope fidelity + blocker attribution** — `deep`
+  Compare changed files and verification notes against plan. Confirm no daemon redesign slipped in. Confirm any `bun run check-types` failure cites exact unrelated blocker source if still external.
+  Output: `Scope [CLEAN/ISSUES] | Blocker attribution [CORRECT/INCORRECT] | VERDICT`
 
----
+## Dependency Matrix
+- **1**: — — 2, 3, 4, 1
+- **2**: 1 — 4, 8, 10, 2
+- **3**: 1 — 4, 7, 9, 2
+- **4**: 2, 3 — 5, 6, 7, 8, 9, 10, 3
+- **5**: 4 — 11, 12, 2
+- **6**: 4 — 7, 8, 11, 2
+- **7**: 4, 6 — 9, 11, 3
+- **8**: 2, 4, 6 — 9, 10, 11, 3
+- **9**: 4, 5, 7, 8 — 10, 11, 12, 3
+- **10**: 2, 4, 8, 9 — 12, 4
+- **11**: 5, 6, 7, 8, 9 — 12, 4
+- **12**: 10, 11 — F1-F4, FINAL
+
+## Agent Dispatch Summary
+- **Wave 1**: **2** — T2 → `quick`, T3 → `writing`
+- **Wave 2**: **4** — T4 → `deep`, T5/T6/T7 → `visual-engineering`, T8 → `unspecified-high`
+- **Wave 3**: **2** — T9 → `visual-engineering`, T10 → `quick`
+- **Wave 4**: **1** — T11 → `visual-engineering`
+- **Final**: **1** — T12 → `unspecified-high`
+- **Verification**: **4 parallel** — F1 `deep`, F2 `unspecified-high`, F3 `visual-engineering`, F4 `deep`
 
 ## Commit Strategy
+- One coherent PM UI slice commit after mapper + panel + tests + proof
+- Message target: `fix(pm): complete side agents project manager panel`
+- If unrelated blocker remains, include note in handoff/evidence, not commit subject
 
-- Group A: proxy + types + fetch/composition plumbing
-- Group B: Side Agents UI + dense summary + degraded states
-- Group C: tests + live proof artifacts
+## Success Criteria
 
----
-
-## Success Criteria <!-- oc:id=sec_ao -->
-
-### Verification Commands <!-- oc:id=sec_ap -->
+### Verification Commands
 ```bash
+bun run svc:status
+curl -sS http://127.0.0.1:30206/api/ch5pm/state
+curl -sS http://127.0.0.1:30206/api/ch5pm/babysitter
+curl -sS http://127.0.0.1:30206/api/ch5pm/queue
+curl -sS http://127.0.0.1:30206/api/ch5pm/health
+bun test <targeted-pm-files>
+bun run lint
 bun run check-types
-bun test apps/desktop/src/renderer/ch5pm-dashboard/contract.test.ts
-bun test <new side-agent test files>
-curl -fsS http://127.0.0.1:43130/pm/babysitter
-curl -fsS http://127.0.0.1:43130/queue
-curl -fsS http://127.0.0.1:43130/health
 ```
 
-### Final Checklist <!-- oc:id=sec_aq -->
-- [ ] Existing PM dashboard still works
-- [ ] Side Agents panel is real, not placeholder
-- [ ] Live daemon feed is visible through palot seams
-- [ ] Prompt-management gaps are surfaced, not hidden
-- [ ] Degraded/offline states fail loud
-- [ ] Tests cover contracts and UI states
+### Final Checklist
+- [ ] Placeholder Side Agents tab replaced
+- [ ] Live babysitter loop + box digests + decisions visible
+- [ ] Queue/terminal buckets visible from `/api/ch5pm/queue`
+- [ ] Shared mapper owns PM normalization
+- [ ] Source/freshness badges explicit and correct
+- [ ] Static/detected-only agents never marked live
+- [ ] Browser proof captured at `/#/project-manager`
+- [ ] Unrelated typecheck blocker called out if still present
+
+## Atlas Continuation Prompt
+```text
+Continue `pm-side-agents-panel` in /Users/hassoncs/src/ch5/palot on branch `rescue/pm-side-agents-seam`.
+
+Read first:
+- .sisyphus/plans/pm-side-agents-panel.md
+- apps/desktop/src/renderer/components/pm-dockview.tsx
+- apps/desktop/src/renderer/components/pm-live-dashboard.tsx
+- apps/desktop/src/renderer/pm-side-agents/composition.ts
+- apps/desktop/src/renderer/pm-side-agents/types.ts
+- apps/server/src/routes/ch5pm.ts
+- apps/desktop/src/renderer/services/backend.ts
+- apps/desktop/src/renderer/services/elf-server.ts
+
+Mission:
+- Keep existing Dense Console design language.
+- Replace placeholder Side Agents tab with live `/api/ch5pm/babysitter` + `/api/ch5pm/queue` data.
+- Extract shared PM normalization into mapper authority.
+- Add explicit source/freshness badges and safe deep links.
+- Never claim live health for static/detected-only agents.
+- Fail loud on upstream breakage. No stale fallback.
+
+Before edits:
+- Audit current dirty tree and pathscope only PM files.
+- Reconfirm live payload shapes; queue is `rows[]` unless backend changed.
+- Note repo-wide typecheck blocker from `docs/genui-artifact-architecture.md:412` if still present.
+
+Proof required:
+- targeted bun tests
+- curl proofs for `/api/ch5pm/state`, `/api/ch5pm/babysitter`, `/api/ch5pm/queue`, `/api/ch5pm/health`
+- browser proof at `http://localhost:20883/#/project-manager`
+- evidence under `.sisyphus/evidence/pm-side-agents/`
+``` <!-- oc:id=sec_ap -->
+To be appended after task batches.
+
+## Commit Strategy <!-- oc:id=sec_aq -->
+- One coherent PM UI slice commit after mapper + panel + tests + proof
+- Message target: `fix(pm): complete side agents project manager panel`
+
+## Success Criteria <!-- oc:id=sec_ar -->
+- `/#/project-manager` shows real Side Agents tab with live babysitter + queue data.
+- Dense Console still works and uses shared mapper where overlap exists.
+- Source badges make live-fed vs detected vs static explicit.
+- Queue panel groups actionable terminal states.
+- Tests and live proof recorded.

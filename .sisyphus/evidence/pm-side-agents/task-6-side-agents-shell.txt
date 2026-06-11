@@ -1,0 +1,1 @@
+Side Agents dockview shell replaced placeholder text in pm-dockview.tsx with live loop/decisions/boxes/queue sections backed by side-agent fetchers + composition seam. LSP diagnostics clean for pm-dockview.tsx.

@@ -74,6 +74,11 @@ import {
 	type ActiveOpenCodeSessionStreamHandlers,
 } from "./elf-server"
 
+import type {
+	Ch5PmSideAgentFeed,
+	Ch5PmSideAgentQueuePayload,
+	Ch5PmSideAgentHealthPayload,
+} from "../pm-side-agents/types"
 
 export { ELF_SERVER_BASE_URL }
 
@@ -673,6 +678,60 @@ export async function fetchCh5PmState(): Promise<Ch5PmLiveState> {
 	}
 	const { fetchCh5PmState: httpFetch } = await import("./elf-server")
 	return httpFetch() as Promise<Ch5PmLiveState>
+}
+
+export async function fetchCh5PmSideAgentFeed(): Promise<Ch5PmSideAgentFeed> {
+	if (isElectron) {
+		return window.elf.fetch({
+			url: `${ELF_SERVER_BASE_URL}/api/ch5pm/babysitter`,
+			method: "GET",
+			headers: { accept: "application/json" },
+			body: null,
+		}).then((result) => {
+			if (result.status < 200 || result.status >= 300) {
+				throw new Error(`CH5PM side-agent feed fetch failed: ${result.status} ${result.statusText}`)
+			}
+			return JSON.parse(result.body ?? "null") as Ch5PmSideAgentFeed
+		})
+	}
+	const { fetchCh5PmSideAgentFeed: httpFetch } = await import("./elf-server")
+	return httpFetch() as Promise<Ch5PmSideAgentFeed>
+}
+
+export async function fetchCh5PmSideAgentQueue(): Promise<Ch5PmSideAgentQueuePayload> {
+	if (isElectron) {
+		return window.elf.fetch({
+			url: `${ELF_SERVER_BASE_URL}/api/ch5pm/queue`,
+			method: "GET",
+			headers: { accept: "application/json" },
+			body: null,
+		}).then((result) => {
+			if (result.status < 200 || result.status >= 300) {
+				throw new Error(`CH5PM side-agent queue fetch failed: ${result.status} ${result.statusText}`)
+			}
+			return JSON.parse(result.body ?? "null") as Ch5PmSideAgentQueuePayload
+		})
+	}
+	const { fetchCh5PmSideAgentQueue: httpFetch } = await import("./elf-server")
+	return httpFetch() as Promise<Ch5PmSideAgentQueuePayload>
+}
+
+export async function fetchCh5PmSideAgentHealth(): Promise<Ch5PmSideAgentHealthPayload> {
+	if (isElectron) {
+		return window.elf.fetch({
+			url: `${ELF_SERVER_BASE_URL}/api/ch5pm/health`,
+			method: "GET",
+			headers: { accept: "application/json" },
+			body: null,
+		}).then((result) => {
+			if (result.status < 200 || result.status >= 300) {
+				throw new Error(`CH5PM side-agent health fetch failed: ${result.status} ${result.statusText}`)
+			}
+			return JSON.parse(result.body ?? "null") as Ch5PmSideAgentHealthPayload
+		})
+	}
+	const { fetchCh5PmSideAgentHealth: httpFetch } = await import("./elf-server")
+	return httpFetch() as Promise<Ch5PmSideAgentHealthPayload>
 }
 
 async function postCh5PmAttentionActionViaElectron(

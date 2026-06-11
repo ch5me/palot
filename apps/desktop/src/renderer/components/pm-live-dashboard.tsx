@@ -4,16 +4,22 @@ import { useRouter } from "@tanstack/react-router"
 import { RefreshCwIcon } from "lucide-react"
 import { useMemo } from "react"
 import type {
+	Ch5PmAttentionQueue,
+	Ch5PmBabysitter,
 	Ch5PmLiveBackgroundAgent,
 	Ch5PmLiveBox,
 	Ch5PmLiveLane,
-	Ch5PmLiveReadyFrontierTicket,
-	Ch5PmLiveSession,
 	Ch5PmLiveState,
-	Ch5PmNeedsChrisItem,
 	Ch5PmFollowUp,
 	Ch5PmLineageItem,
+	Ch5PmNeedsChrisItem,
 } from "../ch5pm-dashboard/types"
+import {
+	classifyLaneStatus,
+	composePmSideAgentsModel,
+	type Ch5PmDenseConsoleViewModel,
+	type Ch5PmLaneStatus,
+} from "../pm-side-agents/composition"
 import { createLogger } from "../lib/logger"
 import { fetchCh5PmState, openExternalUrl } from "../services/backend"
 import { PmAttentionQueue } from "./pm-attention-queue"
@@ -59,15 +65,8 @@ const STATUS_COLOR: Record<string, string> = {
 	pending: "text-neutral-500",
 }
 
-type LaneStatus = keyof typeof GLYPH
-
-function normalizeLaneStatus(status?: string): LaneStatus {
-	const s = status?.trim().toLowerCase() ?? "idle"
-	if (s.includes("need") || s.includes("human")) return "needs-chris"
-	if (s.includes("nudge")) return "nudged"
-	if (s.includes("done") || s.includes("claim")) return "done"
-	if (s.includes("work") || s.includes("busy") || s.includes("run")) return "working"
-	return "idle"
+function laneStatus(status?: string): Ch5PmLaneStatus {
+	return classifyLaneStatus(status)
 }
 
 function fmtAge(value?: string): string {
@@ -88,8 +87,168 @@ function asText(value: unknown): string {
 	if (typeof value === "string") return value
 	if (typeof value === "number" || typeof value === "boolean") return String(value)
 	if (Array.isArray(value)) return value.map(asText).filter(Boolean).join(" ")
-	if (typeof value === "object") return Object.entries(value as Record<string, unknown>).map(([k, v]) => `${k}:${asText(v)}`).join(" ")
+	if (typeof value === "object") {
+		return Object.entries(value as Record<string, unknown>)
+			.map(([k, v]) => `${k}:${asText(v)}`)
+			.join(" ")
+	}
 	return String(value)
+}
+
+function asRecord(value: unknown): Record<string, unknown> {
+	return value && typeof value === "object" && !Array.isArray(value)
+		? value as Record<string, unknown>
+		: {}
+}
+
+function asArray(value: unknown): unknown[] {
+	return Array.isArray(value) ? value : []
+}
+
+function readString(record: Record<string, unknown>, ...keys: string[]): string | undefined {
+	for (const key of keys) {
+		const value = record[key]
+		if (typeof value === "string" && value.trim().length > 0) return value
+		if (typeof value === "number" || typeof value === "boolean") return String(value)
+	}
+	return undefined
+}
+
+function readNumber(record: Record<string, unknown>, key: string): number {
+	const value = record[key]
+	return typeof value === "number" && Number.isFinite(value) ? value : 0
+}
+
+function directorySlug(value?: string): string | undefined {
+	if (!value) return undefined
+	return value.replace(/^~\/src\/ch5\//, "").split("/").filter(Boolean).pop()
+}
+
+function normalizeBoxes(value: unknown): Ch5PmLiveBox[] {
+	return asArray(value).map((item) => {
+		const box = asRecord(item)
+		const daemon = asRecord(box.daemon)
+		const metadata = asRecord(box.metadata)
+		const staticBox = asRecord(metadata.staticBox)
+		const fleet = asRecord(box.fleet)
+		const provider = asRecord(fleet.provider)
+		const transport = asRecord(fleet.workerLaunchTransport)
+		const healthy = typeof box.healthy === "boolean"
+			? box.healthy
+			: readString(daemon, "health") === "healthy"
+		return {
+			id: readString(box, "id", "boxId") ?? "unknown-box",
+			role:
+				readString(box, "role") ??
+				readString(staticBox, "role") ??
+				readString(provider, "kind") ??
+				"box",
+			daemon: {
+				url: readString(daemon, "url", "altUrl") ?? readString(transport, "daemonBaseUrl"),
+				altUrl: readString(daemon, "altUrl"),
+				health: readString(daemon, "health") ?? (healthy ? "healthy" : "degraded"),
+				boundHost: readString(daemon, "boundHost"),
+			},
+			opencodeServe: readString(box, "opencodeServe"),
+			notes: readString(box, "notes") ?? asText(metadata.degradedReasons),
+		}
+	})
+}
+
+function normalizeSessions(
+	value: unknown,
+): ReturnType<typeof composePmSideAgentsModel>["denseConsole"]["sessions"] {
+	return asArray(value).map((item) => {
+		const session = asRecord(item)
+		const directory = readString(session, "directory")
+		const repo = readString(session, "repo", "repoId") ?? directorySlug(directory)
+		const id = readString(session, "id", "sessionId") ?? readString(session, "title") ?? "unknown-session"
+		return {
+			id,
+			title: readString(session, "title") ?? id,
+			repo,
+			box: readString(session, "box", "boxId", "sourceBoxId"),
+			state: readString(session, "state", "status", "classification"),
+			lane: readString(session, "lane", "reason", "recommendation"),
+			projectSlug: readString(session, "projectSlug") ?? repo,
+		}
+	})
+}
+
+function normalizeNeedsChris(value: unknown): Ch5PmNeedsChrisItem[] {
+	return asArray(value).map((item) => {
+		if (typeof item === "string") return { title: item, source: "daemon" }
+		const row = asRecord(item)
+		return {
+			ticket: readString(row, "ticket", "ticketId"),
+			title: readString(row, "title", "name"),
+			note: readString(row, "note", "reason"),
+			source: readString(row, "source", "sourceBoxId", "boxId"),
+			priority: readString(row, "priority"),
+		}
+	})
+}
+
+function normalizePlane(value: unknown): ReturnType<typeof composePmSideAgentsModel>["denseConsole"]["plane"] {
+	const plane = asRecord(value)
+	return {
+		workspaceSlug: readString(plane, "workspaceSlug"),
+		projects: typeof plane.projects === "number" ? plane.projects : undefined,
+		epics: typeof plane.epics === "number" ? plane.epics : undefined,
+		readUrl: readString(plane, "readUrl"),
+		readyFrontier: asArray(plane.readyFrontier).map((item) => {
+			const ticket = asRecord(item)
+			return {
+				ticket: readString(ticket, "ticket", "ticketId", "id") ?? "ticket",
+				title: readString(ticket, "title", "name") ?? "Untitled",
+				priority: readString(ticket, "priority"),
+				repo: readString(ticket, "repo", "repoId"),
+				coveredBy: readString(ticket, "coveredBy") ?? null,
+			}
+		}),
+		humanGated: asRecord(plane.humanGated),
+	}
+}
+
+function normalizeAttentionQueue(value: unknown): Ch5PmAttentionQueue | undefined {
+	const queue = asRecord(value)
+	const counts = asRecord(queue.counts)
+	const open = asArray(queue.open) as Ch5PmAttentionQueue["open"]
+	if (open.length === 0 && Object.keys(counts).length === 0) return undefined
+	return {
+		open,
+		counts: {
+			total: readNumber(counts, "total"),
+			p0: readNumber(counts, "p0"),
+			p1: readNumber(counts, "p1"),
+			p2: readNumber(counts, "p2"),
+		},
+	}
+}
+
+function normalizeLiveState(data?: Ch5PmLiveState | null): Ch5PmLiveState {
+	const raw = asRecord(data)
+	const schemaVersion = typeof raw.schemaVersion === "number"
+		? raw.schemaVersion
+		: Number(readString(raw, "schemaVersion"))
+	return {
+		_doc: readString(raw, "_doc"),
+		schemaVersion: Number.isFinite(schemaVersion) ? schemaVersion : undefined,
+		updatedAt: readString(raw, "updatedAt"),
+		generatedBy: readString(raw, "generatedBy"),
+		host: readString(raw, "host"),
+		boxes: normalizeBoxes(raw.boxes),
+		sessions: normalizeSessions(raw.sessions),
+		lanes: asArray(raw.lanes) as Ch5PmLiveLane[],
+		backgroundAgents: asArray(raw.backgroundAgents) as Ch5PmLiveBackgroundAgent[],
+		plane: normalizePlane(raw.plane ?? raw.planeSummary),
+		recentCompletions: asArray(raw.recentCompletions).map(asText).filter(Boolean),
+		needsChris: normalizeNeedsChris(raw.needsChris),
+		followUps: asArray(raw.followUps) as Ch5PmFollowUp[],
+		babysitter: asRecord(raw.babysitter) as Ch5PmBabysitter,
+		lineage: asArray(raw.lineage) as Ch5PmLineageItem[],
+		attentionQueue: normalizeAttentionQueue(raw.attentionQueue),
+	}
 }
 
 function openUrl(url?: string) {
@@ -105,10 +264,29 @@ function C({ children, className }: { children?: React.ReactNode; className?: st
 	return <div className={`truncate px-1.5 py-0.5 text-[10px] leading-3 ${className ?? ""}`}>{children}</div>
 }
 
-function SecRow({ label, meta }: { label: string; meta?: string }) {
+function FreshBadge({ freshness }: { freshness: Ch5PmDenseConsoleViewModel["freshness"]["pmState"] }) {
+	if (freshness === "fresh") return null
+	const tone = freshness === "stale"
+		? "border-amber-500/30 text-amber-500"
+		: "border-red-500/30 text-red-400"
+	return <span className={`rounded border px-1 py-px text-[8px] uppercase tracking-[0.14em] ${tone}`}>{freshness}</span>
+}
+
+function SecRow({
+	label,
+	meta,
+	freshness,
+}: {
+	label: string
+	meta?: string
+	freshness?: Ch5PmDenseConsoleViewModel["freshness"]["pmState"]
+}) {
 	return (
 		<div className="flex h-5 items-center justify-between border-b border-neutral-300 bg-neutral-100 px-1.5 text-[9px] font-medium uppercase tracking-[0.18em] text-neutral-500 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-400">
-			<span>{label}</span>
+			<div className="flex min-w-0 items-center gap-1.5">
+				<span>{label}</span>
+				{freshness ? <FreshBadge freshness={freshness} /> : null}
+			</div>
 			{meta ? <span className="truncate font-normal tracking-[0.1em]">{meta}</span> : null}
 		</div>
 	)
@@ -137,9 +315,15 @@ function BoxRow({ box }: { box: Ch5PmLiveBox }) {
 	)
 }
 
-function SessionRow({ session, lane }: { session: Ch5PmLiveSession; lane?: Ch5PmLiveLane }) {
+function SessionRow({
+	session,
+	lane,
+}: {
+	session: ReturnType<typeof composePmSideAgentsModel>["denseConsole"]["sessions"][number]
+	lane?: Ch5PmLiveLane
+}) {
 	const router = useRouter()
-	const status = normalizeLaneStatus(lane?.status ?? session.state)
+	const status = laneStatus(lane?.status ?? session.state)
 	const clickable = Boolean(session.projectSlug)
 
 	function navigate() {
@@ -198,7 +382,11 @@ function FollowUpRow({ item }: { item: Ch5PmFollowUp }) {
 	)
 }
 
-function FrontierRow({ ticket }: { ticket: Ch5PmLiveReadyFrontierTicket }) {
+function FrontierRow({
+	ticket,
+}: {
+	ticket: ReturnType<typeof composePmSideAgentsModel>["denseConsole"]["plane"]["readyFrontier"][number]
+}) {
 	return (
 		<div className="grid border-b border-neutral-200 last:border-b-0 dark:border-neutral-700" style={{ gridTemplateColumns: FRONTIER_COLS }}>
 			<C className="text-sky-400">{asText(ticket.ticket)}</C>
@@ -281,49 +469,26 @@ export function PmLiveDashboard() {
 		staleTime: 10_000,
 	})
 
-	const data = query.data
+	const normalizedState = normalizeLiveState(query.data)
+	const dense = useMemo(
+		() => composePmSideAgentsModel({ pmState: normalizedState }).denseConsole,
+		[normalizedState],
+	)
+	const state: Ch5PmDenseConsoleViewModel = dense
 
 	const lanesBySession = useMemo(() => {
 		const map = new Map<string, Ch5PmLiveLane>()
-		for (const lane of data?.lanes ?? []) {
+		for (const lane of state.lanes) {
 			if (lane.session) map.set(lane.session, lane)
 		}
 		return map
-	}, [data?.lanes])
+	}, [state.lanes])
 
-	const sessionsById = useMemo(() => {
-		const map = new Map<string, Ch5PmLiveSession>()
-		for (const session of data?.sessions ?? []) {
-			map.set(session.id, session)
-		}
-		return map
-	}, [data?.sessions])
-
-	const workingCount = (data?.lanes ?? []).filter((lane) => normalizeLaneStatus(lane.status) === "working").length
-	const needsCount = (data?.needsChris.length ?? 0) || (data?.plane.humanGated?.count ?? 0)
-	const askCount = data?.attentionQueue?.counts.total ?? 0
-	const readyCount = data?.plane.readyFrontier.length ?? 0
+	const workingCount = state.counts.working
+	const needsCount = state.needsChris.length || (state.plane.humanGated?.count ?? 0)
+	const askCount = state.counts.attention
+	const readyCount = state.counts.ready
 	const errMsg = query.error instanceof Error ? query.error.message : query.error ? "load failed" : null
-
-	const empty: Ch5PmLiveState = {
-		boxes: [],
-		sessions: [],
-		lanes: [],
-		backgroundAgents: [],
-		plane: { readyFrontier: [] },
-		recentCompletions: [],
-		needsChris: [],
-	}
-
-	const state = data ?? empty
-
-	const lineage = (state.lineage ?? []).map((item) => ({
-		...item,
-		sessions: item.sessions.map((session) => ({
-			...session,
-			projectSlug: session.projectSlug ?? sessionsById.get(session.id)?.projectSlug,
-		})),
-	}))
 
 	const sessions = state.sessions.slice(0, 14)
 	const boxes = state.boxes.slice(0, 6)
@@ -332,32 +497,34 @@ export function PmLiveDashboard() {
 	const needs = state.needsChris.slice(0, 7)
 	const followups = (state.followUps ?? []).slice(0, 8)
 	const frontier = state.plane.readyFrontier.slice(0, 7)
+	const planeUrl = state.links.plane
 
 	return (
-		<div className="flex h-[calc(100vh-7.5rem)] min-h-[680px] flex-col overflow-hidden bg-white font-mono text-[10px] dark:bg-neutral-950 dark:text-neutral-200">
+		<div className="flex h-full min-h-0 flex-col overflow-hidden bg-white font-mono text-[10px] dark:bg-neutral-950 dark:text-neutral-200">
 			<div className="flex h-7 items-center border-b border-neutral-300 bg-neutral-100 dark:border-neutral-700 dark:bg-neutral-900">
 				<div className="flex h-full items-center border-r border-neutral-300 px-2 text-[10px] font-bold tracking-widest text-neutral-900 dark:border-neutral-700 dark:text-neutral-100">
 					CH5PM
 				</div>
-				{state.babysitter ? (
-					<div className="flex h-full items-center border-r border-neutral-300 px-2 text-[9px] text-neutral-500 dark:border-neutral-700 dark:text-neutral-400">
-						<span className={`mr-1.5 font-bold ${state.babysitter.running ? "text-emerald-500" : "text-red-400"}`}>{state.babysitter.running ? "●" : "○"}</span>
-						<span className="truncate">{asText(state.babysitter.surface)}</span>
-						<span className="mx-1 text-neutral-300 dark:text-neutral-600">/</span>
-						<span className="truncate">{asText(state.babysitter.package)}</span>
-						<span className="ml-2 text-neutral-400">{asText(state.babysitter.loopSeconds)}s</span>
-					</div>
-				) : null}
-				<StatPill label="updated" value={fmtAge(state.updatedAt)} />
-				<StatPill label="host" value={asText(state.host) || "--"} />
-				<StatPill label="boxes" value={state.boxes.length} />
-				<StatPill label="sessions" value={state.sessions.length} />
-				<StatPill label="work" value={workingCount} tone="text-emerald-400" />
-				<StatPill label="ready" value={readyCount} tone="text-sky-400" />
-				<StatPill label="needs" value={needsCount} tone={needsCount > 0 ? "text-red-400" : undefined} />
-				<StatPill label="ask" value={askCount} tone={askCount > 0 ? "text-red-400" : undefined} />
-				<StatPill label="schema" value={state.schemaVersion ?? "?"} />
-				<StatPill label="followups" value={followups.length} />
+			{state.babysitter ? (
+				<div className="flex h-full items-center border-r border-neutral-300 px-2 text-[9px] text-neutral-500 dark:border-neutral-700 dark:text-neutral-400">
+					<span className={`mr-1.5 font-bold ${state.babysitter.running ? "text-emerald-500" : "text-red-400"}`}>{state.babysitter.running ? "●" : "○"}</span>
+					<span className="truncate">{asText(state.babysitter.surface)}</span>
+					<span className="mx-1 text-neutral-300 dark:text-neutral-600">/</span>
+					<span className="truncate">{asText(state.babysitter.package)}</span>
+					<span className="ml-2 text-neutral-400">{asText(state.babysitter.loopSeconds)}s</span>
+				</div>
+			) : null}
+			<StatPill label="updated" value={fmtAge(normalizedState.updatedAt)} />
+			<StatPill label="host" value={asText(normalizedState.host) || "--"} />
+			<StatPill label="boxes" value={state.counts.boxes} />
+			<StatPill label="sessions" value={state.counts.sessions} />
+			<StatPill label="work" value={workingCount} tone="text-emerald-400" />
+			<StatPill label="ready" value={readyCount} tone="text-sky-400" />
+			<StatPill label="needs" value={needsCount} tone={needsCount > 0 ? "text-red-400" : undefined} />
+			<StatPill label="ask" value={askCount} tone={askCount > 0 ? "text-red-400" : undefined} />
+			<StatPill label="schema" value={normalizedState.schemaVersion ?? "?"} />
+			<StatPill label="followups" value={state.counts.followUps} />
+
 				<div className="ml-auto flex h-full items-center border-l border-neutral-300 px-1.5 dark:border-neutral-700">
 					<Button variant="ghost" size="sm" onClick={() => void query.refetch()} disabled={query.isFetching} className="h-5 rounded-none border-0 px-1.5 text-[9px] uppercase tracking-[0.16em] text-neutral-500 hover:text-neutral-900 dark:text-neutral-400 dark:hover:text-neutral-100">
 						<RefreshCwIcon className={`mr-1 size-2.5 ${query.isFetching ? "animate-spin" : ""}`} />
@@ -366,16 +533,16 @@ export function PmLiveDashboard() {
 				</div>
 			</div>
 
-			<PmAttentionQueue queue={state.attentionQueue} onMutated={() => void query.refetch()} />
+			<PmAttentionQueue queue={state.attentionQueue ?? undefined} onMutated={() => void query.refetch()} />
 
-			{lineage.length > 0 ? (
+			{state.lineage.length > 0 ? (
 				<div className="flex min-h-0 flex-col border-b border-neutral-300 dark:border-neutral-700">
 					<div className="flex h-5 items-center justify-between border-b border-neutral-300 bg-neutral-100 px-2 text-[9px] font-medium uppercase tracking-[0.18em] text-neutral-500 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-400">
 						<span>lineage</span>
-						<span>{lineage.length} chain{lineage.length !== 1 ? "s" : ""}</span>
+						<span>{state.lineage.length} chain{state.lineage.length !== 1 ? "s" : ""}</span>
 					</div>
 					<div className="min-h-0 overflow-hidden">
-						{lineage.slice(0, 3).map((item) => <LineageChain key={item.ticket} item={item} />)}
+						{state.lineage.slice(0, 3).map((item) => <LineageChain key={item.ticket} item={item} />)}
 					</div>
 				</div>
 			) : null}
@@ -387,7 +554,7 @@ export function PmLiveDashboard() {
 			<div className="grid min-h-0 flex-1 grid-cols-[minmax(0,1.55fr)_minmax(0,0.95fr)_minmax(280px,0.75fr)]">
 				<div className="grid min-h-0 grid-rows-[1fr_128px] border-r border-neutral-300 dark:border-neutral-700">
 					<div className="min-h-0">
-						<SecRow label="sessions" meta={`${state.sessions.length} live`} />
+						<SecRow label="sessions" meta={`${state.counts.sessions} live`} freshness={state.freshness.pmState} />
 						<div className="grid border-b border-neutral-200 bg-neutral-50 dark:border-neutral-700 dark:bg-neutral-900" style={{ gridTemplateColumns: SESSION_COLS }}>
 							<H>st</H><H>session</H><H>repo</H><H>box</H><H>lane</H><H>goal</H>
 						</div>
@@ -397,7 +564,7 @@ export function PmLiveDashboard() {
 					</div>
 					<div className="grid min-h-0 grid-rows-[1fr_1fr] border-t border-neutral-300 dark:border-neutral-700">
 						<div className="min-h-0 border-b border-neutral-200 dark:border-neutral-700">
-							<SecRow label="agents" meta={`${state.backgroundAgents.length}`} />
+							<SecRow label="agents" meta={`${state.counts.backgroundAgents}`} />
 							<div className="grid border-b border-neutral-200 bg-neutral-50 dark:border-neutral-700 dark:bg-neutral-900" style={{ gridTemplateColumns: AGENT_COLS }}>
 								<H>task</H><H>status</H><H>milestones</H>
 							</div>
@@ -406,7 +573,7 @@ export function PmLiveDashboard() {
 							</div>
 						</div>
 						<div className="min-h-0">
-							<SecRow label="completions" meta={`${state.recentCompletions.length}`} />
+							<SecRow label="completions" meta={`${state.counts.recentCompletions}`} />
 							<div className="grid border-b border-neutral-200 bg-neutral-50 dark:border-neutral-700 dark:bg-neutral-900" style={{ gridTemplateColumns: COMPLETE_COLS }}>
 								<H /><H>item</H>
 							</div>
@@ -419,7 +586,7 @@ export function PmLiveDashboard() {
 
 				<div className="grid min-h-0 grid-rows-[minmax(0,1fr)_minmax(0,1fr)] border-r border-neutral-300 dark:border-neutral-700">
 					<div className="min-h-0 border-b border-neutral-200 dark:border-neutral-700">
-						<SecRow label="needs chris" meta={needsCount > 0 ? `${needsCount}` : undefined} />
+						<SecRow label="needs chris" meta={needsCount > 0 ? `${needsCount}` : undefined} freshness={needs.length > 0 ? undefined : state.freshness.pmState} />
 						<div className="grid border-b border-neutral-200 bg-neutral-50 dark:border-neutral-700 dark:bg-neutral-900" style={{ gridTemplateColumns: NEEDS_COLS }}>
 							<H>ticket</H><H>title</H><H>prio</H><H>src</H>
 						</div>
@@ -428,7 +595,7 @@ export function PmLiveDashboard() {
 						</div>
 					</div>
 					<div className="min-h-0">
-						<SecRow label="ready frontier" meta={`${state.plane.projects ?? 0}p ${state.plane.epics ?? 0}e`} />
+						<SecRow label="ready frontier" meta={`${state.plane.projects ?? 0}p ${state.plane.epics ?? 0}e`} freshness={frontier.length > 0 ? undefined : state.freshness.pmState} />
 						<div className="grid border-b border-neutral-200 bg-neutral-50 dark:border-neutral-700 dark:bg-neutral-900" style={{ gridTemplateColumns: FRONTIER_COLS }}>
 							<H>ticket</H><H>title</H><H>repo</H><H>prio</H>
 						</div>
@@ -440,7 +607,7 @@ export function PmLiveDashboard() {
 
 				<div className="grid min-h-0 grid-rows-[minmax(0,1fr)_144px]">
 					<div className="min-h-0 border-b border-neutral-200 dark:border-neutral-700">
-						<SecRow label="followups" meta={`${(state.followUps ?? []).length}`} />
+						<SecRow label="followups" meta={`${state.counts.followUps}`} />
 						<div className="grid border-b border-neutral-200 bg-neutral-50 dark:border-neutral-700 dark:bg-neutral-900" style={{ gridTemplateColumns: FOLLOWUP_COLS }}>
 							<H>src</H><H>item</H><H>status</H><H>resolution</H>
 						</div>
@@ -449,7 +616,7 @@ export function PmLiveDashboard() {
 						</div>
 					</div>
 					<div className="min-h-0">
-						<SecRow label="boxes" meta={`${state.boxes.length}`} />
+						<SecRow label="boxes" meta={`${state.counts.boxes}`} />
 						<div className="grid border-b border-neutral-200 bg-neutral-50 dark:border-neutral-700 dark:bg-neutral-900" style={{ gridTemplateColumns: BOX_COLS }}>
 							<H>id</H><H>role</H><H>serve</H><H />
 						</div>
@@ -461,8 +628,8 @@ export function PmLiveDashboard() {
 			</div>
 
 			<div className="flex h-4 items-center justify-between border-t border-neutral-300 bg-neutral-50 px-2 text-[9px] text-neutral-400 dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-500">
-				<span className="truncate">ch5pm daemon /pm/state via firefly</span>
-				<span className="truncate">{asText(state.generatedBy) || "--"}</span>
+				<span className="truncate">{planeUrl ? <button type="button" onClick={() => openUrl(planeUrl)} className="truncate hover:text-neutral-700 dark:hover:text-neutral-300">ch5pm daemon /pm/state via firefly</button> : "ch5pm daemon /pm/state via firefly"}</span>
+				<span className="truncate">{asText(normalizedState.generatedBy) || state.sources.label || "--"}</span>
 			</div>
 		</div>
 	)
