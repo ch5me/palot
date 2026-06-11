@@ -69,6 +69,7 @@ function createDefaultRecord(): BrowserLaneRecord {
 		label: "Default",
 		mode: "local",
 		runtime: "docker-chromium",
+		surfaceKind: "selkies-stream",
 		streamBackendUrl: null,
 		cdpEndpoint: null,
 		profilePath: null,
@@ -163,7 +164,11 @@ function buildHealth(input: {
 function toBrowserLane(record: BrowserLaneRecord): BrowserLane {
 	return {
 		...inflateBrowserLane(record, getLaneState(record.id).health),
-		desktopStreamUrl: getBrowserLaneDesktopUrl(record.id, record.streamBackendUrl),
+		desktopStreamUrl: getBrowserLaneDesktopUrl(
+			record.id,
+			record.streamBackendUrl,
+			record.surfaceKind,
+		),
 	}
 }
 
@@ -217,6 +222,7 @@ export async function createRemoteBrowserLane(input: CreateRemoteBrowserLaneInpu
 		label: input.label,
 		mode: "remote",
 		runtime: "remote-attached",
+		surfaceKind: input.surfaceKind ?? (input.cdpEndpoint ? "selkies-stream" : "direct-iframe"),
 		streamBackendUrl: input.streamBackendUrl,
 		cdpEndpoint: input.cdpEndpoint,
 		host: input.host ?? null,
@@ -229,6 +235,7 @@ export async function createBrowserLane(input: {
 	label: string
 	mode: BrowserLaneMode
 	runtime: BrowserLaneRuntime
+	surfaceKind?: "selkies-stream" | "direct-iframe"
 	host?: string | null
 	streamBackendUrl?: string | null
 	cdpEndpoint?: string | null
@@ -242,6 +249,7 @@ export async function createBrowserLane(input: {
 		label: input.label,
 		mode: input.mode,
 		runtime: input.runtime,
+		surfaceKind: input.surfaceKind,
 		streamBackendUrl: input.streamBackendUrl ?? null,
 		cdpEndpoint: input.cdpEndpoint ?? null,
 		profilePath: input.profilePath ?? null,
@@ -278,18 +286,36 @@ async function ensureBrowserLanePrepared(id: string): Promise<BrowserLane> {
 		setLaneHealth(
 			id,
 			buildHealth({
-				status: lane.streamBackendUrl ? "degraded" : "error",
+				status: lane.streamBackendUrl
+					? lane.surfaceKind === "direct-iframe"
+						? "running"
+						: lane.cdpEndpoint
+							? "running"
+							: "degraded"
+					: "error",
 				message: lane.streamBackendUrl
-					? lane.cdpEndpoint
-						? "Remote stream attached, CDP ready"
-						: "Remote stream attached, CDP unavailable"
+					? lane.surfaceKind === "direct-iframe"
+						? "Direct iframe route attached"
+						: lane.cdpEndpoint
+							? "Remote stream attached, CDP ready"
+							: "Remote stream attached, CDP unavailable"
 					: "Remote lane not configured",
 				streamUrl: lane.streamBackendUrl,
 				streamState: lane.streamBackendUrl ? "ready" : "failed",
 				streamError: lane.streamBackendUrl ? null : "Stream backend URL missing",
 				cdpUrl: lane.cdpEndpoint,
-				cdpState: lane.cdpEndpoint ? "ready" : "failed",
-				cdpError: lane.cdpEndpoint ? null : "CDP endpoint missing",
+				cdpState:
+					lane.surfaceKind === "direct-iframe"
+						? "not-applicable"
+						: lane.cdpEndpoint
+							? "ready"
+							: "failed",
+				cdpError:
+					lane.surfaceKind === "direct-iframe"
+						? null
+						: lane.cdpEndpoint
+							? null
+							: "CDP endpoint missing",
 			}),
 		)
 		return await getBrowserLane(id).then((entry) => {
@@ -698,9 +724,19 @@ export async function refreshBrowserLaneHealth(id: string): Promise<BrowserLaneH
 				profileResetAt: state.profileResetAt,
 			})
 		}
+		if (lane.surfaceKind === "direct-iframe" && lane.streamBackendUrl) {
+			return buildHealth({
+				status: "running",
+				message: "Direct iframe route attached",
+				streamUrl: lane.streamBackendUrl,
+				streamState: "ready",
+				cdpUrl: lane.cdpEndpoint,
+				cdpState: "not-applicable",
+			})
+		}
 		if (lane.streamBackendUrl && lane.cdpEndpoint) {
 			return buildHealth({
-				status: "degraded",
+				status: "running",
 				message: "Remote lane attached and reachable",
 				streamUrl: lane.streamBackendUrl,
 				streamState: "ready",

@@ -38,6 +38,8 @@ export function buildNavigableUrl(input: string): string | null {
 interface BrowserLaneDisplayUrlInput {
 	desktopStreamUrl?: string | null
 	streamPath: string
+	streamBackendUrl?: string | null
+	surfaceKind?: "selkies-stream" | "direct-iframe"
 }
 
 interface BrowserLaneDisplayUrlOptions {
@@ -49,6 +51,9 @@ export function buildBrowserLaneDisplayUrl(
 	input: BrowserLaneDisplayUrlInput,
 	options: BrowserLaneDisplayUrlOptions = { isElectron: true },
 ): string {
+	if (input.surfaceKind === "direct-iframe" && input.streamBackendUrl) {
+		return input.streamBackendUrl
+	}
 	if (options.isElectron && input.desktopStreamUrl) return input.desktopStreamUrl
 	if (!options.isElectron && options.backendBaseUrl) {
 		return new URL(input.streamPath, options.backendBaseUrl).toString()

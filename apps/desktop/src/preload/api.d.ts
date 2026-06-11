@@ -15,6 +15,8 @@ export type BrowserLaneMode = "local" | "remote"
 
 export type BrowserLaneRuntime = "docker-chromium" | "remote-attached"
 
+export type BrowserLaneSurfaceKind = "selkies-stream" | "direct-iframe"
+
 export type BrowserLaneStatus =
 	| "installing"
 	| "starting"
@@ -24,7 +26,7 @@ export type BrowserLaneStatus =
 	| "error"
 	| "profile-locked"
 
-export type BrowserLaneReadiness = "unknown" | "pending" | "ready" | "failed"
+export type BrowserLaneReadiness = "unknown" | "pending" | "ready" | "failed" | "not-applicable"
 
 export interface BrowserLaneEndpoint {
 	url: string | null
@@ -45,6 +47,7 @@ export interface BrowserLane {
 	label: string
 	mode: BrowserLaneMode
 	runtime: BrowserLaneRuntime
+	surfaceKind: BrowserLaneSurfaceKind
 	streamPath: string
 	streamBackendUrl: string | null
 	desktopStreamUrl?: string | null
@@ -61,6 +64,7 @@ export interface BrowserLaneRecord {
 	label: string
 	mode: BrowserLaneMode
 	runtime: BrowserLaneRuntime
+	surfaceKind?: BrowserLaneSurfaceKind
 	streamBackendUrl: string | null
 	cdpEndpoint: string | null
 	profilePath: string | null
@@ -72,6 +76,7 @@ export interface BrowserLaneRecord {
 export interface CreateRemoteBrowserLaneInput {
 	id: string
 	label: string
+	surfaceKind?: BrowserLaneSurfaceKind
 	streamBackendUrl: string
 	cdpEndpoint: string | null
 	host?: string | null

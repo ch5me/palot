@@ -5,6 +5,8 @@ export type BrowserLaneMode = "local" | "remote"
 
 export type BrowserLaneRuntime = "docker-chromium" | "remote-attached"
 
+export type BrowserLaneSurfaceKind = "selkies-stream" | "direct-iframe"
+
 export type BrowserLaneStatus =
 	| "installing"
 	| "starting"
@@ -14,7 +16,7 @@ export type BrowserLaneStatus =
 	| "error"
 	| "profile-locked"
 
-export type BrowserLaneReadiness = "unknown" | "pending" | "ready" | "failed"
+export type BrowserLaneReadiness = "unknown" | "pending" | "ready" | "failed" | "not-applicable"
 
 export interface BrowserLaneEndpoint {
 	url: string | null
@@ -35,6 +37,7 @@ export interface BrowserLane {
 	label: string
 	mode: BrowserLaneMode
 	runtime: BrowserLaneRuntime
+	surfaceKind: BrowserLaneSurfaceKind
 	streamPath: string
 	streamBackendUrl: string | null
 	cdpEndpoint: string | null
@@ -50,6 +53,7 @@ export interface BrowserLaneRecord {
 	label: string
 	mode: BrowserLaneMode
 	runtime: BrowserLaneRuntime
+	surfaceKind?: BrowserLaneSurfaceKind
 	streamBackendUrl: string | null
 	cdpEndpoint: string | null
 	profilePath: string | null
@@ -132,8 +136,15 @@ export function getBrowserLaneStoragePaths(laneId: string): BrowserLanePaths {
 }
 
 export function summarizeBrowserLaneHealth(health: BrowserLaneHealth): string {
-	if (health.status === "running" && health.stream.state === "ready" && health.cdp.state === "ready") {
-		return "Stream and CDP ready"
+	if (
+		health.status === "running" &&
+		health.stream.state === "ready" &&
+		(health.cdp.state === "ready" || health.cdp.state === "not-applicable")
+	) {
+		return health.cdp.state === "not-applicable" ? "Direct iframe ready" : "Stream and CDP ready"
+	}
+	if (health.stream.state === "ready" && health.cdp.state === "not-applicable") {
+		return "Direct iframe ready"
 	}
 	if (health.stream.state === "ready" && health.cdp.state === "pending") {
 		return "Stream ready, CDP still starting"
@@ -181,9 +192,20 @@ export function createEmptyBrowserLaneHealth(
 	}
 }
 
+export function getBrowserLaneSurfaceKind(record: Pick<BrowserLaneRecord, "runtime" | "surfaceKind" | "cdpEndpoint">): BrowserLaneSurfaceKind {
+	if (record.surfaceKind) {
+		return record.surfaceKind
+	}
+	if (record.runtime === "docker-chromium") {
+		return "selkies-stream"
+	}
+	return record.cdpEndpoint ? "selkies-stream" : "direct-iframe"
+}
+
 export function inflateBrowserLane(record: BrowserLaneRecord, health?: BrowserLaneHealth): BrowserLane {
 	return {
 		...record,
+		surfaceKind: getBrowserLaneSurfaceKind(record),
 		streamPath: getBrowserLaneStreamPath(record.id),
 		health: health ?? createEmptyBrowserLaneHealth(),
 	}

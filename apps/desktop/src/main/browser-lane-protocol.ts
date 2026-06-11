@@ -11,6 +11,7 @@ interface BrowserLaneProtocolRecord {
 	id: string
 	streamBackendUrl: string | null
 	mode?: "local" | "remote"
+	surfaceKind?: "selkies-stream" | "direct-iframe"
 }
 
 interface BrowserLaneProtocolRegistry {
@@ -152,7 +153,14 @@ export async function registerBrowserLaneProtocol(
 	})
 }
 
-export function getBrowserLaneDesktopUrl(laneId: string, streamBackendUrl?: string | null): string {
+export function getBrowserLaneDesktopUrl(
+	laneId: string,
+	streamBackendUrl?: string | null,
+	surfaceKind?: "selkies-stream" | "direct-iframe",
+): string {
+	if (surfaceKind === "direct-iframe" && streamBackendUrl) {
+		return streamBackendUrl
+	}
 	if (streamBackendUrl && isLoopbackUrl(streamBackendUrl)) {
 		return new URL("/", streamBackendUrl).toString()
 	}
