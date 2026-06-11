@@ -1,0 +1,13 @@
+CLOUD000-64 final bundle proof
+
+missing=0
+all required evidence files present
+- local-tests.txt: 478 bytes
+- build.txt: 85217 bytes
+- check-types.txt: 7912 bytes
+- live-proof-blocker.txt: 684 bytes
+- manifest.txt: 160 bytes
+- handoff.txt: 574 bytes
+- state-check.txt: 218 bytes
+- inventory.txt: 128 bytes
+- checksums.txt: 718 bytes

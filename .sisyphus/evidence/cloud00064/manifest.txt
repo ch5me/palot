@@ -1,0 +1,6 @@
+CLOUD000-64 evidence manifest
+local-tests.txt	478 bytes
+build.txt	85217 bytes
+check-types.txt	7912 bytes
+live-proof-blocker.txt	684 bytes
+handoff.txt	574 bytes

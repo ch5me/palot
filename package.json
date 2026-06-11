@@ -11,6 +11,7 @@
 		"../ch5-packages/packages/motion/motion",
 		"../ch5-packages/packages/effects/contract",
 		"../ch5-packages/packages/react-native/skia-canvas-init",
+		"../ch5-packages/packages/tooling/storybook-rn-init",
 		"../ch5-packages/packages/tooling/vitest-react-native-mocks",
 		"../ch5-packages/packages/web/ch5-design-web",
 		"../ch5-packages/packages/web/ch5-ui-web",

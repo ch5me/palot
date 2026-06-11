@@ -1,0 +1,21 @@
+CLOUD000-64 handoff
+
+Branch tip:
+- f2631a10d87dbe271d32b06857601716716a2758
+
+Local verification:
+- targeted auth seam tests green -> local-tests.txt
+- desktop build green -> build.txt
+- desktop typecheck red from pre-existing unrelated repo debt -> check-types.txt
+
+Live proof blocker:
+- auth.elf.dance unresolved from this box
+- app.elf.dance reachable (200)
+- api.elf.dance reachable (401 unauthenticated)
+- blocker details -> live-proof-blocker.txt
+
+Working tree changes kept local:
+- package.json
+- bun.lock
+- apps/desktop/tsconfig.json
+- .sisyphus/evidence/cloud00064/

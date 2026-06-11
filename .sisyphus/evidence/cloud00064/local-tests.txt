@@ -1,0 +1,16 @@
+bun test v1.3.14 (0d9b296a)
+
+apps/desktop/src/main/services/auth/vault.test.ts:
+[main:auth/vault] safeStorage backend is 'basic_text'. Auth tokens stored in plaintext — dev only.
+
+apps/desktop/src/main/services/cloud/firefly-runtime-client.test.ts:
+[main:cloud/runtime-client] Cloud runtime status non-2xx {
+  apiUrl: "https://api.example.com",
+  status: 503,
+  statusText: "Service Unavailable",
+}
+
+ 19 pass
+ 0 fail
+ 42 expect() calls
+Ran 19 tests across 3 files. [123.00ms]

@@ -1,0 +1,58 @@
+$ bunx tsgo --noEmit
+plugins/notes/notes-plugin.test.tsx(12,40): error TS2307: Cannot find module 'bun:test' or its corresponding type declarations.
+plugins/notes/notes-plugin.test.tsx(47,14): error TS2339: Property 'dir' does not exist on type 'ImportMeta'.
+plugins/notes/notes-plugin.test.tsx(83,16): error TS2339: Property 'dir' does not exist on type 'ImportMeta'.
+src/main/firefly-plugin/boot-probe.test.ts(26,60): error TS2307: Cannot find module 'bun:test' or its corresponding type declarations.
+src/main/firefly-plugin/capability-broker.test.ts(1,40): error TS2307: Cannot find module 'bun:test' or its corresponding type declarations.
+src/main/firefly-plugin/catalog.test.ts(1,40): error TS2307: Cannot find module 'bun:test' or its corresponding type declarations.
+src/main/firefly-plugin/disk-manifests.test.ts(1,40): error TS2307: Cannot find module 'bun:test' or its corresponding type declarations.
+src/main/firefly-plugin/dispatch.test.ts(1,40): error TS2307: Cannot find module 'bun:test' or its corresponding type declarations.
+src/main/firefly-plugin/lifecycle-state.test.ts(1,40): error TS2307: Cannot find module 'bun:test' or its corresponding type declarations.
+src/main/firefly-plugin/supervisor-boot.test.ts(1,51): error TS2307: Cannot find module 'bun:test' or its corresponding type declarations.
+src/main/firefly-plugin/worker-supervisor.test.ts(9,51): error TS2307: Cannot find module 'bun:test' or its corresponding type declarations.
+src/main/firefly-plugin/worker-supervisor.test.ts(16,40): error TS2339: Property 'dir' does not exist on type 'ImportMeta'.
+src/main/mcp-connections-runtime.test.ts(1,69): error TS2307: Cannot find module 'bun:test' or its corresponding type declarations.
+src/main/mcp-connections-runtime.test.ts(36,11): error TS7006: Parameter 'result' implicitly has an 'any' type.
+src/main/palot-browser-dispatcher.test.ts(5,28): error TS2307: Cannot find module 'bun:test' or its corresponding type declarations.
+src/main/services/auth/device-auth-client.test.ts(1,65): error TS2307: Cannot find module 'bun:test' or its corresponding type declarations.
+src/main/services/auth/token-store.test.ts(1,67): error TS2307: Cannot find module 'bun:test' or its corresponding type declarations.
+src/main/services/auth/vault.test.ts(1,54): error TS2307: Cannot find module 'bun:test' or its corresponding type declarations.
+src/main/services/auth/vault.test.ts(99,3): error TS2578: Unused '@ts-expect-error' directive.
+src/main/services/auth/vault.test.ts(131,3): error TS2578: Unused '@ts-expect-error' directive.
+src/main/services/cloud/firefly-runtime-client.test.ts(1,65): error TS2307: Cannot find module 'bun:test' or its corresponding type declarations.
+src/main/services/cloud/firefly-runtime-client.test.ts(62,22): error TS2339: Property 'startsWith' does not exist on type 'never'.
+src/main/services/cloud/firefly-runtime-client.test.ts(63,22): error TS2339: Property 'length' does not exist on type 'never'.
+src/renderer/atoms/browser-actions.test.ts(1,40): error TS2307: Cannot find module 'bun:test' or its corresponding type declarations.
+src/renderer/atoms/browser.test.ts(1,40): error TS2307: Cannot find module 'bun:test' or its corresponding type declarations.
+src/renderer/components/side-panel/browser-cursor-overlay.test.tsx(1,40): error TS2307: Cannot find module 'bun:test' or its corresponding type declarations.
+src/renderer/components/side-panel/browser-geometry-reconciliation.test.tsx(1,40): error TS2307: Cannot find module 'bun:test' or its corresponding type declarations.
+src/renderer/components/side-panel/browser-panel.binding.test.tsx(1,40): error TS2307: Cannot find module 'bun:test' or its corresponding type declarations.
+src/renderer/components/sidebar.tsx(75,2): error TS2353: Object literal may only specify known properties, and 'degraded' does not exist in type 'Record<AgentStatus, ForwardRefExoticComponent<Omit<LucideProps, "ref"> & RefAttributes<SVGSVGElement>>>'.
+src/renderer/components/sidebar.tsx(82,2): error TS2353: Object literal may only specify known properties, and 'degraded' does not exist in type 'Record<AgentStatus, string>'.
+src/renderer/components/sidebar.tsx(87,16): error TS2339: Property 'visibilityReason' does not exist on type 'Agent'.
+src/renderer/components/sidebar.tsx(870,33): error TS2339: Property 'visibilityReason' does not exist on type 'Agent'.
+src/renderer/components/sidebar.tsx(871,41): error TS2339: Property 'driftFlags' does not exist on type 'Agent'.
+src/renderer/components/sidebar.tsx(871,61): error TS2339: Property 'driftFlags' does not exist on type 'Agent'.
+src/renderer/firefly-plugin-surface-merge.test.ts(1,40): error TS2307: Cannot find module 'bun:test' or its corresponding type declarations.
+src/renderer/firefly-plugin-surfaces.test.tsx(10,40): error TS2307: Cannot find module 'bun:test' or its corresponding type declarations.
+src/renderer/hooks/use-discovery.ts(172,70): error TS2339: Property 'bootstrapDirectories' does not exist on type 'DiscoveryState'.
+src/renderer/hooks/use-discovery.ts(202,6): error TS2353: Object literal may only specify known properties, and 'bootstrapDirectories' does not exist in type 'SetStateAction<DiscoveryState>'.
+src/renderer/lib/profile.test.ts(3,22): error TS2307: Cannot find module 'bun:test' or its corresponding type declarations.
+src/renderer/lib/voice.test.ts(1,40): error TS2307: Cannot find module 'bun:test' or its corresponding type declarations.
+src/renderer/project-manager.test.ts(1,40): error TS2307: Cannot find module 'bun:test' or its corresponding type declarations.
+../server/src/index.ts(51,29): error TS2503: Cannot find namespace 'Bun'.
+../server/src/index.ts(74,40): error TS2503: Cannot find namespace 'Bun'.
+../server/src/index.ts(99,12): error TS2503: Cannot find namespace 'Bun'.
+../server/src/index.ts(107,42): error TS7006: Parameter 'event' implicitly has an 'any' type.
+../server/src/index.ts(123,40): error TS7006: Parameter 'event' implicitly has an 'any' type.
+../server/src/index.ts(130,15): error TS2503: Cannot find namespace 'Bun'.
+../server/src/index.ts(138,13): error TS2503: Cannot find namespace 'Bun'.
+../server/src/routes/files.ts(43,15): error TS2868: Cannot find name 'Bun'. Do you need to install type definitions for Bun? Try `npm i --save-dev @types/bun` and then add 'bun' to the types field in your tsconfig.
+../server/src/routes/files.ts(53,8): error TS2868: Cannot find name 'Bun'. Do you need to install type definitions for Bun? Try `npm i --save-dev @types/bun` and then add 'bun' to the types field in your tsconfig.
+../server/src/routes/model-state.ts(34,22): error TS2868: Cannot find name 'Bun'. Do you need to install type definitions for Bun? Try `npm i --save-dev @types/bun` and then add 'bun' to the types field in your tsconfig.
+../server/src/routes/model-state.ts(63,22): error TS2868: Cannot find name 'Bun'. Do you need to install type definitions for Bun? Try `npm i --save-dev @types/bun` and then add 'bun' to the types field in your tsconfig.
+../server/src/routes/model-state.ts(94,10): error TS2868: Cannot find name 'Bun'. Do you need to install type definitions for Bun? Try `npm i --save-dev @types/bun` and then add 'bun' to the types field in your tsconfig.
+../server/src/services/server-manager.ts(17,29): error TS2868: Cannot find name 'Bun'. Do you need to install type definitions for Bun? Try `npm i --save-dev @types/bun` and then add 'bun' to the types field in your tsconfig.
+../server/src/services/server-manager.ts(104,15): error TS2868: Cannot find name 'Bun'. Do you need to install type definitions for Bun? Try `npm i --save-dev @types/bun` and then add 'bun' to the types field in your tsconfig.
+../server/src/services/server-manager.ts(218,9): error TS2868: Cannot find name 'Bun'. Do you need to install type definitions for Bun? Try `npm i --save-dev @types/bun` and then add 'bun' to the types field in your tsconfig.
+exit=2

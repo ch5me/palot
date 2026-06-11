@@ -1,0 +1,14 @@
+CLOUD000-64 recovery summary
+branch=f2631a10d87dbe271d32b06857601716716a2758
+plane_status=request-integration-posted-and-blocked-for-live-proof
+artifact_dir=.sisyphus/evidence/cloud00064
+artifact_count=11
+
+[latest-status]
+CLOUD000-64 latest status
+branch=f2631a10d87dbe271d32b06857601716716a2758
+live_proof=blocked_dns_auth_host
+local_tests=green
+desktop_build=green
+desktop_typecheck=red_preexisting_unrelated
+bundle_artifacts=10

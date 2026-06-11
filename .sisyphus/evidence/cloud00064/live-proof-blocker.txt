@@ -1,0 +1,16 @@
+CLOUD000-64 live proof blocker
+
+DNS probe:
+- auth.elf.dance -> unresolved from this box
+- app.elf.dance -> resolves and returns HTTP 200
+- api.elf.dance -> resolves and returns HTTP 401 (reachable)
+
+Impact:
+- Cannot execute required POST https://auth.elf.dance/api/device-auth/codes from this worker box.
+- Device-code live proof remains blocked by network/DNS reachability, not local code state.
+
+Local proof status:
+- bun install: fixed by adding ../ch5-packages/packages/tooling/storybook-rn-init workspace link
+- targeted auth seam tests: green
+- desktop build: green
+- desktop typecheck: red due to pre-existing unrelated Bun/sidebar/discovery issues captured in check-types.txt
