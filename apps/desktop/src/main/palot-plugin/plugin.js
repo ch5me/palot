@@ -1,5 +1,15 @@
 import { z } from "zod"
 import {
+	loomMutationResultSchema,
+	loomPollResultSchema,
+	loomRenderArgsShape,
+	loomSessionEndResultSchema,
+	loomSessionOpenArgsShape,
+	loomSessionOpenResultSchema,
+	loomPatchArgsShape,
+	loomPollArgsShape,
+	loomStateArgsShape,
+	palotToolArgsShapes,
 	palotBrowserClickArgsShape,
 	palotBrowserNavigateArgsShape,
 	palotBrowserOpenArgsShape,
@@ -7,6 +17,10 @@ import {
 	palotBrowserStatusArgsShape,
 	palotBrowserTabsArgsShape,
 	palotBrowserTypeArgsShape,
+	palotComponentsDescribeArgsShape,
+	palotComponentsDescribeResultSchema,
+	palotComponentsListArgsShape,
+	palotComponentsListResultSchema,
 	palotOpenSidePanelArgsSchema,
 	palotOpenSidePanelArgsShape,
 	palotResolverResultSchema,
@@ -14,9 +28,36 @@ import {
 	palotUiStateArgsSchema,
 	palotUiStateArgsShape,
 } from "../../shared/palot-bridge-schemas"
+import { readFileSync } from "node:fs"
+import { dirname, join } from "node:path"
+import { fileURLToPath } from "node:url"
+import { openLoomSession as resolveOpenLoomSession } from "../palot-resolver"
+import {
+	patchCommand,
+	pollCommand,
+	renderCommand,
+	sessionEndCommand,
+	sessionOpenCommand,
+	stateCommand,
+} from "../palot-runtime/commands"
+import { describeComponentCatalogEntry, getComponentCatalogItems } from "../palot-runtime/component-catalog"
+import { encode as encodeToon } from "../palot-runtime/toon"
 
 const BRIDGE_ENV_URL = "PALOT_BRIDGE_URL"
 const BRIDGE_ENV_TOKEN = "PALOT_BRIDGE_TOKEN"
+
+// Loom Wave 0: the side-panel tab vocabulary is owned by
+// `apps/desktop/src/renderer/firefly-surface-registry.tsx`. The Node-side
+// runtime cannot import that file (it pulls React), so it reads the same
+// 18 ids from a JSON sidecar. Drift between the registry and this list is
+// caught by `apps/desktop/src/renderer/__tests__/surface-mirror-lists.test.ts`.
+const __filename = fileURLToPath(import.meta.url)
+const __dirname = dirname(__filename)
+const SIDE_PANEL_TABS_SIDECAR = join(
+	__dirname,
+	"../../renderer/firefly-surface-registry-ids.json",
+)
+const VALID_SIDE_PANEL_TABS = JSON.parse(readFileSync(SIDE_PANEL_TABS_SIDECAR, "utf8"))
 
 const createQueuedResponse = ({ toolName, requestId, resultSummary = null }) => ({
 	status: "queued",
@@ -41,6 +82,14 @@ const PRODUCT_CONTROL_TOOLS = [
 	"browser_click",
 	"browser_type",
 	"browser_scroll",
+	"palot_components_list",
+	"palot_components_describe",
+	"palot_session_open",
+	"palot_session_end",
+	"palot_render",
+	"palot_patch",
+	"palot_poll",
+	"palot_state",
 	"open_side_panel",
 	"ui_state",
 ]
@@ -89,6 +138,7 @@ export const buildProductContextBlock = (resolved) => {
 		`side_panel_open: ${sidePanel?.open ? "yes" : "no"}`,
 		`side_panel_tab: ${sidePanel?.activeTab ?? "none"}`,
 		`side_panel_tabs: ${(sidePanel?.availableTabs ?? []).join(",") || "none"}`,
+		`loom_component_tools: ${resolved?.loomComponentToolsEnabled ? "enabled" : "disabled"}`,
 		"connected_apps:",
 		...connectedApps.map((line) => `- ${line}`),
 		`connected_app_discovery_tools: ${CONNECTION_DISCOVERY_TOOLS.join(",")}`,
@@ -117,30 +167,10 @@ const createResolver = ({ resolve, bridgeRequest, listConnections }) => {
 			opaqueActionTarget: resolved?.opaqueActionTarget ?? null,
 			uiState: resolved?.uiState,
 			connections: Array.isArray(connections) ? connections : [],
+			loomComponentToolsEnabled: env.LOOM_COMPONENT_TOOLS_ENABLED === "1",
 		}
 	}
 }
-
-const VALID_SIDE_PANEL_TABS = [
-	"review",
-	"browser",
-	"notes",
-	"pulse",
-	"memory",
-	"files",
-	"terminal",
-	"editor",
-	"plugins",
-	"bridges",
-	"crm",
-	"studio",
-	"voice",
-	"oracle",
-	"claude",
-	"ch5pm",
-	"artifacts",
-	"pdf-review",
-]
 
 const createUiStateError = (toolName, message) =>
 	createTypedError({
@@ -367,6 +397,138 @@ export const buildCatalogToolEntries = async ({ bridgeRequest }) => {
 	return tools
 }
 
+export const buildComponentsListHandler = () => {
+	return async (args = {}) => {
+		const parsedArgs = palotToolArgsSchemas.palot_components_list.parse(args)
+		const components = getComponentCatalogItems()
+			.filter((entry) => !parsedArgs.category || entry.category === parsedArgs.category)
+			.map((entry) => ({ name: entry.name, one_line: entry.one_line, category: entry.category }))
+		const result = palotComponentsListResultSchema.parse({ count: components.length, components })
+		return encodeToon(result)
+	}
+}
+
+export const buildComponentsDescribeHandler = () => {
+	return async (args = {}) => {
+		const parsedArgs = palotToolArgsSchemas.palot_components_describe.parse(args)
+		const entry = describeComponentCatalogEntry(parsedArgs.name)
+		if (!entry) {
+			return encodeToon(
+				palotComponentsDescribeResultSchema.parse({
+					errorCode: "unknown_component",
+					help: ["Run `palot components list` to see available components."],
+				}),
+			)
+		}
+		const props_schema = parsedArgs.full
+			? z.toJSONSchema(entry.propsSchema)
+			: { type: "object", properties: z.toJSONSchema(entry.propsSchema).properties ?? {}, path: entry.name }
+		return encodeToon(
+			palotComponentsDescribeResultSchema.parse({
+				name: entry.name,
+				one_line: entry.one_line,
+				category: entry.category,
+				props_schema,
+				example: entry.example,
+			}),
+		)
+	}
+}
+
+function formatPollHelp() {
+	return [
+		"Use `rev` to request changes newer than known revision. Use append patches for chunked text or markdown updates.",
+		"Returns count: 0 when no events, no state delta, and no tree slice.",
+		"Long-poll cap handled by Loom bridge server at 30s max.",
+	]
+}
+
+export const buildLoomSessionOpenHandler = () => {
+	return async (args = {}, context = {}) => {
+		const parsedArgs = palotToolArgsSchemas.palot_session_open.parse(args)
+		const sessionId = context.sessionID
+		if (!sessionId) {
+			return encodeToon({ errorCode: "missing_session", help: ["OpenCode session context required."] })
+		}
+		sessionOpenCommand(sessionId, encodeToon(parsedArgs))
+		const opened = await resolveOpenLoomSession(sessionId)
+		return encodeToon(loomSessionOpenResultSchema.parse(opened))
+	}
+}
+
+export const buildLoomSessionEndHandler = () => {
+	return async (_args = {}, context = {}) => {
+		if (!context.sessionID) {
+			return encodeToon({ errorCode: "missing_session", help: ["OpenCode session context required."] })
+		}
+		return encodeToon(loomSessionEndResultSchema.parse(sessionEndCommand(context.sessionID)))
+	}
+}
+
+export const buildLoomRenderHandler = () => {
+	return async (args = {}, context = {}) => {
+		const parsedArgs = palotToolArgsSchemas.palot_render.parse(args)
+		if (!context.sessionID) {
+			return encodeToon({ errorCode: "missing_session", help: ["OpenCode session context required."] })
+		}
+		return encodeToon(loomMutationResultSchema.parse(renderCommand(context.sessionID, parsedArgs.tree)))
+	}
+}
+
+export const buildLoomPatchHandler = () => {
+	return async (args = {}, context = {}) => {
+		const parsedArgs = palotToolArgsSchemas.palot_patch.parse(args)
+		if (!context.sessionID) {
+			return encodeToon({ errorCode: "missing_session", help: ["OpenCode session context required."] })
+		}
+		const decodedPatch = decodeToon(parsedArgs.patch)
+		const normalizedPatch = {
+			rev: decodedPatch.rev,
+			nodeId: decodedPatch.nodeId ?? decodedPatch.node_id,
+			field: decodedPatch.field,
+			value: decodedPatch.value ?? decodedPatch.chunk,
+			append: decodedPatch.append ?? false,
+		}
+		return encodeToon(
+			loomMutationResultSchema.parse(
+				patchCommand(context.sessionID, encodeToon({ patch: normalizedPatch })),
+			),
+		)
+	}
+}
+
+export const buildLoomPollHandler = () => {
+	return async (args = {}, context = {}) => {
+		const parsedArgs = palotToolArgsSchemas.palot_poll.parse(args)
+		if (parsedArgs.help) {
+			return encodeToon(loomPollResultSchema.parse({ rev: parsedArgs.rev ?? 0, events: [], state_delta: [], tree_slice: null, help: formatPollHelp(), count: 0 }))
+		}
+		if (!context.sessionID) {
+			return encodeToon({ errorCode: "missing_session", help: ["OpenCode session context required."] })
+		}
+		const result = pollCommand(context.sessionID, encodeToon({ rev: parsedArgs.rev ?? 0 }))
+		const count = result.events.length + result.stateDelta.length + (result.treeSlice ? 1 : 0)
+		const payload = loomPollResultSchema.parse({
+			rev: result.rev,
+			events: result.events,
+			state_delta: result.stateDelta,
+			tree_slice: result.treeSlice,
+			count,
+		})
+		return encodeToon(payload)
+	}
+}
+
+export const buildLoomStateHandler = () => {
+	return async (args = {}, context = {}) => {
+		const parsedArgs = palotToolArgsSchemas.palot_state.parse(args)
+		if (!context.sessionID) {
+			return encodeToon({ errorCode: "missing_session", help: ["OpenCode session context required."] })
+		}
+		return encodeToon(loomMutationResultSchema.parse(stateCommand(context.sessionID, parsedArgs.delta)))
+	}
+}
+
 export const createPalotPlugin = (
 	{ resolve, dispatch, getUiState, openSidePanel, listConnections } = {},
 	{ bridgeRequest = createBridgeClient() } = {},
@@ -547,6 +709,46 @@ export const createPalotPlugin = (
 					bridgeRequest,
 					schema: palotToolArgsSchemas.browser_scroll,
 				}),
+			},
+			palot_components_list: {
+				description: "List Loom component discovery entries as TOON",
+				args: palotComponentsListArgsShape,
+				execute: buildComponentsListHandler(),
+			},
+			palot_components_describe: {
+				description: "Describe one Loom component as TOON",
+				args: palotComponentsDescribeArgsShape,
+				execute: buildComponentsDescribeHandler(),
+			},
+			palot_session_open: {
+				description: "Open Loom session and return surface URL as TOON",
+				args: loomSessionOpenArgsShape,
+				execute: buildLoomSessionOpenHandler(),
+			},
+			palot_session_end: {
+				description: "End Loom session and return rev as TOON",
+				args: palotToolArgsShapes.palot_session_end,
+				execute: buildLoomSessionEndHandler(),
+			},
+			palot_render: {
+				description: "Render Loom tree from TOON payload",
+				args: loomRenderArgsShape,
+				execute: buildLoomRenderHandler(),
+			},
+			palot_patch: {
+				description: "Patch Loom tree from TOON payload",
+				args: loomPatchArgsShape,
+				execute: buildLoomPatchHandler(),
+			},
+			palot_poll: {
+				description: "Poll Loom runtime for frames as TOON",
+				args: loomPollArgsShape,
+				execute: buildLoomPollHandler(),
+			},
+			palot_state: {
+				description: "Queue Loom state delta from TOON payload",
+				args: loomStateArgsShape,
+				execute: buildLoomStateHandler(),
 			},
 			open_side_panel: {
 				description: "Open a Palot side panel tab in the desktop UI",

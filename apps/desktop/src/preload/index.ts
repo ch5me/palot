@@ -82,6 +82,32 @@ contextBridge.exposeInMainWorld("elf", {
 		getUiStateSnapshot: () => ipcRenderer.invoke("palot:ui-state-snapshot"),
 		openSidePanel: (tab: import("./api").SidePanelTabId) =>
 			ipcRenderer.invoke("palot:open-side-panel", tab),
+		openLoomSession: (sessionId: string) => ipcRenderer.invoke("palot:loom-session-open", sessionId),
+		getArtifact: (sessionId: string, artifactId: string) =>
+			ipcRenderer.invoke("palot-artifact:get", sessionId, artifactId),
+		listArtifacts: (sessionId: string) => ipcRenderer.invoke("palot-artifact:list", sessionId),
+		upsertArtifact: (sessionId: string, record: import("./api").GenUiArtifactRecord) =>
+			ipcRenderer.invoke("palot-artifact:upsert", sessionId, record),
+		patchArtifact: (
+			sessionId: string,
+			artifactId: string,
+			input: {
+				propsPatch?: Record<string, unknown>
+				pin?: import("./api").GenUiArtifactPinState
+				markDirty?: string[]
+				lastAgentPatchAt?: number
+				lastHumanEditAt?: number
+				lastRenderedAt?: number
+			},
+		) => ipcRenderer.invoke("palot-artifact:patch", sessionId, artifactId, input),
+		sendLoomEvent: (
+			sessionId: string,
+			event: { type: string; nodeId: string; payload?: Record<string, unknown> },
+		) => ipcRenderer.invoke("palot:loom-event", sessionId, event),
+		sendLoomStateDelta: (
+			sessionId: string,
+			delta: { nodeId: string; field: string; value: unknown },
+		) => ipcRenderer.invoke("palot:loom-state", sessionId, delta),
 		onOpenSidePanel: (callback: (payload: { tab: import("./api").SidePanelTabId }) => void) => {
 			const listener = (_event: unknown, payload: { tab: import("./api").SidePanelTabId }) => callback(payload)
 			ipcRenderer.on("palot:open-side-panel", listener)

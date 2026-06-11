@@ -3,9 +3,11 @@ import { cn } from "@ch5me/elf-ui/lib/utils"
 import { useSetAtom } from "jotai"
 import { memo, useEffect, useMemo, useRef } from "react"
 import { upsertGenUiArtifactAtom } from "../atoms/genui-artifacts"
+import { useLoomContext } from "../loom/loom-context"
+import { LoomRenderer } from "../loom/loom-renderer"
 import type { GenUiArtifactDescriptor } from "../lib/types"
 import { GenUiArtifactInlineActions } from "../components/genui/genui-artifact-inline-actions"
-import { resolveGenUiEntry } from "./registry"
+import { parseGenUiProps, resolveGenUiEntry } from "./registry"
 
 // ============================================================
 // Fence parsing
@@ -202,7 +204,7 @@ function GenUiBlockImpl({
 	if (!entry) {
 		return <GenUiErrorBlock error={`Unknown component: ${name}`} raw={JSON.stringify(props)} />
 	}
-	const parsed = entry.parseProps(props)
+	const parsed = parseGenUiProps(entry, props)
 	if (!parsed.ok) {
 		return <GenUiErrorBlock error={`${entry.name}: ${parsed.error}`} raw={JSON.stringify(props)} />
 	}
@@ -235,7 +237,8 @@ function GenUiArtifactCapture({ sessionId, messageId, partId, descriptor, rawFen
 	const artifactIdRef = useRef<string | null>(null)
 
 	useEffect(() => {
-		const artifactId = upsertArtifact({
+		let disposed = false
+		void upsertArtifact({
 			sessionId,
 			descriptor,
 			source: {
@@ -246,8 +249,13 @@ function GenUiArtifactCapture({ sessionId, messageId, partId, descriptor, rawFen
 				rawFence,
 			},
 			artifactId: artifactIdRef.current ?? undefined,
+		}).then((artifactId) => {
+			if (disposed) return
+			artifactIdRef.current = artifactId
 		})
-		artifactIdRef.current = artifactId
+		return () => {
+			disposed = true
+		}
 	}, [descriptor, messageId, partId, rawFence, sessionId, upsertArtifact])
 
 	if (!artifactIdRef.current) {
@@ -338,7 +346,11 @@ interface TextWithGenUiProps {
  * parse errors.
  */
 export function TextWithGenUi({ text, isStreaming, className, sessionId, messageId, partId }: TextWithGenUiProps) {
+	const loom = useLoomContext()
 	const segments = useMemo(() => splitGenUiFences(text, { dropErrors: true }), [text])
+	if (loom?.tree) {
+		return <LoomRenderer tree={loom.tree} />
+	}
 	if (segments.length === 1 && segments[0].kind === "text") {
 		return (
 			<MessageResponse className={className} animated={isStreaming}>

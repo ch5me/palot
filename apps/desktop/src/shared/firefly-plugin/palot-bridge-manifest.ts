@@ -16,13 +16,14 @@
 
 import { z } from "zod"
 
-import type { PluginManifest } from "./manifest"
+import type { ComponentContribution, PluginManifest } from "./manifest"
 
-const palotSidePanelTabSchema = z.enum([
+const FIREFLY_SURFACE_IDS = [
 	"review",
 	"browser",
 	"notes",
 	"pulse",
+	"artifacts",
 	"memory",
 	"files",
 	"terminal",
@@ -35,9 +36,10 @@ const palotSidePanelTabSchema = z.enum([
 	"oracle",
 	"claude",
 	"ch5pm",
-	"artifacts",
 	"pdf-review",
-])
+] as const
+
+export const palotSidePanelTabSchema = z.enum(FIREFLY_SURFACE_IDS)
 
 const browserActionArgsShape = {
 	selector: z.string().optional(),
@@ -56,6 +58,109 @@ const browserActionArgsShape = {
 	url: z.string().url().optional(),
 	action: z.enum(["list", "open", "close", "activate"]).optional(),
 } satisfies z.ZodRawShape
+
+const dagSparklinePropsSchema = z.object({
+	nodes: z.array(
+		z
+			.object({
+				id: z.string().min(1),
+				label: z.string().optional(),
+				tone: z.string().optional(),
+			})
+			.passthrough(),
+	),
+	edges: z.array(
+		z
+			.object({
+				source: z.string().min(1),
+				target: z.string().min(1),
+				tone: z.string().optional(),
+				animated: z.boolean().optional(),
+			})
+			.passthrough(),
+	),
+	dir: z.enum(["LR", "TB"]).optional(),
+	animate: z.enum(["none", "reveal", "flow"]).optional(),
+	height: z.number().finite().optional(),
+	showLabels: z.boolean().optional(),
+	className: z.string().optional(),
+})
+
+const decisionCardPropsSchema = z.object({
+	title: z.string().min(1),
+	options: z.array(
+		z.object({
+			id: z.string().min(1),
+			label: z.string().min(1),
+		}),
+	),
+	selected: z.string().nullable(),
+	notes: z.string().optional(),
+})
+
+const palotBridgeComponents: ComponentContribution[] = [
+	{
+		id: "dag-sparkline",
+		apiVersion: 1,
+		category: "diagram",
+		props: dagSparklinePropsSchema,
+		events: {},
+		state: {},
+		supports_append: true,
+		example: {
+			component: "dag-sparkline",
+			props: {
+				nodes: [
+					{ id: "plan", label: "Plan" },
+					{ id: "build", label: "Build" },
+					{ id: "ship", label: "Ship" },
+				],
+				edges: [
+					{ source: "plan", target: "build" },
+					{ source: "build", target: "ship" },
+				],
+			},
+		},
+		capabilityGates: [],
+		hostVocabulary: {
+			slots: ["chart"],
+			zones: ["loom-tree", "genui-fence"],
+		},
+		conflictPolicy: "ask",
+	},
+	{
+		id: "decision_card",
+		apiVersion: 1,
+		category: "decision",
+		props: decisionCardPropsSchema,
+		events: {
+			submit: z.object({ optionId: z.string().min(1) }),
+		},
+		state: {
+			notes: z.string(),
+			selected: z.string().nullable(),
+		},
+		supports_append: false,
+		example: {
+			component: "decision_card",
+			props: {
+				title: "Pick launch path",
+				options: [
+					{ id: "opt_a", label: "Private beta" },
+					{ id: "opt_b", label: "Public launch" },
+				],
+				selected: null,
+				notes: "",
+			},
+		},
+		capabilityGates: [],
+		hostVocabulary: {
+			slots: ["notes", "actions"],
+			zones: ["loom-tree", "genui-fence", "artifact-widget"],
+		},
+		conflictPolicy: "ask",
+	},
+]
 
 export const palotBridgeManifest: PluginManifest = {
 	apiVersion: "firefly.plugin/v2",
@@ -230,6 +335,7 @@ export const palotBridgeManifest: PluginManifest = {
 				timeoutMs: 5_000,
 			},
 		],
+		components: palotBridgeComponents,
 	},
 	capabilities: [
 		"host:bridge.session-read",
@@ -251,6 +357,20 @@ export const palotBridgeManifest: PluginManifest = {
 	tags: ["bridge", "browser", "side-panel", "first-party"],
 }
 
+export const PALOT_BRIDGE_DECISION_CARD_COMPONENT = {
+	component: "decision_card",
+	props: {
+		title: "string",
+		options: [{ id: "string", label: "string" }],
+		selected: "string | null",
+		notes: "string",
+	},
+	events: { submit: { optionId: "string" } },
+	state: { notes: "string" },
+	conflictPolicy: "ask",
+} as const
+
+export const PALOT_BRIDGE_COMPONENT_IDS = palotBridgeComponents.map((component) => component.id)
 export const PALOT_BRIDGE_PLUGIN_ID = palotBridgeManifest.id
 export const PALOT_BRIDGE_TOOL_IDS = palotBridgeManifest.contributes.tools.map((t) => t.id)
 export const PALOT_BRIDGE_SIDE_PANEL_TABS = palotSidePanelTabSchema.options

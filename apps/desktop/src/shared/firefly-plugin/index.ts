@@ -22,17 +22,20 @@ export * from "./palot-bridge-manifest"
 export * from "./memory-surface-manifest"
 export * from "./api-versioning"
 export * from "./bridge-projection"
+export * from "./component-zod"
 export {
 	projectSidePanelsFromCatalog,
 	projectSessionWidgetsFromCatalog,
 	projectCommandsFromCatalog,
 	projectThemesFromCatalog,
+	projectComponentsFromCatalog,
 	projectRendererFamiliesFromCatalog,
 	defaultCapabilityState,
 	getProjectedCommandId,
 	getProjectedWidgetId,
 	getProjectedPanelId,
 	getProjectedThemeId,
+	getProjectedComponentId,
 	RENDERER_PROJECTION_FAMILIES,
 	type RendererProjectionFamily,
 	type RendererContributionState,
@@ -43,6 +46,7 @@ export {
 	type RendererProjectionResult,
 	type CapabilityStateShape,
 	type ProjectionCollision,
+	type ProjectedComponent,
 } from "./renderer-projection"
 export * from "./theme-pipeline"
 export * from "./storage-scopes"

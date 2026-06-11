@@ -59,6 +59,40 @@ export interface BrowserLane {
 	health: BrowserLaneHealth
 }
 
+export interface GenUiArtifactSource {
+	sessionId: string
+	messageId: string
+	partId?: string
+	component: string
+	rawFence: string
+}
+
+export type GenUiArtifactPlacement = "inline" | "above-chat" | "chat-inline-right" | "side-panel"
+
+export interface GenUiArtifactPinState {
+	pinned: boolean
+	placement: GenUiArtifactPlacement | null
+	pinnedAt: number | null
+}
+
+export interface GenUiArtifactRecord {
+	id: string
+	scope: "session"
+	title: string
+	component: string
+	props: Record<string, unknown>
+	source: GenUiArtifactSource
+	createdAt: number
+	updatedAt: number
+	lastRenderedAt: number
+	pin: GenUiArtifactPinState
+	version: number
+	dirty: string[]
+	lastAgentPatchAt: number
+	lastHumanEditAt: number
+	schemaVersion: 1
+}
+
 export interface BrowserLaneRecord {
 	id: string
 	label: string
@@ -240,6 +274,12 @@ export interface PalotSidePanelSnapshot {
 
 export interface PalotUiStateSnapshot {
 	sidePanel: PalotSidePanelSnapshot
+}
+
+export interface LoomOpenSessionResult {
+	sessionId: string
+	surfaceUrl: string
+	rev: number
 }
 
 export type BrowserActionSource =
@@ -1120,6 +1160,30 @@ export interface ElfAPI {
 		releaseBinding: (sessionId: string) => Promise<SessionBinding | null>
 		getUiStateSnapshot: () => Promise<PalotUiStateSnapshot>
 		openSidePanel: (tab: SidePanelTabId) => Promise<PalotUiStateSnapshot>
+		openLoomSession: (sessionId: string) => Promise<LoomOpenSessionResult>
+		getArtifact: (sessionId: string, artifactId: string) => Promise<GenUiArtifactRecord | null>
+		listArtifacts: (sessionId: string) => Promise<{ order: string[]; records: Record<string, GenUiArtifactRecord> }>
+		upsertArtifact: (sessionId: string, record: GenUiArtifactRecord) => Promise<GenUiArtifactRecord | null>
+		patchArtifact: (
+			sessionId: string,
+			artifactId: string,
+			input: {
+				propsPatch?: Record<string, unknown>
+				pin?: GenUiArtifactPinState
+				markDirty?: string[]
+				lastAgentPatchAt?: number
+				lastHumanEditAt?: number
+				lastRenderedAt?: number
+			},
+		) => Promise<GenUiArtifactRecord | null>
+		sendLoomEvent: (
+			sessionId: string,
+			event: { type: string; nodeId: string; payload?: Record<string, unknown> },
+		) => Promise<void>
+		sendLoomStateDelta: (
+			sessionId: string,
+			delta: { nodeId: string; field: string; value: unknown },
+		) => Promise<void>
 		onOpenSidePanel: (callback: (payload: { tab: SidePanelTabId }) => void) => () => void
 		onBrowserActions: (callback: (event: BrowserActionEvent) => void) => () => void
 	}

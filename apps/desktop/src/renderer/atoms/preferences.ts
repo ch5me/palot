@@ -10,6 +10,7 @@ import {
 	normalizeFireflyProfileLabel,
 } from "../lib/profile"
 import type { ColorScheme } from "../lib/themes"
+import type { SidePanelTabId } from "./ui"
 
 // ============================================================
 // Types
@@ -25,25 +26,7 @@ export interface PersistedModelRef {
 }
 
 export interface FireflySurfacePreferences {
-	lastSidePanelTab:
-		| "review"
-		| "browser"
-		| "notes"
-		| "pulse"
-		| "memory"
-		| "files"
-		| "terminal"
-		| "editor"
-		| "plugins"
-		| "bridges"
-		| "crm"
-		| "studio"
-		| "voice"
-		| "oracle"
-		| "claude"
-		| "ch5pm"
-		| "artifacts"
-		| "pdf-review"
+	lastSidePanelTab: SidePanelTabId
 }
 
 export interface BrowserPanelState {

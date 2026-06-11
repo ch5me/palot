@@ -5,11 +5,13 @@ import {
 	parsePluginManifest,
 } from "./index"
 import {
+	PALOT_BRIDGE_DECISION_CARD_COMPONENT,
 	PALOT_BRIDGE_PLUGIN_ID,
 	PALOT_BRIDGE_SIDE_PANEL_TABS,
 	PALOT_BRIDGE_TOOL_IDS,
 	palotBridgeManifest,
 } from "./palot-bridge-manifest"
+import { summarizeComponentBindings } from "./component-zod"
 
 describe("palotBridgeManifest", () => {
 	test("parses as a valid V2 manifest", () => {
@@ -79,6 +81,14 @@ describe("palotBridgeManifest", () => {
 		expect(PALOT_BRIDGE_SIDE_PANEL_TABS).toContain("review")
 		expect(PALOT_BRIDGE_SIDE_PANEL_TABS).toContain("pdf-review")
 		expect(PALOT_BRIDGE_SIDE_PANEL_TABS).toHaveLength(18)
+	})
+
+	test("decision_card component summary exposes events, state, and conflict policy", () => {
+		const summary = summarizeComponentBindings("decision_card")
+		expect(summary).toBeDefined()
+		expect(summary?.events).toEqual(PALOT_BRIDGE_DECISION_CARD_COMPONENT.events)
+		expect(summary?.state).toEqual(PALOT_BRIDGE_DECISION_CARD_COMPONENT.state)
+		expect(summary?.conflictPolicy).toBe("ask")
 	})
 
 	test("no commands or themes declared (bridge is surface + tools only)", () => {

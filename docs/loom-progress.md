@@ -26,10 +26,10 @@
 | **0** | Collapse the 7 mirror lists | not started | n/a (refactor) | plan §3 Phase 0 | `wave-00-mirror-lists.md` | prerequisite for everything |
 | **1** | Typed Zod GenUI registry + `list` / `describe` | not started | `loom.componentTools.enabled` | plan §3 Phase 1 | `wave-01-typed-registry.md` | first Loom wave; smallest safe step |
 | **2** | The Loom wire (`session` / `render` / `patch` / `poll`) | blocked | `loom.enabled` | plan §3 Phase 2 | `wave-02-loom-wire.md` | blocked on D1, D3, D4 |
-| **3** | Dual `signal` / `state` bindings + `decision_card` | blocked | `loom.dualBindings` | plan §3 Phase 3 | `wave-03-dual-bindings.md` | blocked on wave 2 |
-| **4** | Per-node `rev` + dirty-field protection | blocked | `loom.conflictProtection` | plan §3 Phase 4 | `wave-04-dirty-field.md` | blocked on wave 3 |
-| **5** | Durable artifact identity + `append` frame | blocked | `loom.persistence.migrate`, `loom.appendFrame` | plan §3 Phase 5 | `wave-05-durable-identity.md` | blocked on wave 4 |
-| **6** | `contributes.components` in the V2 manifest | blocked | `loom.v2Components` | plan §3 Phase 6 | `wave-06-v2-components.md` | blocked on wave 5; closes the cross-project loop |
+| **3** | Dual `signal` / `state` bindings + `decision_card` | complete (2026-06-08) | `loom.dualBindings` | plan §3 Phase 3 | `wave-03-dual-bindings.md` | landed on `atlas/loom`; dirty-field protection included |
+| **4** | Per-node `rev` + dirty-field protection | complete (2026-06-08) | `loom.conflictProtection` | plan §3 Phase 4 | `wave-04-dirty-field.md` | landed on `atlas/loom`; per-node `rev` fence + `conflict.test.ts` coverage |
+| **5** | Durable artifact identity + `append` frame | complete (2026-06-08) | `loom.persistence.migrate`, `loom.appendFrame` | plan §3 Phase 5 | `wave-05-durable-identity.md` | landed on `atlas/loom`; sqlite identity + append frames + snapshot replay |
+| **6** | `contributes.components` in the V2 manifest | complete (2026-06-08) | `loom.v2Components`, `loom.v2.acmeComponents` | plan §3 Phase 6 | `wave-06-v2-components.md` | landed on `atlas/loom`; cross-project contract doc + exemplar ready to dispatch |
 | **7** | Tool-renderer consolidation (deferred) | not started | n/a (refactor) | plan §3 Phase 7 | `wave-07-tool-renderers.md` | post-Loom refactor; not part of Loom |
 
 ## Open decisions <!-- oc:id=sec_ad -->
@@ -57,8 +57,8 @@ cross-project teams consume.
 | Project | Status | Notes |
 |---|---|---|
 | **palot** | Loom waves 0–6 in flight | this doc |
-| Firefly / ELF plugins | pending | consume the V2 `contributes.components` family (wave 6) |
-| OpenCode fork | pending | wire Loom core as a built-in SessionStart hook (post-palot-wave-6) |
+| Firefly / ELF plugins | ready to dispatch | consume the V2 `contributes.components` family (wave 6 contract doc landed) |
+| OpenCode fork | ready to dispatch | wire Loom core as a built-in SessionStart hook (post-palot-wave-6 contract ready) |
 | CH5 agent CLIs/tools | ongoing | new tools run the AXI checklist by default |
 
 ## Changelog <!-- oc:id=sec_af -->

@@ -254,3 +254,7 @@ cd packages/ui && npm publish   # requires NPM_TOKEN from Hush
 - Run all: `cd packages/configconv && bun test`
 - Run one file: `cd packages/configconv && bun test test/converter/mcp.test.ts`
 - Run by name: `cd packages/configconv && bun test --grep "pattern"`
+
+## @ch5me packages
+
+`@ch5me/*` registry auth: `NPM_TOKEN` in repo Hush — run installs/publishes via `hush run --`. Doctrine: global skill `ch5me-npm-packages`.

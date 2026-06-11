@@ -21,12 +21,7 @@ Current registry substrate:
 - `apps/desktop/src/renderer/components/side-panel/session-side-panel.tsx`
 - `apps/desktop/src/renderer/components/agent-detail.tsx`
 
-When adding a side-panel Firefly surface:
-1. Widen `SidePanelTabId` in `apps/desktop/src/renderer/atoms/ui.ts` <!-- oc:id=item_aa -->
-1. Add or extend a flag in `apps/desktop/src/renderer/atoms/feature-flags.ts` <!-- oc:id=item_ab -->
-1. Create the panel component under `apps/desktop/src/renderer/components/side-panel/` <!-- oc:id=item_ac -->
-1. Register the surface in `apps/desktop/src/renderer/components/agent-detail.tsx` <!-- oc:id=item_ad -->
-1. Add discoverability/toggle entry in `apps/desktop/src/renderer/components/command-palette.tsx` <!-- oc:id=item_ae -->
+When adding a side-panel Firefly surface, add one row to `FIREFLY_SURFACE_REGISTRY` in `apps/desktop/src/renderer/firefly-surface-registry.tsx`. The surface id union, feature flags, persistence keys, bridge schemas, side-panel tabs, and command-palette entries are all derived from that registry. Create the panel component under `apps/desktop/src/renderer/components/side-panel/` and reference it from the registry row's `spawn`. <!-- oc:id=item_aa -->
 
 ## Flag policy <!-- oc:id=sec_ae -->
 - Use `atomWithStorage<boolean>("elf:<feature>Enabled", <default>)`

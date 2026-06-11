@@ -38,6 +38,7 @@ import { memorySurfaceManifest, MEMORY_SURFACE_PLUGIN_ID } from "../../shared/fi
 import {
 	defaultCapabilityState,
 	projectCommandsFromCatalog,
+	projectComponentsFromCatalog,
 	projectSidePanelsFromCatalog,
 	projectSessionWidgetsFromCatalog,
 	projectThemesFromCatalog,
@@ -45,11 +46,16 @@ import {
 } from "../../shared/firefly-plugin/index"
 import {
 	type ProjectedCommand,
+	type ProjectedComponent,
 	type ProjectedSessionWidget,
 	type ProjectedSidePanel,
 	type ProjectedTheme,
 } from "../../shared/firefly-plugin/renderer-projection"
 import { type PluginManifest } from "../../shared/firefly-plugin/manifest"
+import {
+	acmeComponentsExemplarManifest,
+	ACME_COMPONENTS_PLUGIN_ID,
+} from "../../shared/firefly-plugin/exemplars/acme-components-exemplar"
 import { palotBridgeManifest, PALOT_BRIDGE_PLUGIN_ID } from "../../shared/firefly-plugin/palot-bridge-manifest"
 
 import { derivePluginDescriptor, parsePluginManifest } from "../../shared/firefly-plugin/index"
@@ -72,6 +78,7 @@ const BUILT_IN_MANIFESTS: readonly PluginManifest[] = [
 	memorySurfaceManifest,
 	acmeNotebookManifest,
 	notesPluginManifest,
+	acmeComponentsExemplarManifest,
 ]
 
 /**
@@ -132,7 +139,7 @@ const appVersionSchema = z
  * The single in-process catalog. Hosts:
  *   - the parsed `PluginDescriptor[]` (one per built-in manifest)
  *   - the per-plugin capability state the renderer reads
- *   - the latest projections (panels/widgets/commands/themes)
+ *   - the latest projections (panels/widgets/commands/themes/components)
  *
  * Pure functions, no fs. Persistence is handled by the runtime
  * supervisor and the storage scopes layer (see
@@ -148,6 +155,7 @@ export interface PluginCatalog {
 		readonly widgets: readonly ProjectedSessionWidget[]
 		readonly commands: readonly ProjectedCommand[]
 		readonly themes: readonly ProjectedTheme[]
+		readonly components: readonly ProjectedComponent[]
 	}
 }
 
@@ -289,10 +297,6 @@ export function buildPluginCatalog(input: {
 		)
 	}
 
-	const projectionInput = {
-		descriptors,
-		stateByPluginId: capabilityStates,
-	}
 	const panels = projectSidePanelsFromCatalog(
 		descriptors,
 		capabilityStates,
@@ -309,8 +313,11 @@ export function buildPluginCatalog(input: {
 		descriptors,
 		capabilityStates,
 	).items
+	const components = projectComponentsFromCatalog(
+		descriptors,
+		capabilityStates,
+	).items
 
-	void projectionInput
 	log.info("Built V2 plugin catalog", {
 		appVersion,
 		pluginCount: descriptors.length,
@@ -322,7 +329,7 @@ export function buildPluginCatalog(input: {
 		descriptors,
 		entries,
 		capabilityStates,
-		projections: { panels, widgets, commands, themes },
+		projections: { panels, widgets, commands, themes, components },
 	}
 }
 
@@ -338,6 +345,7 @@ export interface PluginProjectionSummary {
 	readonly commandCount: number
 	readonly themeCount: number
 	readonly toolCount: number
+	readonly componentCount: number
 }
 
 export function summarizeProjection(catalog: PluginCatalog): readonly PluginProjectionSummary[] {
@@ -356,6 +364,9 @@ export function summarizeProjection(catalog: PluginCatalog): readonly PluginProj
 				(t) => t.pluginId === descriptor.normalizedId,
 			).length,
 			toolCount: descriptor.tools.length,
+			componentCount: catalog.projections.components.filter(
+				(component) => component.pluginId === descriptor.normalizedId,
+			).length,
 		}
 		return { pluginId: descriptor.normalizedId, ...projected }
 	})
@@ -415,4 +426,5 @@ export const KNOWN_PLUGIN_IDS = {
 	memorySurface: MEMORY_SURFACE_PLUGIN_ID,
 	acmeNotebook: ACME_NOTEBOOK_PLUGIN_ID,
 	notes: NOTES_PLUGIN_ID,
+	acmeComponents: ACME_COMPONENTS_PLUGIN_ID,
 } as const

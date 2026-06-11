@@ -23,6 +23,52 @@ export const toggleAutomationsAtom = atom(null, (get, set) => {
 	set(automationsEnabledAtom, !get(automationsEnabledAtom))
 })
 
+
+// ============================================================
+// Loom (GenUI) feature flags
+// ============================================================
+
+export const loomEnabledAtom = atomWithStorage<boolean>("elf:loomEnabled", false)
+export const loomDualBindingsAtom = atomWithStorage<boolean>("elf:loomDualBindings", false)
+export const loomConflictProtectionAtom = atomWithStorage<boolean>("elf:loomConflictProtection", false)
+export const loomDagSparklineDemoAtom = atomWithStorage<boolean>("elf:loomDagSparklineDemo", false)
+export const loomComponentToolsEnabledAtom = atomWithStorage<boolean>(
+	"elf:loomComponentToolsEnabled",
+	false,
+)
+export const loomPersistenceMigrateAtom = atomWithStorage<boolean>("elf:loom.persistence.migrate", false)
+export const loomAppendFrameAtom = atomWithStorage<boolean>("elf:loom.appendFrame", false)
+export const loomV2ComponentsAtom = atomWithStorage<boolean>("elf:loom.v2Components", false)
+export const loomAcmeComponentsAtom = atomWithStorage<boolean>("elf:loom.v2.acmeComponents", false)
+
+export const toggleLoomEnabledAtom = atom(null, (get, set) => {
+	set(loomEnabledAtom, !get(loomEnabledAtom))
+})
+export const toggleLoomDualBindingsAtom = atom(null, (get, set) => {
+	set(loomDualBindingsAtom, !get(loomDualBindingsAtom))
+})
+export const toggleLoomConflictProtectionAtom = atom(null, (get, set) => {
+	set(loomConflictProtectionAtom, !get(loomConflictProtectionAtom))
+})
+export const toggleLoomDagSparklineDemoAtom = atom(null, (get, set) => {
+	set(loomDagSparklineDemoAtom, !get(loomDagSparklineDemoAtom))
+})
+export const toggleLoomComponentToolsAtom = atom(null, (get, set) => {
+	set(loomComponentToolsEnabledAtom, !get(loomComponentToolsEnabledAtom))
+})
+export const toggleLoomPersistenceMigrateAtom = atom(null, (get, set) => {
+	set(loomPersistenceMigrateAtom, !get(loomPersistenceMigrateAtom))
+})
+export const toggleLoomAppendFrameAtom = atom(null, (get, set) => {
+	set(loomAppendFrameAtom, !get(loomAppendFrameAtom))
+})
+export const toggleLoomV2ComponentsAtom = atom(null, (get, set) => {
+	set(loomV2ComponentsAtom, !get(loomV2ComponentsAtom))
+})
+export const toggleLoomAcmeComponentsAtom = atom(null, (get, set) => {
+	set(loomAcmeComponentsAtom, !get(loomAcmeComponentsAtom))
+})
+
 // NOTE: `notes` has no feature flag any more — the Notes surface is a
 // catalog-served plugin (firefly.built-in.surface.notes); its
 // enable/disable state lives in the host plugin lifecycle store. The

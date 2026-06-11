@@ -17,10 +17,10 @@ import {
 } from "./family-contracts"
 
 describe("family contracts", () => {
-	test("represents all four contribution families", () => {
-		expect(CONTRIBUTION_FAMILIES).toEqual(["panels", "widgets", "commands", "themes"])
+	test("represents all five contribution families", () => {
+		expect(CONTRIBUTION_FAMILIES).toEqual(["panels", "widgets", "commands", "themes", "components"])
 		expect(Object.keys(CONTRIBUTION_FAMILY_CONTRACTS)).toEqual([...CONTRIBUTION_FAMILIES])
-		expect(ALL_CONTRIBUTION_FAMILY_CONTRACTS).toHaveLength(4)
+		expect(ALL_CONTRIBUTION_FAMILY_CONTRACTS).toHaveLength(5)
 		for (const family of CONTRIBUTION_FAMILIES) {
 			expect(getContributionFamilyContract(family).family).toBe(family)
 		}

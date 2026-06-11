@@ -1,27 +1,7 @@
 import { 	ActivityIcon, BoxesIcon, DatabaseIcon, FileDiffIcon, FileTextIcon, FilesIcon, GlobeIcon, MicIcon, MonitorPlayIcon, PlugIcon, RectangleEllipsisIcon, Share2Icon, SquarePenIcon, TerminalSquareIcon, UsersIcon, WandSparklesIcon, type LucideIcon } from "lucide-react"
 
 import type { ReactNode } from "react"
-import {
-	browserPanelEnabledAtom,
-	artifactsSurfaceEnabledAtom,
-	bridgesSurfaceEnabledAtom,
-	claudeSurfaceEnabledAtom,
-	ch5pmSurfaceEnabledAtom,
-	crmSurfaceEnabledAtom,
-	editorSurfaceEnabledAtom,
-	filesSurfaceEnabledAtom,
-	memorySurfaceEnabledAtom,
-	oracleSurfaceEnabledAtom,
-	pluginsSurfaceEnabledAtom,
-	pdfReviewSurfaceEnabledAtom,
-	pulseSurfaceEnabledAtom,
-	reviewSurfaceEnabledAtom,
-	studioSurfaceEnabledAtom,
-	terminalSurfaceEnabledAtom,
-	voiceSurfaceEnabledAtom,
-} from "./atoms/feature-flags"
 
-import type { SidePanelTabId } from "./atoms/ui"
 import { Ch5PmDashboardPanel } from "./ch5pm-dashboard/panel"
 import { ReviewPanel } from "./components/review/review-panel"
 import { ArtifactsPanel } from "./components/side-panel/artifacts-panel"
@@ -65,13 +45,13 @@ export interface FireflySurfaceContext {
 }
 
 export interface FireflySurfaceDef {
-	id: SidePanelTabId
+	id: FireflySurfaceId
+	manifestId: string
 	title: string
 	icon: LucideIcon
 	formFactor: FireflySurfaceFormFactor
 	enabledFlag: {
 		key: string
-		atom?: typeof browserPanelEnabledAtom
 	}
 	defaultOn: boolean
 	availability: (ctx: FireflySurfaceContext) => FireflySurfaceAvailability
@@ -83,7 +63,7 @@ export interface FireflySurfaceDef {
 }
 
 export interface FireflySidePanelTab {
-	id: SidePanelTabId
+	id: FireflySurfaceId
 	label: string
 	icon: ReactNode
 	title: string
@@ -98,12 +78,12 @@ export interface FireflySidePanelTab {
 export const FIREFLY_SURFACE_REGISTRY: FireflySurfaceDef[] = [
 	{
 		id: "review",
+		manifestId: "firefly.built-in.side-panel.review",
 		title: "Changes",
 		icon: FileDiffIcon,
 		formFactor: "side-panel-tab",
 		enabledFlag: {
 			key: "review",
-			atom: reviewSurfaceEnabledAtom,
 		},
 		defaultOn: true,
 		availability: (ctx) => {
@@ -122,12 +102,12 @@ export const FIREFLY_SURFACE_REGISTRY: FireflySurfaceDef[] = [
 	},
 	{
 		id: "browser",
+		manifestId: "firefly.built-in.side-panel.browser",
 		title: "Browser",
 		icon: GlobeIcon,
 		formFactor: "side-panel-tab",
 		enabledFlag: {
 			key: "browserPanelEnabled",
-			atom: browserPanelEnabledAtom,
 		},
 		defaultOn: false,
 		availability: (ctx) =>
@@ -144,12 +124,12 @@ export const FIREFLY_SURFACE_REGISTRY: FireflySurfaceDef[] = [
 	// apps/desktop/plugins/notes) — first migrated surface. Do not re-add a row.
 	{
 		id: "pulse",
+		manifestId: "firefly.built-in.side-panel.pulse",
 		title: "Pulse",
 		icon: ActivityIcon,
 		formFactor: "side-panel-tab",
 		enabledFlag: {
 			key: "pulse",
-			atom: pulseSurfaceEnabledAtom,
 		},
 		defaultOn: false,
 		availability: (ctx) =>
@@ -164,12 +144,12 @@ export const FIREFLY_SURFACE_REGISTRY: FireflySurfaceDef[] = [
 	},
 	{
 		id: "artifacts",
+		manifestId: "firefly.built-in.side-panel.artifacts",
 		title: "Artifacts",
 		icon: BoxesIcon,
 		formFactor: "side-panel-tab",
 		enabledFlag: {
 			key: "artifacts",
-			atom: artifactsSurfaceEnabledAtom,
 		},
 		defaultOn: true,
 		availability: (ctx) =>
@@ -184,12 +164,12 @@ export const FIREFLY_SURFACE_REGISTRY: FireflySurfaceDef[] = [
 	},
 	{
 		id: "memory",
+		manifestId: "firefly.built-in.side-panel.memory",
 		title: "Memory",
 		icon: DatabaseIcon,
 		formFactor: "side-panel-tab",
 		enabledFlag: {
 			key: "memory",
-			atom: memorySurfaceEnabledAtom,
 		},
 		defaultOn: false,
 		availability: (ctx) =>
@@ -216,12 +196,12 @@ export const FIREFLY_SURFACE_REGISTRY: FireflySurfaceDef[] = [
 	},
 	{
 		id: "files",
+		manifestId: "firefly.built-in.side-panel.files",
 		title: "Files",
 		icon: FilesIcon,
 		formFactor: "side-panel-tab",
 		enabledFlag: {
 			key: "files",
-			atom: filesSurfaceEnabledAtom,
 		},
 		defaultOn: true,
 		availability: (ctx) =>
@@ -236,12 +216,12 @@ export const FIREFLY_SURFACE_REGISTRY: FireflySurfaceDef[] = [
 	},
 	{
 		id: "terminal",
+		manifestId: "firefly.built-in.side-panel.terminal",
 		title: "Terminal",
 		icon: TerminalSquareIcon,
 		formFactor: "side-panel-tab",
 		enabledFlag: {
 			key: "terminal",
-			atom: terminalSurfaceEnabledAtom,
 		},
 		defaultOn: true,
 		availability: (ctx) =>
@@ -256,12 +236,12 @@ export const FIREFLY_SURFACE_REGISTRY: FireflySurfaceDef[] = [
 	},
 	{
 		id: "editor",
+		manifestId: "firefly.built-in.side-panel.editor",
 		title: "Editor",
 		icon: SquarePenIcon,
 		formFactor: "side-panel-tab",
 		enabledFlag: {
 			key: "editor",
-			atom: editorSurfaceEnabledAtom,
 		},
 		defaultOn: true,
 		availability: (ctx) =>
@@ -276,12 +256,12 @@ export const FIREFLY_SURFACE_REGISTRY: FireflySurfaceDef[] = [
 	},
 	{
 		id: "plugins",
+		manifestId: "firefly.built-in.side-panel.plugins",
 		title: "Plugins",
 		icon: PlugIcon,
 		formFactor: "side-panel-tab",
 		enabledFlag: {
 			key: "plugins",
-			atom: pluginsSurfaceEnabledAtom,
 		},
 		defaultOn: true,
 		availability: (ctx) =>
@@ -296,12 +276,12 @@ export const FIREFLY_SURFACE_REGISTRY: FireflySurfaceDef[] = [
 	},
 	{
 		id: "bridges",
+		manifestId: "firefly.built-in.side-panel.bridges",
 		title: "Bridges",
 		icon: Share2Icon,
 		formFactor: "side-panel-tab",
 		enabledFlag: {
 			key: "bridges",
-			atom: bridgesSurfaceEnabledAtom,
 		},
 		defaultOn: true,
 		availability: (ctx) =>
@@ -316,12 +296,12 @@ export const FIREFLY_SURFACE_REGISTRY: FireflySurfaceDef[] = [
 	},
 	{
 		id: "crm",
+		manifestId: "firefly.built-in.side-panel.crm",
 		title: "Contacts / CRM",
 		icon: UsersIcon,
 		formFactor: "side-panel-tab",
 		enabledFlag: {
 			key: "crm",
-			atom: crmSurfaceEnabledAtom,
 		},
 		defaultOn: true,
 		availability: (ctx) =>
@@ -336,12 +316,12 @@ export const FIREFLY_SURFACE_REGISTRY: FireflySurfaceDef[] = [
 	},
 	{
 		id: "studio",
+		manifestId: "firefly.built-in.side-panel.studio",
 		title: "Studio / Office",
 		icon: MonitorPlayIcon,
 		formFactor: "side-panel-tab",
 		enabledFlag: {
 			key: "studio",
-			atom: studioSurfaceEnabledAtom,
 		},
 		defaultOn: true,
 		availability: (ctx) =>
@@ -356,12 +336,12 @@ export const FIREFLY_SURFACE_REGISTRY: FireflySurfaceDef[] = [
 	},
 	{
 		id: "voice",
+		manifestId: "firefly.built-in.side-panel.voice",
 		title: "Voice",
 		icon: MicIcon,
 		formFactor: "side-panel-tab",
 		enabledFlag: {
 			key: "voice",
-			atom: voiceSurfaceEnabledAtom,
 		},
 		defaultOn: true,
 		availability: (ctx) =>
@@ -376,12 +356,12 @@ export const FIREFLY_SURFACE_REGISTRY: FireflySurfaceDef[] = [
 	},
 	{
 		id: "oracle",
+		manifestId: "firefly.built-in.side-panel.oracle",
 		title: "Oracle Roster",
 		icon: WandSparklesIcon,
 		formFactor: "side-panel-tab",
 		enabledFlag: {
 			key: "oracle",
-			atom: oracleSurfaceEnabledAtom,
 		},
 		defaultOn: true,
 		availability: (ctx) =>
@@ -396,12 +376,12 @@ export const FIREFLY_SURFACE_REGISTRY: FireflySurfaceDef[] = [
 	},
 	{
 		id: "claude",
+		manifestId: "firefly.built-in.side-panel.claude",
 		title: "Claude Code",
 		icon: RectangleEllipsisIcon,
 		formFactor: "side-panel-tab",
 		enabledFlag: {
 			key: "claude",
-			atom: claudeSurfaceEnabledAtom,
 		},
 		defaultOn: true,
 		availability: (ctx) =>
@@ -416,12 +396,12 @@ export const FIREFLY_SURFACE_REGISTRY: FireflySurfaceDef[] = [
 	},
 	{
 		id: "ch5pm",
+		manifestId: "firefly.built-in.side-panel.ch5pm",
 		title: "CH5PM Dashboard",
 		icon: MonitorPlayIcon,
 		formFactor: "side-panel-tab",
 		enabledFlag: {
 			key: "ch5pm",
-			atom: ch5pmSurfaceEnabledAtom,
 		},
 		defaultOn: false,
 		availability: (ctx) =>
@@ -436,12 +416,12 @@ export const FIREFLY_SURFACE_REGISTRY: FireflySurfaceDef[] = [
 	},
 	{
 		id: "pdf-review",
+		manifestId: "firefly.built-in.side-panel.pdf-review",
 		title: "PDF Review",
 		icon: FileTextIcon,
 		formFactor: "side-panel-tab",
 		enabledFlag: {
 			key: "pdfReview",
-			atom: pdfReviewSurfaceEnabledAtom,
 		},
 		defaultOn: false,
 		availability: (ctx) =>
@@ -456,9 +436,69 @@ export const FIREFLY_SURFACE_REGISTRY: FireflySurfaceDef[] = [
 	},
 ]
 
+/**
+ * Canonical 18 side-panel surface ids. Used to derive SidePanelTabId,
+ * palotSidePanelTabSchema, and the JSON sidecar the runtime plugin reads
+ * (`firefly-surface-registry-ids.json`).
+ */
+export const FIREFLY_SURFACE_IDS = [
+	"review",
+	"browser",
+	"notes",
+	"pulse",
+	"artifacts",
+	"memory",
+	"files",
+	"terminal",
+	"editor",
+	"plugins",
+	"bridges",
+	"crm",
+	"studio",
+	"voice",
+	"oracle",
+	"claude",
+	"ch5pm",
+	"pdf-review",
+] as const
+
+export type FireflySurfaceId = (typeof FIREFLY_SURFACE_IDS)[number]
+
+/**
+ * Surfaces that are valid side-panel tabs but have NO registry row here:
+ * they are served from the plugin catalog (host plugin lifecycle owns
+ * their enable/disable). First migrated surface: notes.
+ */
+export const CATALOG_SERVED_SURFACE_IDS: readonly FireflySurfaceId[] = ["notes"]
+
+export const FIREFLY_SURFACE_DEFAULT_ON = Object.fromEntries(
+	FIREFLY_SURFACE_REGISTRY.map((surface) => [surface.id, surface.defaultOn]),
+) as Readonly<Record<FireflySurfaceId, boolean>>
+
+export const FIREFLY_SURFACE_LABELS = Object.fromEntries(
+	FIREFLY_SURFACE_REGISTRY.map((surface) => [surface.id, surface.title]),
+) as Readonly<Record<FireflySurfaceId, string>>
+
 export const FIREFLY_SURFACE_REGISTRY_BY_ID = Object.fromEntries(
 	FIREFLY_SURFACE_REGISTRY.map((surface) => [surface.id, surface]),
-) as Record<SidePanelTabId, FireflySurfaceDef>
+) as Record<FireflySurfaceId, FireflySurfaceDef>
+
+/**
+ * Runtime assertion: every entry of `FIREFLY_SURFACE_REGISTRY` has a unique id
+ * and the ids match `FIREFLY_SURFACE_IDS`. Drift here is a programming error
+ * and would break the single-source-of-truth invariant.
+ */
+if (FIREFLY_SURFACE_IDS.length !== FIREFLY_SURFACE_REGISTRY.length + CATALOG_SERVED_SURFACE_IDS.length) {
+	throw new Error(
+		`firefly-surface-registry drift: FIREFLY_SURFACE_IDS (${FIREFLY_SURFACE_IDS.length}) != registry rows (${FIREFLY_SURFACE_REGISTRY.length}) + catalog-served (${CATALOG_SERVED_SURFACE_IDS.length})`,
+	)
+}
+const _registryIds = new Set<string>(FIREFLY_SURFACE_REGISTRY.map((surface) => surface.id))
+for (const id of FIREFLY_SURFACE_IDS) {
+	if (!_registryIds.has(id) && !CATALOG_SERVED_SURFACE_IDS.includes(id)) {
+		throw new Error(`firefly-surface-registry drift: id "${id}" missing from registry`)
+	}
+}
 
 export function getFireflySurfaceTabs(ctx: FireflySurfaceContext): FireflySidePanelTab[] {
 	return FIREFLY_SURFACE_REGISTRY.filter((surface) => surface.formFactor === "side-panel-tab").map(

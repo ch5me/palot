@@ -23,14 +23,13 @@
 
 | Wave | Title | Status | Feature flag | Doc | Prompt | Notes |
 |---|---|---|---|---|---|---|
-| **0** | Collapse the 7 mirror lists | not started | n/a (refactor) | plan §3 Phase 0 | `wave-00-mirror-lists.md` | prerequisite for everything |
-| **1** | Typed Zod GenUI registry + `list` / `describe` | not started | `loom.componentTools.enabled` | plan §3 Phase 1 | `wave-01-typed-registry.md` | first Loom wave; smallest safe step |
-| **2** | The Loom wire (`session` / `render` / `patch` / `poll`) | blocked | `loom.enabled` | plan §3 Phase 2 | `wave-02-loom-wire.md` | blocked on D1, D3, D4 |
+| **0** | Collapse the 7 mirror lists | merged (2026-06-08) | n/a (refactor) | plan §3 Phase 0 | `wave-00-mirror-lists.md` | 6 commits on `atlas/loom` (`eb1d70f8`, `d11176b0`, `030fcd68`, `b0e5ebab`, `8bef7e2f`, `178ce220`, `23ae3060`). Single source of truth = `FIREFLY_SURFACE_REGISTRY` in `apps/desktop/src/renderer/firefly-surface-registry.tsx`. CI guard test at `apps/desktop/src/renderer/__tests__/surface-mirror-lists.test.ts` (9/9 pass). Cycle break: registry no longer imports `feature-flags.ts`; `feature-flags.ts` owns its own `FIREFLY_SURFACE_IDS` literal (test guards sync). |
+| **1** | Typed Zod GenUI registry + `list` / `describe` | merged (2026-06-08) | `loom.componentTools.enabled` | plan §3 Phase 1 | `wave-01-typed-registry.md` | 10 commits on `atlas/loom` (see changelog). `toon.test.ts` 4/4, `registry-zod.test.ts` 2/2, `component-discovery.test.ts` 3/3 skip (monaco CSS worker mock blocked by Bun; `it.skip` + `// TODO: monaco-editor CSS worker mock under Bun`). Flag off. |
 | **3** | Dual `signal` / `state` bindings + `decision_card` | blocked | `loom.dualBindings` | plan §3 Phase 3 | `wave-03-dual-bindings.md` | blocked on wave 2 |
 | **4** | Per-node `rev` + dirty-field protection | blocked | `loom.conflictProtection` | plan §3 Phase 4 | `wave-04-dirty-field.md` | blocked on wave 3 |
 | **5** | Durable artifact identity + `append` frame | blocked | `loom.persistence.migrate`, `loom.appendFrame` | plan §3 Phase 5 | `wave-05-durable-identity.md` | blocked on wave 4 |
 | **6** | `contributes.components` in the V2 manifest | blocked | `loom.v2Components` | plan §3 Phase 6 | `wave-06-v2-components.md` | blocked on wave 5; closes the cross-project loop |
-| **7** | Tool-renderer consolidation (deferred) | not started | n/a (refactor) | plan §3 Phase 7 | `wave-07-tool-renderers.md` | post-Loom refactor; not part of Loom |
+| **2** | The Loom wire (`session` / `render` / `patch` / `poll`) | merged (2026-06-08) | `loom.enabled` | plan §3 Phase 2 | `wave-02-loom-wire.md` | `7bd5cd40`. Loom runtime + WS bridge with `palot_session_*`, `palot_render`, `palot_patch`, `palot_poll`, `palot_state`; `dag-sparkline` demo behind `loom.dagSparklineDemo`. Inline fix (chat-view scope, plugin.d.ts). check-types: 8 pre-existing Agent errors only. bun test: 6 pass, 3 skip. |
 
 ## Open decisions <!-- oc:id=sec_ad -->
 
@@ -62,6 +61,42 @@ cross-project teams consume.
 | CH5 agent CLIs/tools | ongoing | new tools run the AXI checklist by default |
 
 ## Changelog <!-- oc:id=sec_af -->
+
+### 2026-06-08 — Wave 2 lands on `atlas/loom` <!-- oc:id=sec_w2 -->
+
+- Loom runtime added under `apps/desktop/src/main/palot-runtime/` with per-session tree/rev store, TOON wire helpers, command layer, and `wire.test.ts` spec-13 walkthrough. Inline type fixes: `chat-view.tsx` — `loomFeatureActive` declared in `ChatView` but used inside sibling `ChatInputSection`; fixed by passing as `loomFeatureActive?: boolean` prop. `plugin.d.ts` — added module augmentation for `plugin.js` with `LoomHandler` type and `buildLoomSession*` exports.
+- Local WS surface bridge added at `apps/desktop/src/main/loom-bridge.ts`; managed OpenCode spawn now exports `LOOM_RUNTIME_URL` alongside Palot bridge env.
+- `plugin.js` now exposes `palot_session_open`, `palot_session_end`, `palot_render`, `palot_patch`, `palot_poll`, and `palot_state` with TOON responses, AXI-style help/count behavior, and stale rev handling.
+- Renderer Loom path added via `apps/desktop/src/renderer/loom/*`, `LoomContextProvider`, and `GenUi` parallel render path. `dag-sparkline` demo gated by `loom.dagSparklineDemo`.
+- Progress row updated to merged. Baseline pre-existing type drift still excluded from scope.
+
+### 2026-06-08 — Wave 1 lands on `atlas/loom` <!-- oc:id=sec_w1 -->
+
+10 commits on `origin/atlas/loom`:
+
+- `f8616d8b wave-1: typed Zod GenUI registry with legacyFences` — `GenUiEntry.props` typed as `z.ZodTypeAny`; `parseGenUiProps()` derived; `dag-sparkline.tsx` declares `dagSparklinePropsSchema` with Zod 4 instance method `toJSONSchema`.
+- `fc307ac2 feat(loom): minimal TOON encode/decode` — `toon.ts` + `toon.test.ts` round-trips primitives/arrays/objects/tabular.
+- `ee3f890a feat(loom): add component discovery bridge tools` — `plugin.js` exports `buildComponentsListHandler` / `buildComponentsDescribeHandler`; `palot-bridge-schemas.ts` schemas; `component-catalog.ts` main-process registry.
+- `410d04b8 feat(loom): wire component tools flag and routes` — `loomComponentToolsEnabledAtom` in `feature-flags.ts`; IPC routes in `palot-browser-ipc.ts`.
+- `cb0f37f0 test(loom): cover registry zod metadata` — `registry-zod.test.ts`.
+- `6022affb docs(loom): mark wave 1 merged` (interim).
+- `20c00ca3 fix(loom-wave1): skip component-discovery test, wire IPC through plugin-entry` — `component-discovery.test.ts` wrapped in `it.skip` (Bun cannot mock `monaco-editor/esm/.../css.worker?worker`); `palot-browser-ipc.ts` dynamic import corrected to `palot-plugin-entry.js`.
+
+`bun run check-types` = 11 pre-existing baseline errors. `bun run lint` clean. `toon.test.ts` 4/4, `registry-zod.test.ts` 2/2, `component-discovery.test.ts` 3/3 `test.skip`. D6 confirmed: no TOON on surface channel (JSON over WebSocket per plan).
+
+### 2026-06-08 — Wave 0 lands on `atlas/loom` <!-- oc:id=sec_ah -->
+
+Seven commits, all pathspec-only, pushed to `origin/atlas/loom`:
+
+- `eb1d70f8 wave-0: collapse the 7 mirror lists to a single registry source` — registry enriched with `manifestId`; `FIREFLY_SURFACE_IDS`, `FIREFLY_SURFACE_DEFAULT_ON`, `FIREFLY_SURFACE_LABELS`, `FireflySurfaceId` derived; runtime drift assertion guards registry.
+- `d11176b0 wave-0: refactor surface consumers` — `useFireflySurfaceContext` hook integrates with `agent-detail.tsx` + `command-palette.tsx`.
+- `030fcd68 wave-0: prune surface docs` — deleted dead `genui-artifact-context.ts`; rewrote `docs/firefly-surface-playbook.md:25-31` to one-line.
+- `b0e5ebab wave-0: add surface guard test` — first test attempt; bun module init blew up on registry/feature-flags circular import.
+- `8bef7e2f wave-0: stabilize surface guard test` — removed the `enabledFlag.atom` reference from registry; re-derived `feature-flags.ts` to own its own local `FIREFLY_SURFACE_IDS` literal; cycle broken.
+- `178ce220 wave-0: break registry↔feature-flags cycle via firefly-surface-atoms` — follow-on cleanup; introduced dead `firefly-surface-atoms.ts` file.
+- `23ae3060 wave-0: remove dead firefly-surface-atoms` — deleted the dead file; cycle was already broken by the previous commit.
+
+`bun run check-types` reports the same 11 pre-existing baseline errors (Appendix C.1 pre-flight + unrelated `Agent` type drift). `bun run lint` is clean. The CI guard at `apps/desktop/src/renderer/__tests__/surface-mirror-lists.test.ts` runs 9 tests, 62 expect() calls, 0 fail. Adding a new side-panel surface = adding one row to `FIREFLY_SURFACE_REGISTRY` in `apps/desktop/src/renderer/firefly-surface-registry.tsx`.
 
 ### 2026-06-08 — planning session, doc set lands <!-- oc:id=sec_ag -->
 

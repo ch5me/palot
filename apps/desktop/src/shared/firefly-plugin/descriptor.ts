@@ -18,6 +18,7 @@ import {
 	type BridgeMetadata,
 	type CapabilityToken,
 	type CommandContribution,
+	type ComponentContribution,
 	type LifecycleHints,
 	type PanelContribution,
 	type PluginId,
@@ -72,6 +73,7 @@ export interface PluginDescriptor {
 	readonly commands: readonly CommandContribution[]
 	readonly themes: readonly ThemeContribution[]
 	readonly tools: readonly ToolContribution[]
+	readonly components: readonly ComponentContribution[]
 	readonly bridge: BridgeMetadata | null
 	readonly derived: {
 		readonly appVersion: string
@@ -157,6 +159,7 @@ export function derivePluginDescriptor(
 		commands: manifest.contributes.commands,
 		themes: manifest.contributes.themes,
 		tools: manifest.contributes.tools,
+		components: manifest.contributes.components,
 		bridge: manifest.bridge ?? null,
 		derived: {
 			appVersion: options.appVersion,
