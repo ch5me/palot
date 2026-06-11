@@ -26,13 +26,11 @@ function normalizeAuthBaseUrl(value: string): string {
 	return `https://${trimmed.replace(/\/+$/, "")}`
 }
 
+// Contract: auth entry lives on app host, not a separate auth subdomain.
+// See docs/company/service-topology-env-contract.md (ch5-company repo).
+// Staging override: FIREFLY_AUTH_HOST=https://staging.app.elf.dance
 function resolveEditorHandoffBaseUrl(): string {
-	const configured = process.env.FIREFLY_AUTH_HOST ?? process.env.VITE_FIREFLY_AUTH_HOST
-	if (!configured) {
-		throw new Error(
-			"FIREFLY_AUTH_HOST is required. Set it to the canonical Firefly auth app host (for example https://staging.app.elf.dance).",
-		)
-	}
+	const configured = process.env.FIREFLY_AUTH_HOST ?? process.env.VITE_FIREFLY_AUTH_HOST ?? "https://app.elf.dance"
 	return normalizeAuthBaseUrl(configured)
 }
 
