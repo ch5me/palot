@@ -13,6 +13,7 @@ import { useNavigate, useParams } from "@tanstack/react-router"
 import { useAtomValue, useSetAtom } from "jotai"
 import { useCallback, useEffect, useState } from "react"
 import { agentFamily, sessionNameFamily } from "../atoms/derived/agents"
+import { serverConnectedAtom } from "../atoms/connection"
 import { upsertSessionAtom } from "../atoms/sessions"
 import { appStore } from "../atoms/store"
 import { viewedSessionIdAtom } from "../atoms/ui"
@@ -46,6 +47,7 @@ export function SessionView({ sessionId }: SessionViewProps) {
 		forkSession,
 		deletePart,
 	} = useAgentActions()
+	const isServerConnected = useAtomValue(serverConnectedAtom)
 
 	// Track which session is currently viewed so background sessions can
 	// skip expensive metric recomputation.
@@ -291,7 +293,7 @@ export function SessionView({ sessionId }: SessionViewProps) {
 			onSendMessage={handleSendMessage}
 			onRename={handleRenameSession}
 			parentSessionName={parentSessionName}
-			isConnected={true}
+			isConnected={isServerConnected}
 			providers={providers}
 			config={config}
 			vcs={vcs}

@@ -960,7 +960,11 @@ export function registerIpcHandlers(): void {
 	})
 
 	ipcMain.handle("auth:poll", async () => {
-		return pollSignIn()
+		const state = await pollSignIn()
+		for (const win of BrowserWindow.getAllWindows()) {
+			win.webContents.send("auth:state-changed", state)
+		}
+		return state
 	})
 
 	ipcMain.handle("auth:cancel-sign-in", async () => {

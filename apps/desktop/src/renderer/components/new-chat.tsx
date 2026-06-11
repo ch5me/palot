@@ -16,6 +16,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@ch5me/elf-ui/component
 import { Tooltip, TooltipContent, TooltipTrigger } from "@ch5me/elf-ui/components/tooltip"
 import { useNavigate, useParams } from "@tanstack/react-router"
 import { useAtomValue } from "jotai"
+import { serverConnectedAtom } from "../atoms/connection"
 import {
 	ChevronDownIcon,
 	CodeIcon,
@@ -225,6 +226,7 @@ export function NewChat() {
 	const draft = useDraftSnapshot(NEW_CHAT_DRAFT_KEY)
 	const { setDraft, clearDraft } = useDraftActions(NEW_CHAT_DRAFT_KEY)
 	const [projectPickerOpen, setProjectPickerOpen] = useState(false)
+	const isServerConnected = useAtomValue(serverConnectedAtom)
 
 	// Toolbar state
 	const [selectedModel, setSelectedModel] = useState<ModelRef | null>(null)
@@ -763,7 +765,7 @@ export function NewChat() {
 					{providers && (
 						<StatusBar
 							vcs={vcs ?? null}
-							isConnected={true}
+							isConnected={isServerConnected}
 							branchSlot={
 								selectedDirectory ? (
 									<BranchPicker

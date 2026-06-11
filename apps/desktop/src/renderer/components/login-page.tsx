@@ -2,8 +2,8 @@ import { Button } from "@ch5me/elf-ui/components/button"
 import { Spinner } from "@ch5me/elf-ui/components/spinner"
 import { useRouter } from "@tanstack/react-router"
 import { AlertCircleIcon, ExternalLinkIcon } from "lucide-react"
-import { useState } from "react"
-import type { DeviceCodeUi } from "../../preload/api"
+import { useEffect, useState } from "react"
+import type { DeviceCodeUi, ElfAuthStateDto } from "../../preload/api"
 
 const FIREFLY_DESKTOP_CLIENT_ID = "firefly-desktop"
 
@@ -20,6 +20,32 @@ export function LoginPage() {
 	const [deviceCode, setDeviceCode] = useState<DeviceCodeUi | null>(null)
 	const [error, setError] = useState<ErrorInfo | null>(null)
 	const [polling, setPolling] = useState(false)
+	const [authState, setAuthState] = useState<ElfAuthStateDto | null>(null)
+
+	useEffect(() => {
+		let cancelled = false
+
+		window.elf.auth.getState().then((state) => {
+			if (!cancelled) {
+				setAuthState(state)
+			}
+		})
+
+		const unsubscribe = window.elf.auth.onChange((state) => {
+			setAuthState(state)
+		})
+
+		return () => {
+			cancelled = true
+			unsubscribe()
+		}
+	}, [])
+
+	useEffect(() => {
+		if (authState?.hasToken) {
+			router.navigate({ to: "/" })
+		}
+	}, [authState?.hasToken, router])
 
 	async function handleSignIn() {
 		setError(null)
@@ -38,9 +64,7 @@ export function LoginPage() {
 		setPolling(true)
 		try {
 			const state = await window.elf.auth.poll()
-			if (state?.hasToken) {
-				router.navigate({ to: "/" })
-			}
+			setAuthState(state)
 		} catch (err) {
 			const msg = err instanceof Error ? err.message : String(err)
 			if (msg === "sign_in_denied") {
