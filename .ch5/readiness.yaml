@@ -1,0 +1,117 @@
+version: 1
+project: elf
+current_stage: staging
+cohort: firefly-launch-v1
+
+hard_gates:
+  automated_testing:
+    status: red
+    last_verified: 2026-06-08T20:50:00Z
+    command: ch5 coverage elf --root /Users/hassoncs/src/ch5 --json
+    evidence_refs:
+      - .ch5/proof.yaml#requiredProofs
+      - .ch5/workflows/**/*.yaml
+      - artifacts/workflow-proof/latest/status.json
+  hq_telemetry:
+    status: yellow
+    last_verified: 2026-06-08T20:50:00Z
+    command: ch5 readiness gates elf --root /Users/hassoncs/src/ch5 --json
+    evidence_refs:
+      - .ch5/observability.yaml
+      - .ch5/environments.yaml
+  promotion_path:
+    status: red
+    last_verified: 2026-06-08T20:50:00Z
+    command: ch5 readiness promote-check elf --to production --root /Users/hassoncs/src/ch5 --json
+    evidence_refs:
+      - .ch5/environments.yaml
+      - artifacts/deploy-depot/latest/status.json
+  linked_repo_health:
+    status: red
+    last_verified: 2026-06-08T20:50:00Z
+    command: ch5 readiness matrix --cohort firefly-launch-v1 --root /Users/hassoncs/src/ch5 --json
+    evidence_refs:
+      - ../folio-db/.ch5/readiness.yaml
+      - ../firefly-cloud/.ch5/readiness.yaml
+  secrets_runtime:
+    status: red
+    last_verified: 2026-06-08T20:50:00Z
+    command: ch5 doctor elf --root /Users/hassoncs/src/ch5 --json
+    evidence_refs:
+      - .ch5/environments.yaml
+      - .ch5/integrations.yaml
+
+soft_gates:
+  - id: chat-cutover-completion
+    status: yellow
+    reason: firefly-client still needs to finish chat home ownership per firefly-launch-integration-strategy D11.
+
+dependency_health:
+  - project: firefly-cloud
+    readiness_ref: ../firefly-cloud/.ch5/readiness.yaml
+    expected_role: hosted-platform
+    status: yellow
+  - project: folio-db
+    readiness_ref: ../folio-db/.ch5/readiness.yaml
+    expected_role: first-federated-subapp
+    status: green
+  - project: open-pencil
+    readiness_ref: ../open-pencil/.ch5/readiness.yaml
+    expected_role: second-cohort-federation-validator
+    status: not-yet-authored
+
+required_proof_bundle:
+  proof_refs:
+    - .ch5/proof.yaml#requiredProofs
+  workflow_refs:
+    - .ch5/workflows/**/*.yaml
+  generated_artifacts:
+    - artifacts/workflow-proof/latest/status.json
+
+hq_integration_gates:
+  telemetry:
+    required: true
+    source: .ch5/observability.yaml
+  logging:
+    required: true
+    source: .ch5/observability.yaml
+  analytics:
+    required: true
+    source: .ch5/observability.yaml
+  eventing:
+    required: true
+    source: .ch5/observability.yaml
+  deploy_depot:
+    required: true
+    source: .ch5/environments.yaml
+
+promotion_prerequisites:
+  to_staging:
+    requires:
+      - hard_gates.automated_testing != red
+      - hard_gates.secrets_runtime != red
+  to_production:
+    requires:
+      - hard_gates.automated_testing == green
+      - hard_gates.hq_telemetry == green
+      - hard_gates.promotion_path == green
+      - hard_gates.linked_repo_health == green
+      - hard_gates.secrets_runtime == green
+
+waivers: []
+
+projection:
+  cli_family: readiness
+  default_view: status
+  matrix_columns:
+    - project
+    - current_stage
+    - automated_testing
+    - hq_telemetry
+    - promotion_path
+    - linked_repo_health
+    - secrets_runtime
+
+meta:
+  last_updated_by: sisyphus
+  last_updated_at: 2026-06-08T20:50:00Z

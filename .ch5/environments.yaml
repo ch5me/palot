@@ -1,0 +1,35 @@
+version: 1
+environments:
+  local:
+    id: elf-local
+    type: development
+    description: Local desktop dev with pnpm dev
+    deployTarget: local
+    placement: laptop
+    services:
+      desktop: { binding: local }
+  preview:
+    id: elf-preview
+    type: preview
+    description: Per-PR preview build for desktop
+    deployTarget: electron-preview
+    promotionFrom: local
+    services:
+      desktop: { binding: preview }
+  staging:
+    id: elf-staging
+    type: staging
+    description: Staging signed build distributed to internal testers
+    deployTarget: electron-staging
+    promotionFrom: preview
+    services:
+      desktop: { url: https://staging.app.elf.dance }
+  production:
+    id: elf-production
+    type: production
+    description: Production signed build promoted only from staging
+    deployTarget: electron-production
+    promotionFrom: staging
+    requiresApproval: true
+    services:
+      desktop: { url: https://app.elf.dance }
