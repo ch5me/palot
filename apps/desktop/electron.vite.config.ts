@@ -5,6 +5,22 @@ import react from "@vitejs/plugin-react"
 import { defineConfig, externalizeDepsPlugin } from "electron-vite"
 import type { Plugin } from "vite"
 
+const ROOT_NODE_MODULES = path.resolve(__dirname, "../../node_modules")
+const REACT_NODE_MODULES = path.resolve(ROOT_NODE_MODULES, "react")
+const REACT_DOM_NODE_MODULES = path.resolve(ROOT_NODE_MODULES, "react-dom")
+const REACT_SPRING_CORE_ENTRY = path.resolve(
+	ROOT_NODE_MODULES,
+	"@react-spring/core/dist/react-spring_core.modern.mjs",
+)
+const REACT_SPRING_SHARED_ENTRY = path.resolve(
+	ROOT_NODE_MODULES,
+	"@react-spring/shared/dist/react-spring_shared.modern.mjs",
+)
+const REACT_SPRING_WEB_ENTRY = path.resolve(
+	ROOT_NODE_MODULES,
+	"@react-spring/web/dist/react-spring_web.modern.mjs",
+)
+
 /**
  * Copies the drizzle migrations directory into the main process output.
  *
@@ -25,17 +41,15 @@ function copyDrizzleMigrations(): Plugin {
 }
 
 const EFFECTS_SWARM_ENTRY = path.resolve(
-	__dirname,
-	"../../node_modules/@ch5me/effects/dist/particles/SwarmParticles/index.js",
+	ROOT_NODE_MODULES,
+	"@ch5me/effects/dist/particles/SwarmParticles/index.js",
 )
 const EFFECTS_GRADIENT_BRAND_TEXT_ENTRY = path.resolve(
-	__dirname,
-	"../../node_modules/@ch5me/effects/dist/text/GradientBrandText/GradientBrandText.js",
+	ROOT_NODE_MODULES,
+	"@ch5me/effects/dist/text/GradientBrandText/GradientBrandText.js",
 )
-const MOTION_WEB_ENTRY = path.resolve(
-	__dirname,
-	"../../../ch5-packages/packages/motion/motion/src/index.web.ts",
-)
+const MOTION_WEB_ENTRY = path.resolve(ROOT_NODE_MODULES, "@ch5me/motion/dist/index.web.js")
+const WORKSPACE_ENTRY = path.resolve(ROOT_NODE_MODULES, "@ch5me/workspace/dist/index.js")
 
 export default defineConfig({
 	main: {
@@ -64,16 +78,27 @@ export default defineConfig({
 	renderer: {
 		root: path.resolve(__dirname, "src/renderer"),
 		plugins: [react(), tailwindcss()],
+		optimizeDeps: {
+			include: ["@react-spring/core", "@react-spring/shared", "@react-spring/web"],
+			esbuildOptions: {
+				preserveSymlinks: true,
+			},
+		},
 		resolve: {
 			alias: {
 				"@": path.resolve(__dirname, "src/renderer"),
 				"@ch5me/effects/particles": EFFECTS_SWARM_ENTRY,
 				"@ch5me/effects/text": EFFECTS_GRADIENT_BRAND_TEXT_ENTRY,
 				"@ch5me/motion": MOTION_WEB_ENTRY,
+				"@ch5me/workspace": WORKSPACE_ENTRY,
 				"@ch5me/elf-ui": path.resolve(__dirname, "../../packages/ui/src"),
-				react: path.resolve(__dirname, "node_modules/react"),
-				"react-dom": path.resolve(__dirname, "node_modules/react-dom"),
+				"@react-spring/core": REACT_SPRING_CORE_ENTRY,
+				"@react-spring/shared": REACT_SPRING_SHARED_ENTRY,
+				"@react-spring/web": REACT_SPRING_WEB_ENTRY,
+				react: REACT_NODE_MODULES,
+				"react-dom": REACT_DOM_NODE_MODULES,
 			},
+			preserveSymlinks: true,
 		},
 		worker: {
 			format: "es",
