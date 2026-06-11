@@ -219,7 +219,7 @@ Wave FINAL:
 
 ## TODOs
 
-- [ ] 1. Lock current PM page seams and replacement targets
+- [x] 1. Lock current PM page seams and replacement targets
 
   **What to do**:
   - Confirm route, shell, dockview, dense dashboard, attention queue, and server proxy seams currently used by the PM page.
@@ -278,7 +278,7 @@ Wave FINAL:
 
   **Commit**: NO
 
-- [ ] 2. Define renderer-side type contract for side-agent live data
+- [x] 2. Define renderer-side type contract for side-agent live data
 
   **What to do**:
   - Introduce renderer TypeScript types for daemon side-agent payloads: babysitter session reports, box digests, action log rows, attention rows, loop status, and queue-derived side-agent entries if needed.
@@ -337,7 +337,7 @@ Wave FINAL:
 
   **Commit**: NO
 
-- [ ] 3. Add Firefly server proxy routes for side-agent read endpoints
+- [x] 3. Add Firefly server proxy routes for side-agent read endpoints
 
   **What to do**:
   - Extend `apps/server/src/routes/ch5pm.ts` to proxy read-only daemon endpoints needed by the renderer: at minimum `/pm/babysitter`, `/queue`, and `/health`; add `/status.json` only if renderer needs extra derived fields not already available elsewhere.
