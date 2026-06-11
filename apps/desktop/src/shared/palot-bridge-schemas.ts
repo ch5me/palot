@@ -1,5 +1,8 @@
 import { z } from "zod"
-import { FIREFLY_SURFACE_IDS } from "../renderer/firefly-surface-registry"
+// Import from the renderer-free ids module, NOT the renderer registry:
+// this file is loaded by the headless palot-bridge OpenCode plugin, where
+// renderer imports (React/monaco) fail at module load time.
+import { FIREFLY_SURFACE_IDS } from "./firefly-surface-ids"
 
 export const sidePanelTabValues = FIREFLY_SURFACE_IDS
 

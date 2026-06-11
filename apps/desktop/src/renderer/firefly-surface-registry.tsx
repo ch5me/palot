@@ -440,29 +440,14 @@ export const FIREFLY_SURFACE_REGISTRY: FireflySurfaceDef[] = [
  * Canonical 18 side-panel surface ids. Used to derive SidePanelTabId,
  * palotSidePanelTabSchema, and the JSON sidecar the runtime plugin reads
  * (`firefly-surface-registry-ids.json`).
+ *
+ * The tuple itself lives in the renderer-free module
+ * `src/shared/firefly-surface-ids.ts` so headless runtimes (the palot-bridge
+ * OpenCode plugin via `palot-bridge-schemas.ts`) can import it without
+ * dragging in React/monaco; it is re-exported here for renderer consumers.
  */
-export const FIREFLY_SURFACE_IDS = [
-	"review",
-	"browser",
-	"notes",
-	"pulse",
-	"artifacts",
-	"memory",
-	"files",
-	"terminal",
-	"editor",
-	"plugins",
-	"bridges",
-	"crm",
-	"studio",
-	"voice",
-	"oracle",
-	"claude",
-	"ch5pm",
-	"pdf-review",
-] as const
-
-export type FireflySurfaceId = (typeof FIREFLY_SURFACE_IDS)[number]
+export { FIREFLY_SURFACE_IDS, type FireflySurfaceId } from "../shared/firefly-surface-ids"
+import { FIREFLY_SURFACE_IDS, type FireflySurfaceId } from "../shared/firefly-surface-ids"
 
 /**
  * Surfaces that are valid side-panel tabs but have NO registry row here:

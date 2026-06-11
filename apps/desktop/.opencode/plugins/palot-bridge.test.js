@@ -88,7 +88,7 @@ describe("palot bridge plugin", () => {
 		expect(output.system[0]).toContain("connected_apps:")
 		expect(output.system[0]).toContain("- Notion (connected)")
 		expect(output.system[0]).toContain("connected_app_discovery_tools: search_tools,describe_tool,call_tool,tools_status")
-		expect(output.system[0]).toContain("product_control_tools: browser_status,browser_open,browser_navigate,browser_tabs,browser_click,browser_type,browser_scroll,open_side_panel,ui_state")
+		expect(output.system[0]).toContain("product_control_tools: browser_status,browser_open,browser_navigate,browser_tabs,browser_click,browser_type,browser_scroll,palot_components_list,palot_components_describe,palot_session_open,palot_session_end,palot_render,palot_patch,palot_poll,palot_state,open_side_panel,ui_state")
 		expect(output.system[0]).not.toContain("authToken")
 	})
 
@@ -118,6 +118,14 @@ describe("palot bridge plugin", () => {
 			"call_tool",
 			"describe_tool",
 			"open_side_panel",
+			"palot_components_describe",
+			"palot_components_list",
+			"palot_patch",
+			"palot_poll",
+			"palot_render",
+			"palot_session_end",
+			"palot_session_open",
+			"palot_state",
 			"search_tools",
 			"tools_status",
 			"ui_state",
@@ -134,6 +142,24 @@ describe("palot bridge plugin", () => {
 		const parsed = JSON.parse(result)
 		expect(parsed.status).toBe("queued")
 		expect(parsed.resultSummary).toContain("https://example.com")
+	})
+
+	test("call_tool fails fast instead of faking a queued approval", async () => {
+		// Regression: the old stub returned status "queued" + approval "required"
+		// with no approval queue behind it, permanently dead-ending headless
+		// workers (e.g. magic-browser benchmark sessions) that routed a tool
+		// call through call_tool. It must fail loudly instead.
+		const plugin = createPalotPlugin({ resolve: boundResolver })
+		const hooks = await plugin()
+		const result = await hooks.tool.call_tool.execute(
+			{ query: "{\"items\":[\"x\"]}", toolName: "magic_browser_todo_init" },
+			{ sessionID: "ses_bound" },
+		)
+		const parsed = JSON.parse(result)
+		expect(parsed.status).toBe("failed")
+		expect(parsed.errorCode).toBe("not_implemented")
+		expect(parsed.approval).toBeUndefined()
+		expect(parsed.requested.toolName).toBe("magic_browser_todo_init")
 	})
 
 	test("awaits async resolver and dispatch callbacks", async () => {
@@ -299,6 +325,7 @@ describe("palot bridge plugin", () => {
 		expect(uiState.sidePanel.availableTabs).toContain("browser")
 		expect(opened.sidePanel.activeTab).toBe("review")
 		expect(bridgeCalls.map((entry) => entry.action)).toEqual([
+			"list-plugin-tools",
 			"resolve-binding",
 			"dispatch-browser-tool",
 			"get-ui-state",

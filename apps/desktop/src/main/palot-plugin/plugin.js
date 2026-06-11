@@ -167,7 +167,7 @@ const createResolver = ({ resolve, bridgeRequest, listConnections }) => {
 			opaqueActionTarget: resolved?.opaqueActionTarget ?? null,
 			uiState: resolved?.uiState,
 			connections: Array.isArray(connections) ? connections : [],
-			loomComponentToolsEnabled: env.LOOM_COMPONENT_TOOLS_ENABLED === "1",
+			loomComponentToolsEnabled: process.env.LOOM_COMPONENT_TOOLS_ENABLED === "1",
 		}
 	}
 }
@@ -610,17 +610,22 @@ export const createPalotPlugin = (
 							remoteCalled: false,
 						})
 					}
+					// Fail fast: the connected-app runtime path is not wired yet.
+					// Never report a fake "queued"/"approval: required" state — no
+					// approval queue exists, so that response permanently dead-ends
+					// any agent that routes a real tool call through this stub
+					// (e.g. headless benchmark workers calling magic_browser_* names).
 					return JSON.stringify({
-						serverId: args.serverId ?? "github",
-						toolName: args.toolName ?? "issues.search",
-						status: "queued",
-						approval: "required",
-						mutability: "write",
-						provenance: {
-							serverId: args.serverId ?? "github",
-							toolName: args.toolName ?? "issues.search",
-							argsShape: Object.keys(args ?? {}),
+						status: "failed",
+						errorCode: "not_implemented",
+						errorMessage:
+							"call_tool connected-app execution is not implemented; there is no approval queue behind this tool. Call the target tool by its exact native name instead of routing through call_tool.",
+						requested: {
+							serverId: args.serverId ?? null,
+							toolName: args.toolName ?? null,
 						},
+						schema,
+						remoteCalled: false,
 					})
 				},
 			},
