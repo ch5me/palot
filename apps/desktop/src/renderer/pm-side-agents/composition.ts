@@ -133,8 +133,8 @@ export function composePmSideAgentsModel(
 		pmState: pmStateSource.data,
 		feed: feedSource.data,
 		queue: {
-			jobs: queueSource.data?.jobs ?? [],
-			claims: queueSource.data?.claims ?? [],
+			jobs: queueSource.data?.rows.jobs ?? [],
+			claims: queueSource.data?.rows.claims ?? [],
 			status: queueSource.status,
 			freshness: queueSource.freshness,
 			reasons: queueSource.reasons,
@@ -248,18 +248,21 @@ function buildQueueSource(
 		return missingSource("queue", "Dispatch queue", "dispatch-queue-missing")
 	}
 
-	const jobs = Array.isArray(payload.jobs) ? payload.jobs : []
-	const claims = Array.isArray(payload.claims) ? payload.claims : []
-	const updatedAt = payload.updatedAt ?? payload.generatedAt ?? newestTimestamp([
-		...jobs.map((job) => job.updatedAt ?? job.createdAt ?? null),
-		...claims.map((claim) => claim.updatedAt ?? claim.createdAt ?? null),
+	const rows = payload.rows ?? { jobs: [], claims: [] }
+	const jobs = Array.isArray(rows.jobs) ? rows.jobs : []
+	const claims = Array.isArray(rows.claims) ? rows.claims : []
+	const updatedAt = payload.generatedAt ?? newestTimestamp([
+		...jobs.map((job) => job.endedAt ?? job.startedAt ?? job.enqueuedAt ?? null),
+		...claims.map((claim) => claim.releasedAt ?? claim.claimedAt ?? null),
 	])
 	const ageMs = parseAgeMs(updatedAt, now)
 	const freshness = deriveFreshness(ageMs, staleAfterMs)
-	const partial = !Array.isArray(payload.jobs) || !Array.isArray(payload.claims)
+	const partial = !Array.isArray(rows.jobs) || !Array.isArray(rows.claims)
 	const reasons = dedupe([
+		...(payload.degradedReasons ?? []),
 		...(partial ? ["dispatch-queue-partial"] : []),
 		...(freshness === "stale" ? ["dispatch-queue-stale"] : []),
+		...(payload.health && payload.health !== "healthy" ? ["dispatch-queue-health-degraded"] : []),
 	])
 	return {
 		name: "queue",
@@ -270,10 +273,13 @@ function buildQueueSource(
 		ageMs,
 		updatedAt,
 		data: {
-			jobs,
-			claims,
-			updatedAt,
-			generatedAt: payload.generatedAt ?? null,
+			ok: payload.ok,
+			health: payload.health,
+			helper: payload.helper,
+			rows: { jobs, claims },
+			generatedAt: payload.generatedAt,
+			degradedReasons: payload.degradedReasons,
+			dataAges: payload.dataAges ?? null,
 		},
 		reasons,
 	}
@@ -288,7 +294,7 @@ function buildHealthSource(
 		return missingSource("health", "Daemon health", "daemon-health-missing")
 	}
 
-	const updatedAt = payload.updatedAt ?? payload.babysitterLoop?.lastRunAt ?? payload.babysitterLoop?.lastDigestAt ?? null
+	const updatedAt = payload.generatedAt ?? payload.babysitterLoop?.lastRunAt ?? payload.babysitterLoop?.lastDigestAt ?? null
 	const ageMs = parseAgeMs(updatedAt, now)
 	const freshness = deriveFreshness(ageMs, staleAfterMs)
 	const reasons = dedupe([

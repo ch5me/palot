@@ -57,9 +57,22 @@ Generated: 2026-06-10
 
 ## 10. Server Proxy Routes Implemented (Plan Task 3)
 - **File**: `apps/server/src/routes/ch5pm.ts`
-- **Detail**: Added `GET /babysitter`, `GET /queue`, and `GET /health` proxy routes to `ch5pm.ts`, delegating to the CH5PM daemon. Existing `/state`, `/attention/resolve`, and `/attention/cancel` behavior preserved. Timeout, fail-loud 502, and `cache-control: no-store` semantics intact.
+- **Detail**: `GET /babysitter` (lines 13, 76), `GET /queue` (lines 14, 77), `GET /health` (lines 15, 78) proxy to daemon endpoints. Existing behavior preserved.
 - **Verification**: File-level `lsp_diagnostics` clean.
 
-## 10. Wave 2 Proxy Verification
-- **File**: `apps/server/src/routes/ch5pm.ts`
-- **Detail**: `GET /babysitter` (line 73), `GET /queue` (line 74), `GET /health` (line 75) already proxy to daemon endpoints. Zero edits required; existing behavior preserved.
+## 11. Client Fetch Helpers Implemented (Plan Task 5)
+- **File**: `apps/desktop/src/renderer/services/backend.ts`, `apps/desktop/src/renderer/services/elf-server.ts`
+- **Detail**: Added `fetchCh5PmBabysitter()`, `fetchCh5PmQueue()`, and `fetchCh5PmHealth()`. Both Electron (`window.elf.fetch` with explicit non-2xx throws and `JSON.parse`) and browser (`client.api.ch5pm...` with `readError`) share identical payload shapes using `../pm-side-agents/types`. Pure data, no UI or composition edits.
+- **Verification**: File-level `lsp_diagnostics` clean; practical file-level `bun x tsc --noEmit` completed clean.
+
+
+## 11. Side-Agent Fetcher Seams
+- **Files**: `apps/desktop/src/renderer/services/backend.ts`, `apps/desktop/src/renderer/services/elf-server.ts`
+- **Detail**: Added renderer fetch helpers for `/api/ch5pm/babysitter`, `/api/ch5pm/queue`, and `/api/ch5pm/health` in both Electron and browser-mode paths. Error handling matches existing `fetchCh5PmState()` semantics and keeps payload shapes identical across runtimes.
+- **Verification**: `lsp_diagnostics` clean for `backend.ts` and `elf-server.ts`; targeted `bun x tsc --noEmit ...` still trips pre-existing ambient type gaps in `preload/api.d.ts`, `renderer/lib/themes.ts`, and `apps/server/dist` rather than these new helpers.
+
+
+## 12. Side Agents Dockview Shell
+- **File**: `apps/desktop/src/renderer/components/pm-dockview.tsx`
+- **Detail**: Replaced Side Agents placeholder with live dockview shell backed by `composePmSideAgentsModel()`. Panel now renders loop, decisions, boxes, and queue sections with loud degraded banner and keeps PM state independent by degrading only side-agent fetches.
+- **Verification**: `lsp_diagnostics` clean for `pm-dockview.tsx`; targeted `bun x tsc --noEmit ...` still blocked by pre-existing ambient type gaps outside this slice.
