@@ -139,16 +139,16 @@ Embed all major Folio user-facing surfaces inside Palot through semantic plugin 
 
 ### Definition of Done <!-- oc:id=sec_af -->
 
-- [ ] Existing Palot left sidebar is converted into a host-owned `nav-sidebar` shell with a top `DiscreteTabs` switcher
-- [ ] Built-in sidebar content becomes tab one and duplicate tab two proves shared outlet switching
-- [ ] Every major Folio route/page/settings/workflow family is inventoried
-- [ ] Every inventoried Folio surface is mapped to a semantic Palot host surface type
-- [ ] Schema/runtime evolution path is specified with exact Palot files to change
-- [ ] Route/deeplink model is explicit enough to implement without guesswork
-- [ ] Provider/runtime/data/auth/storage ownership is explicit
-- [ ] Settings, commands, contextual side-panels, and page surfaces are included in first-class architecture
-- [ ] Bundled Folio plugin packaging strategy is explicit and reusable
-- [ ] Verification plan proves full first-class citizenship, not just compilation or one sidebar tab
+- [x] Existing Palot left sidebar is converted into a host-owned `nav-sidebar` shell with a top `DiscreteTabs` switcher
+- [x] Built-in sidebar content becomes tab one and duplicate tab two proves shared outlet switching
+- [x] Every major Folio route/page/settings/workflow family is inventoried
+- [x] Every inventoried Folio surface is mapped to a semantic Palot host surface type
+- [x] Schema/runtime evolution path is specified with exact Palot files to change
+- [x] Route/deeplink model is explicit enough to implement without guesswork
+- [x] Provider/runtime/data/auth/storage ownership is explicit
+- [x] Settings, commands, contextual side-panels, and page surfaces are included in first-class architecture
+- [x] Bundled Folio plugin packaging strategy is explicit and reusable
+- [x] Verification plan proves full first-class citizenship, not just compilation or one sidebar tab
 
 ### Must Have <!-- oc:id=sec_ag -->
 
@@ -339,8 +339,8 @@ Wave FINAL
   - `apps/desktop/src/shared/firefly-plugin/first-party-migration.ts:477`
 
   **Acceptance Criteria**:
-  - [ ] Architecture note names shell/body/outlet/persistence seams with file refs.
-  - [ ] Host-only authority boundary is explicit and aligns with migration note.
+  - [x] Architecture note names shell/body/outlet/persistence seams with file refs.
+  - [x] Host-only authority boundary is explicit and aligns with migration note.
 
   **QA Scenarios**:
   ```text
@@ -356,7 +356,7 @@ Wave FINAL
 
   **Commit**: NO
 
-- [ ] 2. Extract built-in sidebar inner/body seam design
+- [x] 2. Extract built-in sidebar inner/body seam design
 
   **What to do**:
   - Identify which pieces of current `AppSidebarContent` should become reusable inner body vs host wrapper/header/footer.
@@ -374,8 +374,8 @@ Wave FINAL
   - `apps/desktop/src/renderer/components/sidebar-layout.tsx`
 
   **Acceptance Criteria**:
-  - [ ] Exact extraction boundary defined for reusable built-in inner content.
-  - [ ] All existing sidebar user actions are accounted for in extracted interface.
+  - [x] Exact extraction boundary defined for reusable built-in inner content.
+  - [x] All existing sidebar user actions are accounted for in extracted interface.
 
   **QA Scenarios**:
   ```text
@@ -391,7 +391,7 @@ Wave FINAL
 
   **Commit**: NO
 
-- [ ] 3. Define nav-sidebar manifest/schema contract
+- [x] 3. Define nav-sidebar manifest/schema contract
 
   **What to do**:
   - Decide and document semantic contract shape for plugin-declared nav-sidebar contributions.
@@ -411,8 +411,8 @@ Wave FINAL
   - `apps/desktop/src/shared/firefly-plugin/descriptor.ts`
 
   **Acceptance Criteria**:
-  - [ ] Chosen contract documented with rationale against overloading existing panels.
-  - [ ] Host-owned chrome constraint explicitly encoded.
+  - [x] Chosen contract documented with rationale against overloading existing panels.
+  - [x] Host-owned chrome constraint explicitly encoded.
 
   **QA Scenarios**:
   ```text
@@ -427,7 +427,7 @@ Wave FINAL
 
   **Commit**: NO
 
-- [ ] 4. Define nav-sidebar projection/runtime contract
+- [x] 4. Define nav-sidebar projection/runtime contract
 
   **What to do**:
   - Specify how manifest data becomes descriptor data, then projected renderer data, then host-renderable tab descriptors.
@@ -448,8 +448,8 @@ Wave FINAL
   - `apps/desktop/src/renderer/firefly-plugin-surface-merge.ts`
 
   **Acceptance Criteria**:
-  - [ ] Projection pipeline documented from manifest to renderer tab descriptor.
-  - [ ] Collision policy for duplicate nav-sidebar ids/order explicitly defined.
+  - [x] Projection pipeline documented from manifest to renderer tab descriptor.
+  - [x] Collision policy for duplicate nav-sidebar ids/order explicitly defined.
 
   **QA Scenarios**:
   ```text
@@ -464,7 +464,7 @@ Wave FINAL
 
   **Commit**: NO
 
-- [ ] 5. Storybook/discrete-tabs embedding spec
+- [x] 5. Storybook/discrete-tabs embedding spec
 
   **What to do**:
   - Define compact nav-sidebar header usage of `DiscreteTabs`: size, container chrome, icon/label behavior, active-tab callback, spacing, overflow, and reduced-motion expectations.
@@ -481,8 +481,8 @@ Wave FINAL
   - `~/src/ch5/ch5-packages/packages/web/ch5-ui-web/src/animate/discrete-tabs.stories.tsx`
 
   **Acceptance Criteria**:
-  - [ ] Header embedding spec includes size/container/responsive behavior.
-  - [ ] Reduced-motion and collapsed-sidebar behavior defined.
+  - [x] Header embedding spec includes size/container/responsive behavior.
+  - [x] Reduced-motion and collapsed-sidebar behavior defined.
 
   **QA Scenarios**:
   ```text
@@ -497,7 +497,7 @@ Wave FINAL
 
   **Commit**: NO
 
-- [ ] 6. Host nav-sidebar state model + persistence
+- [x] 6. Host nav-sidebar state model + persistence
 
   **What to do**:
   - Define nav-sidebar open/active-tab/persisted-preference atoms or equivalent host state.
@@ -516,8 +516,8 @@ Wave FINAL
   - `apps/desktop/src/renderer/components/sidebar-layout.tsx`
 
   **Acceptance Criteria**:
-  - [ ] Distinct nav-sidebar state model documented.
-  - [ ] Dynamic tab disappearance/arrival behavior specified.
+  - [x] Distinct nav-sidebar state model documented.
+  - [x] Dynamic tab disappearance/arrival behavior specified.
 
   **QA Scenarios**:
   ```text
@@ -532,7 +532,7 @@ Wave FINAL
 
   **Commit**: NO
 
-- [ ] 7. Host nav-sidebar header shell with DiscreteTabs
+- [x] 7. Host nav-sidebar header shell with DiscreteTabs
 
   **What to do**:
   - Design host-owned top header component that renders `DiscreteTabs` above nav-sidebar outlet.
@@ -551,8 +551,8 @@ Wave FINAL
   - `~/src/ch5/ch5-packages/packages/web/ch5-ui-web/src/animate/discrete-tabs.tsx`
 
   **Acceptance Criteria**:
-  - [ ] Header shell placement and styling spec complete.
-  - [ ] Dynamic tab list contract for host shell documented.
+  - [x] Header shell placement and styling spec complete.
+  - [x] Dynamic tab list contract for host shell documented.
 
   **QA Scenarios**:
   ```text
@@ -567,7 +567,7 @@ Wave FINAL
 
   **Commit**: NO
 
-- [ ] 8. Built-in sidebar body extraction + wrapper design
+- [x] 8. Built-in sidebar body extraction + wrapper design
 
   **What to do**:
   - Specify concrete component extraction from current sidebar file into reusable built-in nav-sidebar body.
@@ -584,7 +584,7 @@ Wave FINAL
   - `apps/desktop/src/renderer/components/sidebar-layout.tsx`
 
   **Acceptance Criteria**:
-  - [ ] Reusable body extraction plan names exact component boundaries and props.
+  - [x] Reusable body extraction plan names exact component boundaries and props.
 
   **QA Scenarios**:
   ```text
@@ -599,7 +599,7 @@ Wave FINAL
 
   **Commit**: NO
 
-- [ ] 9. Temporary duplicate second-tab proof path
+- [x] 9. Temporary duplicate second-tab proof path
 
   **What to do**:
   - Define temporary second tab as separate contribution id rendering the same built-in body through the new outlet.
@@ -612,7 +612,7 @@ Wave FINAL
   - **Category**: `visual-engineering`
 
   **Acceptance Criteria**:
-  - [ ] Duplicate tab path uses same outlet/selection machinery as future plugin tabs.
+  - [x] Duplicate tab path uses same outlet/selection machinery as future plugin tabs.
 
   **QA Scenarios**:
   ```text
@@ -627,7 +627,7 @@ Wave FINAL
 
   **Commit**: NO
 
-- [ ] 10. Host availability/fallback/error UX for nav-sidebar tabs
+- [x] 10. Host availability/fallback/error UX for nav-sidebar tabs
 
   **What to do**:
   - Define UX for disabled, quarantined, unavailable, or crashing nav-sidebar plugin tabs.
@@ -645,7 +645,7 @@ Wave FINAL
   - `apps/desktop/src/shared/firefly-plugin/renderer-projection.ts`
 
   **Acceptance Criteria**:
-  - [ ] Behavior for disabled/quarantined/error states fully documented.
+  - [x] Behavior for disabled/quarantined/error states fully documented.
 
   **QA Scenarios**:
   ```text
@@ -659,7 +659,7 @@ Wave FINAL
 
   **Commit**: NO
 
-- [ ] 11. Telemetry / focus / keyboard model
+- [x] 11. Telemetry / focus / keyboard model
 
   **What to do**:
   - Define telemetry namespace, tab-switch events, plugin render crash events, persistence restore events.
@@ -676,7 +676,7 @@ Wave FINAL
   - `apps/desktop/src/renderer/firefly-plugin-surface-merge.ts`
 
   **Acceptance Criteria**:
-  - [ ] Telemetry and focus rules specified.
+  - [x] Telemetry and focus rules specified.
 
   **QA Scenarios**:
   ```text
@@ -702,7 +702,7 @@ Wave FINAL
   - **Category**: `unspecified-high`
 
   **Acceptance Criteria**:
-  - [ ] Integrated nav-sidebar smoke path fully specified with exact checks/evidence.
+  - [x] Integrated nav-sidebar smoke path fully specified with exact checks/evidence.
 
   **QA Scenarios**:
   ```text
@@ -740,8 +740,8 @@ Wave FINAL
   - `~/src/ch5/folio-db/README.md`
 
   **Acceptance Criteria**:
-  - [ ] Every major Folio route/page family is listed with exact file refs.
-  - [ ] Each route is tagged as MVP, later, or unsupported for first-class Palot integration.
+  - [x] Every major Folio route/page family is listed with exact file refs.
+  - [x] Each route is tagged as MVP, later, or unsupported for first-class Palot integration.
 
   **QA Scenarios**:
   ```text
@@ -776,7 +776,7 @@ Wave FINAL
   - `~/src/ch5/folio-db/apps/storybook/stories/Shell.stories.tsx`
 
   **Acceptance Criteria**:
-  - [ ] Workspace shell pieces are split into host-owned chrome vs Folio-owned content/navigation.
+  - [x] Workspace shell pieces are split into host-owned chrome vs Folio-owned content/navigation.
 
   **QA Scenarios**:
   ```text
@@ -810,7 +810,7 @@ Wave FINAL
   - `~/src/ch5/folio-db/apps/web/src/components/OrgAdminPanel.tsx`
 
   **Acceptance Criteria**:
-  - [ ] All major settings/admin surfaces are mapped to host integration targets.
+  - [x] All major settings/admin surfaces are mapped to host integration targets.
 
   **QA Scenarios**:
   ```text
@@ -847,8 +847,8 @@ Wave FINAL
   - `~/src/ch5/folio-db/packages/sync/src/index.ts`
 
   **Acceptance Criteria**:
-  - [ ] Every major provider/service is ownership-classified.
-  - [ ] Hidden singleton collision risks are called out.
+  - [x] Every major provider/service is ownership-classified.
+  - [x] Hidden singleton collision risks are called out.
 
   **QA Scenarios**:
   ```text
@@ -891,8 +891,8 @@ Wave FINAL
   - `apps/desktop/src/shared/firefly-plugin/family-contracts.ts`
 
   **Acceptance Criteria**:
-  - [ ] Every Folio UI category has one clear host surface target.
-  - [ ] Taxonomy names are semantic and future-safe.
+  - [x] Every Folio UI category has one clear host surface target.
+  - [x] Taxonomy names are semantic and future-safe.
 
   **QA Scenarios**:
   ```text
@@ -923,7 +923,7 @@ Wave FINAL
   - **Category**: `deep`
 
   **Acceptance Criteria**:
-  - [ ] Each Folio surface family has explicit tier assignment and rationale.
+  - [x] Each Folio surface family has explicit tier assignment and rationale.
 
   **QA Scenarios**:
   ```text
@@ -954,7 +954,7 @@ Wave FINAL
   - **Category**: `deep`
 
   **Acceptance Criteria**:
-  - [ ] Chosen schema direction has explicit reasons and rejected alternative documented.
+  - [x] Chosen schema direction has explicit reasons and rejected alternative documented.
 
   **QA Scenarios**:
   ```text
@@ -983,7 +983,7 @@ Wave FINAL
   - **Category**: `deep`
 
   **Acceptance Criteria**:
-  - [ ] Page surface registration contract is explicit and host-owned.
+  - [x] Page surface registration contract is explicit and host-owned.
 
   **QA Scenarios**:
   ```text
@@ -1011,7 +1011,7 @@ Wave FINAL
   - **Category**: `deep`
 
   **Acceptance Criteria**:
-  - [ ] Settings-section integration model is explicit and reusable.
+  - [x] Settings-section integration model is explicit and reusable.
 
   **QA Scenarios**:
   ```text
@@ -1039,7 +1039,7 @@ Wave FINAL
   - **Category**: `deep`
 
   **Acceptance Criteria**:
-  - [ ] Contextual Folio surfaces are classified and mapped.
+  - [x] Contextual Folio surfaces are classified and mapped.
 
   **QA Scenarios**:
   ```text
@@ -1067,7 +1067,7 @@ Wave FINAL
   - **Category**: `deep`
 
   **Acceptance Criteria**:
-  - [ ] Folio command/action model is explicit and host-integrated.
+  - [x] Folio command/action model is explicit and host-integrated.
 
   **QA Scenarios**:
   ```text
@@ -1098,7 +1098,7 @@ Wave FINAL
   - **Category**: `deep`
 
   **Acceptance Criteria**:
-  - [ ] Background/runtime integration model is explicit and fail-loud.
+  - [x] Background/runtime integration model is explicit and fail-loud.
 
   **QA Scenarios**:
   ```text
@@ -1113,7 +1113,7 @@ Wave FINAL
 
   **Commit**: NO
 
-- [ ] 25. Host route + Folio route identity contract
+- [x] 25. Host route + Folio route identity contract
 
   **What to do**:
   - Define two-layer route model:
@@ -1128,7 +1128,7 @@ Wave FINAL
   - **Category**: `deep`
 
   **Acceptance Criteria**:
-  - [ ] Route/deeplink model is explicit enough to implement without guesswork.
+  - [x] Route/deeplink model is explicit enough to implement without guesswork.
 
   **QA Scenarios**:
   ```text
@@ -1143,7 +1143,7 @@ Wave FINAL
 
   **Commit**: NO
 
-- [ ] 26. Breadcrumb/history/deeplink model
+- [x] 26. Breadcrumb/history/deeplink model
 
   **What to do**:
   - Define how breadcrumbs, back/forward, and deep links should work once Folio pages live inside Palot.
@@ -1156,7 +1156,7 @@ Wave FINAL
   - **Category**: `deep`
 
   **Acceptance Criteria**:
-  - [ ] History and breadcrumb ownership is explicit.
+  - [x] History and breadcrumb ownership is explicit.
 
   **QA Scenarios**:
   ```text
@@ -1171,7 +1171,7 @@ Wave FINAL
 
   **Commit**: NO
 
-- [ ] 27. Provider ownership matrix
+- [x] 27. Provider ownership matrix
 
   **What to do**:
   - Produce final matrix of host-owned, Folio-owned, and adapter-owned providers/stores/services.
@@ -1183,7 +1183,7 @@ Wave FINAL
   - **Category**: `deep`
 
   **Acceptance Criteria**:
-  - [ ] Ownership matrix covers all critical providers and services.
+  - [x] Ownership matrix covers all critical providers and services.
 
   **QA Scenarios**:
   ```text
@@ -1198,7 +1198,7 @@ Wave FINAL
 
   **Commit**: NO
 
-- [ ] 28. Auth/session bridge contract
+- [x] 28. Auth/session bridge contract
 
   **What to do**:
   - Define exact Palot ↔ Folio auth/session integration model.
@@ -1212,7 +1212,7 @@ Wave FINAL
   - **Category**: `deep`
 
   **Acceptance Criteria**:
-  - [ ] Auth/session integration path is explicit and fail-loud.
+  - [x] Auth/session integration path is explicit and fail-loud.
 
   **QA Scenarios**:
   ```text
@@ -1227,7 +1227,7 @@ Wave FINAL
 
   **Commit**: NO
 
-- [ ] 29. API/storage/cache/sync bridge contract
+- [x] 29. API/storage/cache/sync bridge contract
 
   **What to do**:
   - Define how Folio API client, local cache, durable document state, and sync runtime live inside Palot.
@@ -1240,7 +1240,7 @@ Wave FINAL
   - **Category**: `deep`
 
   **Acceptance Criteria**:
-  - [ ] Data/runtime bridge contract covers startup, active use, and recovery.
+  - [x] Data/runtime bridge contract covers startup, active use, and recovery.
 
   **QA Scenarios**:
   ```text
@@ -1255,7 +1255,7 @@ Wave FINAL
 
   **Commit**: NO
 
-- [ ] 30. Failure-state and fail-loud runtime model
+- [x] 30. Failure-state and fail-loud runtime model
 
   **What to do**:
   - Enumerate failure states:
@@ -1275,7 +1275,7 @@ Wave FINAL
   - **Category**: `deep`
 
   **Acceptance Criteria**:
-  - [ ] Failure-state matrix exists and is exhaustive enough for MVP.
+  - [x] Failure-state matrix exists and is exhaustive enough for MVP.
 
   **QA Scenarios**:
   ```text
@@ -1303,7 +1303,7 @@ Wave FINAL
   - **Category**: `deep`
 
   **Acceptance Criteria**:
-  - [ ] Workspace shell integration is explicit and non-duplicative.
+  - [x] Workspace shell integration is explicit and non-duplicative.
 
   **QA Scenarios**:
   ```text
@@ -1317,7 +1317,7 @@ Wave FINAL
 
   **Commit**: NO
 
-- [ ] 32. Document/page surface integration design
+- [x] 32. Document/page surface integration design
 
   **What to do**:
   - Define integration of Folio page/document/editor surfaces into Palot page host.
@@ -1327,7 +1327,7 @@ Wave FINAL
   - **Category**: `deep`
 
   **Acceptance Criteria**:
-  - [ ] Document/page surface plan is implementation-ready.
+  - [x] Document/page surface plan is implementation-ready.
 
   **QA Scenarios**:
   ```text
@@ -1341,7 +1341,7 @@ Wave FINAL
 
   **Commit**: NO
 
-- [ ] 33. Database/view surface integration design
+- [x] 33. Database/view surface integration design
 
   **What to do**:
   - Define how database home, table view, and future database views register as first-class page surfaces.
@@ -1351,7 +1351,7 @@ Wave FINAL
   - **Category**: `deep`
 
   **Acceptance Criteria**:
-  - [ ] Database/view surface integration path is explicit.
+  - [x] Database/view surface integration path is explicit.
 
   **QA Scenarios**:
   ```text
@@ -1365,7 +1365,7 @@ Wave FINAL
 
   **Commit**: NO
 
-- [ ] 34. Settings/admin integration design
+- [x] 34. Settings/admin integration design
 
   **What to do**:
   - Define how Folio settings/admin surfaces become Palot-native settings sections or supporting pages.
@@ -1374,7 +1374,7 @@ Wave FINAL
   - **Category**: `deep`
 
   **Acceptance Criteria**:
-  - [ ] Settings/admin surface integration is explicit and host-owned.
+  - [x] Settings/admin surface integration is explicit and host-owned.
 
   **QA Scenarios**:
   ```text
@@ -1388,7 +1388,7 @@ Wave FINAL
 
   **Commit**: NO
 
-- [ ] 35. Command palette and keyboard integration design
+- [x] 35. Command palette and keyboard integration design
 
   **What to do**:
   - Define palette actions, keyboard shortcuts, and contextual commands for Folio.
@@ -1398,7 +1398,7 @@ Wave FINAL
   - **Category**: `deep`
 
   **Acceptance Criteria**:
-  - [ ] Folio command model is native to Palot command UX.
+  - [x] Folio command model is native to Palot command UX.
 
   **QA Scenarios**:
   ```text
@@ -1413,7 +1413,7 @@ Wave FINAL
 
   **Commit**: NO
 
-- [ ] 36. Contextual side-panel integration design
+- [x] 36. Contextual side-panel integration design
 
   **What to do**:
   - Define which Folio surfaces become side-panel inspectors/previews/backlinks/details.
@@ -1422,7 +1422,7 @@ Wave FINAL
   - **Category**: `deep`
 
   **Acceptance Criteria**:
-  - [ ] Side-panel use is selective and justified per surface.
+  - [x] Side-panel use is selective and justified per surface.
 
   **QA Scenarios**:
   ```text
@@ -1449,7 +1449,7 @@ Wave FINAL
   - **Category**: `deep`
 
   **Acceptance Criteria**:
-  - [ ] Packaging strategy is explicit and reusable.
+  - [x] Packaging strategy is explicit and reusable.
 
   **QA Scenarios**:
   ```text
@@ -1463,7 +1463,7 @@ Wave FINAL
 
   **Commit**: NO
 
-- [ ] 38. Capability, crash-isolation, and telemetry model
+- [x] 38. Capability, crash-isolation, and telemetry model
 
   **What to do**:
   - Define capability gates, crash boundaries, telemetry, persistence, quarantine rules for Folio surfaces across all host surface families.
@@ -1472,7 +1472,7 @@ Wave FINAL
   - **Category**: `deep`
 
   **Acceptance Criteria**:
-  - [ ] Safety and observability model covers all major surface families.
+  - [x] Safety and observability model covers all major surface families.
 
   **QA Scenarios**:
   ```text
@@ -1486,7 +1486,7 @@ Wave FINAL
 
   **Commit**: NO
 
-- [ ] 39. Phase rollout plan
+- [x] 39. Phase rollout plan
 
   **What to do**:
   - Turn architecture into phased execution:
@@ -1500,7 +1500,7 @@ Wave FINAL
   - **Category**: `writing`
 
   **Acceptance Criteria**:
-  - [ ] Rollout sequencing minimizes risk and preserves reusable architecture.
+  - [x] Rollout sequencing minimizes risk and preserves reusable architecture.
 
   **QA Scenarios**:
   ```text
@@ -1515,7 +1515,7 @@ Wave FINAL
 
   **Commit**: NO
 
-- [ ] 40. Verification matrix and proof plan
+- [x] 40. Verification matrix and proof plan
 
   **What to do**:
   - Define proof for every surface family:
@@ -1530,7 +1530,7 @@ Wave FINAL
   - **Category**: `writing`
 
   **Acceptance Criteria**:
-  - [ ] Verification plan proves full first-class citizenship, not only compilation.
+  - [x] Verification plan proves full first-class citizenship, not only compilation.
 
   **QA Scenarios**:
   ```text
@@ -1545,7 +1545,7 @@ Wave FINAL
 
   **Commit**: NO
 
-- [ ] 41. Future bundled-app generalization
+- [x] 41. Future bundled-app generalization
 
   **What to do**:
   - Extract lessons from Folio so next app can become first-class plugin without custom reinvention.
@@ -1554,7 +1554,7 @@ Wave FINAL
   - **Category**: `writing`
 
   **Acceptance Criteria**:
-  - [ ] Architecture is not Folio-only; reusable host doctrine is captured.
+  - [x] Architecture is not Folio-only; reusable host doctrine is captured.
 
   **QA Scenarios**:
   ```text
@@ -1572,16 +1572,16 @@ Wave FINAL
 
 ## Final Verification Wave <!-- oc:id=sec_am -->
 
-- [ ] F1. **Master-Plan Compliance Audit** — `oracle`
+- [x] F1. **Master-Plan Compliance Audit** — `oracle`
   Validate that every promised Folio surface family, runtime seam, and rollout phase is covered by concrete tasks.
 
-- [ ] F2. **Schema/Runtime Architecture Review** — `deep`
+- [x] F2. **Schema/Runtime Architecture Review** — `deep`
   Review whether chosen plugin-surface evolution is clean, non-overloaded, and reusable beyond Folio.
 
-- [ ] F3. **Surface-Coverage Review Against Folio Inventory** — `unspecified-high`
+- [x] F3. **Surface-Coverage Review Against Folio Inventory** — `unspecified-high`
   Compare full Folio route/UI inventory against this plan and assert no significant surface family is omitted.
 
-- [ ] F4. **Scope Fidelity and One-Plan Audit** — `deep`
+- [x] F4. **Scope Fidelity and One-Plan Audit** — `deep`
   Confirm this merged plan remains the single canonical execution target and that no superseded plan is still needed.
 
 ---
@@ -1603,12 +1603,12 @@ bun test <targeted palot plugin tests>     # Expected: schema/descriptor/catalog
 ```
 
 ### Final Checklist <!-- oc:id=sec_ap -->
-- [ ] Existing Palot sidebar is transformed into a host-owned `nav-sidebar`
-- [ ] Built-in tab proof works and flows into plugin-driven nav-sidebar architecture
-- [ ] Full Folio surface inventory exists
-- [ ] All inventoried surfaces map to semantic host surface families
-- [ ] Route/deeplink model is explicit
-- [ ] Provider/runtime/auth/storage ownership is explicit
-- [ ] Settings, commands, contextual side-panels, and full pages are included
-- [ ] Bundled plugin packaging strategy is explicit
-- [ ] Architecture is reusable beyond Folio
+- [x] Existing Palot sidebar is transformed into a host-owned `nav-sidebar`
+- [x] Built-in tab proof works and flows into plugin-driven nav-sidebar architecture
+- [x] Full Folio surface inventory exists
+- [x] All inventoried surfaces map to semantic host surface families
+- [x] Route/deeplink model is explicit
+- [x] Provider/runtime/auth/storage ownership is explicit
+- [x] Settings, commands, contextual side-panels, and full pages are included
+- [x] Bundled plugin packaging strategy is explicit
+- [x] Architecture is reusable beyond Folio
