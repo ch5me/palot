@@ -1369,7 +1369,68 @@ export interface ElfAPI {
 				grantedTokens: string[]
 			}
 		}>
-		panels: () => Promise<{ appVersion: string; items: unknown[] }>
+		panels: () => Promise<{
+			appVersion: string
+			items: Array<{
+				pluginId: string
+				contributionId: string
+				projectedId: string
+				title: string
+				icon: string | null
+				formFactor: "side-panel-tab" | "main-pane"
+				hostSlot: "side-panel" | "main-pane"
+				hostTarget: { kind: "side-panel" | "main-pane"; slot: "side-panel" | "main-pane" }
+				defaultOn: boolean
+				commandIds: string[]
+				persistenceKey: string | null
+				telemetryNamespace: string | null
+				renderMode: "host-reconciler" | "declarative-props" | "iframe"
+				declarativeSchemaRef: string | null
+				iframeSandbox: string | null
+				capabilityGates: Array<{
+					token: string
+					knownToHost: boolean
+					granted: boolean
+					risk: "low" | "medium" | "high" | "critical" | null
+					source: "plugin" | "contribution"
+					reason: string
+				}>
+				availability: {
+					available: boolean
+					state: "ready" | "loading" | "disabled" | "quarantined" | "error"
+					reason: {
+						code:
+							| "available"
+							| "loading"
+							| "plugin-disabled"
+							| "plugin-quarantined"
+							| "plugin-error"
+							| "plugin-capability-missing"
+							| "contribution-capability-missing"
+							| "reserved-command-prefix"
+							| "host-capability-unknown"
+						message: string
+						hostCapabilityState: {
+							trust: "built-in" | "local-dev" | "signed-third-party" | "unsigned-third-party"
+							sessionScope: "session" | "project" | "app"
+							grantedTokens: string[]
+							loading?: boolean
+							pluginDisabled?: boolean
+							pluginQuarantined?: boolean
+							pluginError?: { code: string; message: string } | null
+						}
+						missingCapabilities: Array<{
+							token: string
+							knownToHost: boolean
+							granted: boolean
+							risk: "low" | "medium" | "high" | "critical" | null
+							source: "plugin" | "contribution"
+							reason: string
+						}>
+					} | null
+				}
+			}>
+		}>
 		widgets: () => Promise<{ appVersion: string; items: unknown[] }>
 		commands: () => Promise<{ appVersion: string; items: unknown[] }>
 		themes: () => Promise<{ appVersion: string; items: unknown[] }>
