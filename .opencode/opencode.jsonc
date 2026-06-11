@@ -1,0 +1,17 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  // PM worker lanes: no semantic-search / design sidecars (MCP sidecar sprawl fix 2026-06-10).
+  // Full typed entries (not bare enabled:false) because each config file is schema-validated alone.
+  "mcp": {
+    "semble": {
+      "type": "local",
+      "command": ["uvx", "--from", "semble[mcp]", "semble"],
+      "enabled": false
+    },
+    "pencil": {
+      "type": "local",
+      "command": ["/Applications/Pencil.app/Contents/Resources/app.asar.unpacked/out/mcp-server-darwin-arm64", "--app", "desktop"],
+      "enabled": false
+    }
+  }
+}
