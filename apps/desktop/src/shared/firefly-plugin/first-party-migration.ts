@@ -69,6 +69,21 @@ export interface FirstPartyMigrationRow {
 	readonly rolloutPhase: RolloutPhase
 	readonly teardown: readonly TeardownBehavior[]
 	readonly notes: string
+	/**
+	 * Superseding-row convention. When set, lists the legacy `currentId`
+	 * values that this row replaces. The matrix stays append-only: the
+	 * legacy ids can remain in source (e.g. an earlier copy of the row
+	 * that's been retired) without causing lookup ambiguity — callers
+	 * asking for a superseded id get the new row returned transparently.
+	 *
+	 * This replaces the old "duplicated key, first-match wins" behavior
+	 * which masked bugs like the doubled `browser` row. With
+	 * `supersedes`, two rows may share a logical id only when one
+	 * declares it supersedes the other; lookup follows the chain and
+	 * throws on a cycle or fan-in conflict (see
+	 * `findFirstPartyMigrationRow`).
+	 */
+	readonly supersedes?: readonly string[]
 }
 
 /**
@@ -443,7 +458,7 @@ export const FIRST_PARTY_MIGRATION_MATRIX: readonly FirstPartyMigrationRow[] = [
 	},
 	{
 		currentId: "palot-bridge",
-		currentFile: "apps/desktop/src/main/palot-plugin/plugin.js",
+		currentFile: "apps/desktop/src/main/palot-plugin-entry.ts",
 		currentFamily: "command",
 		owner: { kind: "built-in-plugin", pluginId: "firefly.built-in.palot-bridge" },
 		targetFamily: "tools",
@@ -456,7 +471,104 @@ export const FIRST_PARTY_MIGRATION_MATRIX: readonly FirstPartyMigrationRow[] = [
 		trust: "built-in",
 		rolloutPhase: "phase-1",
 		teardown: ["deregister-command", "cancel-in-flight-tool"],
-		notes: "Palot bridge exemplar: 13 tools (7 browser + 2 side panel + 4 connected-app discovery). First-party exemplar for Task 21.",
+		notes: "Palot bridge exemplar: 13 tools (7 browser + 2 side panel + 4 connected-app discovery). First-party exemplar for Task 21. Source of truth: `apps/desktop/src/main/palot-plugin-entry.ts` (TS entry that re-exports `palot-plugin/plugin.js`); the OpenCode host loads it as the `apps/desktop/.opencode/plugins/palot-bridge.js` bundle.",
+	},
+	{
+		currentId: "left-nav-sidebar",
+		currentFile: "apps/desktop/src/renderer/components/sidebar.tsx",
+		currentFamily: "panel",
+		owner: {
+			kind: "host-only",
+			rationale:
+				"the left navigation sidebar is the host's own chrome; plugins project surfaces and widgets into it, so the chrome itself cannot be a plugin without inverting authority",
+		},
+		targetFamily: "panels",
+		targetToolId: null,
+		requiredCapabilities: [],
+		trust: "built-in",
+		rolloutPhase: "defer",
+		teardown: ["preserve-state"],
+		notes: "Host-only host chrome (plan §1.2). Sidebar composition is host-owned; plugins contribute children via the existing sidebar-slot-context seam.",
+	},
+	{
+		currentId: "app-bar",
+		currentFile: "apps/desktop/src/renderer/components/app-bar.tsx",
+		currentFamily: "panel",
+		owner: {
+			kind: "host-only",
+			rationale: "the application bar is host chrome (window/transport controls + global status); plugins contribute status items, not the bar itself",
+		},
+		targetFamily: "panels",
+		targetToolId: null,
+		requiredCapabilities: [],
+		trust: "built-in",
+		rolloutPhase: "defer",
+		teardown: ["preserve-state"],
+		notes: "Host-only host chrome (plan §1.2). Pairs with app-bar-context for plugin-contributed status slots.",
+	},
+	{
+		currentId: "command-palette-shell",
+		currentFile: "apps/desktop/src/renderer/components/command-palette.tsx",
+		currentFamily: "panel",
+		owner: {
+			kind: "host-only",
+			rationale: "the command palette shell is the host's command dispatch surface; plugins contribute commands, not the shell",
+		},
+		targetFamily: "panels",
+		targetToolId: null,
+		requiredCapabilities: [],
+		trust: "built-in",
+		rolloutPhase: "defer",
+		teardown: ["preserve-state"],
+		notes: "Host-only host chrome (plan §1.2). The shell hosts projected commands from the V2 command-projection contract.",
+	},
+	{
+		currentId: "side-panel-tab-strip",
+		currentFile: "apps/desktop/src/renderer/components/side-panel/session-side-panel.tsx",
+		currentFamily: "panel",
+		owner: {
+			kind: "host-only",
+			rationale: "the side-panel tab strip is the host's own switcher for projected panel surfaces; making it a plugin would invert the projection relationship",
+		},
+		targetFamily: "panels",
+		targetToolId: null,
+		requiredCapabilities: [],
+		trust: "built-in",
+		rolloutPhase: "defer",
+		teardown: ["preserve-state"],
+		notes: "Host-only host chrome (plan §1.2). The strip is fed by renderer-projection (Task 4 cutover seam); plugins do not own the strip itself.",
+	},
+	{
+		currentId: "startup-overlay",
+		currentFile: "apps/desktop/src/renderer/components/startup-overlay.tsx",
+		currentFamily: "panel",
+		owner: {
+			kind: "host-only",
+			rationale: "the startup overlay renders before any plugin catalog is loaded; it must remain host-owned so the app can boot regardless of plugin state",
+		},
+		targetFamily: "panels",
+		targetToolId: null,
+		requiredCapabilities: [],
+		trust: "built-in",
+		rolloutPhase: "defer",
+		teardown: ["preserve-state"],
+		notes: "Host-only host chrome (plan §1.2). Boots before the plugin catalog; cannot depend on plugin state.",
+	},
+	{
+		currentId: "update-banner",
+		currentFile: "apps/desktop/src/renderer/components/update-banner.tsx",
+		currentFamily: "panel",
+		owner: {
+			kind: "host-only",
+			rationale: "the update banner reports host-level lifecycle events (auto-update, packaged rebuilds) that are independent of plugin state",
+		},
+		targetFamily: "panels",
+		targetToolId: null,
+		requiredCapabilities: [],
+		trust: "built-in",
+		rolloutPhase: "defer",
+		teardown: ["preserve-state"],
+		notes: "Host-only host chrome (plan §1.2). Surfaces host lifecycle; not a plugin surface.",
 	},
 ] as const satisfies readonly FirstPartyMigrationRow[]
 
@@ -488,15 +600,33 @@ export class AmbiguousMigrationRowError extends Error {
 	}
 }
 
+/** Thrown when a queried id is claimed by more than one superseding row. */
+export class AmbiguousSupersedeError extends Error {
+	constructor(currentId: string, supersedingRowIds: readonly string[]) {
+		super(
+			`migration row lookup for "${currentId}" is superseded by multiple rows [${supersedingRowIds.join(", ")}]; the matrix is in a fan-in conflict`,
+		)
+		this.name = "AmbiguousSupersedeError"
+	}
+}
+
 /**
  * Look up the migration row for a current surface id. Returns `null`
  * when the surface is not in the matrix (e.g. a third-party extension
  * added it).
  *
- * Fail-fast on ambiguity: if the id matches rows in MORE than one
- * family and no `currentFamily` filter was given, this throws instead
- * of silently returning the first match (the old first-match behavior
- * masked the doubled `browser` row bug).
+ * Resolution order:
+ *   1. Exact match on `(currentId, currentFamily?)` — same as before.
+ *      If multiple families match and no family filter was given,
+ *      throws `AmbiguousMigrationRowError` (the first-match behavior
+ *      that masked the doubled `browser` row is gone).
+ *   2. If no exact match, the lookup follows the superseding-row
+ *      convention: any row whose `supersedes` lists the queried id
+ *      is a candidate. Multiple candidates throw
+ *      `AmbiguousSupersedeError`; a single candidate is returned
+ *      transparently (the superseding row stands in for the
+ *      superseded id without forcing callers to know the alias).
+ *   3. Still nothing → return `null`.
  */
 export function findFirstPartyMigrationRow(
 	currentId: string,
@@ -505,12 +635,21 @@ export function findFirstPartyMigrationRow(
 	const matches = FIRST_PARTY_MIGRATION_MATRIX.filter(
 		(row) => row.currentId === currentId && (currentFamily === undefined || row.currentFamily === currentFamily),
 	)
-	if (matches.length === 0) return null
-	const families = [...new Set(matches.map((row) => row.currentFamily))]
-	if (families.length > 1) {
-		throw new AmbiguousMigrationRowError(currentId, families)
+	if (matches.length > 0) {
+		const families = [...new Set(matches.map((row) => row.currentFamily))]
+		if (families.length > 1) {
+			throw new AmbiguousMigrationRowError(currentId, families)
+		}
+		return matches[0] ?? null
 	}
-	return matches[0] ?? null
+	const superseding = FIRST_PARTY_MIGRATION_MATRIX.filter(
+		(row) => row.supersedes !== undefined && row.supersedes.includes(currentId),
+	)
+	if (superseding.length === 1) return superseding[0] ?? null
+	if (superseding.length > 1) {
+		throw new AmbiguousSupersedeError(currentId, superseding.map((row) => row.currentId))
+	}
+	return null
 }
 
 /**
