@@ -69,6 +69,12 @@ export default defineConfig({
 		port: Number(process.env.PORT) || 20883,
 		strictPort: true,
 		host: "127.0.0.1",
+		fs: {
+			allow: [
+				path.resolve(__dirname, "../../../../.."),
+				path.resolve(__dirname, "../../../../../ch5-packages"),
+			],
+		},
 	},
 })
 
