@@ -397,7 +397,7 @@ Wave FINAL:
 
   **Commit**: NO
 
-- [ ] 4. Define composed data model and freshness/degraded rules
+- [x] 4. Define composed data model and freshness/degraded rules
 
   **What to do**:
   - Define a renderer-side view-model that merges current `Ch5PmLiveState` with side-agent feed and queue/health extras.

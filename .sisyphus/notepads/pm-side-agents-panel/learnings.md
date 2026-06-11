@@ -50,3 +50,16 @@ Generated: 2026-06-10
   - Queue stays render-safe when `jobs` or `claims` is absent by marking source `partial` and preserving whichever list exists.
   - Health degradation comes from `/health` payload reasons/status without overwriting feed or PM timestamps; loop status derives from health payload and surfaces `stalled` vs `failed` separately.
 - **Verification**: `lsp_diagnostics` clean for `composition.ts` and `types.ts`; practical file-level `bun x tsc --noEmit apps/desktop/src/renderer/pm-side-agents/composition.ts apps/desktop/src/renderer/pm-side-agents/types.ts` completed clean.
+
+## 10. Composition IO Tightening (Task 4)
+- **File**: `apps/desktop/src/renderer/pm-side-agents/composition.ts`
+- **Detail**: Composition seam now exposes explicit per-source freshness + severity maps, keeps PM/feed/queue/health timestamps separate, and treats stale feed, missing feed, partial queue, and degraded health as independent reusable states for later panel/dashboard work.
+
+## 10. Server Proxy Routes Implemented (Plan Task 3)
+- **File**: `apps/server/src/routes/ch5pm.ts`
+- **Detail**: Added `GET /babysitter`, `GET /queue`, and `GET /health` proxy routes to `ch5pm.ts`, delegating to the CH5PM daemon. Existing `/state`, `/attention/resolve`, and `/attention/cancel` behavior preserved. Timeout, fail-loud 502, and `cache-control: no-store` semantics intact.
+- **Verification**: File-level `lsp_diagnostics` clean.
+
+## 10. Wave 2 Proxy Verification
+- **File**: `apps/server/src/routes/ch5pm.ts`
+- **Detail**: `GET /babysitter` (line 73), `GET /queue` (line 74), `GET /health` (line 75) already proxy to daemon endpoints. Zero edits required; existing behavior preserved.

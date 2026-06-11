@@ -1,0 +1,1 @@
+Verified route additions in apps/server/src/routes/ch5pm.ts lines 72-75. File diagnostics clean. Live curl not run in this session.

@@ -10,7 +10,6 @@ import type {
 	Ch5PmSideAgentAttentionRow,
 	Ch5PmSideAgentFeed,
 	Ch5PmSideAgentHealthPayload,
-	Ch5PmSideAgentLoopStatus,
 	Ch5PmSideAgentPayload,
 	Ch5PmSideAgentQueueClaim,
 	Ch5PmSideAgentQueueJob,
@@ -89,11 +88,20 @@ export interface Ch5PmSideAgentsViewModel {
 		feed: Ch5PmSideAgentFreshness
 		queue: Ch5PmSideAgentFreshness
 		health: Ch5PmSideAgentFreshness
+		pmState: Ch5PmSideAgentFreshness
+	}
+	status: {
+		live: Ch5PmSideAgentSeverity
+		feed: Ch5PmSideAgentSeverity
+		queue: Ch5PmSideAgentSeverity
+		health: Ch5PmSideAgentSeverity
+		pmState: Ch5PmSideAgentSeverity
 	}
 	degraded: {
 		severity: Ch5PmSideAgentSeverity
 		bannerReasons: string[]
 		feedMissing: boolean
+		feedStale: boolean
 		queuePartial: boolean
 		healthDegraded: boolean
 		loopDegraded: boolean
@@ -109,10 +117,14 @@ export function composePmSideAgentsModel(
 	input: Ch5PmSideAgentsCompositionInput,
 ): Ch5PmSideAgentsViewModel {
 	const now = input.now ?? Date.now()
-	const pmStateSource = buildPmStateSource(input.pmState, now)
-	const feedSource = buildFeedSource(input.feedPayload, now)
-	const queueSource = buildQueueSource(input.queuePayload, now)
-	const healthSource = buildHealthSource(input.healthPayload, now)
+	const pmStateStaleAfterMs = input.pmStateStaleAfterMs ?? PM_STATE_STALE_MS
+	const feedStaleAfterMs = input.feedStaleAfterMs ?? FEED_STALE_MS
+	const queueStaleAfterMs = input.queueStaleAfterMs ?? QUEUE_STALE_MS
+	const healthStaleAfterMs = input.healthStaleAfterMs ?? HEALTH_STALE_MS
+	const pmStateSource = buildPmStateSource(input.pmState, now, pmStateStaleAfterMs)
+	const feedSource = buildFeedSource(input.feedPayload, now, feedStaleAfterMs)
+	const queueSource = buildQueueSource(input.queuePayload, now, queueStaleAfterMs)
+	const healthSource = buildHealthSource(input.healthPayload, now, healthStaleAfterMs)
 	const loop = composeLoop(feedSource, healthSource)
 	const bannerReasons = collectBannerReasons(feedSource, queueSource, healthSource, loop)
 	const severity = deriveOverallSeverity(feedSource, queueSource, healthSource, loop)
@@ -141,15 +153,28 @@ export function composePmSideAgentsModel(
 		freshness: {
 			overall: severity === "offline"
 				? "missing"
-				: pickWorstFreshness(feedSource.freshness, queueSource.freshness, healthSource.freshness),
+				: pickWorstFreshness(
+					feedSource.freshness,
+					queueSource.freshness,
+					healthSource.freshness,
+				),
 			feed: feedSource.freshness,
 			queue: queueSource.freshness,
 			health: healthSource.freshness,
+			pmState: pmStateSource.freshness,
+		},
+		status: {
+			live: severity,
+			feed: feedSource.severity,
+			queue: queueSource.severity,
+			health: healthSource.severity,
+			pmState: pmStateSource.severity,
 		},
 		degraded: {
 			severity,
 			bannerReasons,
 			feedMissing: feedSource.status === "missing",
+			feedStale: feedSource.freshness === "stale",
 			queuePartial: queueSource.status === "partial",
 			healthDegraded: healthSource.severity !== "healthy",
 			loopDegraded: loop.severity !== "healthy",
@@ -160,10 +185,11 @@ export function composePmSideAgentsModel(
 function buildPmStateSource(
 	pmState: Ch5PmLiveState | null | undefined,
 	now: number,
+	staleAfterMs: number,
 ): Ch5PmSideAgentSourceSnapshot<Ch5PmLiveState> {
 	const updatedAt = pmState?.updatedAt ?? null
 	const ageMs = parseAgeMs(updatedAt, now)
-	const freshness = pmState ? deriveFreshness(ageMs, PM_STATE_STALE_MS) : "missing"
+	const freshness = pmState ? deriveFreshness(ageMs, staleAfterMs) : "missing"
 	return {
 		name: "pm-state",
 		status: pmState ? "present" : "missing",
@@ -180,6 +206,7 @@ function buildPmStateSource(
 function buildFeedSource(
 	payload: Ch5PmSideAgentPayload | null | undefined,
 	now: number,
+	staleAfterMs: number,
 ): Ch5PmSideAgentSourceSnapshot<Ch5PmSideAgentFeed> {
 	if (!payload) {
 		return missingSource("feed", "Side-agent live feed", "side-agent-feed-missing")
@@ -193,7 +220,7 @@ function buildFeedSource(
 		attention: payload.attention,
 	}
 	const ageMs = parseDurationMs(payload.dataAges?.feed) ?? parseAgeMs(payload.generatedAt, now)
-	const freshness = deriveFreshness(ageMs, FEED_STALE_MS)
+	const freshness = deriveFreshness(ageMs, staleAfterMs)
 	const reasons = dedupe([
 		...(payload.degradedReasons ?? []),
 		...(payload.ok === false ? ["side-agent-feed-not-ok"] : []),
@@ -215,6 +242,7 @@ function buildFeedSource(
 function buildQueueSource(
 	payload: Ch5PmSideAgentQueuePayload | null | undefined,
 	now: number,
+	staleAfterMs: number,
 ): Ch5PmSideAgentSourceSnapshot<Ch5PmSideAgentQueuePayload> {
 	if (!payload) {
 		return missingSource("queue", "Dispatch queue", "dispatch-queue-missing")
@@ -227,7 +255,7 @@ function buildQueueSource(
 		...claims.map((claim) => claim.updatedAt ?? claim.createdAt ?? null),
 	])
 	const ageMs = parseAgeMs(updatedAt, now)
-	const freshness = deriveFreshness(ageMs, QUEUE_STALE_MS)
+	const freshness = deriveFreshness(ageMs, staleAfterMs)
 	const partial = !Array.isArray(payload.jobs) || !Array.isArray(payload.claims)
 	const reasons = dedupe([
 		...(partial ? ["dispatch-queue-partial"] : []),
@@ -254,6 +282,7 @@ function buildQueueSource(
 function buildHealthSource(
 	payload: Ch5PmSideAgentHealthPayload | null | undefined,
 	now: number,
+	staleAfterMs: number,
 ): Ch5PmSideAgentSourceSnapshot<Ch5PmSideAgentHealthPayload> {
 	if (!payload) {
 		return missingSource("health", "Daemon health", "daemon-health-missing")
@@ -261,7 +290,7 @@ function buildHealthSource(
 
 	const updatedAt = payload.updatedAt ?? payload.babysitterLoop?.lastRunAt ?? payload.babysitterLoop?.lastDigestAt ?? null
 	const ageMs = parseAgeMs(updatedAt, now)
-	const freshness = deriveFreshness(ageMs, HEALTH_STALE_MS)
+	const freshness = deriveFreshness(ageMs, staleAfterMs)
 	const reasons = dedupe([
 		...(payload.degradedReasons ?? []),
 		...(payload.health === "degraded" ? ["daemon-health-degraded"] : []),

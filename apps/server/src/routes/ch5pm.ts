@@ -9,6 +9,9 @@ import { Hono } from "hono"
  * single seam between the Firefly client and the PM control plane.
  *
  * - GET  /state             → daemon GET  /pm/state (includes attentionQueue)
+ * - GET  /babysitter        → daemon GET  /pm/babysitter
+ * - GET  /queue             → daemon GET  /queue
+ * - GET  /health            → daemon GET  /health
  * - POST /attention/resolve → daemon POST /mutations/attention/resolve
  * - POST /attention/cancel  → daemon POST /mutations/attention/cancel
  *
@@ -70,6 +73,9 @@ const app = new Hono()
 
 const routes = app
 	.get("/state", () => proxyDaemon("/pm/state"))
+	.get("/babysitter", () => proxyDaemon("/pm/babysitter"))
+	.get("/queue", () => proxyDaemon("/queue"))
+	.get("/health", () => proxyDaemon("/health"))
 	.post("/attention/resolve", async (c) =>
 		proxyDaemonMutation("/mutations/attention/resolve", await c.req.text()),
 	)
