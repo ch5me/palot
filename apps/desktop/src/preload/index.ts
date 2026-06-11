@@ -510,8 +510,8 @@ contextBridge.exposeInMainWorld("elf", {
 		getState(): Promise<ElfAuthStateDto | null> {
 			return ipcRenderer.invoke("auth:get-state")
 		},
-		signIn(): Promise<DeviceCodeUi> {
-			return ipcRenderer.invoke("auth:sign-in")
+		signIn(clientId: string): Promise<DeviceCodeUi> {
+			return ipcRenderer.invoke("auth:sign-in", clientId)
 		},
 		poll(): Promise<ElfAuthStateDto | null> {
 			return ipcRenderer.invoke("auth:poll")

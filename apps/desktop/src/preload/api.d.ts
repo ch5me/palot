@@ -848,7 +848,7 @@ export interface DeviceCodeUi {
 
 export interface ElfAuthApi {
 	getState(): Promise<ElfAuthStateDto | null>
-	signIn(): Promise<DeviceCodeUi>
+	signIn(clientId: string): Promise<DeviceCodeUi>
 	poll(): Promise<ElfAuthStateDto | null>
 	cancelSignIn(): Promise<void>
 	signOut(): Promise<void>

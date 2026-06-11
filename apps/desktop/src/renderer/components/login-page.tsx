@@ -5,6 +5,8 @@ import { AlertCircleIcon, ExternalLinkIcon } from "lucide-react"
 import { useState } from "react"
 import type { DeviceCodeUi } from "../../preload/api"
 
+const FIREFLY_DESKTOP_CLIENT_ID = "firefly-desktop"
+
 type SignInPhase = "idle" | "pending" | "error"
 
 interface ErrorInfo {
@@ -22,7 +24,7 @@ export function LoginPage() {
 	async function handleSignIn() {
 		setError(null)
 		try {
-			const code = await window.elf.auth.signIn()
+			const code = await window.elf.auth.signIn(FIREFLY_DESKTOP_CLIENT_ID)
 			setDeviceCode(code)
 			setPhase("pending")
 			await pollForToken()

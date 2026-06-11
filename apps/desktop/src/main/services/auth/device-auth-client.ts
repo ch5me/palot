@@ -1,10 +1,26 @@
-const AUTH_HOST = process.env.FIREFLY_AUTH_HOST ?? process.env.VITE_FIREFLY_AUTH_HOST
+import { createLogger } from "../../logger"
 
-function getAuthHost(): string {
-	if (!AUTH_HOST) {
-		throw new Error("FIREFLY_AUTH_HOST is required for desktop auth flows")
+const log = createLogger("auth/device-auth-client")
+
+function normalizeAuthBaseUrl(value: string): string {
+	const trimmed = value.trim()
+	if (!trimmed) {
+		throw new Error("FIREFLY_AUTH_HOST is set but empty")
 	}
-	return AUTH_HOST
+	if (/^https?:\/\//i.test(trimmed)) {
+		return trimmed.replace(/\/+$/, "")
+	}
+	return `https://${trimmed.replace(/\/+$/, "")}`
+}
+
+function resolveAuthBaseUrl(): string {
+	const configured = process.env.FIREFLY_AUTH_HOST ?? process.env.VITE_FIREFLY_AUTH_HOST
+	if (!configured) {
+		throw new Error(
+			"FIREFLY_AUTH_HOST is required. Set it to the canonical Firefly auth app host (for example https://staging.app.elf.dance).",
+		)
+	}
+	return normalizeAuthBaseUrl(configured)
 }
 
 export interface DeviceCodeResponse {
@@ -47,7 +63,8 @@ export class SlowDownError extends Error {
 }
 
 async function post<T>(path: string, body: Record<string, unknown>): Promise<T> {
-	const res = await fetch(`${getAuthHost()}${path}`, {
+	const authBaseUrl = resolveAuthBaseUrl()
+	const res = await fetch(`${authBaseUrl}${path}`, {
 		method: "POST",
 		headers: { "Content-Type": "application/json" },
 		body: JSON.stringify(body),
@@ -67,7 +84,8 @@ async function post<T>(path: string, body: Record<string, unknown>): Promise<T> 
 }
 
 async function get<T>(path: string): Promise<T> {
-	const res = await fetch(`${getAuthHost()}${path}`)
+	const authBaseUrl = resolveAuthBaseUrl()
+	const res = await fetch(`${authBaseUrl}${path}`)
 
 	if (!res.ok) {
 		const body = await res.json().catch(() => ({ error: res.statusText }))
@@ -81,9 +99,10 @@ async function get<T>(path: string): Promise<T> {
 				throw new SlowDownError(retryAfter)
 			}
 			if (code === "authorization_pending") {
-				const err = new Error(`device-auth ${path} returned ${res.status} ${JSON.stringify(body)}`)
-				// @ts-ignore - attach discriminator for pollForApproval's catch
-				;(err as unknown as { code: string }).code = "authorization_pending"
+				const err = new Error(`device-auth ${path} returned ${res.status} ${JSON.stringify(body)}`) as Error & {
+					code?: string
+				}
+				err.code = "authorization_pending"
 				throw err
 			}
 		}
@@ -139,5 +158,5 @@ export async function pollForApproval(params: {
 }
 
 export async function deny(_deviceCode: string): Promise<void> {
-// No deny endpoint on the cloud side — if one is added, wire it here.
+	log.debug("No deny endpoint on cloud side; skipping device-code denial")
 }
