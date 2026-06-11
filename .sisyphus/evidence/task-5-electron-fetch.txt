@@ -1,0 +1,1 @@
+Verified new Electron/browser fetch helpers exist for babysitter, queue, and health in backend.ts and elf-server.ts. File diagnostics clean. Targeted tsc still fails on pre-existing ambient type gaps outside these helpers.

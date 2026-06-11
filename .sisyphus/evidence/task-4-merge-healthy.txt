@@ -1,0 +1,1 @@
+Verified composition module exists at apps/desktop/src/renderer/pm-side-agents/composition.ts with explicit freshness, degraded, loop, queue, and attention view-model outputs. LSP diagnostics clean.

@@ -1,11 +1,61 @@
 {
-  "active_plan": "/Users/hassoncs/src/ch5/palot/.sisyphus/plans/palot-opencode-plugin-bridge-completion.md",
-  "started_at": "2026-06-06T17:50:14.920Z",
+  "active_plan": "/Users/hassoncs/src/ch5/palot/.sisyphus/plans/pm-side-agents-panel.md",
+  "started_at": "2026-06-10T22:50:27.276Z",
   "session_ids": [
-    "ses_161f19b9affeHjAuurajLYvvOl"
+    "ses_14c462dcfffeAm09ycDoH5gCWk",
+    "ses_14c367640ffeUT1M5JWEJWsBBh",
+    "ses_14c365f7affexZuOdTQLBbhNWG",
+    "ses_14c1638fbffeEPquTeQW8J6rVi",
+    "ses_14c15da38ffe1KyF3GTtJ8GCG3",
+    "ses_14bce44b7ffe0qAC40onpwH4cs",
+    "ses_14bbce459ffecMoFqd4RgLq0hH",
+    "ses_14bd6e3bfffeUNKBXqO1IuV3dc",
+    "ses_14bada3b6ffeGNOITq004BpADt",
+    "ses_14b80daacffe1XUcVHI4rvz7Y8",
+    "ses_14b6daed5ffeHnj0c3AW7P9JBz",
+    "ses_14b5dc616ffew4BU1mJZPCfx81",
+    "ses_14b576156ffe6h8IhspSN2GNuq",
+    "ses_14a285005ffeZf2u4gbSWVD3zU",
+    "ses_14a1e4491ffeDzANo97SPJY2W3",
+    "ses_14a0d7243ffexDc6T0vT2k1VjP",
+    "ses_149fcc5efffeM3I45DzGQAnGJG",
+    "ses_149f42e66ffe5XcpBxqxDaVsLh",
+    "ses_149e6309effeIotf5pT4AUTHvV",
+    "ses_149d969e9ffe9aclcz0yjImxTj",
+    "ses_149d2a697ffePVeQ8sM7MPL4ZQ",
+    "ses_149ccdb35ffe0CsLyV7dwAzxp6",
+    "ses_149c99015ffeu8z64IVUHGJaYM",
+    "ses_149c98f26ffeNYphOIcdRptyDI",
+    "ses_149c99097ffeFPgQOaIWrt3Iog",
+    "ses_149c98f8fffe0auqFiDgYi7tV4"
   ],
-  "plan_name": "palot-opencode-plugin-bridge-completion",
+  "plan_name": "pm-side-agents-panel",
   "agent": "atlas",
-  "task_sessions": {},
-  "worktree_path": "/Users/hassoncs/src/ch5/palot/.worktrees/palot-opencode-plugin-bridge-completion"
+  "worktree_path": "/Users/hassoncs/src/ch5/palot/.worktrees/palot-opencode-plugin-bridge-completion",
+  "task_sessions": {
+    "todo:1": {
+      "task_key": "todo:1",
+      "task_label": "1",
+      "task_title": "Lock current PM page seams and replacement targets",
+      "session_id": "ses_14c462dcfffeAm09ycDoH5gCWk",
+      "updated_at": "2026-06-10T23:14:54.925Z",
+      "no_progress_resume_count": 0
+    },
+    "todo:2": {
+      "task_key": "todo:2",
+      "task_label": "2",
+      "task_title": "Define renderer-side type contract for side-agent live data",
+      "session_id": "ses_14c462dcfffeAm09ycDoH5gCWk",
+      "updated_at": "2026-06-11T00:12:16.586Z",
+      "no_progress_resume_count": 0
+    },
+    "todo:3": {
+      "task_key": "todo:3",
+      "task_label": "3",
+      "task_title": "Add Firefly server proxy routes for side-agent read endpoints",
+      "session_id": "ses_14c462dcfffeAm09ycDoH5gCWk",
+      "updated_at": "2026-06-11T01:00:00.310Z",
+      "no_progress_resume_count": 0
+    }
+  }
 }

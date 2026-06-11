@@ -269,7 +269,7 @@ Actual live queue payload exposes top-level `rows`, where `rows.jobs[]` and `row
 
   **Commit**: NO
 
-- [ ] 2. Tighten shared PM types around real source payloads
+- [x] 2. Tighten shared PM types around real source payloads
 
   **What to do**:
   - Update `apps/desktop/src/renderer/pm-side-agents/types.ts` to reflect real babysitter and queue payloads.
@@ -512,7 +512,7 @@ Actual live queue payload exposes top-level `rows`, where `rows.jobs[]` and `row
 
   **Commit**: NO
 
-- [ ] 6. Build real Side Agents dockview panel shell
+- [x] 6. Build real Side Agents dockview panel shell
 
   **What to do**:
   - Add presentational Side Agents panel component and wire it into `pm-dockview.tsx` in place of placeholder copy.
@@ -574,7 +574,7 @@ Actual live queue payload exposes top-level `rows`, where `rows.jobs[]` and `row
 
   **Commit**: NO
 
-- [ ] 7. Render live babysitter loop, per-box digests, and decision-needed rows
+- [x] 7. Render live babysitter loop, per-box digests, and decision-needed rows
 
   **What to do**:
   - Use shared mapper output to render babysitter loop card: running/stalled/failed, interval, passes, last run, last digest, last error.
@@ -636,7 +636,7 @@ Actual live queue payload exposes top-level `rows`, where `rows.jobs[]` and `row
 
   **Commit**: NO
 
-- [ ] 8. Add queue / terminal groups from live `/api/ch5pm/queue`
+- [x] 8. Add queue / terminal groups from live `/api/ch5pm/queue`
 
   **What to do**:
   - Map actual queue `rows[]` into grouped buckets: failed, timed-out, retry, merge-ready, needs-human.
@@ -696,7 +696,7 @@ Actual live queue payload exposes top-level `rows`, where `rows.jobs[]` and `row
 
   **Commit**: NO
 
-- [ ] 9. Add freshness/source badges and deep-link affordances
+- [x] 9. Add freshness/source badges and deep-link affordances
 
   **What to do**:
   - Add reusable badge component or helper for source authority: `live`, `detected`, `static`, `missing`, freshness age, degraded reason count.
@@ -757,7 +757,7 @@ Actual live queue payload exposes top-level `rows`, where `rows.jobs[]` and `row
 
   **Commit**: NO
 
-- [ ] 10. Add mapper and contract regression tests
+- [x] 10. Add mapper and contract regression tests
 
   **What to do**:
   - Add focused Bun tests for side-agent type fixtures, mapper composition, queue grouping, provenance rules, freshness rules, degraded-state derivation, and bucket precedence.
@@ -816,7 +816,7 @@ Actual live queue payload exposes top-level `rows`, where `rows.jobs[]` and `row
 
   **Commit**: NO
 
-- [ ] 11. Add component/browser proof for PM route
+- [x] 11. Add component/browser proof for PM route
 
   **What to do**:
   - Add component-level tests only where current Bun/renderer setup supports them for Side Agents panel degraded/healthy render states.
@@ -881,7 +881,7 @@ Actual live queue payload exposes top-level `rows`, where `rows.jobs[]` and `row
 
   **Commit**: NO
 
-- [ ] 12. Final cleanup, blockers note, and handoff packet
+- [x] 12. Final cleanup, blockers note, and handoff packet
 
   **What to do**:
   - Run targeted verification commands.

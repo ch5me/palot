@@ -1,0 +1,146 @@
+# Task 1: Dirty Tree Scope Exclusions
+## Date: 2026-06-11
+## Branch: rescue/pm-side-agents-seam
+
+---
+
+## 1. Git Status Summary
+
+Branch: rescue/pm-side-agents-seam
+Upstream: origin/rescue/pm-side-agents-seam
+
+Modified (tracked):
+- .sisyphus/boulder.json
+- .sisyphus/notepads/pm-side-agents-panel/learnings.md
+- .sisyphus/plans/pm-side-agents-panel.md
+- apps/desktop/src/renderer/services/backend.ts
+- apps/desktop/src/renderer/services/elf-server.ts
+
+Untracked (selected PM-relevant):
+- .sisyphus/evidence/pm-side-agents/ (this directory)
+- .sisyphus/evidence/session-sync/* (prior session work)
+- .sisyphus/evidence/task-* (prior task work from other seams)
+
+---
+
+## 2. PM Slice Scope (what THIS task touches)
+
+### Files in PM side-agents seam:
+- apps/desktop/src/renderer/pm-side-agents/types.ts (queue type bug)
+- apps/desktop/src/renderer/pm-side-agents/composition.ts (queue envelope bug, dead code)
+- apps/desktop/src/renderer/components/pm-dockview.tsx (Side Agents placeholder)
+- apps/desktop/src/renderer/components/pm-live-dashboard.tsx (Dense Console, already working)
+- apps/desktop/src/renderer/services/backend.ts (PM fetch functions, already correct naming)
+- apps/desktop/src/renderer/services/elf-server.ts (PM fetch functions, already correct naming)
+- apps/server/src/routes/ch5pm.ts (server proxy, already correct)
+
+### What THIS task (Task 1) touches:
+- .sisyphus/evidence/pm-side-agents/task-1-live-contract-audit.txt (this audit)
+- .sisyphus/evidence/pm-side-agents/task-1-dirty-tree-scope.txt (this file)
+- NO application code changes (audit only)
+
+### What SUBSEQUENT tasks will touch:
+- Task 2+: pm-side-agents/types.ts (fix queue envelope type)
+- Task 2+: pm-side-agents/composition.ts (fix queue envelope reading, or replace)
+- Task 3+: pm-dockview.tsx (replace Side Agents placeholder with real panel)
+- Task N: regression tests for queue envelope shape
+
+---
+
+## 3. Dirty Tree Exclusions (NOT part of PM slice)
+
+### Modified files — NOT PM side-agents seam:
+- .sisyphus/boulder.json — Sisyphus state, not application code
+- .sisyphus/notepads/pm-side-agents-panel/learnings.md — planning artifact
+- .sisyphus/plans/pm-side-agents-panel.md — planning artifact
+- apps/desktop/src/renderer/services/backend.ts — MODIFIED but changes are from prior session, not this task
+- apps/desktop/src/renderer/services/elf-server.ts — MODIFIED but changes are from prior session, not this task
+
+Note: backend.ts and elf-server.ts show as modified in git status, but the PM fetch functions (fetchCh5PmSideAgentFeed/Queue/Health) are already correct. The modifications are from prior work on this branch, not from this audit task. Do not attribute unrelated changes to PM slice.
+
+### Untracked files — NOT PM side-agents seam:
+- .sisyphus/boulder.json.v2 — Sisyphus state
+- .sisyphus/drafts/* — planning drafts for other seams
+- .sisyphus/evidence/f1-plan-compliance-v2.md — Firefly audit evidence
+- .sisyphus/evidence/f2-repo-reality-v2.md — Firefly audit evidence
+- .sisyphus/evidence/f3-qa-adequacy-v2.md — Firefly audit evidence
+- .sisyphus/evidence/f4-scope-fidelity-v2.md — Firefly audit evidence
+- .sisyphus/evidence/firefly-v2-architecture-synthesis.md — Firefly audit evidence
+- .sisyphus/evidence/session-sync/* — prior session-sync seam work
+- .sisyphus/evidence/task-{1-29}-* — prior task work from other seams (Firefly, theme, MCP, etc.)
+- .sisyphus/evidence/wave-2-synthesis.md — prior synthesis
+- .sisyphus/notepads/session-sync-audit-remediation/* — prior session-sync work
+- .sisyphus/notepads/sidebars-as-first-class-plugins/ — different seam
+- .sisyphus/plans/react-inspect-prop-override-toolbar.md — different seam
+- apps/desktop/src/renderer/atoms/session-sync-regressions.test.ts — session-sync seam
+- apps/desktop/src/shared/mcp-connections-shared.d.ts — MCP connections seam
+- apps/desktop/src/shared/mcp-connections-shared.d.ts.map — MCP connections seam
+- apps/desktop/src/shared/mcp-connections-shared.js — MCP connections seam
+- export — unknown, not PM
+- handoff-20260606-225432.md — handoff artifact, not PM
+- packages/ui/.tmp-storybook-verify.mjs — Storybook verification, not PM
+
+---
+
+## 4. Scope Isolation Rules
+
+### DO:
+- Commit PM slice changes separately from unrelated dirty files
+- Attribute only pm-side-agents/* and PM component changes to this seam
+- Use this audit as baseline for what exists before making changes
+- Track queue envelope bug fix as a distinct commit when implemented
+
+### DO NOT:
+- Attribute backend.ts/elf-server.ts modifications to this task (they're from prior session)
+- Bundle unrelated untracked files with PM slice commits
+- Assume all .sisyphus/* changes are PM-related (many are from Firefly, session-sync, theme seams)
+- Touch legacy ch5pm-dashboard/panel.tsx (separate surface, audit/reference only)
+
+---
+
+## 5. Commit Strategy for PM Slice
+
+When implementing Task 2+ (queue envelope fix):
+
+1. Stage ONLY:
+   - apps/desktop/src/renderer/pm-side-agents/types.ts
+   - apps/desktop/src/renderer/pm-side-agents/composition.ts (if fixing, not replacing)
+   - .sisyphus/evidence/pm-side-agents/* (audit artifacts)
+
+2. Commit message:
+   ```
+   fix(pm): correct queue envelope shape in side-agent types and composition
+   
+   - Ch5PmSideAgentQueuePayload now matches live daemon /queue envelope
+   - rows.jobs[] and rows.claims[] instead of flat jobs/claims
+   - composition.ts buildQueueSource reads payload.rows.jobs/claims
+   - Regression test fixture added for envelope shape
+   ```
+
+3. Do NOT stage:
+   - .sisyphus/boulder.json (Sisyphus state)
+   - .sisyphus/notepads/* (planning artifacts, commit separately if needed)
+   - .sisyphus/plans/* (planning artifacts, commit separately if needed)
+   - apps/desktop/src/renderer/services/backend.ts (prior session changes)
+   - apps/desktop/src/renderer/services/elf-server.ts (prior session changes)
+   - Any untracked files from other seams
+
+---
+
+## 6. Verification
+
+To verify PM slice is isolated:
+
+```bash
+# See only PM side-agents files
+git status --short | grep -E "pm-side-agents|pm-dockview|pm-live-dashboard"
+
+# See what backend.ts/elf-server.ts changes are
+git diff apps/desktop/src/renderer/services/backend.ts
+git diff apps/desktop/src/renderer/services/elf-server.ts
+
+# Confirm no imports of composition.ts
+grep -r "from.*composition" apps/desktop/src/renderer --include="*.ts" --include="*.tsx"
+```
+
+Expected: grep returns no matches (composition.ts is dead code).
