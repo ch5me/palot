@@ -10,7 +10,7 @@ import {
 	registerMcpConnection,
 	searchCatalog,
 	testMcpConnection,
-} from "@ch5me/mcp-runtime-shared"
+} from "../services/mcp-connections"
 import { Hono } from "hono"
 import { getMcpAuthSessionStatus, startMcpAuthSession } from "../services/mcp-auth-sessions"
 

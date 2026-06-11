@@ -49,6 +49,7 @@ export const memorySurfaceManifest: PluginManifest = {
 		widgets: [],
 		commands: [],
 		themes: [],
+		components: [],
 		tools: [
 			{
 				id: "plugin.firefly.built-in.surface.memory.open",

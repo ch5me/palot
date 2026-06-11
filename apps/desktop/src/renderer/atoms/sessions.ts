@@ -39,22 +39,29 @@ export interface ProjectPaginationState {
 export interface SessionEntry {
 	session: Session
 	status: SessionStatus
-	/** Pending permission requests */
 	permissions: PermissionRequest[]
-	/** Pending question requests */
 	questions: QuestionRequest[]
-	/** Project directory this session belongs to */
 	directory: string
-	/** Git branch at the time this session was created */
 	branch?: string
-	/** If set, the session runs in a git worktree at this path */
 	worktreePath?: string
-	/** The branch name auto-created for the worktree (e.g. "elf/fix-auth-bug") */
 	worktreeBranch?: string
-	/** Last session-level error (from session.error events) */
 	error?: SessionError
-	/** Worktree setup phase (shown in chat empty state while worktree is being created) */
 	setupPhase?: SessionSetupPhase
+	presenceSource: "attach" | "inferred" | "none"
+	visibilityReason: "visible" | "child-session" | "pm-session" | "noise-project" | "excluded"
+	driftFlags: Array<
+		| "invisible-running"
+		| "stale-recency"
+		| "attached-but-unhydrated"
+		| "timed-out-parent-live-child"
+		| "missing-child"
+	>
+	lastContentActivityAt: number
+	lastActivityAt: number
+}
+
+function clearHydrationDrift(flags: SessionEntry["driftFlags"] | undefined): SessionEntry["driftFlags"] {
+	return (flags ?? []).filter((flag) => flag !== "attached-but-unhydrated")
 }
 
 // ============================================================
@@ -89,6 +96,7 @@ export const upsertSessionAtom = atom(
 		const { session, directory } = args
 		const existing = get(sessionFamily(session.id))
 
+		const lastActivityAt = session.time.updated ?? session.time.created
 		set(sessionFamily(session.id), {
 			session,
 			directory: existing?.directory ?? directory,
@@ -100,6 +108,11 @@ export const upsertSessionAtom = atom(
 			worktreeBranch: existing?.worktreeBranch,
 			error: existing?.error,
 			setupPhase: existing?.setupPhase,
+			presenceSource: existing?.presenceSource ?? "none",
+			visibilityReason: existing?.visibilityReason ?? (session.parentID ? "child-session" : "visible"),
+			driftFlags: clearHydrationDrift(existing?.driftFlags),
+			lastContentActivityAt: existing?.lastContentActivityAt ?? lastActivityAt,
+			lastActivityAt: Math.max(existing?.lastActivityAt ?? 0, lastActivityAt),
 		})
 
 		// Add to index
@@ -142,24 +155,54 @@ export const removeSessionAtom = atom(null, (get, set, sessionId: string) => {
 	}
 })
 
-export const replaceAttachedSessionIdsAtom = atom(null, (get, set, sessionIds: Iterable<string>) => {
-	const prev = get(attachedSessionIdsAtom)
-	const next = new Set(sessionIds)
-
-	for (const sessionId of prev) {
-		if (!next.has(sessionId)) {
-			set(attachedSessionFamily(sessionId), false)
-		}
-	}
-
-	for (const sessionId of next) {
-		if (!prev.has(sessionId)) {
-			set(attachedSessionFamily(sessionId), true)
-		}
-	}
-
-	set(attachedSessionIdsAtom, next)
+export const replaceAttachedSessionIdsAtom = atom(null, (_get, set, sessionIds: Iterable<string>) => {
+	set(
+		replaceSessionPresenceAtom,
+		Array.from(sessionIds, (sessionId) => ({ sessionId, source: "attach" as const })),
+	)
 })
+
+export const replaceSessionPresenceAtom = atom(
+	null,
+	(
+		get,
+		set,
+		entries: Iterable<{
+			sessionId: string
+			source: "attach" | "inferred"
+		}>,
+	) => {
+		const prev = get(attachedSessionIdsAtom)
+		const next = new Set<string>()
+		const sources = new Map<string, "attach" | "inferred">()
+
+		for (const entry of entries) {
+			next.add(entry.sessionId)
+			sources.set(entry.sessionId, entry.source)
+		}
+
+		for (const sessionId of prev) {
+			if (!next.has(sessionId)) {
+				set(attachedSessionFamily(sessionId), false)
+				const entry = get(sessionFamily(sessionId))
+				if (entry) {
+					set(sessionFamily(sessionId), { ...entry, presenceSource: "none" })
+				}
+			}
+		}
+
+		for (const sessionId of next) {
+			const source = sources.get(sessionId) ?? "attach"
+			set(attachedSessionFamily(sessionId), source === "attach")
+			const entry = get(sessionFamily(sessionId))
+			if (entry) {
+				set(sessionFamily(sessionId), { ...entry, presenceSource: source })
+			}
+		}
+
+		set(attachedSessionIdsAtom, next)
+	},
+)
 
 export const setSessionStatusAtom = atom(
 	null,
@@ -173,7 +216,11 @@ export const setSessionStatusAtom = atom(
 	) => {
 		const entry = get(sessionFamily(args.sessionId))
 		if (!entry) return
-		set(sessionFamily(args.sessionId), { ...entry, status: args.status })
+		set(sessionFamily(args.sessionId), {
+			...entry,
+			status: args.status,
+			lastActivityAt: Math.max(entry.lastActivityAt, Date.now()),
+		})
 	},
 )
 
@@ -189,7 +236,15 @@ export const setSessionErrorAtom = atom(
 	) => {
 		const entry = get(sessionFamily(args.sessionId))
 		if (!entry) return
-		set(sessionFamily(args.sessionId), { ...entry, error: args.error })
+		const driftFlags = new Set(entry.driftFlags)
+		if (args.error && String(args.error.data.message ?? "").toLowerCase().includes("timed out")) {
+			driftFlags.add("timed-out-parent-live-child")
+		}
+		set(sessionFamily(args.sessionId), {
+			...entry,
+			error: args.error,
+			driftFlags: Array.from(driftFlags),
+		})
 	},
 )
 
@@ -226,6 +281,30 @@ export const setSessionWorktreeAtom = atom(
 			...entry,
 			worktreePath: args.worktreePath,
 			worktreeBranch: args.worktreeBranch,
+		})
+	},
+)
+
+export const markSessionPresenceAtom = atom(
+	null,
+	(
+		get,
+		set,
+		args: {
+			sessionId: string
+			source: "attach" | "inferred" | "none"
+		},
+	) => {
+		const entry = get(sessionFamily(args.sessionId))
+		if (!entry) return
+		const driftFlags = new Set(entry.driftFlags)
+		if (args.source === "none") {
+			driftFlags.delete("attached-but-unhydrated")
+		}
+		set(sessionFamily(args.sessionId), {
+			...entry,
+			presenceSource: args.source,
+			driftFlags: Array.from(driftFlags),
 		})
 	},
 )
@@ -358,6 +437,7 @@ export const setSessionsAtom = atom(
 			const sessionDir = session.directory || args.directory
 			const isSandbox = args.sandboxDirs?.has(sessionDir) ?? false
 
+			const lastActivityAt = session.time.updated ?? session.time.created
 			set(sessionFamily(session.id), {
 				session,
 				status: args.statuses[session.id] ?? existing?.status ?? { type: "idle" },
@@ -369,6 +449,11 @@ export const setSessionsAtom = atom(
 				worktreeBranch: existing?.worktreeBranch,
 				error: existing?.error,
 				setupPhase: existing?.setupPhase,
+				presenceSource: existing?.presenceSource ?? "none",
+				visibilityReason: existing?.visibilityReason ?? (session.parentID ? "child-session" : "visible"),
+				driftFlags: clearHydrationDrift(existing?.driftFlags),
+				lastContentActivityAt: existing?.lastContentActivityAt ?? lastActivityAt,
+				lastActivityAt: Math.max(existing?.lastActivityAt ?? 0, lastActivityAt),
 			})
 			nextIds.add(session.id)
 		}

@@ -21,6 +21,7 @@
 		"check-types": "bunx tsgo --noEmit"
 	},
 	"dependencies": {
+		"@ch5me/mcp-runtime-shared": "workspace:*",
 		"@opencode-ai/sdk": "^1.2.1",
 		"hono": "4.11.9"
 	},

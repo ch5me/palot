@@ -95,7 +95,7 @@ export interface ServerInstance {
 export type EnvironmentType = "local" | "cloud" | "vm"
 
 /** Derived agent status for UI display, mapped from SessionStatus */
-export type AgentStatus = "running" | "waiting" | "paused" | "completed" | "failed" | "idle"
+export type AgentStatus = "running" | "waiting" | "degraded" | "idle"
 
 /** Project in the sidebar — aggregates from OpenCode projects */
 export interface ProjectInfo {
@@ -184,11 +184,30 @@ export type FireflySurfaceTarget = {
 	tab: SidePanelTabId
 }
 
+export type AgentVisibilityReason =
+	| "visible"
+	| "child-session"
+	| "pm-session"
+	| "noise-project"
+	| "excluded"
+
+export type AgentPresenceSource = "attach" | "inferred" | "none"
+
+export type AgentDriftFlag =
+	| "invisible-running"
+	| "stale-recency"
+	| "attached-but-unhydrated"
+	| "timed-out-parent-live-child"
+	| "missing-child"
+
 export interface Agent {
 	id: string
 	name: string
 	status: AgentStatus
 	isAttached: boolean
+	presenceSource: AgentPresenceSource
+	visibilityReason: AgentVisibilityReason
+	driftFlags: AgentDriftFlag[]
 	environment: EnvironmentType
 	project: string
 	projectSlug: string
@@ -206,6 +225,7 @@ export interface Agent {
 	worktreeBranch?: string
 	createdAt: number
 	lastActiveAt: number
+	lastContentActivityAt: number
 	providerID?: string
 	modelID?: string
 	agentType?: string

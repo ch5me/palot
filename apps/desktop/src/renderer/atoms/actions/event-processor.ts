@@ -129,6 +129,13 @@ export function processEvent(event: Event): void {
 			}
 			break
 
+		case "session.idle":
+			set(setSessionStatusAtom, {
+				sessionId: event.properties.sessionID,
+				status: { type: "idle" },
+			})
+			break
+
 		case "session.error": {
 			const { sessionID, error } = event.properties
 			if (sessionID && error) {

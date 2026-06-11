@@ -179,17 +179,9 @@ export function SidebarLayout() {
 							onOpenChange={setLeftPanelOpen}
 						>
 							<div
-								className="flex h-full flex-col overflow-y-auto"
+								className="flex h-full min-h-0 flex-col overflow-hidden"
 								style={{ background: "hsl(var(--sidebar, var(--card)))" }}
 							>
-								<div
-									className="flex shrink-0 items-center gap-1"
-									style={{
-										height: APP_BAR_HEIGHT,
-										// @ts-expect-error -- vendor-prefixed CSS property
-										WebkitAppRegion: "drag",
-									}}
-								/>
 								{sidebarContent}
 								{slotFooter !== false && slotFooter}
 							</div>

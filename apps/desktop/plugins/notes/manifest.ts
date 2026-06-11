@@ -78,6 +78,7 @@ export const notesPluginManifest: PluginManifest = {
 			},
 		],
 		themes: [],
+		components: [],
 		tools: [
 			{
 				id: "plugin.firefly.built-in.surface.notes.open",

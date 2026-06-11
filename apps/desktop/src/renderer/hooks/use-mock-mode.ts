@@ -124,13 +124,15 @@ function deactivateMockMode(): void {
 	}
 
 	// 4. Reset discovery so useDiscovery() will re-run
-	appStore.set(discoveryAtom, {
-		loaded: false,
-		loading: false,
-		error: null,
-		phase: "idle",
-		projects: [],
-	})
+		appStore.set(discoveryAtom, {
+			loaded: false,
+			loading: false,
+			error: null,
+			phase: "idle",
+			projects: [],
+			bootstrapDirectories: [],
+		})
+
 
 	// 5. Reset connection state
 	appStore.set(serverUrlAtom, null)

@@ -7,7 +7,7 @@ import type {
 	McpCatalogSearchInput,
 	McpConnectionRecordSnapshot,
 	McpConnectionRegisterInput,
-} from "../../../desktop/src/shared/mcp-connections-shared"
+} from "@ch5me/mcp-runtime-shared"
 import { resolveMcporterCommand } from "./mcporter-cli"
 import { resolveMcporterConfigPath, withMcporterConfig } from "./mcporter-config"
 

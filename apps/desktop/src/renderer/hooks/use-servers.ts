@@ -271,5 +271,6 @@ function triggerServerSwitch(newActiveServerId: string) {
 		error: null,
 		phase: "idle",
 		projects: [],
+		bootstrapDirectories: [],
 	})
 }

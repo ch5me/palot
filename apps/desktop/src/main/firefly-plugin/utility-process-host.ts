@@ -1,4 +1,7 @@
-import type { QuarantineRecord } from "../../shared/firefly-plugin/runtime-supervision"
+import {
+	quarantineRecordSchema,
+	type QuarantineRecord,
+} from "../../shared/firefly-plugin/runtime-supervision"
 
 import { createLogger } from "../logger"
 import { getSettings, updateSettings } from "../settings-store"
@@ -42,13 +45,15 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 }
 
 function readPersistedQuarantines(): Record<string, QuarantineRecord> {
-	const raw = getSettings() as Record<string, unknown>
-	const value = raw[QUARANTINE_SETTINGS_KEY]
+	const value = getSettings()[QUARANTINE_SETTINGS_KEY]
 	if (!isRecord(value)) return {}
 	const records: Record<string, QuarantineRecord> = {}
 	for (const [pluginId, record] of Object.entries(value)) {
-		if (isRecord(record)) {
-			records[pluginId] = record as QuarantineRecord
+		const parsed = quarantineRecordSchema.safeParse(record)
+		if (parsed.success) {
+			records[pluginId] = parsed.data
+		} else {
+			log.warn("Dropping invalid persisted quarantine record", { pluginId })
 		}
 	}
 	return records
@@ -59,7 +64,7 @@ function persistQuarantines(records: Record<string, QuarantineRecord>): void {
 		[QUARANTINE_SETTINGS_KEY]: {
 			...records,
 		},
-	} as never)
+	})
 }
 
 export function getPersistedPluginQuarantines(): PluginRuntimeQuarantineSnapshot {

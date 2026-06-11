@@ -3,7 +3,9 @@ import type { ToolPart } from "@opencode-ai/sdk/v2/client"
 import { atomFamily } from "jotai-family"
 import type {
 	Agent,
+	AgentDriftFlag,
 	AgentStatus,
+	AgentVisibilityReason,
 	OpenCodeProject,
 	SessionStatus,
 	SidebarProject,
@@ -51,12 +53,17 @@ function agentEqual(prev: Agent | null, next: Agent | null): boolean {
 		prev.providerID === next.providerID &&
 		prev.modelID === next.modelID &&
 		prev.agentType === next.agentType &&
+		prev.presenceSource === next.presenceSource &&
+		prev.visibilityReason === next.visibilityReason &&
+		prev.lastContentActivityAt === next.lastContentActivityAt &&
+		prev.driftFlags.length === next.driftFlags.length &&
 		prev.permissions.length === next.permissions.length &&
 		prev.questions.length === next.questions.length &&
 		prev.childSessionIds.length === next.childSessionIds.length &&
 		prev.permissions[0] === next.permissions[0] &&
 		prev.questions[0] === next.questions[0] &&
-		prev.childSessionIds.every((id, i) => id === next.childSessionIds[i])
+		prev.childSessionIds.every((id, i) => id === next.childSessionIds[i]) &&
+		prev.driftFlags.every((flag, i) => flag === next.driftFlags[i])
 	)
 }
 
@@ -68,7 +75,9 @@ function deriveAgentStatus(
 	status: SessionStatus,
 	hasPermissions: boolean,
 	hasQuestions: boolean,
+	driftFlags: AgentDriftFlag[],
 ): AgentStatus {
+	if (driftFlags.length > 0) return "degraded"
 	if (hasPermissions || hasQuestions) return "waiting"
 	switch (status.type) {
 		case "busy":
@@ -353,11 +362,29 @@ export const agentFamily = atomFamily((sessionId: string) => {
 		const hasTreePermission = get(effectivePermissionFamily(session.id)) !== undefined
 		const hasTreeQuestion = get(effectiveQuestionFamily(session.id)) !== undefined
 		const isAttached = get(attachedSessionFamily(session.id))
-		const agentStatus = deriveAgentStatus(status, hasTreePermission, hasTreeQuestion)
+		const childEntries = childSessionIds
+			.map((childId) => get(sessionFamily(childId)))
+			.filter((child): child is NonNullable<typeof child> => !!child)
+		const driftFlags = new Set<AgentDriftFlag>(entry.driftFlags)
+		if (session.parentID && childEntries.length === 0) {
+			driftFlags.add("missing-child")
+		}
+		const hasTimedOutChild = childEntries.some(
+			(child) => child.error && String(child.error.data.message ?? "").toLowerCase().includes("timed out"),
+		)
+		if (hasTimedOutChild) {
+			driftFlags.add("timed-out-parent-live-child")
+		}
+		const agentStatus = deriveAgentStatus(
+			status,
+			hasTreePermission,
+			hasTreeQuestion,
+			Array.from(driftFlags),
+		)
 
 		const { permissions, questions } = entry
 		const created = session.time.created
-		const lastActiveAt = session.time.updated ?? session.time.created
+		const lastActiveAt = entry.lastActivityAt
 
 		// If this session's directory is a sandbox (worktree), resolve the parent
 		// project directory for name/slug display so it groups visually under the parent.
@@ -370,12 +397,16 @@ export const agentFamily = atomFamily((sessionId: string) => {
 		const effectivePerm = get(effectivePermissionFamily(session.id))
 		const effectiveQ = get(effectiveQuestionFamily(session.id))
 
+		const visibilityReason: AgentVisibilityReason = session.parentID ? "child-session" : entry.visibilityReason
 		const next: Agent = {
 			id: session.id,
 			sessionId: session.id,
 			name: session.title || "Untitled",
 			status: agentStatus,
 			isAttached,
+			presenceSource: isAttached ? "attach" : entry.presenceSource,
+			visibilityReason,
+			driftFlags: Array.from(driftFlags),
 			environment: "local" as const,
 			project: projectNameFromDir(displayDir),
 			projectSlug: projectInfo?.slug ?? projectNameFromDir(displayDir),
@@ -389,7 +420,9 @@ export const agentFamily = atomFamily((sessionId: string) => {
 					? `Waiting for approval: ${effectivePerm.request.permission}`
 					: status.type === "busy"
 						? "Working..."
-						: undefined,
+						: driftFlags.size > 0
+							? Array.from(driftFlags).join(", ")
+							: undefined,
 			activities: [],
 			permissions,
 			questions,
@@ -398,6 +431,7 @@ export const agentFamily = atomFamily((sessionId: string) => {
 			worktreeBranch: entry.worktreeBranch,
 			createdAt: created,
 			lastActiveAt,
+			lastContentActivityAt: entry.lastContentActivityAt,
 			providerID,
 			modelID,
 			agentType,

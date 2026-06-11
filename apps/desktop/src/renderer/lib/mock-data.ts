@@ -122,6 +122,7 @@ export const MOCK_DISCOVERY: DiscoveryState = {
 	error: null,
 	phase: "ready",
 	projects: mockDiscoveredProjects,
+	bootstrapDirectories: [],
 }
 
 // ============================================================
@@ -321,6 +322,11 @@ export const MOCK_SESSION_ENTRIES: Map<string, SessionEntry> = new Map([
 			questions: [],
 			directory: DIRS.elf,
 			branch: "feat/dark-mode",
+			presenceSource: "none",
+			visibilityReason: "visible",
+			driftFlags: [],
+			lastContentActivityAt: mockSessions[0].time.updated ?? mockSessions[0].time.created,
+			lastActivityAt: mockSessions[0].time.updated ?? mockSessions[0].time.created,
 		},
 	],
 	[
@@ -344,6 +350,11 @@ export const MOCK_SESSION_ENTRIES: Map<string, SessionEntry> = new Map([
 			questions: [],
 			directory: DIRS.acmeApi,
 			branch: "fix/token-refresh",
+			presenceSource: "attach",
+			visibilityReason: "visible",
+			driftFlags: [],
+			lastContentActivityAt: mockSessions[1].time.updated ?? mockSessions[1].time.created,
+			lastActivityAt: mockSessions[1].time.updated ?? mockSessions[1].time.created,
 		},
 	],
 	[
@@ -355,7 +366,13 @@ export const MOCK_SESSION_ENTRIES: Map<string, SessionEntry> = new Map([
 			questions: [],
 			directory: DIRS.acmeApi,
 			branch: "refactor/db-pool",
+			presenceSource: "none",
+			visibilityReason: "visible",
+			driftFlags: [],
+			lastContentActivityAt: mockSessions[2].time.updated ?? mockSessions[2].time.created,
+			lastActivityAt: mockSessions[2].time.updated ?? mockSessions[2].time.created,
 		},
+
 	],
 	[
 		IDS.sessionLanding,
@@ -366,7 +383,13 @@ export const MOCK_SESSION_ENTRIES: Map<string, SessionEntry> = new Map([
 			questions: [],
 			directory: DIRS.landing,
 			branch: "feat/hero-section",
+			presenceSource: "none",
+			visibilityReason: "visible",
+			driftFlags: [],
+			lastContentActivityAt: mockSessions[3].time.updated ?? mockSessions[3].time.created,
+			lastActivityAt: mockSessions[3].time.updated ?? mockSessions[3].time.created,
 		},
+
 	],
 	[
 		IDS.sessionTests,
@@ -377,7 +400,13 @@ export const MOCK_SESSION_ENTRIES: Map<string, SessionEntry> = new Map([
 			questions: [],
 			directory: DIRS.elf,
 			branch: "test/auth-middleware",
+			presenceSource: "none",
+			visibilityReason: "visible",
+			driftFlags: [],
+			lastContentActivityAt: mockSessions[4].time.updated ?? mockSessions[4].time.created,
+			lastActivityAt: mockSessions[4].time.updated ?? mockSessions[4].time.created,
 		},
+
 	],
 	[
 		IDS.sessionDocs,
@@ -388,7 +417,13 @@ export const MOCK_SESSION_ENTRIES: Map<string, SessionEntry> = new Map([
 			questions: [],
 			directory: DIRS.elf,
 			branch: "docs/api-v2",
+			presenceSource: "none",
+			visibilityReason: "visible",
+			driftFlags: [],
+			lastContentActivityAt: mockSessions[5].time.updated ?? mockSessions[5].time.created,
+			lastActivityAt: mockSessions[5].time.updated ?? mockSessions[5].time.created,
 		},
+
 	],
 ])
 

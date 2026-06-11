@@ -41,6 +41,7 @@ export interface DiscoveryState {
 	phase: DiscoveryPhase
 	/** Projects discovered from the OpenCode API (Project type from SDK) */
 	projects: OpenCodeProject[]
+	bootstrapDirectories: string[]
 }
 
 // ============================================================
@@ -53,6 +54,7 @@ export const discoveryAtom = atom<DiscoveryState>({
 	error: null,
 	phase: "idle",
 	projects: [],
+	bootstrapDirectories: [],
 })
 
 // Convenience selectors

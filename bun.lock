@@ -387,6 +387,7 @@
       "name": "@ch5me/elf-server",
       "version": "0.4.0",
       "dependencies": {
+        "@ch5me/mcp-runtime-shared": "workspace:*",
         "@opencode-ai/sdk": "^1.2.1",
         "hono": "4.11.9",
       },
@@ -430,6 +431,10 @@
     },
     "packages/mcp-runtime-shared": {
       "name": "@ch5me/mcp-runtime-shared",
+      "devDependencies": {
+        "@typescript/native-preview": "^7.0.0-dev.20260207.1",
+        "typescript": "^5.8.3",
+      },
     },
     "packages/ui": {
       "name": "@ch5me/elf-ui",
@@ -3988,6 +3993,8 @@
     "@ch5me/elf-ui/typescript": ["typescript@5.9.3", "", { "bin": { "tsc": "bin/tsc", "tsserver": "bin/tsserver" } }, "sha512-jl1vZzPDinLr9eUt3J/t7V6FgNEw9QjvBPdysz9KfQDD41fQrC2Y4vKQdiaUpFT4bXlb1RHhLpp8wtm6M5TgSw=="],
 
     "@ch5me/elf-ui/zod": ["zod@4.3.6", "", {}, "sha512-rftlrkhHZOcjDwkGlnUtZZkvaPHCsDATp4pGpuOOMDaTdDDXF91wuVDJoWoPsKX/3YPQ5fHuF3STjcYyKr+Qhg=="],
+
+    "@ch5me/mcp-runtime-shared/typescript": ["typescript@5.9.3", "", { "bin": { "tsc": "bin/tsc", "tsserver": "bin/tsserver" } }, "sha512-jl1vZzPDinLr9eUt3J/t7V6FgNEw9QjvBPdysz9KfQDD41fQrC2Y4vKQdiaUpFT4bXlb1RHhLpp8wtm6M5TgSw=="],
 
     "@ch5me/react-dev-surface/react": ["react@19.2.4", "", {}, "sha512-9nfp2hYpCwOjAN+8TZFGhtWEwgvWHXqESH8qT89AT/lWklpLON22Lc8pEtnpsZz7VmawabSU0gCjnj8aC0euHQ=="],
 

@@ -84,11 +84,27 @@ const STATUS_COLOR: Record<AgentStatus, string> = {
 }
 
 function isActiveSurfaceAgent(agent: Agent): boolean {
-	return (agent.visibilityReason ?? "visible") === "visible" && agent.status !== "idle"
+	return (
+		agent.visibilityReason === "visible" &&
+		(agent.status !== "idle" || agent.presenceSource !== "none")
+	)
+}
+
+function getActiveSurfaceRank(agent: Agent): number {
+	if (agent.status === "running" || agent.status === "waiting") return 0
+	if (agent.status === "degraded") return 1
+	if (agent.presenceSource !== "none") return 2
+	return 3
 }
 
 function renderAgentMeta(agent: Agent): string | undefined {
-	const parts = [agent.agentType, agent.modelID].filter(Boolean)
+	const presence =
+		agent.presenceSource === "attach"
+			? "attached"
+			: agent.presenceSource === "inferred"
+				? "inferred live"
+				: undefined
+	const parts = [agent.agentType, agent.modelID, presence].filter(Boolean)
 	return parts.length > 0 ? parts.join(" · ") : undefined
 }
 
@@ -178,7 +194,11 @@ export function AppSidebarContent({
 		() =>
 			agents
 				.filter((a) => !a.parentId && !isProjectManagerSession(a) && isActiveSurfaceAgent(a))
-				.sort((a, b) => b.lastActiveAt - a.lastActiveAt),
+				.sort((a, b) => {
+					const rankDelta = getActiveSurfaceRank(a) - getActiveSurfaceRank(b)
+					if (rankDelta !== 0) return rankDelta
+					return b.lastActiveAt - a.lastActiveAt
+				}),
 		[agents, isProjectManagerSession],
 	)
 
@@ -299,7 +319,7 @@ export function AppSidebarContent({
 				{activeSessions.length > 0 && (
 					<SessionSection
 						id="active"
-						label="Active Now"
+						label={`Active Now (${activeSessions.length})`}
 						open={sidebarSectionsOpen.active}
 						onOpenChange={setSectionOpen}
 					>
@@ -405,15 +425,15 @@ export function AppSidebarContent({
 							open={sidebarSectionsOpen.projects}
 							onOpenChange={(open) => setSectionOpen("projects", open)}
 						>
-							<div className="flex items-center justify-between gap-2 px-2 pb-1">
-								<CollapsibleTrigger className="flex min-w-0 flex-1 items-center gap-1.5 text-left outline-hidden">
+							<div className="flex w-full items-center justify-between gap-2 px-2 pb-1">
+								<CollapsibleTrigger className="group flex w-full min-w-0 flex-1 items-center gap-2 text-left outline-hidden">
+									<SidebarGroupLabel className="h-auto min-w-0 flex-1 p-0">Projects</SidebarGroupLabel>
 									<ChevronRightIcon
-										className="size-3 shrink-0 text-muted-foreground transition-transform duration-200 ease-out"
+										className="size-3 shrink-0 text-muted-foreground opacity-0 transition-[transform,opacity] duration-200 ease-out group-hover:opacity-100 group-focus-visible:opacity-100"
 										style={{
 											transform: sidebarSectionsOpen.projects ? "rotate(90deg)" : "rotate(0deg)",
 										}}
 									/>
-									<SidebarGroupLabel className="h-auto min-w-0 p-0">Projects</SidebarGroupLabel>
 								</CollapsibleTrigger>
 								<div className="flex shrink-0 items-center gap-0.5">
 									<Tooltip>
@@ -532,7 +552,7 @@ export function AppSidebarContent({
 
 				)}
 			</SidebarContent>
-			<SidebarFooter className="space-y-0 p-2">
+			<SidebarFooter className="space-y-0 border-t border-sidebar-border/10 bg-sidebar/95 p-2 shadow-[0_-10px_24px_-18px_rgba(15,23,42,0.45)] backdrop-blur supports-[backdrop-filter]:bg-sidebar/85">
 				<ServerIndicator />
 				<SidebarMenu>
 					<SidebarMenuItem>
@@ -606,12 +626,12 @@ const SessionSection = memo(function SessionSection({
 	return (
 		<SidebarGroup>
 			<Collapsible open={open} onOpenChange={(nextOpen) => onOpenChange(id, nextOpen)}>
-				<CollapsibleTrigger className="flex w-full items-center gap-1.5 px-2 text-left outline-hidden">
+				<CollapsibleTrigger className="group flex w-full items-center gap-2 px-2 text-left outline-hidden">
+					<SidebarGroupLabel className="h-8 min-w-0 flex-1 p-0">{label}</SidebarGroupLabel>
 					<ChevronRightIcon
-						className="size-3 shrink-0 text-muted-foreground transition-transform duration-200 ease-out"
+						className="size-3 shrink-0 text-muted-foreground opacity-0 transition-[transform,opacity] duration-200 ease-out group-hover:opacity-100 group-focus-visible:opacity-100"
 						style={{ transform: open ? "rotate(90deg)" : "rotate(0deg)" }}
 					/>
-					<SidebarGroupLabel className="h-8 min-w-0 p-0">{label}</SidebarGroupLabel>
 				</CollapsibleTrigger>
 				<CollapsibleContent
 					keepMounted
@@ -679,6 +699,8 @@ const ProjectFolder = memo(function ProjectFolder({
 			const aActive = isActiveSurfaceAgent(a)
 			const bActive = isActiveSurfaceAgent(b)
 			if (aActive !== bActive) return aActive ? -1 : 1
+			const rankDelta = getActiveSurfaceRank(a) - getActiveSurfaceRank(b)
+			if (rankDelta !== 0) return rankDelta
 			// Within same group, sort by lastActiveAt (matches server's time_updated DESC)
 			return b.lastActiveAt - a.lastActiveAt
 		})
@@ -821,7 +843,8 @@ const SessionItem = memo(function SessionItem({
 	const isWorktree = !!agent.worktreePath
 	const lastActive = useLiveLastActive(agent)
 	const showSpinner = agent.status === "running"
-	const showAttachedPulse = agent.isAttached && agent.status === "idle"
+	const showLivePresencePulse = agent.presenceSource !== "none" && agent.status === "idle"
+	const livePresenceColor = agent.presenceSource === "inferred" ? "text-cyan-500" : "text-green-500"
 	const pinnedSessions = useAtomValue(pinnedSessionsAtom)
 	const meta = renderAgentMeta(agent)
 	const isPinned = agent.sessionId in pinnedSessions
@@ -883,14 +906,14 @@ const SessionItem = memo(function SessionItem({
 				onClick={isEditing ? undefined : onSelect}
 			>
 					{isWorktree ? (
-						<GitForkIcon
-							className={`shrink-0 ${showAttachedPulse ? "text-green-500" : statusColor} ${showSpinner ? "animate-spin" : showAttachedPulse ? "animate-pulse" : ""}`}
+							<GitForkIcon
+								className={`shrink-0 ${showLivePresencePulse ? livePresenceColor : statusColor} ${showSpinner ? "animate-spin" : showLivePresencePulse ? "animate-pulse" : ""}`}
+							/>
+						) : (
+						<StatusIcon
+							className={`shrink-0 ${showLivePresencePulse ? livePresenceColor : statusColor} ${showSpinner ? "animate-spin" : showLivePresencePulse ? "animate-pulse" : ""}`}
 						/>
-					) : (
-					<StatusIcon
-						className={`shrink-0 ${showAttachedPulse ? "text-green-500" : statusColor} ${showSpinner ? "animate-spin" : showAttachedPulse ? "animate-pulse" : ""}`}
-					/>
-				)}
+					)}
 
 				{isEditing ? (
 					<Input
