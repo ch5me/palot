@@ -27,12 +27,41 @@ const AgentsPanel = memo(function AgentsPanel() {
 })
 
 function PmDockviewShellImpl({ onReady }: { onReady?: (event: DockviewReadyEvent) => void }) {
+	function handleReady(event: DockviewReadyEvent) {
+		if (event.api.panels.length === 0) {
+			event.api.addPanel({
+				id: PANEL_DENSE,
+				title: "Dense Console",
+				component: PANEL_DENSE,
+			})
+			event.api.addPanel({
+				id: PANEL_AGENTS,
+				title: "Side Agents",
+				component: PANEL_AGENTS,
+				position: { direction: "within", referencePanel: PANEL_DENSE },
+				inactive: true,
+			})
+			event.api.addPanel({
+				id: PANEL_LINEAGE,
+				title: "Lineage",
+				component: PANEL_LINEAGE,
+				position: { direction: "within", referencePanel: PANEL_DENSE },
+				inactive: true,
+			})
+		}
+		onReady?.(event)
+	}
+
 	return (
 		<div className="dockview-theme-light dark:dockview-theme-dark h-full w-full">
 			<DockviewReact
 				className="h-full w-full"
-				components={{ [PANEL_DENSE]: DenseConsolePanel, [PANEL_LINEAGE]: LineagePanel, [PANEL_AGENTS]: AgentsPanel }}
-				onReady={onReady ?? (() => {})}
+				components={{
+					[PANEL_DENSE]: DenseConsolePanel,
+					[PANEL_LINEAGE]: LineagePanel,
+					[PANEL_AGENTS]: AgentsPanel,
+				}}
+				onReady={handleReady}
 			/>
 		</div>
 	)

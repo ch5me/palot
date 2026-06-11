@@ -4,15 +4,18 @@ import { useRouter } from "@tanstack/react-router"
 import { RefreshCwIcon } from "lucide-react"
 import { useMemo } from "react"
 import type {
+	Ch5PmAttentionQueue,
+	Ch5PmBabysitter,
 	Ch5PmLiveBackgroundAgent,
 	Ch5PmLiveBox,
 	Ch5PmLiveLane,
+	Ch5PmLivePlaneSummary,
 	Ch5PmLiveReadyFrontierTicket,
 	Ch5PmLiveSession,
 	Ch5PmLiveState,
-	Ch5PmNeedsChrisItem,
 	Ch5PmFollowUp,
 	Ch5PmLineageItem,
+	Ch5PmNeedsChrisItem,
 } from "../ch5pm-dashboard/types"
 import { createLogger } from "../lib/logger"
 import { fetchCh5PmState, openExternalUrl } from "../services/backend"
@@ -88,8 +91,180 @@ function asText(value: unknown): string {
 	if (typeof value === "string") return value
 	if (typeof value === "number" || typeof value === "boolean") return String(value)
 	if (Array.isArray(value)) return value.map(asText).filter(Boolean).join(" ")
-	if (typeof value === "object") return Object.entries(value as Record<string, unknown>).map(([k, v]) => `${k}:${asText(v)}`).join(" ")
+	if (typeof value === "object") {
+		return Object.entries(value as Record<string, unknown>)
+			.map(([k, v]) => `${k}:${asText(v)}`)
+			.join(" ")
+	}
 	return String(value)
+}
+
+function asRecord(value: unknown): Record<string, unknown> {
+	return value && typeof value === "object" && !Array.isArray(value)
+		? value as Record<string, unknown>
+		: {}
+}
+
+function asArray(value: unknown): unknown[] {
+	return Array.isArray(value) ? value : []
+}
+
+function readString(record: Record<string, unknown>, ...keys: string[]): string | undefined {
+	for (const key of keys) {
+		const value = record[key]
+		if (typeof value === "string" && value.trim().length > 0) return value
+		if (typeof value === "number" || typeof value === "boolean") return String(value)
+	}
+	return undefined
+}
+
+function readNumber(record: Record<string, unknown>, key: string): number {
+	const value = record[key]
+	return typeof value === "number" && Number.isFinite(value) ? value : 0
+}
+
+function directorySlug(value?: string): string | undefined {
+	if (!value) return undefined
+	return value.replace(/^~\/src\/ch5\//, "").split("/").filter(Boolean).pop()
+}
+
+function normalizeBoxes(value: unknown): Ch5PmLiveBox[] {
+	return asArray(value).map((item) => {
+		const box = asRecord(item)
+		const daemon = asRecord(box.daemon)
+		const metadata = asRecord(box.metadata)
+		const staticBox = asRecord(metadata.staticBox)
+		const fleet = asRecord(box.fleet)
+		const provider = asRecord(fleet.provider)
+		const transport = asRecord(fleet.workerLaunchTransport)
+		const healthy = typeof box.healthy === "boolean"
+			? box.healthy
+			: readString(daemon, "health") === "healthy"
+		return {
+			id: readString(box, "id", "boxId") ?? "unknown-box",
+			role:
+				readString(box, "role") ??
+				readString(staticBox, "role") ??
+				readString(provider, "kind") ??
+				"box",
+			daemon: {
+				url: readString(daemon, "url", "altUrl") ?? readString(transport, "daemonBaseUrl"),
+				altUrl: readString(daemon, "altUrl"),
+				health: readString(daemon, "health") ?? (healthy ? "healthy" : "degraded"),
+				boundHost: readString(daemon, "boundHost"),
+			},
+			opencodeServe: readString(box, "opencodeServe"),
+			notes: readString(box, "notes") ?? asText(metadata.degradedReasons),
+		}
+	})
+}
+
+function normalizeSessions(value: unknown): Ch5PmLiveSession[] {
+	return asArray(value).map((item) => {
+		const session = asRecord(item)
+		const directory = readString(session, "directory")
+		const repo = readString(session, "repo", "repoId") ?? directorySlug(directory)
+		const id = readString(session, "id", "sessionId") ?? readString(session, "title") ?? "unknown-session"
+		return {
+			id,
+			title: readString(session, "title") ?? id,
+			repo,
+			box: readString(session, "box", "boxId", "sourceBoxId"),
+			state: readString(session, "state", "status", "classification"),
+			lane: readString(session, "lane", "reason", "recommendation"),
+			projectSlug: readString(session, "projectSlug") ?? repo,
+		}
+	})
+}
+
+function normalizeLanes(value: unknown): Ch5PmLiveLane[] {
+	return asArray(value).map((item) => {
+		const lane = asRecord(item)
+		const name = readString(lane, "name", "jobId", "ticketId") ?? "lane"
+		return {
+			name,
+			symbol: readString(lane, "symbol"),
+			status: readString(lane, "status", "state"),
+			session: readString(lane, "session", "sessionId"),
+			goal: readString(lane, "goal", "failedStepReason", "failedStep", "ticketId"),
+		}
+	})
+}
+
+function normalizeNeedsChris(value: unknown): Ch5PmNeedsChrisItem[] {
+	return asArray(value).map((item) => {
+		if (typeof item === "string") return { title: item, source: "daemon" }
+		const row = asRecord(item)
+		return {
+			ticket: readString(row, "ticket", "ticketId"),
+			title: readString(row, "title", "name"),
+			note: readString(row, "note", "reason"),
+			source: readString(row, "source", "sourceBoxId", "boxId"),
+			priority: readString(row, "priority"),
+		}
+	})
+}
+
+function normalizePlane(value: unknown): Ch5PmLivePlaneSummary {
+	const plane = asRecord(value)
+	return {
+		workspaceSlug: readString(plane, "workspaceSlug"),
+		projects: typeof plane.projects === "number" ? plane.projects : undefined,
+		epics: typeof plane.epics === "number" ? plane.epics : undefined,
+		readUrl: readString(plane, "readUrl"),
+		readyFrontier: asArray(plane.readyFrontier).map((item) => {
+			const ticket = asRecord(item)
+			return {
+				ticket: readString(ticket, "ticket", "ticketId", "id") ?? "ticket",
+				title: readString(ticket, "title", "name") ?? "Untitled",
+				priority: readString(ticket, "priority"),
+				repo: readString(ticket, "repo", "repoId"),
+				coveredBy: readString(ticket, "coveredBy") ?? null,
+			}
+		}),
+		humanGated: asRecord(plane.humanGated),
+	}
+}
+
+function normalizeAttentionQueue(value: unknown): Ch5PmAttentionQueue | undefined {
+	const queue = asRecord(value)
+	const counts = asRecord(queue.counts)
+	const open = asArray(queue.open) as Ch5PmAttentionQueue["open"]
+	if (open.length === 0 && Object.keys(counts).length === 0) return undefined
+	return {
+		open,
+		counts: {
+			total: readNumber(counts, "total"),
+			p0: readNumber(counts, "p0"),
+			p1: readNumber(counts, "p1"),
+			p2: readNumber(counts, "p2"),
+		},
+	}
+}
+
+function normalizeLiveState(data?: Ch5PmLiveState | null): Ch5PmLiveState {
+	const raw = asRecord(data)
+	const schemaVersion = typeof raw.schemaVersion === "number"
+		? raw.schemaVersion
+		: Number(readString(raw, "schemaVersion"))
+	return {
+		_doc: readString(raw, "_doc"),
+		schemaVersion: Number.isFinite(schemaVersion) ? schemaVersion : undefined,
+		updatedAt: readString(raw, "updatedAt"),
+		generatedBy: readString(raw, "generatedBy"),
+		host: readString(raw, "host"),
+		boxes: normalizeBoxes(raw.boxes),
+		sessions: normalizeSessions(raw.sessions),
+		lanes: normalizeLanes(raw.lanes),
+		backgroundAgents: asArray(raw.backgroundAgents) as Ch5PmLiveBackgroundAgent[],
+		plane: normalizePlane(raw.plane ?? raw.planeSummary),
+		recentCompletions: asArray(raw.recentCompletions).map(asText).filter(Boolean),
+		needsChris: normalizeNeedsChris(raw.needsChris),
+		followUps: asArray(raw.followUps) as Ch5PmFollowUp[],
+		babysitter: asRecord(raw.babysitter) as Ch5PmBabysitter,
+		lineage: asArray(raw.lineage) as Ch5PmLineageItem[],
+		attentionQueue: normalizeAttentionQueue(raw.attentionQueue),
+	}
 }
 
 function openUrl(url?: string) {
@@ -281,41 +456,33 @@ export function PmLiveDashboard() {
 		staleTime: 10_000,
 	})
 
-	const data = query.data
+	const state = normalizeLiveState(query.data)
 
 	const lanesBySession = useMemo(() => {
 		const map = new Map<string, Ch5PmLiveLane>()
-		for (const lane of data?.lanes ?? []) {
+		for (const lane of state.lanes) {
 			if (lane.session) map.set(lane.session, lane)
 		}
 		return map
-	}, [data?.lanes])
+	}, [state.lanes])
 
 	const sessionsById = useMemo(() => {
 		const map = new Map<string, Ch5PmLiveSession>()
-		for (const session of data?.sessions ?? []) {
+		for (const session of state.sessions) {
 			map.set(session.id, session)
 		}
 		return map
-	}, [data?.sessions])
+	}, [state.sessions])
 
-	const workingCount = (data?.lanes ?? []).filter((lane) => normalizeLaneStatus(lane.status) === "working").length
-	const needsCount = (data?.needsChris.length ?? 0) || (data?.plane.humanGated?.count ?? 0)
-	const askCount = data?.attentionQueue?.counts.total ?? 0
-	const readyCount = data?.plane.readyFrontier.length ?? 0
+	const workingLaneCount = state.lanes.filter((lane) => normalizeLaneStatus(lane.status) === "working").length
+	const busySessionCount = state.sessions.filter((session) =>
+		["busy", "settling", "running"].includes(session.state?.trim().toLowerCase() ?? ""),
+	).length
+	const workingCount = workingLaneCount || busySessionCount
+	const needsCount = state.needsChris.length || (state.plane.humanGated?.count ?? 0)
+	const askCount = state.attentionQueue?.counts?.total ?? 0
+	const readyCount = state.plane.readyFrontier.length
 	const errMsg = query.error instanceof Error ? query.error.message : query.error ? "load failed" : null
-
-	const empty: Ch5PmLiveState = {
-		boxes: [],
-		sessions: [],
-		lanes: [],
-		backgroundAgents: [],
-		plane: { readyFrontier: [] },
-		recentCompletions: [],
-		needsChris: [],
-	}
-
-	const state = data ?? empty
 
 	const lineage = (state.lineage ?? []).map((item) => ({
 		...item,
@@ -334,7 +501,7 @@ export function PmLiveDashboard() {
 	const frontier = state.plane.readyFrontier.slice(0, 7)
 
 	return (
-		<div className="flex h-[calc(100vh-7.5rem)] min-h-[680px] flex-col overflow-hidden bg-white font-mono text-[10px] dark:bg-neutral-950 dark:text-neutral-200">
+		<div className="flex h-full min-h-0 flex-col overflow-hidden bg-white font-mono text-[10px] dark:bg-neutral-950 dark:text-neutral-200">
 			<div className="flex h-7 items-center border-b border-neutral-300 bg-neutral-100 dark:border-neutral-700 dark:bg-neutral-900">
 				<div className="flex h-full items-center border-r border-neutral-300 px-2 text-[10px] font-bold tracking-widest text-neutral-900 dark:border-neutral-700 dark:text-neutral-100">
 					CH5PM
