@@ -119,42 +119,85 @@ export interface Ch5PmSideAgentPayload {
   } | null;
 }
 
+/**
+ * Full payload shape returned by GET /pm/health daemon endpoint.
+ *
+ * Provenance: proxied via `apps/server/src/routes/ch5pm.ts` → daemon `/health`.
+ * Live audit 2026-06-11: ok, health, helper, runtimeStateFile, generatedAt,
+ * version, babysitterLoop, dataAges, degradedReasons.
+ */
 export interface Ch5PmSideAgentHealthPayload {
   ok?: boolean;
   health?: string;
-  degradedReasons?: string[];
+  helper?: string;
+  runtimeStateFile?: string;
+  generatedAt?: string;
+  version?: { commit: string; boxId: string } | null;
   babysitterLoop?: Ch5PmSideAgentLoopStatus | null;
-  updatedAt?: string | null;
+  dataAges?: Record<string, string> | null;
+  degradedReasons?: string[];
 }
 
+/**
+ * Queue job row from the daemon dispatch queue.
+ *
+ * Provenance: proxied via `apps/server/src/routes/ch5pm.ts` → daemon `/queue`.
+ * Live audit 2026-06-11: fields are jobId, ticketId, repoId, boxId, workerId,
+ * sessionId, state, enqueuedAt, startedAt, endedAt, completedSteps, failedStep,
+ * failedStepReason, rollbackSteps, metadata.
+ */
 export interface Ch5PmSideAgentQueueJob {
-  id?: string;
-  status?: string;
-  claimedBy?: string | null;
+  jobId: string;
+  ticketId?: string | null;
+  repoId?: string | null;
   boxId?: string | null;
-  ticket?: string | null;
-  repo?: string | null;
-  title?: string | null;
+  workerId?: string | null;
+  sessionId?: string | null;
+  state: string;
+  enqueuedAt?: string | null;
+  startedAt?: string | null;
+  endedAt?: string | null;
+  completedSteps?: string[];
   failedStep?: string | null;
+  failedStepReason?: string | null;
+  rollbackSteps?: string[];
   metadata?: Record<string, unknown> | null;
-  createdAt?: string | null;
-  updatedAt?: string | null;
 }
 
+/**
+ * Queue claim row from the daemon dispatch queue.
+ *
+ * Provenance: same source as jobs — daemon `/queue` via `rows.claims[]`.
+ * Claim fields follow the same naming convention as jobs.
+ */
 export interface Ch5PmSideAgentQueueClaim {
-  id?: string;
-  status?: string;
+  claimId: string;
+  jobId?: string | null;
   boxId?: string | null;
-  ticket?: string | null;
-  title?: string | null;
-  createdAt?: string | null;
-  updatedAt?: string | null;
+  workerId?: string | null;
+  state: string;
+  claimedAt?: string | null;
+  releasedAt?: string | null;
   metadata?: Record<string, unknown> | null;
 }
 
+/**
+ * Full payload shape returned by GET /pm/queue daemon endpoint.
+ *
+ * Provenance: proxied via `apps/server/src/routes/ch5pm.ts` → daemon `/queue`.
+ * Live audit 2026-06-11: envelope with top-level ok, health, helper, rows,
+ * generatedAt, degradedReasons, dataAges. `rows` is an OBJECT containing
+ * `jobs[]` and `claims[]` — NOT flat top-level arrays.
+ */
 export interface Ch5PmSideAgentQueuePayload {
-  jobs?: Ch5PmSideAgentQueueJob[];
-  claims?: Ch5PmSideAgentQueueClaim[];
-  updatedAt?: string | null;
-  generatedAt?: string | null;
+  ok?: boolean;
+  health?: string;
+  helper?: string;
+  rows: {
+    jobs: Ch5PmSideAgentQueueJob[];
+    claims: Ch5PmSideAgentQueueClaim[];
+  };
+  generatedAt?: string;
+  degradedReasons?: string[];
+  dataAges?: Record<string, string> | null;
 }
