@@ -17,3 +17,11 @@ project:
       role: overview
     - locator: AGENTS.md
       role: agent-guide
+    - locator: .ch5/readiness.yaml
+      role: readiness
+    - locator: .ch5/observability.yaml
+      role: observability
+    - locator: .ch5/proof.yaml
+      role: proof
+    - locator: .ch5/environments.yaml
+      role: environments
