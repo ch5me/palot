@@ -21,9 +21,9 @@ Folio's current `WorkspaceShell.tsx` acts as a monolithic facade. For Palot firs
 Folio plugins must **not** own the outer routing shell or sidebar collapse logic. They provide tab content payloads and page surface bodies that the host renders inside its owned containers.
 
 ## Evidence <!-- oc:id=sec_af -->
-- `apps/web/src/components/shell-facade/WorkspaceShell.tsx`
-- `apps/web/src/components/Sidebar.tsx`
-- `apps/storybook/stories/Shell.stories.tsx`
+- `~/src/ch5/folio-db/apps/web/src/components/shell-facade/WorkspaceShell.tsx`
+- `~/src/ch5/folio-db/apps/web/src/components/Sidebar.tsx`
+- `~/src/ch5/folio-db/apps/storybook/stories/Shell.stories.tsx`
 
 ## Acceptance Criteria <!-- oc:id=sec_ag -->
 - [x] Workspace shell pieces are split into host-owned chrome vs Folio-owned content/navigation.

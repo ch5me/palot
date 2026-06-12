@@ -8,7 +8,9 @@ To prevent the closed-trap of `side-panel` vocab, we define distinct, future-saf
 1. **`settings-section`**: Dedicated panels within the Palot settings shell for Folio organizations, admin, and workspace preferences. <!-- oc:id=item_ac -->
 1. **`side-panel`**: Contextual adjunct surfaces (backlinks, inspectors, row previews, comments) that supplement an active `page` or `nav-sidebar` without replacing it. <!-- oc:id=item_ad -->
 1. **`command`**: Palette actions, keybindings, and context menus for creating/opening Folio objects, independent of sidebar clicks. <!-- oc:id=item_ae -->
-1. **`background-service` / `data-bridge`**: Non-visual runtime integrations (auth bridge, API client injection, local cache coordination). <!-- oc:id=item_af -->
+1. **`workspace-widget`**: Small embedded summaries or launchers that enrich a broader Palot workspace surface without becoming the primary page or nav shell. This stays conceptual in the first implementation but remains part of the taxonomy so inventory items have a durable target. <!-- oc:id=item_af -->
+1. **`background-service`**: Non-visual runtime integrations that manage long-lived behavior such as sync/watch loops and durable cache lifecycle. Conceptual in the first implementation; not a manifest family yet. <!-- oc:id=item_ag -->
+1. **`data-bridge`**: Adapter seams for auth/session bridging, API client injection, route translation, and cache handoff between Palot host and Folio runtime. Manifest-adjacent but primarily architectural in the first implementation. <!-- oc:id=item_ah -->
 
 ## Mapping Folio UI Categories to Host Families <!-- oc:id=sec_ac -->
 | Folio UI Category | Host Surface Target | Rationale |

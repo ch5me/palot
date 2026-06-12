@@ -12,7 +12,7 @@
 | **Local Cache** (`local-cache.ts`) | Offline document state | Folio Web | **Folio-owned**: Initialized and torn down alongside the active page surface lifecycle. |
 
 ## Hidden Singleton Collision Risks <!-- oc:id=sec_ac -->
-1. **tRPC Client Instantiation**: Currently, components like `Sidebar.tsx`, `WorkspaceHome.tsx`, and `DatabasePage.tsx` call `createClient()` independently. If embedded as separate Palot surfaces without a shared host context, this creates redundant WebSocket/HTTP connections. **Mitigation**: Palot must provide a single, memoized Folio client instance via a host-provided React Context or Jotai atom. <!-- oc:id=item_aa -->
+1. **tRPC Client Instantiation**: Folio surfaces rooted under `~/src/ch5/folio-db/apps/web/src/components/Sidebar.tsx`, `~/src/ch5/folio-db/apps/web/src/components/WorkspaceHome.tsx`, and `~/src/ch5/folio-db/apps/web/src/databases/DatabasePage.tsx` all depend on the same client layer. If embedded as separate Palot surfaces without a shared host context, this creates redundant WebSocket/HTTP connections. **Mitigation**: Palot must provide a single, memoized Folio client instance via a host-provided React Context or Jotai atom. <!-- oc:id=item_aa -->
 1. **Auth Redirect Loops**: Folio's `useSession` hook manages its own auth redirects. In Palot, auth should be elevated to the host level. Folio surfaces should receive auth state as props or read from a host-provided atom, disabling internal redirect logic that would break the Palot shell. <!-- oc:id=item_ab -->
 
 ## Acceptance Criteria <!-- oc:id=sec_ad -->

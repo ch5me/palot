@@ -23,10 +23,10 @@ Folio uses a query-parameter-driven route identity model (`?route=<identity>`), 
 - **Unsupported / Deferred**: Publish-to-web flows (explicitly marked excluded in Folio code).
 
 ## Evidence <!-- oc:id=sec_ae -->
-- `apps/web/src/documents/route.ts` (route identity read/write)
-- `apps/web/src/documents/DocumentPageDispatcher.tsx` (document families)
-- `apps/web/src/databases/DatabasePage.tsx` (database view routing)
-- `tests/e2e/shell-facade-smoke.spec.ts` (e2e route coverage)
+- `~/src/ch5/folio-db/apps/web/src/documents/route.ts` (route identity read/write)
+- `~/src/ch5/folio-db/apps/web/src/documents/DocumentPageDispatcher.tsx` (document families)
+- `~/src/ch5/folio-db/apps/web/src/databases/DatabasePage.tsx` (database view routing)
+- `~/src/ch5/folio-db/tests/e2e/shell-facade-smoke.spec.ts` (e2e route coverage)
 
 ## Acceptance Criteria <!-- oc:id=sec_af -->
 - [x] Every major Folio route/page family is listed with exact file refs.
