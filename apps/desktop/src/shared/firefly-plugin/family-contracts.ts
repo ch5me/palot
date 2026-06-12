@@ -1,6 +1,6 @@
 import { z } from "zod"
 
-export const CONTRIBUTION_FAMILIES = ["panels", "navSidebars", "widgets", "commands", "themes"] as const
+export const CONTRIBUTION_FAMILIES = ["panels", "navSidebars", "widgets", "commands", "themes", "components"] as const
 export type ContributionFamily = (typeof CONTRIBUTION_FAMILIES)[number]
 
 export const escapeHatchTransportSchema = z.enum(["iframe", "webview"])
@@ -81,6 +81,24 @@ export type ThemeActivationTrigger = z.infer<typeof themeActivationTriggerSchema
 
 export const themePersistenceStrategySchema = z.enum(["none", "host-theme-selection"])
 export type ThemePersistenceStrategy = z.infer<typeof themePersistenceStrategySchema>
+
+export const componentCategorySchema = z.enum(["diagram", "decision", "form", "viewer", "layout", "custom"])
+export type ComponentCategory = z.infer<typeof componentCategorySchema>
+
+export const componentActivationTriggerSchema = z.enum([
+	"loom-tree-reference",
+	"chat-fence",
+	"host-preview",
+	"host-restore",
+])
+export type ComponentActivationTrigger = z.infer<typeof componentActivationTriggerSchema>
+
+export const componentPersistenceStrategySchema = z.enum([
+	"none",
+	"loom-node-state",
+	"loom-artifact-state",
+])
+export type ComponentPersistenceStrategy = z.infer<typeof componentPersistenceStrategySchema>
 
 export const contributionDefaultStateSchema = z.discriminatedUnion("mode", [
 	z.object({ mode: z.literal("default-on") }).strict(),
@@ -380,12 +398,55 @@ export const THEME_CONTRACT = contributionFamilyContractSchema.parse({
 	},
 })
 
+export const COMPONENT_CONTRACT = contributionFamilyContractSchema.parse({
+	family: "components",
+	hostVocabulary: ["loom-tree", "genui-fence", "artifact-widget", "side-panel"],
+	placementSurfaces: ["loom-tree", "chat-fence", "artifact-widget"],
+	activationTriggers: componentActivationTriggerSchema.options,
+	defaultState: { mode: "default-off" },
+	availability: {
+		staticRequiresCapabilities: true,
+		hostEvaluatesLiveAvailability: true,
+		hostOwnsReasonStrings: true,
+	},
+	persistence: {
+		strategy: componentPersistenceStrategySchema.enum["loom-node-state"],
+		hostOwnsStorage: true,
+		pluginMayProvidePersistenceKey: false,
+		scope: "session",
+	},
+	hostRendering: {
+		hostOwnsContainer: true,
+		hostOwnsPlacementVocabulary: true,
+		hostOwnsActivationLifecycle: true,
+		allowedModes: ["host-reconciler", "declarative-props"],
+		dataOnly: false,
+		hostMayPreviewWithoutApply: true,
+		hostMayApplyWithoutPluginRuntime: false,
+	},
+	escapeHatch: {
+		policy: "forbidden",
+		allowedTransports: [],
+		requiresExplicitPolicyField: false,
+		hostOwnedSandbox: true,
+	},
+	mutationGuard: {
+		mayDirectlyMutateHostChrome: false,
+		requiresWrapperToolsOrCapabilities: true,
+		notes: [
+			"Components render inside host-owned Loom and GenUI containers only.",
+			"Component state and events flow through Loom bindings; direct DOM escape is forbidden.",
+		],
+	},
+})
+
 export const CONTRIBUTION_FAMILY_CONTRACTS = {
 	panels: PANEL_CONTRACT,
 	navSidebars: NAV_SIDEBAR_CONTRACT,
 	widgets: WIDGET_CONTRACT,
 	commands: COMMAND_CONTRACT,
 	themes: THEME_CONTRACT,
+	components: COMPONENT_CONTRACT,
 } as const satisfies Readonly<Record<ContributionFamily, ContributionFamilyContract>>
 
 export const ALL_CONTRIBUTION_FAMILY_CONTRACTS = Object.values(CONTRIBUTION_FAMILY_CONTRACTS)
