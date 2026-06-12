@@ -1,23 +1,23 @@
 # Task 15: Settings / Admin Surface Inventory <!-- oc:id=sec_aa -->
 
 ## Auth and Account Entry Surfaces <!-- oc:id=sec_ab -->
-- **Auth page**: `/Users/hassoncs/src/ch5/folio-db/apps/web/src/auth/AuthPage.tsx`
+- **Auth page**: `~/src/ch5/folio-db/apps/web/src/auth/AuthPage.tsx`
   - magic link
   - password sign-in
   - signup
   - forgot password
   - Google sign-in when enabled
-- **Onboarding**: `/Users/hassoncs/src/ch5/folio-db/apps/web/src/auth/OnboardingPage.tsx`
-- **Invite acceptance**: `/Users/hassoncs/src/ch5/folio-db/apps/web/src/auth/InvitePage.tsx`
+- **Onboarding**: `~/src/ch5/folio-db/apps/web/src/auth/OnboardingPage.tsx`
+- **Invite acceptance**: `~/src/ch5/folio-db/apps/web/src/auth/InvitePage.tsx`
 
 ## Organization / Admin Surfaces <!-- oc:id=sec_ac -->
-- **Org admin UI**: `/Users/hassoncs/src/ch5/folio-db/apps/web/src/components/OrgAdminPanel.tsx`
+- **Org admin UI**: `~/src/ch5/folio-db/apps/web/src/components/OrgAdminPanel.tsx`
   - members tab
   - audit log tab
   - audit filters
 - **API authority**:
-  - `/Users/hassoncs/src/ch5/folio-db/apps/api/src/trpc/routes/auth.ts`
-  - `/Users/hassoncs/src/ch5/folio-db/apps/api/src/trpc/routes/organizations.ts`
+  - `~/src/ch5/folio-db/apps/api/src/trpc/routes/auth.ts`
+  - `~/src/ch5/folio-db/apps/api/src/trpc/routes/organizations.ts`
 
 ## Host Surface Mapping <!-- oc:id=sec_ad -->
 - **Auth / onboarding / invite** -> `page`
