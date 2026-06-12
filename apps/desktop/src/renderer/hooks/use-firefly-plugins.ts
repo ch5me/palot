@@ -13,7 +13,7 @@
  */
 
 import { useQuery } from "@tanstack/react-query"
-import { buildPluginCatalog, summarizeProjection } from "../../main/firefly-plugin/catalog"
+import { buildPluginCatalog } from "../../main/firefly-plugin/catalog"
 
 export interface FireflyPluginEntry {
 	pluginId: string
@@ -219,23 +219,10 @@ function getBridge(): {
 	return w.elf.plugins
 }
 
-function buildStaticPluginList(): FireflyPluginListResult {
-	const catalog = buildPluginCatalog({ appVersion: "0.11.0" })
-	return {
-		appVersion: catalog.appVersion,
-		plugins: catalog.entries.map((entry) => ({
-			...entry,
-			requiredCapabilities: [...entry.requiredCapabilities],
-			defaultGrantedCapabilities: [...entry.defaultGrantedCapabilities],
-		})),
-		summaries: summarizeProjection(catalog).map((summary) => ({ ...summary })),
-	}
-}
-
 export function useFireflyPlugins() {
 	return useQuery({
 		queryKey: ["firefly-plugin", "list"],
-		queryFn: async () => buildStaticPluginList(),
+		queryFn: () => getBridge().list(),
 		staleTime: 5_000,
 	})
 }

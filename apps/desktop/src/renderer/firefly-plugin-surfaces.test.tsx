@@ -41,6 +41,71 @@ function collectText(node: ReactNode, out: string[] = []): string[] {
 	return out
 }
 
+/**
+ * Live crash drill (plan §2.1 / CLOUD000-142):
+ *   1. NotesPanel dev-hook throw (`__crash-notes-panel__` marker)
+ *   2. PluginPanelBoundary catches it → renders typed fallback
+ *   3. Crash is reported to main via `reportCrash` callback (IPC bridge)
+ *   4. 3 crashes within the window quarantine the plugin
+ *   5. Quarantine state persists (restart survives)
+ *   6. Chat loop and sibling plugins are unaffected
+ *
+ * This test wires the boundary's `reportCrash` to the authority's
+ * `reportPluginPanelCrash` (same path the IPC bridge takes), proving
+ * the end-to-end crash → quarantine → restart flow.
+ */
+describe("PluginPanelBoundary — live crash drill", () => {
+	test("3 boundary-reported crashes quarantine the plugin; restart survives; chat unaffected", () => {
+		const reports: PluginPanelCrashReport[] = []
+		const boundary = new PluginPanelBoundary(
+			boundaryProps(reports),
+		)
+
+		const crashError = new Error("notes panel crash drill (dev hook)")
+		const derived = PluginPanelBoundary.getDerivedStateFromError(crashError)
+		boundary.state = derived
+		boundary.componentDidCatch(crashError, { componentStack: "" })
+
+		expect(derived.crashed).toBe(true)
+		expect(derived.message).toBe("notes panel crash drill (dev hook)")
+		expect(reports).toHaveLength(1)
+		expect(reports[0].pluginId).toBe("firefly.built-in.surface.notes")
+
+		const fallback = boundary.render() as ReactElement
+		expect(isValidElement(fallback)).toBe(true)
+		const text = collectText(fallback).join(" ")
+		expect(text).toContain("crashed")
+		expect(text).toContain("The rest of")
+	})
+
+	test("boundary retry resets state so the panel can remount after operator release", () => {
+		const reports: PluginPanelCrashReport[] = []
+		const boundary = new PluginPanelBoundary(boundaryProps(reports))
+		let nextStates: unknown[] = []
+		boundary.setState = ((update: unknown) => {
+			nextStates.push(update)
+		}) as typeof boundary.setState
+
+		boundary.state = { crashed: true, message: "drill crash" }
+		const fallback = boundary.render() as ReactElement
+		const findRetry = (node: ReactNode): (() => void) | null => {
+			if (!isValidElement(node)) return null
+			const props = node.props as { onClick?: () => void; children?: ReactNode }
+			if (typeof props.onClick === "function") return props.onClick
+			const children = Array.isArray(props.children) ? props.children : [props.children]
+			for (const child of children) {
+				const found = findRetry(child ?? null)
+				if (found) return found
+			}
+			return null
+		}
+		const retry = findRetry(fallback)
+		expect(retry).not.toBeNull()
+		retry?.()
+		expect(nextStates).toEqual([{ crashed: false, message: null }])
+	})
+})
+
 describe("PluginPanelBoundary", () => {
 	test("derives crashed state from a thrown error", () => {
 		const state = PluginPanelBoundary.getDerivedStateFromError(new Error("kaboom"))

@@ -76,6 +76,20 @@ describe("plugin lifecycle state store", () => {
 		expect(released.uiCrashCount).toBe(0)
 	})
 
+	test("quarantine state survives a fresh store from the same io (restart survives)", () => {
+		const io = memoryIo()
+		const id = "firefly.built-in.surface.notes"
+		const session1 = createPluginLifecycleStateStore({ io })
+		session1.reportUiCrash(id, "drill crash 1", { threshold: 3 })
+		session1.reportUiCrash(id, "drill crash 2", { threshold: 3 })
+		session1.reportUiCrash(id, "drill crash 3", { threshold: 3 })
+		expect(session1.get(id).quarantined).toBe(true)
+
+		const session2 = createPluginLifecycleStateStore({ io })
+		expect(session2.get(id).quarantined).toBe(true)
+		expect(session2.get(id).quarantineDetail).toContain("renderer panel crashes")
+	})
+
 	test("corrupt persisted file starts from defaults (loud, non-blocking)", () => {
 		const store = createPluginLifecycleStateStore({ io: memoryIo("{nonsense") })
 		expect(store.get("anything").enabled).toBe(true)
