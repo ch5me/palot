@@ -1,6 +1,5 @@
 import { DiscreteTab, DiscreteTabs } from "@ch5me/ch5-ui-web/animate/discrete-tabs"
 import { AnimatePresence } from "motion/react"
-import { Button } from "@ch5me/elf-ui/components/button"
 import { SidebarFooter } from "@ch5me/elf-ui/components/sidebar"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@ch5me/elf-ui/components/tooltip"
 import { useNavigate } from "@tanstack/react-router"
@@ -15,7 +14,7 @@ import {
 	XIcon,
 } from "lucide-react"
 import { memo, useEffect, useMemo, useRef, useState } from "react"
-import { activeServerConfigAtom, serverConnectedAtom } from "../atoms/connection"
+import { activeServerConfigAtom } from "../atoms/connection"
 import { agentFamily, projectSessionIdsFamily, sandboxMappingsAtom } from "../atoms/derived/agents"
 import { automationsEnabledAtom } from "../atoms/feature-flags"
 import { pinnedSessionsAtom } from "../atoms/preferences"
@@ -65,23 +64,19 @@ const RECENT_COUNT = 5
 const STATUS_ICON: Record<AgentStatus, typeof BlocksIcon> = {
 	running: BlocksIcon,
 	waiting: BlocksIcon,
-	paused: BlocksIcon,
-	completed: BlocksIcon,
-	failed: BlocksIcon,
+	degraded: BlocksIcon,
 	idle: BlocksIcon,
 }
 
 const STATUS_COLOR: Record<AgentStatus, string> = {
 	running: "text-green-500",
 	waiting: "text-yellow-500",
-	paused: "text-yellow-500",
-	completed: "text-green-500",
-	failed: "text-red-500",
+	degraded: "text-red-500",
 	idle: "text-muted-foreground",
 }
 
 function isActiveSurfaceAgent(agent: Agent): boolean {
-	return agent.status !== "idle" && agent.status !== "completed" && agent.status !== "failed"
+	return agent.status !== "idle"
 }
 
 function renderAgentMeta(agent: Agent): string | undefined {
