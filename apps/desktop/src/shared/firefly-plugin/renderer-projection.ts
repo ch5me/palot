@@ -1,7 +1,7 @@
-import type { HostPanelSlot, HostWidgetZone, PluginDescriptor } from "./descriptor"
+import type { PluginDescriptor, HostPanelSlot, HostWidgetZone } from "./descriptor"
 import {
 	COMMAND_CONTRACT,
-	COMPONENT_CONTRACT,
+	NAV_SIDEBAR_CONTRACT,
 	PANEL_CONTRACT,
 	THEME_CONTRACT,
 	WIDGET_CONTRACT,
@@ -11,7 +11,7 @@ import {
 } from "./family-contracts"
 import { evaluateBrokerRequest, lookupCapability, type CapabilityRisk } from "./capabilities"
 
-export const RENDERER_PROJECTION_FAMILIES = ["panels", "widgets", "commands", "themes", "components"] as const
+export const RENDERER_PROJECTION_FAMILIES = ["panels", "navSidebars", "widgets", "commands", "themes"] as const
 export type RendererProjectionFamily = (typeof RENDERER_PROJECTION_FAMILIES)[number]
 
 export type RendererContributionState =
@@ -163,31 +163,6 @@ export interface ProjectedTheme {
 	readonly contract: ContributionFamilyContract
 }
 
-export interface ProjectedComponent {
-	readonly family: "components"
-	readonly pluginId: string
-	readonly contributionId: string
-	readonly projectedId: string
-	readonly apiVersion: number
-	readonly category: "diagram" | "decision" | "form" | "viewer" | "layout" | "custom"
-	readonly propsSchema: unknown
-	readonly eventSchemas: Readonly<Record<string, unknown>>
-	readonly stateSchemas: Readonly<Record<string, unknown>>
-	readonly supportsAppend: boolean
-	readonly example: {
-		readonly component: string
-		readonly props: unknown
-	}
-	readonly hostVocabulary: {
-		readonly slots: readonly string[]
-		readonly zones: readonly string[]
-	}
-	readonly conflictPolicy: "agent-wins" | "human-wins" | "merge" | "ask"
-	readonly capabilityGates: readonly RendererCapabilityGate[]
-	readonly availability: RendererAvailability
-	readonly contract: ContributionFamilyContract
-}
-
 export interface RendererProjectionResult<T> {
 	readonly items: readonly T[]
 	readonly collisions: readonly ProjectionCollision[]
@@ -226,7 +201,7 @@ function buildCapabilityGates(
 			token,
 			trust: state.trust,
 			sessionScope: state.sessionScope,
-			grantedTokens: cloneGrantedTokens(state.grantedTokens),
+			grantedTokens: [...state.grantedTokens],
 		})
 		gates.push({
 			token,
@@ -374,15 +349,6 @@ function projectIdForCollision(contributionId: string): string {
 	return contributionId
 }
 
-function zodSchemaToJsonish(schema: unknown): unknown {
-	const zodSchema = schema as { toJSONSchema?: (options?: { unrepresentable?: string }) => unknown } | null
-	try {
-		return zodSchema?.toJSONSchema?.({ unrepresentable: "any" }) ?? { type: "object" }
-	} catch {
-		return { type: "object" }
-	}
-}
-
 export function getProjectedPanelId(descriptor: PluginDescriptor, panelId: string): string {
 	return `${descriptor.normalizedId}.${panelId}`
 }
@@ -397,10 +363,6 @@ export function getProjectedCommandId(descriptor: PluginDescriptor, commandId: s
 
 export function getProjectedThemeId(descriptor: PluginDescriptor, themeId: string): string {
 	return `${descriptor.normalizedId}.${themeId}`
-}
-
-export function getProjectedComponentId(descriptor: PluginDescriptor, componentId: string): string {
-	return `${descriptor.normalizedId}.${componentId}`
 }
 
 export function projectSidePanels(
@@ -546,43 +508,6 @@ export function projectThemes(
 	})
 }
 
-export function projectComponents(
-	descriptor: PluginDescriptor,
-	state: CapabilityStateShape,
-): readonly ProjectedComponent[] {
-	return descriptor.components.map((component) => {
-		const gates = buildCapabilityGates(descriptor, component.capabilityGates, state)
-		return {
-			family: "components",
-			pluginId: descriptor.normalizedId,
-			contributionId: component.id,
-			projectedId: getProjectedComponentId(descriptor, component.id),
-			apiVersion: component.apiVersion,
-			category: component.category,
-			propsSchema: zodSchemaToJsonish(component.props),
-			eventSchemas: Object.fromEntries(
-				Object.entries(component.events).map(([name, schema]) => [name, zodSchemaToJsonish(schema)]),
-			),
-			stateSchemas: Object.fromEntries(
-				Object.entries(component.state).map(([name, schema]) => [name, zodSchemaToJsonish(schema)]),
-			),
-			supportsAppend: component.supports_append,
-			example: {
-				component: component.example.component,
-				props: component.example.props,
-			},
-			hostVocabulary: {
-				slots: [...component.hostVocabulary.slots],
-				zones: [...component.hostVocabulary.zones],
-			},
-			conflictPolicy: component.conflictPolicy,
-			capabilityGates: gates,
-			availability: buildAvailability(state, gates),
-			contract: COMPONENT_CONTRACT,
-		}
-	})
-}
-
 export function projectSidePanelsFromCatalog(
 	descriptors: readonly PluginDescriptor[],
 	stateByPluginId: Readonly<Record<string, CapabilityStateShape>>,
@@ -642,25 +567,11 @@ export function projectThemesFromCatalog(
 	return { items, collisions }
 }
 
-export function projectComponentsFromCatalog(
-	descriptors: readonly PluginDescriptor[],
-	stateByPluginId: Readonly<Record<string, CapabilityStateShape>>,
-): RendererProjectionResult<ProjectedComponent> {
-	const items = descriptors.flatMap((descriptor) =>
-		projectComponents(descriptor, stateByPluginId[descriptor.normalizedId] ?? defaultCapabilityState(descriptor)),
-	)
-	const collisions = buildCollisionMap(
-		"components",
-		items.map((item) => ({ ...item, projectedId: projectIdForCollision(item.contributionId) })),
-	)
-	return { items, collisions }
-}
-
 export function defaultCapabilityState(descriptor: PluginDescriptor): CapabilityStateShape {
 	return {
 		trust: descriptor.trust,
 		sessionScope: "session",
-		grantedTokens: [],
+		grantedTokens: [...descriptor.capabilities],
 		loading: false,
 		pluginDisabled: false,
 		pluginQuarantined: false,
@@ -677,6 +588,5 @@ export function projectRendererFamiliesFromCatalog(
 		widgets: projectSessionWidgetsFromCatalog(descriptors, stateByPluginId),
 		commands: projectCommandsFromCatalog(descriptors, stateByPluginId),
 		themes: projectThemesFromCatalog(descriptors, stateByPluginId),
-		components: projectComponentsFromCatalog(descriptors, stateByPluginId),
 	} as const
 }

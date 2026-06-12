@@ -2,15 +2,12 @@ import { atom } from "jotai"
 import { atomWithStorage } from "jotai/utils"
 import type { WindowChromeTier } from "../../preload/api"
 import {
-	DEFAULT_FIREFLY_MODE,
 	DEFAULT_FIREFLY_PROFILE,
 	DEFAULT_FIREFLY_PROFILE_ID,
-	type FireflyProfile,
-	migrateFireflyProfile,
 	normalizeFireflyProfileLabel,
+	type FireflyProfile,
 } from "../lib/profile"
 import type { ColorScheme } from "../lib/themes"
-import type { SidePanelTabId } from "./ui"
 
 // ============================================================
 // Types
@@ -25,8 +22,31 @@ export interface PersistedModelRef {
 	agent?: string
 }
 
+export type LastSidePanelTabId =
+	| "review"
+	| "browser"
+	| "notes"
+	| "pulse"
+	| "memory"
+	| "files"
+	| "terminal"
+	| "editor"
+	| "plugins"
+	| "bridges"
+	| "crm"
+	| "studio"
+	| "voice"
+	| "oracle"
+	| "claude"
+	| "ch5pm"
+	| "artifacts"
+	| "pdf-review"
+
+export type NavSidebarTabId = "built-in" | "built-in-duplicate"
+
 export interface FireflySurfacePreferences {
-	lastSidePanelTab: SidePanelTabId
+	lastSidePanelTab: LastSidePanelTabId
+	lastNavSidebarTab: NavSidebarTabId
 }
 
 export interface BrowserPanelState {
@@ -88,33 +108,6 @@ function migrateDisplayMode(): void {
 }
 migrateDisplayMode()
 
-// Migrate stored Firefly profiles to the mode-aware shape (missing mode → "simple")
-function migrateFireflyProfileModes(): void {
-	if (typeof localStorage === "undefined") return
-	const key = "elf:fireflyProfilePreferences"
-	const raw = localStorage.getItem(key)
-	if (!raw) return
-
-	try {
-		const parsed: unknown = JSON.parse(raw)
-		if (
-			typeof parsed !== "object" ||
-			parsed === null ||
-			!Array.isArray((parsed as { profiles?: unknown }).profiles)
-		) {
-			return
-		}
-		const preferences = parsed as FireflyProfilePreferences
-		const profiles = preferences.profiles.map(migrateFireflyProfile)
-		if (profiles.some((profile, index) => profile !== preferences.profiles[index])) {
-			localStorage.setItem(key, JSON.stringify({ ...preferences, profiles }))
-		}
-	} catch {
-		// Ignore malformed data — atomWithStorage falls back to the default
-	}
-}
-migrateFireflyProfileModes()
-
 // ============================================================
 // Persisted atoms — each is independent with its own localStorage key
 // ============================================================
@@ -166,7 +159,7 @@ export const automationsBannerDismissedAtom = atomWithStorage<boolean>(
 
 export const fireflySurfacePreferencesAtom = atomWithStorage<FireflySurfacePreferences>(
 	"elf:firefly-surface-preferences",
-	{ lastSidePanelTab: "review" },
+	{ lastSidePanelTab: "review", lastNavSidebarTab: "built-in" },
 )
 
 export const browserPanelStateAtom = atomWithStorage<Record<string, BrowserPanelState>>(
@@ -191,12 +184,10 @@ export const fireflyProfilePreferencesAtom = atomWithStorage<FireflyProfilePrefe
 
 export const activeFireflyProfileAtom = atom((get) => {
 	const preferences = get(fireflyProfilePreferencesAtom)
-	// migrateFireflyProfile guards against pre-mode profiles written by an
-	// older app version after the load-time localStorage migration ran.
-	return migrateFireflyProfile(
+	return (
 		preferences.profiles.find((profile) => profile.id === preferences.activeProfileId) ??
-			preferences.profiles[0] ??
-			DEFAULT_FIREFLY_PROFILE,
+		preferences.profiles[0] ??
+		DEFAULT_FIREFLY_PROFILE
 	)
 })
 
@@ -246,7 +237,6 @@ export const createFireflyProfileAtom = atom(null, (get, set, label: string) => 
 		id: crypto.randomUUID(),
 		label: normalizedLabel,
 		description: `Local-only profile for ${normalizedLabel}`,
-		mode: DEFAULT_FIREFLY_MODE,
 	}
 
 	set(fireflyProfilePreferencesAtom, {

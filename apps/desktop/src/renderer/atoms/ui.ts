@@ -1,7 +1,10 @@
 import { atom } from "jotai"
 import { atomFamily, atomWithStorage } from "jotai/utils"
-import { fireflySurfacePreferencesAtom } from "./preferences"
-import type { FireflySurfaceId } from "../firefly-surface-registry"
+import {
+	fireflySurfacePreferencesAtom,
+	type LastSidePanelTabId,
+	type NavSidebarTabId,
+} from "./preferences"
 import type { FileDiff } from "../lib/types"
 
 export const commandPaletteOpenAtom = atom(false)
@@ -23,12 +26,9 @@ export const sidebarSectionOpenAtom = atomWithStorage<Record<SidebarSectionId, b
 
 export const viewedSessionIdAtom = atom<string | null>(null)
 
-/**
- * Closed vocabulary of side-panel tab ids. Re-exported from the registry so
- * adding a new surface = adding one row to `FIREFLY_SURFACE_REGISTRY`; the
- * string-literal type updates here automatically.
- */
-export type SidePanelTabId = FireflySurfaceId
+export type SidePanelTabId = LastSidePanelTabId
+
+export const NAV_SIDEBAR_TABS = ["built-in", "built-in-duplicate"] as const satisfies readonly NavSidebarTabId[]
 
 export interface SidePanelRoute {
 	tab: SidePanelTabId
@@ -48,6 +48,30 @@ export const setSidePanelActiveTabAtom = atom(null, (get, set, tab: SidePanelTab
 		...get(fireflySurfacePreferencesAtom),
 		lastSidePanelTab: tab,
 	})
+})
+
+export const navSidebarActiveTabAtom = atom<NavSidebarTabId>(
+	(get) => get(fireflySurfacePreferencesAtom).lastNavSidebarTab,
+)
+
+export const setNavSidebarActiveTabAtom = atom(null, (get, set, tab: NavSidebarTabId) => {
+	set(fireflySurfacePreferencesAtom, {
+		...get(fireflySurfacePreferencesAtom),
+		lastNavSidebarTab: tab,
+	})
+})
+
+export const setAvailableNavSidebarTabsAtom = atom(null, (get, set, tabs: NavSidebarTabId[]) => {
+	if (tabs.length === 0) {
+		return
+	}
+
+	const activeTab = get(navSidebarActiveTabAtom)
+	if (tabs.includes(activeTab)) {
+		return
+	}
+
+	set(setNavSidebarActiveTabAtom, tabs[0])
 })
 
 export const sidePanelFocusTokenAtom = atom(0)

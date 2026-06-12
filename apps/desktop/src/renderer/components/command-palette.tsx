@@ -91,7 +91,7 @@ import { isMockModeAtom, toggleMockModeAtom } from "../atoms/mock-mode"
 import { opaqueWindowsAtom } from "../atoms/preferences"
 import { isReactScanAtom, toggleReactScanAtom } from "../atoms/react-scan"
 import { isDevSurfaceAtom, toggleDevSurfaceAtom } from "../atoms/dev-surface"
-import { openSidePanelTabAtom, sidePanelOpenAtom } from "../atoms/ui"
+import { navSidebarActiveTabAtom, openSidePanelTabAtom, sidePanelOpenAtom } from "../atoms/ui"
 import { useSessionRevert } from "../hooks/use-commands"
 import {
 	useAvailableThemes,
@@ -173,6 +173,7 @@ export function CommandPalette({ open, onOpenChange, agents, onForkSession }: Co
 	const toggleCh5PmSurface = useSetAtom(toggleCh5PmSurfaceAtom)
 	const togglePdfReviewSurface = useSetAtom(togglePdfReviewSurfaceAtom)
 	const toggleTerminalSurface = useSetAtom(toggleTerminalSurfaceAtom)
+	const navSidebarActiveTab = useAtomValue(navSidebarActiveTabAtom)
 	const openSidePanelTab = useSetAtom(openSidePanelTabAtom)
 	const [sidePanelOpen, setSidePanelOpen] = useAtom(sidePanelOpenAtom)
 	const [reloading, setReloading] = useState(false)
@@ -500,13 +501,23 @@ export function CommandPalette({ open, onOpenChange, agents, onForkSession }: Co
 						<span>{reviewSurfaceEnabled ? "Disable Changes Surface" : "Enable Changes Surface"}</span>
 						{reviewSurfaceEnabled && <CheckIcon className="ml-auto h-4 w-4" />}
 					</CommandItem>
-					<CommandItem
-						keywords={["browser", "web", "webview", "inline browser", "panel"]}
-						onSelect={() => {
-							toggleBrowserPanel()
-							onOpenChange(false)
-						}}
-					>
+				<CommandItem
+					keywords={["nav sidebar", "folio", "palot", "sidebar tabs"]}
+					onSelect={() => {
+						onOpenChange(false)
+					}}
+				>
+					<BlocksIcon />
+					<span>Nav Sidebar Tab: {navSidebarActiveTab === "built-in" ? "Palot" : "Folio"}</span>
+				</CommandItem>
+				<CommandItem
+					keywords={["browser", "web", "webview", "inline browser", "panel"]}
+					onSelect={() => {
+						toggleBrowserPanel()
+						onOpenChange(false)
+					}}
+				>
+
 						{availableSurfaceTabs.find((surface) => surface.id === "browser")?.icon ?? <MonitorIcon />}
 						<span>{browserPanelEnabled ? "Disable Browser Panel" : "Enable Browser Panel"}</span>
 						{browserPanelEnabled && <CheckIcon className="ml-auto h-4 w-4" />}

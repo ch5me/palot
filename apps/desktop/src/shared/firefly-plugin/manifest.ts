@@ -8,11 +8,12 @@
  * `PluginDescriptor` that all projections read from.
  *
  * One schema covers every contribution family:
- *   - panels   (side-panel or main-pane surfaces; default host-rendered)
- *   - widgets  (session-scoped widget surfaces in host-defined zones)
- *   - commands (command palette / menus / keybindings / contextual actions)
- *   - themes   (data-only theme contributions; host applies)
- *   - tools    (OpenCode / agent-callable capabilities with Zod schemas)
+ *   - panels      (side-panel or main-pane surfaces; default host-rendered)
+ *   - navSidebars (host-owned navigation sidebar tabs)
+ *   - widgets     (session-scoped widget surfaces in host-defined zones)
+ *   - commands    (command palette / menus / keybindings / contextual actions)
+ *   - themes      (data-only theme contributions; host applies)
+ *   - tools       (OpenCode / agent-callable capabilities with Zod schemas)
  *
  * Plus activation, capabilities, bridge metadata, trust hints, and lifecycle
  * hints. See the V2 plan (`firefly-plugin-system-v2.md`) for the full design
@@ -207,6 +208,36 @@ const panelContributionSchema = z
 				mode: z.enum(["host-reconciler", "declarative-props", "iframe"]),
 				declarativeSchemaRef: z.string().max(120).optional(),
 				iframeSandbox: z.string().max(240).optional(),
+			})
+			.strict(),
+	})
+	.strict()
+
+const navSidebarContributionSchema = z
+	.object({
+		id: shortIdSchema,
+		title: z.string().min(1).max(80),
+		icon: z.string().max(64).optional(),
+		order: z.number().int().min(0).max(10_000).default(0),
+		defaultOn: z.boolean().default(false),
+		commandIds: z.array(commandIdSchema).max(8).default([]),
+		persistenceKey: z.string().min(1).max(80).optional(),
+		telemetryNamespace: z
+			.string()
+			.min(1)
+			.max(80)
+			.regex(/^[a-z][a-z0-9.-]*$/u, "telemetry namespace must be lowercase dotted")
+			.optional(),
+		availability: z
+			.object({
+				requires: z.array(capabilityTokenSchema).default([]),
+			})
+			.strict()
+			.default({ requires: [] }),
+		render: z
+			.object({
+				mode: z.enum(["host-reconciler", "declarative-props"]),
+				declarativeSchemaRef: z.string().max(120).optional(),
 			})
 			.strict(),
 	})
@@ -435,6 +466,7 @@ export const pluginManifestSchema = z
 		contributes: z
 			.object({
 				panels: z.array(panelContributionSchema).default([]),
+				navSidebars: z.array(navSidebarContributionSchema).default([]),
 				widgets: z.array(widgetContributionSchema).default([]),
 				commands: z.array(commandContributionSchema).default([]),
 				themes: z.array(themeContributionSchema).default([]),
@@ -444,6 +476,7 @@ export const pluginManifestSchema = z
 			.strict()
 			.default({
 				panels: [],
+				navSidebars: [],
 				widgets: [],
 				commands: [],
 				themes: [],
@@ -465,6 +498,7 @@ export const pluginManifestSchema = z
 	.superRefine((manifest, ctx) => {
 		const seen = {
 			panels: new Set<string>(),
+			navSidebars: new Set<string>(),
 			widgets: new Set<string>(),
 			commands: new Set<string>(),
 			themes: new Set<string>(),
@@ -480,6 +514,16 @@ export const pluginManifestSchema = z
 				})
 			}
 			seen.panels.add(panel.id)
+		}
+		for (const navSidebar of manifest.contributes.navSidebars) {
+			if (seen.navSidebars.has(navSidebar.id)) {
+				ctx.addIssue({
+					code: z.ZodIssueCode.custom,
+					path: ["contributes", "navSidebars"],
+					message: `duplicate nav-sidebar id: ${navSidebar.id}`,
+				})
+			}
+			seen.navSidebars.add(navSidebar.id)
 		}
 		for (const widget of manifest.contributes.widgets) {
 			if (seen.widgets.has(widget.id)) {
@@ -610,6 +654,7 @@ export type PluginManifest = z.infer<typeof pluginManifestSchema>
 export type PluginId = z.infer<typeof pluginIdSchema>
 export type CapabilityToken = z.infer<typeof capabilityTokenSchema>
 export type PanelContribution = z.infer<typeof panelContributionSchema>
+export type NavSidebarContribution = z.infer<typeof navSidebarContributionSchema>
 export type WidgetContribution = z.infer<typeof widgetContributionSchema>
 export type CommandContribution = z.infer<typeof commandContributionSchema>
 export type ThemeContribution = z.infer<typeof themeContributionSchema>
