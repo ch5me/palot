@@ -132,6 +132,11 @@ Each component declares:
 - `id`
 - `apiVersion`
 - `category`
+- `presentation`: `inline-artifact`, `chat-widget`, `side-panel`, `main-pane`, or `webview`
+- `scope`: `generic`, `ch5-internal`, or `lab`
+- `maturity`: `stable`, `beta`, `alpha`, or `internal`
+- `defaultPlacement` and `allowedPlacements`
+- optional `sourcePackage`, `storybookPath`, and `docsPath`
 - `props` schema
 - `events` schema
 - `state` schema
@@ -142,6 +147,24 @@ Each component declares:
 - `conflictPolicy`
 
 This already matches `contributes.components`.
+
+Placement rules:
+
+- `inline-artifact`: assistant emits fenced GenUI JSON in chat; host renders and can capture/pin it.
+- `chat-widget`: compact persistent session UI in `above-chat` or `chat-inline-right`.
+- `side-panel`: focused tool beside chat; live preview belongs here by default.
+- `main-pane`: full workspace, browser, document, or dashboard surface.
+- `webview`: explicit sandbox escape hatch only, never default GenUI.
+
+Scope rules:
+
+- `generic`: safe for open-source/public Surface Skill examples.
+- `ch5-internal`: project-management, queue, lane, or company-specific operator surfaces.
+- `lab`: useful experiments and Storybook-backed candidates that are not production defaults.
+
+Storybook is component discovery/proof input, not registry authority. Components become
+Surface Skill entries only after they have a bounded schema, placement metadata, and
+host-rendered wrapper or explicit WebView sandbox.
 
 Component modes:
 

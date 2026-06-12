@@ -97,6 +97,12 @@ const baseManifest = parsePluginManifest({
 				events: {},
 				state: {},
 				supports_append: false,
+				presentation: "inline-artifact",
+				scope: "generic",
+				maturity: "stable",
+				defaultPlacement: "inline",
+				allowedPlacements: ["inline", "chat-inline-right"],
+				docsPath: "docs/genui-artifact-architecture.md",
 				example: {
 					component: "decision_card",
 					props: {

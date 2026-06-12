@@ -76,6 +76,7 @@ export const acmeNotebookManifest: PluginManifest = {
 	],
 	contributes: {
 		panels: [],
+		navSidebars: [],
 		widgets: [
 			{
 				id: "notepad",

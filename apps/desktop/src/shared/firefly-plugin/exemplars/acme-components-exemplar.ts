@@ -49,6 +49,7 @@ export const acmeComponentsExemplarManifest: PluginManifest = {
 	activationEvents: [{ kind: "onStartup" }],
 	contributes: {
 		panels: [],
+		navSidebars: [],
 		widgets: [],
 		commands: [],
 		themes: [],
@@ -66,6 +67,12 @@ export const acmeComponentsExemplarManifest: PluginManifest = {
 					hovered: loyaltyProgressBarStateSchema,
 				},
 				supports_append: false,
+				presentation: "chat-widget",
+				scope: "generic",
+				maturity: "alpha",
+				defaultPlacement: "chat-inline-right",
+				allowedPlacements: ["inline", "chat-inline-right"],
+				docsPath: "docs/surface-skill-vision.md",
 				example: {
 					component: "acme.loyalty_progress_bar",
 					props: {

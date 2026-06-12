@@ -403,7 +403,7 @@ export async function fetchCh5PmState() {
 }
 
 export async function fetchCh5PmSideAgentFeed() {
-	const res = await client.api.ch5pm.babysitter.$get()
+	const res = await fetch(`${BASE_URL}/api/ch5pm/babysitter`)
 	if (!res.ok) {
 		throw new Error(await readError(res, `CH5PM side-agent feed fetch failed: ${res.status} ${res.statusText}`))
 	}
@@ -411,7 +411,7 @@ export async function fetchCh5PmSideAgentFeed() {
 }
 
 export async function fetchCh5PmSideAgentQueue() {
-	const res = await client.api.ch5pm.queue.$get()
+	const res = await fetch(`${BASE_URL}/api/ch5pm/queue`)
 	if (!res.ok) {
 		throw new Error(await readError(res, `CH5PM side-agent queue fetch failed: ${res.status} ${res.statusText}`))
 	}
@@ -419,7 +419,7 @@ export async function fetchCh5PmSideAgentQueue() {
 }
 
 export async function fetchCh5PmSideAgentHealth() {
-	const res = await client.api.ch5pm.health.$get()
+	const res = await fetch(`${BASE_URL}/api/ch5pm/health`)
 	if (!res.ok) {
 		throw new Error(await readError(res, `CH5PM side-agent health fetch failed: ${res.status} ${res.statusText}`))
 	}
@@ -430,10 +430,11 @@ async function postCh5PmAttentionAction(
 	action: "resolve" | "cancel",
 	body: Record<string, unknown>,
 ): Promise<void> {
-	const res =
-		action === "resolve"
-			? await client.api.ch5pm.attention.resolve.$post({ json: body })
-			: await client.api.ch5pm.attention.cancel.$post({ json: body })
+	const res = await fetch(`${BASE_URL}/api/ch5pm/attention/${action}`, {
+		method: "POST",
+		headers: { "Content-Type": "application/json" },
+		body: JSON.stringify(body),
+	})
 	if (!res.ok) {
 		let payload: unknown = null
 		try {

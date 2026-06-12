@@ -98,6 +98,22 @@ const decisionCardPropsSchema = z.object({
 	notes: z.string().optional(),
 })
 
+const statusThinkingCardPropsSchema = z.object({
+	title: z.string().min(1),
+	status: z.enum(["thinking", "running", "done", "blocked"]),
+	detail: z.string().optional(),
+	steps: z
+		.array(
+			z.object({
+				id: z.string().min(1),
+				label: z.string().min(1),
+				state: z.enum(["queued", "running", "done", "blocked"]).optional(),
+			}),
+		)
+		.min(1)
+		.max(8),
+})
+
 const palotBridgeComponents: ComponentContribution[] = [
 	{
 		id: "dag-sparkline",
@@ -107,6 +123,14 @@ const palotBridgeComponents: ComponentContribution[] = [
 		events: {},
 		state: {},
 		supports_append: true,
+		presentation: "inline-artifact",
+		scope: "generic",
+		maturity: "stable",
+		defaultPlacement: "inline",
+		allowedPlacements: ["inline", "chat-inline-right", "side-panel"],
+		sourcePackage: "@ch5me/dag-sparkline",
+		storybookPath: "packages/web/dag-sparkline/src/DagSpark.stories.tsx",
+		docsPath: "docs/genui-artifact-architecture.md",
 		example: {
 			component: "dag-sparkline",
 			props: {
@@ -141,6 +165,12 @@ const palotBridgeComponents: ComponentContribution[] = [
 			selected: z.string().nullable(),
 		},
 		supports_append: false,
+		presentation: "inline-artifact",
+		scope: "generic",
+		maturity: "stable",
+		defaultPlacement: "inline",
+		allowedPlacements: ["inline", "chat-inline-right"],
+		docsPath: "docs/genui-artifact-architecture.md",
 		example: {
 			component: "decision_card",
 			props: {
@@ -159,6 +189,42 @@ const palotBridgeComponents: ComponentContribution[] = [
 			zones: ["loom-tree", "genui-fence", "artifact-widget"],
 		},
 		conflictPolicy: "ask",
+	},
+	{
+		id: "status_thinking_card",
+		apiVersion: 1,
+		category: "custom",
+		props: statusThinkingCardPropsSchema,
+		events: {},
+		state: {},
+		supports_append: false,
+		presentation: "inline-artifact",
+		scope: "generic",
+		maturity: "beta",
+		defaultPlacement: "inline",
+		allowedPlacements: ["inline", "above-chat", "chat-inline-right"],
+		sourcePackage: "@ch5me/remotion-experiences",
+		storybookPath: "packages/web/remotion-experiences/src/spikes/StatusThinkingCard.stories.tsx",
+		docsPath: "docs/genui-artifact-architecture.md",
+		example: {
+			component: "status_thinking_card",
+			props: {
+				title: "Surface registry pass",
+				status: "running",
+				detail: "Scanning Storybook candidates and wiring safe entries.",
+				steps: [
+					{ id: "scan", label: "Inventory Storybook stories", state: "done" },
+					{ id: "registry", label: "Register schema-safe components", state: "running" },
+					{ id: "proof", label: "Run discovery smoke tests", state: "queued" },
+				],
+			},
+		},
+		capabilityGates: [],
+		hostVocabulary: {
+			slots: ["status"],
+			zones: ["genui-fence", "artifact-widget"],
+		},
+		conflictPolicy: "agent-wins",
 	},
 ]
 
@@ -189,6 +255,7 @@ export const palotBridgeManifest: PluginManifest = {
 	],
 	contributes: {
 		panels: [],
+		navSidebars: [],
 		widgets: [],
 		commands: [
 			{

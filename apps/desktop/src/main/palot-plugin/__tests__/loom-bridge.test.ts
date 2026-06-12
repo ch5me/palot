@@ -9,18 +9,19 @@ test("palot_session_open returns session id, surface url, rev 0", async () => {
 })
 
 test("palot render and patch advance revisions", async () => {
+	const sessionID = `ses_demo_render_${Date.now()}_${Math.random().toString(16).slice(2)}`
 	const render = await buildLoomRenderHandler()(
 		{
 			tree: encodeToon({ root: { id: "root", component: "dag-sparkline", props: { nodes: [{ id: "plan", label: "Plan" }], edges: [] } } }),
 		},
-		{ sessionID: "ses_demo_render" },
+		{ sessionID },
 	)
 	expect(decodeToon(render)).toEqual({ rev: 1 })
 	const patch = await buildLoomPatchHandler()(
 		{
 			patch: encodeToon({ rev: 1, node_id: "root", field: "props", value: { nodes: [{ id: "plan", label: "Plan" }, { id: "ship", label: "Ship" }], edges: [] } }),
 		},
-		{ sessionID: "ses_demo_render" },
+		{ sessionID },
 	)
 	expect(decodeToon(patch)).toEqual({ rev: 2 })
 })

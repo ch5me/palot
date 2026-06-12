@@ -361,6 +361,22 @@ const toolContributionSchema = z
 
 const componentCategorySchema = z.enum(["diagram", "decision", "form", "viewer", "layout", "custom"])
 const componentConflictPolicySchema = z.enum(["agent-wins", "human-wins", "merge", "ask"])
+const componentPresentationSchema = z.enum([
+	"inline-artifact",
+	"chat-widget",
+	"side-panel",
+	"main-pane",
+	"webview",
+])
+const componentScopeSchema = z.enum(["generic", "ch5-internal", "lab"])
+const componentMaturitySchema = z.enum(["stable", "beta", "alpha", "internal"])
+const componentPlacementSchema = z.enum([
+	"inline",
+	"above-chat",
+	"chat-inline-right",
+	"side-panel",
+	"main-pane",
+])
 const componentHostVocabularySchema = z
 	.object({
 		slots: z.array(z.string().min(1).max(80)).default([]),
@@ -384,6 +400,14 @@ const componentContributionSchema = z
 		events: z.record(z.string().min(1).max(64), zodRawShapeEntrySchema).default({}),
 		state: z.record(z.string().min(1).max(64), zodRawShapeEntrySchema).default({}),
 		supports_append: z.boolean().default(false),
+		presentation: componentPresentationSchema.default("inline-artifact"),
+		scope: componentScopeSchema.default("generic"),
+		maturity: componentMaturitySchema.default("alpha"),
+		defaultPlacement: componentPlacementSchema.default("inline"),
+		allowedPlacements: z.array(componentPlacementSchema).min(1).default(["inline"]),
+		sourcePackage: z.string().min(1).max(160).optional(),
+		storybookPath: z.string().min(1).max(320).optional(),
+		docsPath: z.string().min(1).max(320).optional(),
 		example: componentExampleSchema,
 		capabilityGates: z.array(capabilityTokenSchema).default([]),
 		hostVocabulary: componentHostVocabularySchema,

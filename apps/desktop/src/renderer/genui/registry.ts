@@ -3,6 +3,7 @@ import { z } from "zod"
 import type { ComponentContribution } from "../../shared/firefly-plugin/manifest"
 import { DagSparklineEntry } from "./components/dag-sparkline"
 import { DecisionCardEntry } from "./components/decision-card"
+import { StatusThinkingCardEntry } from "./components/status-thinking-card"
 
 export type ParsePropsResult<P> = { ok: true; props: P } | { ok: false; error: string }
 
@@ -12,11 +13,23 @@ export interface GenUiLegacyFence {
 }
 
 export type GenUiConflictPolicy = "agent-wins" | "human-wins" | "merge" | "ask"
+export type GenUiPresentation = "inline-artifact" | "chat-widget" | "side-panel" | "main-pane" | "webview"
+export type GenUiRegistryScope = "generic" | "ch5-internal" | "lab"
+export type GenUiMaturity = "stable" | "beta" | "alpha" | "internal"
+export type GenUiHostPlacement = "inline" | "above-chat" | "chat-inline-right" | "side-panel" | "main-pane"
 
 export interface GenUiEntry<P = Record<string, unknown>> {
 	name: string
 	aliases: string[]
 	description: string
+	presentation: GenUiPresentation
+	scope: GenUiRegistryScope
+	maturity: GenUiMaturity
+	defaultPlacement: GenUiHostPlacement
+	allowedPlacements: GenUiHostPlacement[]
+	sourcePackage?: string
+	storybookPath?: string
+	docsPath?: string
 	Component: ComponentType<P>
 	props: z.ZodType<P>
 	events: Record<string, z.ZodTypeAny>
@@ -31,6 +44,13 @@ export interface GenUiCatalogItem {
 	name: string
 	one_line: string
 	category: string
+	presentation: GenUiPresentation
+	scope: GenUiRegistryScope
+	maturity: GenUiMaturity
+	defaultPlacement: GenUiHostPlacement
+	sourcePackage?: string
+	storybookPath?: string
+	docsPath?: string
 }
 
 export interface BuiltInComponentDefinition {
@@ -83,6 +103,14 @@ function buildBuiltInContribution(entry: GenUiEntry): ComponentContribution {
 		capabilityGates: [],
 		hostVocabulary: inferHostVocabulary(entry),
 		conflictPolicy: entry.conflictPolicy ?? "ask",
+		presentation: entry.presentation,
+		scope: entry.scope,
+		maturity: entry.maturity,
+		defaultPlacement: entry.defaultPlacement,
+		allowedPlacements: entry.allowedPlacements,
+		sourcePackage: entry.sourcePackage,
+		storybookPath: entry.storybookPath,
+		docsPath: entry.docsPath,
 	}
 }
 
@@ -100,6 +128,13 @@ export function getGenUiCatalogItems(): GenUiCatalogItem[] {
 		name: entry.name,
 		one_line: entry.description,
 		category: inferCategory(entry),
+		presentation: entry.presentation,
+		scope: entry.scope,
+		maturity: entry.maturity,
+		defaultPlacement: entry.defaultPlacement,
+		sourcePackage: entry.sourcePackage,
+		storybookPath: entry.storybookPath,
+		docsPath: entry.docsPath,
 	}))
 }
 
@@ -134,6 +169,13 @@ export function describeGenUiEntry(name: string):
 			name: entry.name,
 			one_line: entry.description,
 			category: inferCategory(entry),
+			presentation: entry.presentation,
+			scope: entry.scope,
+			maturity: entry.maturity,
+			defaultPlacement: entry.defaultPlacement,
+			sourcePackage: entry.sourcePackage,
+			storybookPath: entry.storybookPath,
+			docsPath: entry.docsPath,
 		},
 		schema: {
 			props: schema,
@@ -144,12 +186,20 @@ export function describeGenUiEntry(name: string):
 				Object.entries(entry.state).map(([key, value]) => [key, value.toJSONSchema?.({ unrepresentable: "any" }) ?? { type: "object" }]),
 			),
 			conflictPolicy: entry.conflictPolicy ?? "ask",
+			presentation: entry.presentation,
+			scope: entry.scope,
+			maturity: entry.maturity,
+			defaultPlacement: entry.defaultPlacement,
+			allowedPlacements: entry.allowedPlacements,
+			sourcePackage: entry.sourcePackage,
+			storybookPath: entry.storybookPath,
+			docsPath: entry.docsPath,
 		},
 	}
 }
 
 // biome-ignore lint/suspicious/noExplicitAny: registry heterogeneous by design.
-const ENTRIES: GenUiEntry<any>[] = [DagSparklineEntry, DecisionCardEntry]
+const ENTRIES: GenUiEntry<any>[] = [DagSparklineEntry, DecisionCardEntry, StatusThinkingCardEntry]
 
 export const genUiEntries: ReadonlyArray<GenUiEntry> = ENTRIES
 export const BUILT_IN_COMPONENTS: readonly BuiltInComponentDefinition[] = ENTRIES.map((entry) => ({
@@ -188,7 +238,9 @@ export function buildGenUiCatalog(): string {
 		"Only use a component when it genuinely helps the user. Available components:",
 	)
 	for (const item of getGenUiCatalogItems()) {
-		lines.push(`\n• ${item.name} — ${item.one_line} [category=${item.category}]`)
+		lines.push(
+			`\n• ${item.name} — ${item.one_line} [category=${item.category}; presentation=${item.presentation}; scope=${item.scope}; maturity=${item.maturity}; defaultPlacement=${item.defaultPlacement}]`,
+		)
 	}
 	return lines.join("\n")
 }

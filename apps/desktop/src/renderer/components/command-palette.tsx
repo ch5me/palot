@@ -11,6 +11,7 @@ import {
 import { useNavigate, useParams } from "@tanstack/react-router"
 import { useAtom, useAtomValue, useSetAtom } from "jotai"
 import {
+	BlocksIcon,
 	BotIcon,
 	BookTextIcon,
 	CheckIcon,

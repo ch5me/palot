@@ -41,7 +41,7 @@ import {
 	stateCommand,
 } from "../palot-runtime/commands"
 import { describeComponentCatalogEntry, getComponentCatalogItems } from "../palot-runtime/component-catalog"
-import { encode as encodeToon } from "../palot-runtime/toon"
+import { decode as decodeToon, encode as encodeToon } from "../palot-runtime/toon"
 
 const BRIDGE_ENV_URL = "PALOT_BRIDGE_URL"
 const BRIDGE_ENV_TOKEN = "PALOT_BRIDGE_TOKEN"
@@ -402,7 +402,21 @@ export const buildComponentsListHandler = () => {
 		const parsedArgs = palotToolArgsSchemas.palot_components_list.parse(args)
 		const components = getComponentCatalogItems()
 			.filter((entry) => !parsedArgs.category || entry.category === parsedArgs.category)
-			.map((entry) => ({ name: entry.name, one_line: entry.one_line, category: entry.category }))
+			.filter((entry) => !parsedArgs.presentation || entry.presentation === parsedArgs.presentation)
+			.filter((entry) => !parsedArgs.scope || entry.scope === parsedArgs.scope)
+			.filter((entry) => !parsedArgs.maturity || entry.maturity === parsedArgs.maturity)
+			.map((entry) => ({
+				name: entry.name,
+				one_line: entry.one_line,
+				category: entry.category,
+				presentation: entry.presentation,
+				scope: entry.scope,
+				maturity: entry.maturity,
+				defaultPlacement: entry.defaultPlacement,
+				sourcePackage: entry.sourcePackage ?? null,
+				storybookPath: entry.storybookPath ?? null,
+				docsPath: entry.docsPath ?? null,
+			}))
 		const result = palotComponentsListResultSchema.parse({ count: components.length, components })
 		return encodeToon(result)
 	}
@@ -428,6 +442,14 @@ export const buildComponentsDescribeHandler = () => {
 				name: entry.name,
 				one_line: entry.one_line,
 				category: entry.category,
+				presentation: entry.presentation,
+				scope: entry.scope,
+				maturity: entry.maturity,
+				defaultPlacement: entry.defaultPlacement,
+				allowedPlacements: entry.allowedPlacements,
+				sourcePackage: entry.sourcePackage ?? null,
+				storybookPath: entry.storybookPath ?? null,
+				docsPath: entry.docsPath ?? null,
 				props_schema,
 				example: entry.example,
 			}),
@@ -471,7 +493,16 @@ export const buildLoomRenderHandler = () => {
 		if (!context.sessionID) {
 			return encodeToon({ errorCode: "missing_session", help: ["OpenCode session context required."] })
 		}
-		return encodeToon(loomMutationResultSchema.parse(renderCommand(context.sessionID, parsedArgs.tree)))
+		const decodedTree = decodeToon(parsedArgs.tree)
+		const tree =
+			decodedTree && typeof decodedTree === "object"
+				? (decodedTree.root ?? decodedTree.tree ?? decodedTree)
+				: decodedTree
+		return encodeToon(
+			loomMutationResultSchema.parse(
+				renderCommand(context.sessionID, encodeToon({ tree })),
+			),
+		)
 	}
 }
 

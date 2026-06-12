@@ -46,6 +46,7 @@ export const memorySurfaceManifest: PluginManifest = {
 				},
 			},
 		],
+		navSidebars: [],
 		widgets: [],
 		commands: [],
 		themes: [],

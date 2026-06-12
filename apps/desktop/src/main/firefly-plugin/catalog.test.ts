@@ -46,6 +46,7 @@ describe("firefly-plugin v2 catalog authority", () => {
 		expect(palotComponents.map((component) => component.contributionId)).toEqual([
 			"dag-sparkline",
 			"decision_card",
+			"status_thinking_card",
 		])
 	})
 

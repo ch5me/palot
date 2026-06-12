@@ -47,11 +47,15 @@ Think in three layers:
 
 ### Registered GenUI kinds <!-- oc:id=sec_ae -->
 
-There is currently one real GenUI component:
+Current built-in GenUI components:
 - `dag-sparkline`
+- `decision_card`
+- `status_thinking_card`
 
 Defined in:
 - `apps/desktop/src/renderer/genui/components/dag-sparkline.tsx`
+- `apps/desktop/src/renderer/genui/components/decision-card.tsx`
+- `apps/desktop/src/renderer/genui/components/status-thinking-card.tsx`
 
 Canonical aliases:
 - `dag`
@@ -61,7 +65,20 @@ Canonical aliases:
 - `flow graph`
 - `dependency graph`
 
-This is important: the architecture is generic, but the current shipped implementation is still DAG-only.
+`decision_card` covers an inline decision artifact with notes and submit event metadata.
+`status_thinking_card` is a beta inline status card sourced from the Storybook/Remotion
+experience family, wrapped as schema-safe host-rendered GenUI.
+
+Each registry entry now declares:
+- `presentation`: `inline-artifact`, `chat-widget`, `side-panel`, `main-pane`, or `webview`
+- `scope`: `generic`, `ch5-internal`, or `lab`
+- `maturity`: `stable`, `beta`, `alpha`, or `internal`
+- `defaultPlacement` plus `allowedPlacements`
+- optional source package, Storybook path, and docs path
+
+This is important: the architecture is generic, and current components are still
+allowlisted host-rendered entries. Storybook can suggest candidates, but registry
+entries remain the runtime source of truth.
 
 ### Legacy compatibility <!-- oc:id=sec_af -->
 
@@ -405,11 +422,10 @@ Those already show the preferred XDG, schema, and atomic-write patterns.
 This page documents the current shape, not a claim that the system is fully finished.
 
 Known gaps:
-- only one real GenUI kind exists today (`dag-sparkline`)
+- only a small safe set of GenUI kinds is registered today (`dag-sparkline`, `decision_card`, `status_thinking_card`)
 - prop patching is minimal and local-only
 - no remove/archive workflow yet
 - no main-process durable artifact persistence yet
-- repo-wide typecheck is currently blocked outside this slice by an unrelated merge-conflict in `../ch5-packages/packages/motion/motion/package.json`
 
 ## How to Extend Safely <!-- oc:id=sec_bm -->
 

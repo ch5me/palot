@@ -1,7 +1,6 @@
 import type { PluginDescriptor, HostPanelSlot, HostWidgetZone } from "./descriptor"
 import {
 	COMMAND_CONTRACT,
-	NAV_SIDEBAR_CONTRACT,
 	COMPONENT_CONTRACT,
 	PANEL_CONTRACT,
 	THEME_CONTRACT,
@@ -171,6 +170,14 @@ export interface ProjectedComponent {
 	readonly projectedId: string
 	readonly apiVersion: number
 	readonly category: "diagram" | "decision" | "form" | "viewer" | "layout" | "custom"
+	readonly presentation: "inline-artifact" | "chat-widget" | "side-panel" | "main-pane" | "webview"
+	readonly scope: "generic" | "ch5-internal" | "lab"
+	readonly maturity: "stable" | "beta" | "alpha" | "internal"
+	readonly defaultPlacement: "inline" | "above-chat" | "chat-inline-right" | "side-panel" | "main-pane"
+	readonly allowedPlacements: readonly ("inline" | "above-chat" | "chat-inline-right" | "side-panel" | "main-pane")[]
+	readonly sourcePackage: string | null
+	readonly storybookPath: string | null
+	readonly docsPath: string | null
 	readonly propsSchema: unknown
 	readonly eventSchemas: Readonly<Record<string, unknown>>
 	readonly stateSchemas: Readonly<Record<string, unknown>>
@@ -560,6 +567,14 @@ export function projectComponents(
 			projectedId: getProjectedComponentId(descriptor, component.id),
 			apiVersion: component.apiVersion,
 			category: component.category,
+			presentation: component.presentation,
+			scope: component.scope,
+			maturity: component.maturity,
+			defaultPlacement: component.defaultPlacement,
+			allowedPlacements: component.allowedPlacements,
+			sourcePackage: component.sourcePackage ?? null,
+			storybookPath: component.storybookPath ?? null,
+			docsPath: component.docsPath ?? null,
 			propsSchema: zodSchemaToJsonish(component.props),
 			eventSchemas: Object.fromEntries(
 				Object.entries(component.events).map(([name, schema]) => [name, zodSchemaToJsonish(schema)]),

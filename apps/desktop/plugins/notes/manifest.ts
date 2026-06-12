@@ -60,6 +60,7 @@ export const notesPluginManifest: PluginManifest = {
 				render: { mode: "host-reconciler" },
 			},
 		],
+		navSidebars: [],
 		widgets: [],
 		commands: [
 			{

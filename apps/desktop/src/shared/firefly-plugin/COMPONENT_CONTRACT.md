@@ -29,6 +29,7 @@ Each component contribution must declare:
 
 - `decision_card`
 - `dag-sparkline`
+- `status_thinking_card`
 
 ## Current third-party exemplar
 

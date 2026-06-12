@@ -302,6 +302,9 @@ export const palotBrowserScrollArgsShape = {
 } satisfies z.ZodRawShape
 export const palotComponentsListArgsShape = {
 	category: z.string().optional(),
+	presentation: z.enum(["inline-artifact", "chat-widget", "side-panel", "main-pane", "webview"]).optional(),
+	scope: z.enum(["generic", "ch5-internal", "lab"]).optional(),
+	maturity: z.enum(["stable", "beta", "alpha", "internal"]).optional(),
 } satisfies z.ZodRawShape
 export const palotComponentsDescribeArgsShape = {
 	name: z.string().trim().min(1),
@@ -382,6 +385,13 @@ export const palotComponentsListResultSchema = z.object({
 			name: z.string(),
 			one_line: z.string(),
 			category: z.string(),
+			presentation: z.enum(["inline-artifact", "chat-widget", "side-panel", "main-pane", "webview"]),
+			scope: z.enum(["generic", "ch5-internal", "lab"]),
+			maturity: z.enum(["stable", "beta", "alpha", "internal"]),
+			defaultPlacement: z.enum(["inline", "above-chat", "chat-inline-right", "side-panel", "main-pane"]),
+			sourcePackage: z.string().nullable().optional(),
+			storybookPath: z.string().nullable().optional(),
+			docsPath: z.string().nullable().optional(),
 		}),
 	),
 })
@@ -389,6 +399,14 @@ export const palotComponentsDescribeResultSchema = z.object({
 	name: z.string().optional(),
 	one_line: z.string().optional(),
 	category: z.string().optional(),
+	presentation: z.enum(["inline-artifact", "chat-widget", "side-panel", "main-pane", "webview"]).optional(),
+	scope: z.enum(["generic", "ch5-internal", "lab"]).optional(),
+	maturity: z.enum(["stable", "beta", "alpha", "internal"]).optional(),
+	defaultPlacement: z.enum(["inline", "above-chat", "chat-inline-right", "side-panel", "main-pane"]).optional(),
+	allowedPlacements: z.array(z.enum(["inline", "above-chat", "chat-inline-right", "side-panel", "main-pane"])).optional(),
+	sourcePackage: z.string().nullable().optional(),
+	storybookPath: z.string().nullable().optional(),
+	docsPath: z.string().nullable().optional(),
 	props_schema: z.unknown().optional(),
 	example: z.unknown().optional(),
 	errorCode: z.string().optional(),
