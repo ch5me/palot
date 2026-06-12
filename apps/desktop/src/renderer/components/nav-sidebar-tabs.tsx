@@ -1,4 +1,5 @@
-import { AnimatePresence, DiscreteTabs, DiscreteTabsList, DiscreteTabsTrigger } from "@ch5me/ch5-ui-web/animate/discrete-tabs"
+import { DiscreteTab, DiscreteTabs } from "@ch5me/ch5-ui-web/animate/discrete-tabs"
+import { AnimatePresence } from "motion/react"
 import { Button } from "@ch5me/elf-ui/components/button"
 import { SidebarFooter } from "@ch5me/elf-ui/components/sidebar"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@ch5me/elf-ui/components/tooltip"
@@ -136,20 +137,23 @@ export function NavSidebarTabs(props: AppSidebarContentProps) {
 	return (
 		<div className="flex min-h-0 flex-1 flex-col overflow-hidden">
 			<div className="shrink-0 border-b border-sidebar-border/10 px-2 pb-2 pt-1">
-				<DiscreteTabs value={currentTab.id} onValueChange={(value) => setActiveTab(value as typeof currentTab.id)}>
-					<DiscreteTabsList aria-label="Navigation sidebar tabs" className="w-full justify-start">
-						{tabs.map((tab) => {
-							const Icon = tab.icon
-							return (
-								<DiscreteTabsTrigger key={tab.id} value={tab.id} className="min-w-0 flex-1">
-									<span className="flex min-w-0 items-center gap-1.5">
-										<Icon className="size-3.5 shrink-0" />
-										<span className="truncate">{tab.label}</span>
-									</span>
-								</DiscreteTabsTrigger>
-							)
-						})}
-					</DiscreteTabsList>
+				<DiscreteTabs
+					value={currentTab.id}
+					onValueChange={(value) => setActiveTab(value as typeof currentTab.id)}
+					size="sm"
+				>
+					{tabs.map((tab) => {
+						const Icon = tab.icon
+						return (
+							<DiscreteTab
+								key={tab.id}
+								value={tab.id}
+								icon={<Icon className="size-3.5 shrink-0" />}
+							>
+								{tab.label}
+							</DiscreteTab>
+						)
+					})}
 				</DiscreteTabs>
 			</div>
 			<div className="min-h-0 flex-1 overflow-hidden">
