@@ -1,0 +1,57 @@
+{
+  "apiVersion": "firefly.plugin/v2",
+  "kind": "PluginManifest",
+  "id": "acme.disk-example",
+  "displayName": "ACME Disk Example",
+  "version": "1.0.0",
+  "publisher": "ACME Corp",
+  "description": "Example third-party plugin loaded from disk (manifest.json path)",
+  "license": "MIT",
+  "trust": "signed-third-party",
+  "manifestRevision": 1,
+  "engines": {},
+  "lifecycle": {
+    "autoEnable": true,
+    "keepAliveAcrossSessions": false
+  },
+  "activationEvents": [
+    { "kind": "onStartup" }
+  ],
+  "contributes": {
+    "panels": [],
+    "navSidebars": [],
+    "widgets": [],
+    "commands": [
+      {
+        "id": "acme-disk-example-greet",
+        "title": "ACME: Greet from Disk",
+        "description": "Example command contributed by a disk-loaded plugin",
+        "category": "ACME",
+        "requires": []
+      }
+    ],
+    "themes": [],
+    "tools": [
+      {
+        "id": "acme-disk-example-read-config",
+        "title": "Read ACME Config",
+        "description": "Reads configuration from the ACME plugin",
+        "scope": "session",
+        "requires": [],
+        "args": {
+          "type": "object",
+          "properties": {
+            "key": {
+              "type": "string",
+              "description": "Configuration key to read"
+            }
+          },
+          "required": ["key"]
+        }
+      }
+    ],
+    "components": []
+  },
+  "capabilities": [],
+  "tags": ["example", "disk-plugin", "third-party"]
+}
