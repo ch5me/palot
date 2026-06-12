@@ -368,8 +368,6 @@ export const buildCatalogToolEntries = async ({ bridgeRequest }) => {
 	try {
 		listing = await bridgeRequest({ action: "list-plugin-tools" })
 	} catch (error) {
-		// Catalog projection failing must not take down the static bridge
-		// tools — degrade loudly to static-only.
 		console.error(
 			"[palot-plugin] plugin catalog tool listing failed; continuing with static tools only:",
 			error instanceof Error ? error.message : error,
@@ -379,14 +377,16 @@ export const buildCatalogToolEntries = async ({ bridgeRequest }) => {
 	const tools = {}
 	for (const def of Array.isArray(listing?.tools) ? listing.tools : []) {
 		if (typeof def?.toolId !== "string" || typeof def?.pluginId !== "string") continue
-		tools[def.toolId] = {
-			description: typeof def.description === "string" ? def.description : def.toolId,
+		const toolId = def.toolId
+		const description = typeof def.description === "string" ? def.description : toolId
+		tools[toolId] = {
+			description,
 			args: jsonSchemaShapeFromObjectSchema(def.argsJsonSchema),
 			execute: async (args = {}, context = {}) => {
 				const envelope = await bridgeRequest({
 					action: "invoke-plugin-tool",
 					pluginId: def.pluginId,
-					toolId: def.toolId,
+					toolId,
 					args: args ?? {},
 					sessionId: context.sessionID ?? null,
 				})
