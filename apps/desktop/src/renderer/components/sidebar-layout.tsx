@@ -1,4 +1,4 @@
-import { SidebarProvider } from "@ch5me/elf-ui/components/sidebar"
+import { AppSidebarShellFrame } from "@ch5me/elf-ui/components/nav-sidebar-shell"
 import { SplitPane } from "@ch5me/workspace"
 import { Outlet, useNavigate } from "@tanstack/react-router"
 import { useAtom, useAtomValue } from "jotai"
@@ -143,6 +143,8 @@ export function SidebarLayout() {
 		/>
 	)
 
+	const dragRegionStyle = { WebkitAppRegion: "drag" } as const
+
 	return (
 		<>
 			<NarrowWindowCollapser />
@@ -157,55 +159,43 @@ export function SidebarLayout() {
 					width: "100%",
 				}}
 			>
-			<div className="relative">
-				<UpdateBanner />
-				<AppBar />
-			</div>
-
 			<div style={{ minWidth: 0, overflow: "hidden" }}>
-
-					<SplitPane
-						side="left"
-						open={leftPanelOpen}
-						onOpenChange={setLeftPanelOpen}
-						defaultPanelWidth={320}
-						minPanelWidth={200}
-						maxPanelWidth={480}
-					panel={
-						<SidebarProvider
-							embedded
-							defaultOpen={leftPanelOpen}
+				<AppSidebarShellFrame
+					appBar={
+						<div className="relative">
+							<UpdateBanner />
+							<AppBar />
+						</div>
+					}
+					sidebar={sidebarContent}
+					sidebarFooter={slotFooter !== false ? slotFooter : undefined}
+					sidebarHeader={<div className="flex shrink-0 items-center gap-1" style={{ height: APP_BAR_HEIGHT, ...dragRegionStyle }} />}
+					sidebarStyle={{ width: 320, minWidth: 200, maxWidth: 480 }}
+					content={
+						<SplitPane
+							side="left"
 							open={leftPanelOpen}
 							onOpenChange={setLeftPanelOpen}
+							defaultPanelWidth={320}
+							minPanelWidth={200}
+							maxPanelWidth={480}
+							panel={<div className="hidden" />}
 						>
-							<div
-								className="flex h-full flex-col overflow-hidden"
-								style={{ background: "hsl(var(--sidebar, var(--card)))" }}
+							<main
+								className="relative flex h-full min-h-0 min-w-0 flex-1 flex-col overflow-hidden"
+								style={{ background: "hsl(var(--background))" }}
 							>
-								<div
-									className="flex shrink-0 items-center gap-1"
-									style={{
-										height: APP_BAR_HEIGHT,
-										// @ts-expect-error -- vendor-prefixed CSS property
-										WebkitAppRegion: "drag",
-									}}
-								/>
-								<div className="min-h-0 flex-1 overflow-hidden">{sidebarContent}</div>
-								{slotFooter !== false && slotFooter}
-							</div>
-						</SidebarProvider>
+								<div data-slot="content-area" className="relative min-h-0 min-w-0 flex-1 overflow-hidden">
+									<Outlet />
+								</div>
+							</main>
+						</SplitPane>
 					}
-					>
-						<main
-							className="relative flex h-full min-h-0 min-w-0 flex-1 flex-col overflow-hidden"
-							style={{ background: "hsl(var(--background))" }}
-						>
-							<div data-slot="content-area" className="relative min-h-0 min-w-0 flex-1 overflow-hidden">
-								<Outlet />
-							</div>
-						</main>
-					</SplitPane>
-				</div>
+					height="100%"
+					className="h-full"
+					contentClassName="bg-transparent"
+				/>
+			</div>
 			</div>
 			<AddProjectDialog
 				open={addProjectOpen}

@@ -1,3 +1,4 @@
+import { Button } from "@ch5me/elf-ui/components/button"
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@ch5me/elf-ui/components/collapsible"
 import {
 	ContextMenu,
@@ -8,6 +9,7 @@ import {
 } from "@ch5me/elf-ui/components/context-menu"
 import { Input } from "@ch5me/elf-ui/components/input"
 import {
+	Sidebar,
 	SidebarContent,
 	SidebarFooter,
 	SidebarGroup,
@@ -16,6 +18,8 @@ import {
 	SidebarMenu,
 	SidebarMenuButton,
 	SidebarMenuItem,
+	SidebarProvider,
+	SidebarRail,
 	SidebarSeparator,
 } from "@ch5me/elf-ui/components/sidebar"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@ch5me/elf-ui/components/tooltip"
@@ -24,6 +28,7 @@ import { cn } from "@ch5me/elf-ui/lib/utils"
 import {
 	BlocksIcon,
 	CommandIcon,
+	PanelLeftIcon,
 	PlusIcon,
 	SearchIcon,
 	SettingsIcon,
@@ -64,6 +69,46 @@ export interface NavSidebarShellTab {
 export interface NavSidebarServerSummary {
 	label: string
 	connected: boolean
+}
+
+export interface AppShellChromeBadge {
+	label: string
+}
+
+export interface AppShellChromeActionSlot {
+	control: React.ReactNode
+	tooltip?: React.ReactNode
+}
+
+export interface AppShellChromeProps {
+	title?: React.ReactNode
+	badges?: AppShellChromeBadge[]
+	windowControlsInset?: number
+	onToggleSidebar?: () => void
+	onNewSession?: () => void
+	leftAdornment?: React.ReactNode
+	rightContent?: React.ReactNode
+	backgroundMode?: "transparent" | "shell"
+	showSidebarToggle?: boolean
+	showNewSession?: boolean
+	toggleSidebarAction?: AppShellChromeActionSlot
+	newSessionAction?: AppShellChromeActionSlot
+}
+
+export interface AppSidebarShellFrameProps {
+	appBar: React.ReactNode
+	sidebar: React.ReactNode
+	content: React.ReactNode
+	sidebarHeader?: React.ReactNode
+	sidebarFooter?: React.ReactNode
+	height?: string | number
+	className?: string
+	contentClassName?: string
+	shellClassName?: string
+	showSidebarRail?: boolean
+	sidebarClassName?: string
+	sidebarStyle?: React.CSSProperties
+	sidebarVisible?: boolean
 }
 
 export interface NavSidebarShellProps {
@@ -116,6 +161,132 @@ const STATUS_COLOR: Record<NavSidebarAgentStatus, string> = {
 	waiting: "text-yellow-500",
 	degraded: "text-red-500",
 	idle: "text-muted-foreground",
+}
+
+function DefaultWordmark() {
+	return (
+		<div className="mr-2 flex items-center gap-2">
+			<div className="flex h-[16px] items-center gap-[3px]">
+				<div className="h-[14px] w-[7px] rounded-full bg-foreground/85" />
+				<div className="h-[14px] w-[7px] rounded-full bg-foreground/75" />
+				<div className="h-[14px] w-[7px] rounded-full bg-foreground/65" />
+			</div>
+			<span className="text-[14px] font-medium tracking-tight text-muted-foreground/85">Palot</span>
+		</div>
+	)
+}
+
+export function AppShellChrome({
+	title,
+	badges = [],
+	windowControlsInset = 12,
+	onToggleSidebar,
+	onNewSession,
+	leftAdornment,
+	rightContent,
+	backgroundMode = "shell",
+	showSidebarToggle = true,
+	showNewSession = true,
+	toggleSidebarAction,
+	newSessionAction,
+}: AppShellChromeProps) {
+	return (
+		<div
+			className="relative z-30 flex shrink-0 items-center border-b border-border/50 pl-4 pr-3"
+			style={{
+				height: 46,
+				background:
+					backgroundMode === "shell"
+						? "color-mix(in srgb, var(--background) 88%, var(--card))"
+						: "transparent",
+			}}
+		>
+			<div className="mr-3 flex shrink-0 items-center gap-1.5" style={{ marginLeft: windowControlsInset }}>
+				{leftAdornment ?? <DefaultWordmark />}
+				{showSidebarToggle
+					? (toggleSidebarAction?.control ?? (
+						<Button variant="ghost" size="icon" className="size-7 shrink-0" onClick={onToggleSidebar}>
+							<PanelLeftIcon className="size-3.5" />
+						</Button>
+					))
+					: null}
+				{showNewSession
+					? (newSessionAction?.control ?? (
+						<Button variant="ghost" size="icon" className="size-7 shrink-0" onClick={onNewSession}>
+							<PlusIcon className="size-3.5" />
+						</Button>
+					))
+					: null}
+			</div>
+			<div className="relative flex h-full min-w-0 flex-1 items-center justify-between gap-4">
+				<div className="min-w-0">{typeof title === "string" ? <p className="truncate text-sm font-medium">{title}</p> : title}</div>
+				{rightContent ?? (badges.length > 0 ? (
+					<div className="hidden items-center gap-2 md:flex">
+						{badges.map((badge) => (
+							<div key={badge.label} className="rounded-full border border-border/60 px-2.5 py-1 text-[11px] font-medium text-muted-foreground">
+								{badge.label}
+							</div>
+						))}
+					</div>
+				) : null)}
+			</div>
+		</div>
+	)
+}
+
+export function AppSidebarShellFrame({
+	appBar,
+	sidebar,
+	content,
+	sidebarHeader,
+	sidebarFooter,
+	height = "100vh",
+	className,
+	contentClassName,
+	shellClassName,
+	showSidebarRail = true,
+	sidebarClassName,
+	sidebarStyle,
+	sidebarVisible = true,
+}: AppSidebarShellFrameProps) {
+
+	return (
+		<SidebarProvider defaultOpen embedded>
+			<div
+				className={cn("grid overflow-hidden", className)}
+				style={{
+					gridTemplateRows: "46px 1fr",
+					height,
+				}}
+			>
+				{appBar}
+				<div className={cn("flex min-h-0 min-w-0 overflow-hidden", shellClassName)}>
+					{sidebarVisible ? (
+						<Sidebar
+							className={cn("border-r border-sidebar-border/20 bg-sidebar/80 backdrop-blur-sm", sidebarClassName)}
+							collapsible="icon"
+							style={sidebarStyle}
+						>
+							{sidebarHeader ?? (
+								<div
+									className="flex shrink-0 items-center gap-1"
+									style={{
+										height: 46,
+										background: "color-mix(in srgb, var(--sidebar) 82%, transparent)",
+									}}
+								/>
+							)}
+							<div className="min-h-0 flex-1 overflow-hidden">{sidebar}</div>
+							{sidebarFooter}
+							{showSidebarRail ? <SidebarRail /> : null}
+						</Sidebar>
+					) : null}
+					<div className={cn("flex min-w-0 flex-1 flex-col bg-background/80", contentClassName)}>{content}</div>
+				</div>
+
+			</div>
+		</SidebarProvider>
+	)
 }
 
 function renderAgentMeta(agent: NavSidebarAgent): string | undefined {

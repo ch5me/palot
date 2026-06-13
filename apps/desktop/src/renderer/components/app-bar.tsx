@@ -1,5 +1,7 @@
 import { Button } from "@ch5me/elf-ui/components/button"
+import { AppShellChrome } from "@ch5me/elf-ui/components/nav-sidebar-shell"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@ch5me/elf-ui/components/tooltip"
+import type { CSSProperties } from "react"
 import { useSetAtom } from "jotai"
 import { PanelLeftIcon, PlusIcon } from "lucide-react"
 import { useCallback } from "react"
@@ -23,73 +25,78 @@ function isElectron(): boolean {
 }
 
 function GlobalAppChrome() {
+	return <ElfWordmark className="mr-2 h-[16.5px] w-auto shrink-0 text-[16.5px] text-muted-foreground/80" />
+}
+
+export function AppBar() {
 	const navigate = useNavigate()
+	const pageContent = useAppBarContent()
 	const setLeftPanelOpen = useSetAtom(leftPanelOpenAtom)
 
 	const handleToggleSidebar = useCallback(() => {
 		setLeftPanelOpen((prev) => !prev)
 	}, [setLeftPanelOpen])
 
-	return (
-		<div
-			className="mr-3 flex shrink-0 items-center gap-1.5"
-			style={{
-				marginLeft: WINDOW_CONTROLS_LEFT,
-				// @ts-expect-error -- vendor-prefixed CSS property
-				WebkitAppRegion: "no-drag",
-			}}
-		>
-			<ElfWordmark className="mr-2 h-[16.5px] w-auto shrink-0 text-[16.5px] text-muted-foreground/80" />
-			<Tooltip>
-				<TooltipTrigger
-					render={
-						<Button
-							variant="ghost"
-							size="icon"
-							className="size-7 shrink-0"
-							onClick={handleToggleSidebar}
-						/>
-					}
-				>
-					<PanelLeftIcon className="size-3.5" />
-				</TooltipTrigger>
-				<TooltipContent>Toggle sidebar (&#8984;B)</TooltipContent>
-			</Tooltip>
-			<Tooltip>
-				<TooltipTrigger
-					render={
-						<Button
-							variant="ghost"
-							size="icon"
-							className="size-7 shrink-0"
-							onClick={() => navigate({ to: "/" })}
-						/>
-					}
-				>
-					<PlusIcon className="size-3.5" />
-				</TooltipTrigger>
-				<TooltipContent>New session (&#8984;N)</TooltipContent>
-			</Tooltip>
-		</div>
-	)
-}
-
-export function AppBar() {
-	const pageContent = useAppBarContent()
+	const dragStyle = { WebkitAppRegion: "drag" } as CSSProperties
+	const noDragStyle = { WebkitAppRegion: "no-drag" } as CSSProperties
 
 	return (
 		<div
 			data-slot="app-bar"
-			className="relative z-30 flex shrink-0 items-center border-b border-border/50 pl-4 pr-3 transition-[padding-left] duration-250 ease-in-out group-data-[state=collapsed]/sidebar-wrapper:pl-[var(--window-controls-inset)]"
+			className="transition-[padding-left] duration-250 ease-in-out group-data-[state=collapsed]/sidebar-wrapper:pl-[var(--window-controls-inset)]"
 			style={{
-				height: APP_BAR_HEIGHT,
 				// Make entire bar draggable on Electron (title bar replacement)
-				// @ts-expect-error -- vendor-prefixed CSS property
 				WebkitAppRegion: isElectron() ? "drag" : undefined,
-			}}
+			} as CSSProperties}
 		>
-			<GlobalAppChrome />
-			<div className="relative flex h-full min-w-0 flex-1 items-center">{pageContent}</div>
+			<AppShellChrome
+				title={<div className="relative flex h-full min-w-0 flex-1 items-center">{pageContent}</div>}
+				windowControlsInset={WINDOW_CONTROLS_LEFT}
+				leftAdornment={<div style={noDragStyle}><GlobalAppChrome /></div>}
+				toggleSidebarAction={{
+					control: (
+						<div style={noDragStyle}>
+							<Tooltip>
+								<TooltipTrigger
+									render={
+										<Button
+											variant="ghost"
+											size="icon"
+											className="size-7 shrink-0"
+											onClick={handleToggleSidebar}
+										/>
+									}
+								>
+									<PanelLeftIcon className="size-3.5" />
+								</TooltipTrigger>
+								<TooltipContent>Toggle sidebar (&#8984;B)</TooltipContent>
+							</Tooltip>
+						</div>
+					),
+				}}
+				newSessionAction={{
+					control: (
+						<div style={noDragStyle}>
+							<Tooltip>
+								<TooltipTrigger
+									render={
+										<Button
+											variant="ghost"
+											size="icon"
+											className="size-7 shrink-0"
+											onClick={() => navigate({ to: "/" })}
+										/>
+									}
+								>
+									<PlusIcon className="size-3.5" />
+								</TooltipTrigger>
+								<TooltipContent>New session (&#8984;N)</TooltipContent>
+							</Tooltip>
+						</div>
+					),
+				}}
+				rightContent={<div style={dragStyle} />}
+			/>
 		</div>
 	)
 }

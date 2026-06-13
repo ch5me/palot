@@ -24,15 +24,13 @@ import {
 } from "../atoms/ui"
 import { appStore } from "../atoms/store"
 import type { Agent, AgentStatus, SidebarProject } from "../lib/types"
-import { loadMoreProjectSessions, loadProjectSessions } from "../services/connection-manager"
-import { ServerIndicator } from "./server-indicator"
+import { loadMoreProjectSessions } from "../services/connection-manager"
 import {
 	NavSidebarShell,
 	type NavSidebarAgent,
 	type NavSidebarProject,
 	type NavSidebarSectionId,
 	type NavSidebarShellTab,
-	renderAgentMeta,
 } from "@ch5me/elf-ui/components/nav-sidebar-shell"
 
 const RECENT_COUNT = 5
@@ -57,6 +55,7 @@ interface NavSidebarTabDefinition {
 	id: "built-in" | "built-in-duplicate"
 	label: string
 	icon: typeof BlocksIcon
+	mode: "host" | "plugin-seam"
 	render: (props: AppSidebarContentProps) => React.ReactNode
 }
 
@@ -65,13 +64,15 @@ const NAV_SIDEBAR_TAB_DEFINITIONS: NavSidebarTabDefinition[] = [
 		id: "built-in",
 		label: "Palot",
 		icon: BlocksIcon,
-		render: (props) => <BuiltInSidebarBody {...props} />,
+		mode: "host",
+		render: (props) => <BuiltInSidebarBody mode="host" {...props} />,
 	},
 	{
 		id: "built-in-duplicate",
 		label: "Folio",
 		icon: CopyIcon,
-		render: (props) => <BuiltInSidebarBody {...props} />,
+		mode: "plugin-seam",
+		render: (props) => <BuiltInSidebarBody mode="plugin-seam" {...props} />,
 	},
 ]
 
@@ -153,7 +154,8 @@ const BuiltInSidebarBody = memo(function BuiltInSidebarBody({
 	onTogglePinnedSession,
 	onForkSession,
 	serverConnected,
-}: AppSidebarContentProps) {
+	mode = "host",
+}: AppSidebarContentProps & { mode?: "host" | "plugin-seam" }) {
 	const navigate = useNavigate()
 	const automationsEnabled = useAtomValue(automationsEnabledAtom)
 	const [sidebarSectionsOpen, setSidebarSectionsOpen] = useAtom(sidebarSectionOpenAtom)
@@ -207,6 +209,11 @@ const BuiltInSidebarBody = memo(function BuiltInSidebarBody({
 	)
 
 	const hasContent = agents.length > 0 || projects.length > 0
+	const sidebarTitle = mode === "plugin-seam" ? "Folio plugin seam" : "Palot host sidebar"
+	const sidebarDescription =
+		mode === "plugin-seam"
+			? "This tab is reserved for the upcoming plugin-projected Folio family while still using the shared shell contract for spacing, sections, and side-panel behavior."
+			: "This is the current host-owned Palot sidebar, rendered through the shared shell contract."
 
 	const setSectionOpen = (section: SidebarSectionId | NavSidebarSectionId, open: boolean) => {
 		setSidebarSectionsOpen((current) => ({
@@ -233,17 +240,56 @@ const BuiltInSidebarBody = memo(function BuiltInSidebarBody({
 		})
 	}, [projects])
 
+	const seamCopy =
+		mode === "plugin-seam"
+			? {
+				projectManagerLabel: "Folio Queue",
+				automationsLabel: "Projected Panels",
+				projectSearchPlaceholder: "Filter Folio workspaces...",
+				emptyTitle: "Plugin seam warming up",
+				emptyBody: "This host-owned preview marks the projected Folio sidebar slot until the first plugin-projected family is wired in.",
+				primaryBody: "This pane marks the future plugin-projected Folio navigation surface. Host actions stay intentionally disabled here until the first plugin family is wired in.",
+				panelBody: "Reserved for Folio-specific panels, bridge controls, and plugin-owned detail views.",
+			}
+			: {
+				projectManagerLabel: "Project Manager",
+				automationsLabel: "Automations",
+				projectSearchPlaceholder: "Filter projects...",
+				emptyTitle: "No projects yet",
+				emptyBody: "Add a project to get started",
+				primaryBody: "Use this pane to evaluate today’s host-owned sidebar inside the same shell layout future plugin families will inherit.",
+				panelBody: "Reserved for current host-owned notes, browser, and artifacts side panels.",
+			}
+
 	return (
 		<NavSidebarShell
 			tabs={NAV_SIDEBAR_TAB_DEFINITIONS.map((tab) => ({ id: tab.id, label: tab.label, icon: tab.icon }))}
-			activeTab="built-in"
+			activeTab={mode === "plugin-seam" ? "built-in-duplicate" : "built-in"}
 			onTabChange={() => {}}
+
 			serverConnected={serverConnected}
 			hasContent={hasContent}
 			newSessionLabel="New Session"
-			projectManagerLabel="Project Manager"
-			automationsLabel="Automations"
-			showAutomations={automationsEnabled && isLocalServer}
+			projectManagerLabel={seamCopy.projectManagerLabel}
+			automationsLabel={seamCopy.automationsLabel}
+			showAutomations={mode === "plugin-seam" ? false : automationsEnabled && isLocalServer}
+			emptyState={
+				<div className="flex flex-1 items-center justify-center p-4">
+					<div className="space-y-2 text-center">
+						{!serverConnected ? (
+							<>
+								<p className="text-sm text-muted-foreground">Server offline</p>
+								<p className="text-xs text-muted-foreground/60">Check your connection in Settings</p>
+							</>
+						) : (
+							<>
+								<p className="text-sm text-muted-foreground">{seamCopy.emptyTitle}</p>
+								<p className="text-xs text-muted-foreground/60">{seamCopy.emptyBody}</p>
+							</>
+						)}
+					</div>
+				</div>
+			}
 			activeSessions={activeSessions.map(toNavSidebarAgent)}
 			pinnedSessions={pinnedSidebarSessions.map(toNavSidebarAgent)}
 			recentSessions={recentSessions.map(toNavSidebarAgent)}
@@ -251,12 +297,12 @@ const BuiltInSidebarBody = memo(function BuiltInSidebarBody({
 			projects={navProjects}
 			sectionsOpen={sidebarSectionsOpen}
 			onSectionOpenChange={setSectionOpen}
-			onNewSession={() => navigate({ to: "/" })}
-			onProjectManager={() => navigate({ to: "/project-manager" })}
-			onAutomations={() => navigate({ to: "/automations" })}
-			onOpenCommandPalette={onOpenCommandPalette}
-			onAddProject={onAddProject}
-			onSessionSelect={(agent) => {
+			onNewSession={mode === "plugin-seam" ? undefined : () => navigate({ to: "/" })}
+			onProjectManager={mode === "plugin-seam" ? undefined : () => navigate({ to: "/project-manager" })}
+			onAutomations={mode === "plugin-seam" ? undefined : () => navigate({ to: "/automations" })}
+			onOpenCommandPalette={mode === "plugin-seam" ? undefined : onOpenCommandPalette}
+			onAddProject={mode === "plugin-seam" ? undefined : onAddProject}
+			onSessionSelect={mode === "plugin-seam" ? undefined : (agent) => {
 				const original = agents.find((entry) => entry.id === agent.id)
 				if (!original) return
 				navigate({
@@ -264,37 +310,57 @@ const BuiltInSidebarBody = memo(function BuiltInSidebarBody({
 					params: { projectSlug: original.projectSlug, sessionId: original.id },
 				})
 			}}
-			onSessionRename={onRenameSession ? (agent) => {
+			onSessionRename={mode === "plugin-seam" ? undefined : onRenameSession ? (agent) => {
 				const original = agents.find((entry) => entry.id === agent.id)
 				if (!original) return
 				void onRenameSession(original, original.name)
 			} : undefined}
-			onSessionDelete={onDeleteSession ? (agent) => {
+			onSessionDelete={mode === "plugin-seam" ? undefined : onDeleteSession ? (agent) => {
 				const original = agents.find((entry) => entry.id === agent.id)
 				if (!original) return
 				void onDeleteSession(original)
 			} : undefined}
-			onTogglePinnedSession={onTogglePinnedSession ? (agent, pinned) => {
+			onTogglePinnedSession={mode === "plugin-seam" ? undefined : onTogglePinnedSession ? (agent, pinned) => {
 				const original = agents.find((entry) => entry.id === agent.id)
 				if (!original) return
 				void onTogglePinnedSession(original, pinned)
 			} : undefined}
-			onForkSession={onForkSession ? (agent) => {
+			onForkSession={mode === "plugin-seam" ? undefined : onForkSession ? (agent) => {
 				const original = agents.find((entry) => entry.id === agent.id)
 				if (!original) return
 				void onForkSession(original)
 			} : undefined}
-			onProjectSelect={(project) => {
+			onProjectSelect={mode === "plugin-seam" ? undefined : (project) => {
 				navigate({ to: "/project/$projectSlug", params: { projectSlug: project.slug } })
 			}}
-			onProjectLoadMore={(project) => {
+			onProjectLoadMore={mode === "plugin-seam" ? undefined : (project) => {
 				if (!project.directory) return
 				const pagination = appStore.get(projectPaginationFamily(project.directory))
 				loadMoreProjectSessions(project.directory, pagination.currentLimit)
 			}}
-			onSettings={() => navigate({ to: "/settings" })}
-			projectSearchPlaceholder="Filter projects..."
+			onSettings={mode === "plugin-seam" ? undefined : () => navigate({ to: "/settings" })}
+			projectSearchPlaceholder={seamCopy.projectSearchPlaceholder}
 			serverSummary={{ label: activeServer.name, connected: serverConnected }}
+				rightPane={
+					<div className="flex h-full min-h-0 flex-col border-l border-border/50 bg-background/70">
+						<div className="border-b border-border/50 px-4 py-3">
+							<p className="text-xs font-medium uppercase tracking-[0.16em] text-muted-foreground">{mode === "plugin-seam" ? "Plugin seam preview" : "Host sidebar preview"}</p>
+							<p className="mt-2 text-sm font-medium">{sidebarTitle}</p>
+							<p className="mt-1 text-xs leading-5 text-muted-foreground">{sidebarDescription}</p>
+						</div>
+						<div className="grid min-h-0 flex-1 gap-3 p-4 lg:grid-cols-[minmax(0,1fr)_280px]">
+							<div className="rounded-2xl border border-dashed border-border/60 bg-card/40 p-4">
+								<p className="text-xs font-medium uppercase tracking-[0.16em] text-muted-foreground">Primary surface</p>
+								<p className="mt-3 text-sm leading-6 text-muted-foreground">{seamCopy.primaryBody}</p>
+							</div>
+							<div className="rounded-2xl border border-border/60 bg-card p-4 shadow-sm">
+								<p className="text-xs font-medium uppercase tracking-[0.16em] text-muted-foreground">Side panel target</p>
+								<p className="mt-3 text-sm leading-6 text-muted-foreground">{seamCopy.panelBody}</p>
+							</div>
+						</div>
+					</div>
+				}
+
 			renderProjectSession={(agent) => {
 				const original = agents.find((entry) => entry.id === agent.id)
 				if (!original) return agent
@@ -307,24 +373,8 @@ const BuiltInSidebarBody = memo(function BuiltInSidebarBody({
 					modelID: original.modelID,
 				}
 			}}
-			emptyState={
-				<div className="flex flex-1 items-center justify-center p-4">
-					<div className="space-y-2 text-center">
-						{!serverConnected ? (
-							<>
-								<p className="text-sm text-muted-foreground">Server offline</p>
-								<p className="text-xs text-muted-foreground/60">Check your connection in Settings</p>
-							</>
-						) : (
-							<>
-								<p className="text-sm text-muted-foreground">No projects yet</p>
-								<p className="text-xs text-muted-foreground/60">Add a project to get started</p>
-							</>
-						)}
-					</div>
-				</div>
-			}
 		/>
+
 	)
 })
 
