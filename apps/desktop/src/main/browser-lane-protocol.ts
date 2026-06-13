@@ -25,10 +25,17 @@ interface BrowserLaneProtocolRegistry {
 	lanes?: BrowserLaneProtocolRecord[]
 }
 
+function joinUpstreamPath(basePath: string, remainderPath: string): string {
+	const normalizedBase = basePath.endsWith("/") ? basePath.slice(0, -1) : basePath
+	const normalizedRemainder = remainderPath === "/" ? "" : remainderPath
+	const joined = `${normalizedBase}${normalizedRemainder}`
+	return joined || "/"
+}
+
 function createBrowserLaneUrl(upstreamBase: string, requestUrl: string): string {
 	const upstream = new URL(upstreamBase)
 	const incoming = new URL(requestUrl)
-	upstream.pathname = incoming.pathname
+	upstream.pathname = joinUpstreamPath(upstream.pathname, incoming.pathname)
 	upstream.search = incoming.search
 	return upstream.toString()
 }
@@ -175,7 +182,7 @@ export function getBrowserLaneDesktopUrl(
 		return targetUrl
 	}
 	if (streamBackendUrl && isLoopbackUrl(streamBackendUrl)) {
-		return new URL("/", streamBackendUrl).toString()
+		return new URL(joinUpstreamPath(new URL(streamBackendUrl).pathname, "/"), streamBackendUrl).toString()
 	}
 	return `${BROWSER_LANE_ORIGIN}/browser/${laneId}/`
 }

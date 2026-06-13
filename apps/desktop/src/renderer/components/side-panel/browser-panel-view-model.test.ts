@@ -1,5 +1,9 @@
 import { describe, expect, test } from "bun:test"
-import { getBrowserPanelActionLabels, getBrowserPanelState } from "./browser-panel-view-model"
+import {
+	getBrowserPanelActionLabels,
+	getBrowserPanelFailureHint,
+	getBrowserPanelState,
+} from "./browser-panel-view-model"
 import type { BrowserLane, BrowserLaneHealth } from "../../lib/types"
 
 function createLane(overrides: Partial<BrowserLane> = {}): BrowserLane {
@@ -52,6 +56,9 @@ describe("browser panel view model", () => {
 		expect(actions.refreshLabel).toBe("Refresh target")
 		expect(actions.openExternalLabel).toBe("Open target")
 		expect(actions.canRestartManagedLane).toBe(false)
+		expect(getBrowserPanelFailureHint(lane)).toBe(
+			"Use refresh or open target to recover the embedded page.",
+		)
 	})
 
 	test("attached selkies state and actions avoid managed wording", () => {
@@ -72,6 +79,7 @@ describe("browser panel view model", () => {
 		expect(state.detail).toContain("attached surface URL")
 		expect(actions.restartLabel).toBe("Restart unavailable for attached lanes")
 		expect(actions.resetProfileLabel).toBe("Profile reset unavailable for attached lanes")
+		expect(getBrowserPanelFailureHint(lane)).toBe("Use restart or refresh to recover stream state.")
 	})
 
 	test("managed-local selkies state and actions expose managed controls", () => {

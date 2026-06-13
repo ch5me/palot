@@ -158,6 +158,48 @@ On first launch, Elf offers a guided migration wizard that detects your existing
 
 Elf is a GUI layer on top of OpenCode, so core configuration like model providers, MCP servers, custom tools, and agent behavior is still grounded in OpenCode config. MCP setup is now surfaced in Settings through a first-class Connections flow for discovery, auth, posture, and migration visibility. Refer to the [OpenCode documentation](https://opencode.ai/docs) for lower-level provider and server details.
 
+### Browser lanes
+
+Browser lanes are configured surface-first. Pick the rendered surface first, then who owns the runtime, then where that runtime happens to live.
+
+#### Canonical glossary
+
+- `surfaceKind` answers what the panel renders.
+  - `direct-iframe`: render a target URL directly. No Selkies stream. No CDP requirement.
+  - `selkies-stream`: render a streamed browser surface. CDP may exist separately for automation.
+- `runtimeOwnership` answers who is responsible for starting and stopping the runtime.
+  - `managed-local`: Palot creates runtime files, manages profiles, and can start/stop/restart/reset the local lane.
+  - `attached`: Palot attaches to an already-existing surface. It can probe and proxy it, but does not create or manage the runtime.
+- `deploymentLocation` answers where the runtime currently lives.
+  - `local`: the runtime is on the same machine as Palot.
+  - `remote`: the runtime is on another machine.
+  - `unknown`: Palot cannot prove the location yet.
+- `cdpEndpoint` is orthogonal capability metadata. It answers whether automation can drive the surface. It does not decide what the panel renders.
+
+#### Supported combinations
+
+| Surface kind | Runtime ownership | Deployment location | Required fields | Panel behavior | Lifecycle controls |
+|---|---|---|---|---|---|
+| `direct-iframe` | `attached` | `local`, `remote`, or `unknown` | `targetUrl` | Render target directly. Health is reachability-only. CDP is `not-applicable`. | Refresh + open target only |
+| `selkies-stream` | `attached` | `local`, `remote`, or `unknown` | `streamBackendUrl`, optional `cdpEndpoint` | Render proxied stream. CDP stays separate and optional. | Refresh only |
+| `selkies-stream` | `managed-local` | `local` | Managed runtime config; optional initial target URL | Render managed Selkies stream once runtime is ready. | Start, stop, restart, reset profile |
+
+#### Invalid combinations
+
+| Invalid combination | Why it is blocked |
+|---|---|
+| `direct-iframe` + `managed-local` | Direct iframe means “render this target URL”. There is no managed Selkies runtime to create or own. |
+| `direct-iframe` + `streamBackendUrl` | Direct iframe lanes render `targetUrl` only and must not pretend a stream exists. |
+| `selkies-stream` + attached + missing `streamBackendUrl` | Attached stream lanes need a real stream origin to proxy. |
+| `selkies-stream` + any `targetUrl` | Stream lanes render stream transport, not a direct target URL. |
+| `managed-local` + non-`local` deployment location | Managed-local means Palot owns a local runtime on this machine. |
+
+#### Operator examples
+
+- Local dev server preview: choose `direct-iframe`, keep `attached`, set `targetUrl` to your app origin such as `http://127.0.0.1:8077`.
+- Existing remote streamed browser with optional automation: choose `selkies-stream`, keep `attached`, set `streamBackendUrl`, and add `cdpEndpoint` only if automation exists.
+- Palot-managed local browser runtime: choose `selkies-stream`, set `runtimeOwnership` to `managed-local`, and let Palot prepare the runtime locally.
+
 ### From source
 
 **Prerequisites:** [Bun](https://bun.sh) 1.3.8+ and [OpenCode CLI](https://opencode.ai)

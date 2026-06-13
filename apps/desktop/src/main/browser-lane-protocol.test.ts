@@ -10,6 +10,18 @@ interface HeaderRewriteResult {
 	requestHeaders: Record<string, string>
 }
 
+type BeforeSendHeadersHandler = (
+	details: { url: string; requestHeaders: Record<string, string> },
+	callback: (result: HeaderRewriteResult) => void,
+) => void
+
+type HttpProtocolHandler = (request: Request) => Promise<Response>
+
+interface CapturedProtocolHandlers {
+	beforeSendHeaders: BeforeSendHeadersHandler | null
+	handledHttp: HttpProtocolHandler | null
+}
+
 function setupTempRegistry() {
 	const root = mkdtempSync(path.join(tmpdir(), "elf-browser-protocol-"))
 	const configHome = path.join(root, "config")
@@ -76,23 +88,20 @@ test("protocol only injects local auth headers for managed streamed lanes", asyn
 			"utf-8",
 		)
 
-		let beforeSendHeaders:
-			| ((details: { url: string; requestHeaders: Record<string, string> }, callback: (result: HeaderRewriteResult) => void) => void)
-			| null = null
-		let handledHttp: ((request: Request) => Promise<Response>) | null = null
+		const captured: CapturedProtocolHandlers = {
+			beforeSendHeaders: null,
+			handledHttp: null,
+		}
 		const session = {
 			webRequest: {
-				onBeforeSendHeaders: (
-					_filter: unknown,
-					handler: typeof beforeSendHeaders,
-				) => {
-					beforeSendHeaders = handler
+				onBeforeSendHeaders: (_filter: unknown, handler: BeforeSendHeadersHandler) => {
+					captured.beforeSendHeaders = handler
 				},
 			},
 			protocol: {
 				isProtocolHandled: () => false,
-				handle: (_protocol: string, handler: typeof handledHttp) => {
-					handledHttp = handler
+				handle: (_protocol: string, handler: HttpProtocolHandler) => {
+					captured.handledHttp = handler
 				},
 			},
 		} as unknown as import("electron").Session
@@ -115,32 +124,113 @@ test("protocol only injects local auth headers for managed streamed lanes", asyn
 
 		await registerBrowserLaneProtocol(session, fetchImpl)
 
-		assert.ok(beforeSendHeaders)
-		assert.ok(handledHttp)
+		const { beforeSendHeaders, handledHttp } = captured
+		if (!beforeSendHeaders || !handledHttp) {
+			throw new Error("protocol handlers were not registered")
+		}
 
 		let managedHeaders: Record<string, string> | null = null
-		beforeSendHeaders?.(
+		beforeSendHeaders(
 			{ url: "http://127.0.0.1:3901/page", requestHeaders: {} },
 			(result: HeaderRewriteResult) => {
 				managedHeaders = result.requestHeaders
 			},
 		)
-		assert.equal(managedHeaders?.Authorization?.startsWith("Basic "), true)
+		assert.equal((managedHeaders as Record<string, string> | null)?.Authorization?.startsWith("Basic "), true)
 
 		let directHeaders: Record<string, string> | null = null
-		beforeSendHeaders?.(
+		beforeSendHeaders(
 			{ url: "https://example.com/app", requestHeaders: {} },
 			(result: HeaderRewriteResult) => {
 				directHeaders = result.requestHeaders
 			},
 		)
-		assert.equal(directHeaders?.Authorization, undefined)
+		assert.equal((directHeaders as Record<string, string> | null)?.Authorization, undefined)
 
-		assert.ok(handledHttp)
 		const response = await handledHttp(new Request("http://elf-browser-lane.local/browser/direct"))
 		assert.ok(response)
 		const body = await response.text()
 		assert.equal(body.includes("Basic "), false)
+	} finally {
+		cleanup()
+	}
+})
+
+test("protocol preserves upstream base paths for attached lanes", async () => {
+	const { registryFile, cleanup } = setupTempRegistry()
+	try {
+		const { registerBrowserLaneProtocol } = await import(
+			`./browser-lane-protocol?test=${Date.now()}-${Math.random()}`,
+		)
+		writeFileSync(
+			registryFile,
+			JSON.stringify({
+				version: 2,
+				lanes: [
+					{
+						id: "attached",
+						surfaceKind: "selkies-stream",
+						runtimeOwnership: "attached",
+						streamBackendUrl: "https://example.com/browser/lane-123/",
+						targetUrl: null,
+					},
+				],
+			}),
+			"utf-8",
+		)
+
+		const captured: CapturedProtocolHandlers = {
+			beforeSendHeaders: null,
+			handledHttp: null,
+		}
+		const session = {
+			webRequest: {
+				onBeforeSendHeaders: (_filter: unknown, handler: BeforeSendHeadersHandler) => {
+					captured.beforeSendHeaders = handler
+				},
+			},
+			protocol: {
+				isProtocolHandled: () => false,
+				handle: (_protocol: string, handler: HttpProtocolHandler) => {
+					captured.handledHttp = handler
+				},
+			},
+		} as unknown as import("electron").Session
+
+		let forwardedUrl = ""
+		const fetchImpl = Object.assign(
+			async (input: RequestInfo | URL) => {
+				const url = typeof input === "string" ? input : input instanceof URL ? input.toString() : input.url
+				if (url === "http://127.0.0.1:30206/browser") {
+					return new Response(
+						JSON.stringify([
+							{
+								id: "attached",
+								targetUrl: null,
+								streamBackendUrl: "https://example.com/browser/lane-123/",
+								surfaceKind: "selkies-stream",
+							},
+						]),
+					)
+				}
+				forwardedUrl = url
+				return new Response("ok")
+			},
+			{ preconnect: fetch.preconnect.bind(fetch) },
+		) as typeof fetch
+
+		await registerBrowserLaneProtocol(session, fetchImpl)
+
+		const { handledHttp } = captured
+		if (!handledHttp) {
+			throw new Error("protocol handler was not registered")
+		}
+
+		await handledHttp(
+			new Request("http://elf-browser-lane.local/browser/attached/assets/app.js?token=abc"),
+		)
+
+		assert.equal(forwardedUrl, "https://example.com/browser/lane-123/assets/app.js?token=abc")
 	} finally {
 		cleanup()
 	}

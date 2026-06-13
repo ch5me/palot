@@ -84,7 +84,7 @@ test("renders persistent profile volume in compose", () => {
 	})
 	assert.match(compose, /\/tmp\/browser-profile-default:\/config/)
 	assert.match(compose, /"3901:3000"/)
-	assert.match(compose, /"9229:9222"/)
+	assert.match(compose, /"9229:9223"/)
 	assert.match(compose, /NO_DECOR=1/)
 	assert.match(compose, /--app=https:\/\/example\.com/)
 	assert.doesNotMatch(compose, /SELKIES_MANUAL_WIDTH/)

@@ -36,6 +36,13 @@ export function getBrowserPanelActionLabels(activeLane: BrowserLane | null): Bro
 	}
 }
 
+export function getBrowserPanelFailureHint(activeLane: BrowserLane | null): string {
+	if (activeLane?.surfaceKind === "direct-iframe") {
+		return "Use refresh or open target to recover the embedded page."
+	}
+	return "Use restart or refresh to recover stream state."
+}
+
 export function getBrowserPanelState(input: {
 	activeLane: BrowserLane | null
 	laneHealth: BrowserLaneHealth | null

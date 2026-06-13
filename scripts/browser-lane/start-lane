@@ -3,6 +3,7 @@ import { existsSync, readFileSync } from "node:fs"
 import path from "node:path"
 import { detectBrowserLaneCapabilities } from "../../apps/desktop/src/main/browser-lane-capabilities"
 import { getBrowserLaneDataDir } from "../../apps/desktop/src/main/automation/paths"
+import { ensureBrowserLaneRuntimeFiles } from "../../apps/desktop/src/main/browser-lane-runtime"
 import { parseBrowserLaneArgs, runCommand, runRemoteCommand } from "./lib"
 
 const args = parseBrowserLaneArgs(process.argv.slice(2))
@@ -52,6 +53,20 @@ const env = Object.fromEntries(envText.split("\n").filter(Boolean).map((line) =>
 	const [key, ...rest] = line.split("=")
 	return [key, rest.join("=")]
 }))
+ensureBrowserLaneRuntimeFiles({
+	laneId,
+	host: "127.0.0.1",
+	streamPort: Number(env.STREAM_PORT),
+	cdpPort: Number(env.CDP_PORT),
+	profilePath: env.PROFILE_PATH,
+	runtimeDir,
+	composeFile,
+	envFile,
+	streamBackendUrl: `http://127.0.0.1:${env.STREAM_PORT}`,
+	cdpEndpoint: `http://127.0.0.1:${env.CDP_PORT}`,
+	auth: { user: env.STREAM_AUTH_USER || "abc", password: env.STREAM_AUTH_PASSWORD || "abc" },
+	startUrl: env.START_URL || "https://example.com",
+})
 const composeArgs = capabilities.compose.command === "docker compose"
 	? ["compose", "-f", composeFile, "up", "-d"]
 	: ["-f", composeFile, "up", "-d"]

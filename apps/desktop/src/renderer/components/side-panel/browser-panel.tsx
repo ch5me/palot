@@ -50,7 +50,11 @@ import {
 	getBrowserPanelCreateFormViewModel,
 } from "./browser-panel-form"
 import { selectBrowserPanelLane } from "./browser-panel-selection"
-import { getBrowserPanelActionLabels, getBrowserPanelState } from "./browser-panel-view-model"
+import {
+	getBrowserPanelActionLabels,
+	getBrowserPanelFailureHint,
+	getBrowserPanelState,
+} from "./browser-panel-view-model"
 import type { SessionBinding } from "../../../preload/api"
 import type { Agent, BrowserLane, BrowserLaneHealth } from "../../lib/types"
 
@@ -94,6 +98,7 @@ export function BrowserPanel({ agent: _agent, className }: BrowserPanelProps) {
 	const [createForm, setCreateForm] = useState(createDefaultBrowserPanelFormState)
 	const [createError, setCreateError] = useState<string | null>(null)
 	const [createBusy, setCreateBusy] = useState(false)
+	const [frameNonce, setFrameNonce] = useState(0)
 
 	const activeLane = useMemo(
 		() =>
@@ -119,6 +124,7 @@ export function BrowserPanel({ agent: _agent, className }: BrowserPanelProps) {
 	)
 
 	const actionLabels = useMemo(() => getBrowserPanelActionLabels(activeLane), [activeLane])
+	const failureHint = useMemo(() => getBrowserPanelFailureHint(activeLane), [activeLane])
 	const createFormView = useMemo(() => getBrowserPanelCreateFormViewModel(createForm), [createForm])
 
 	const panelState = useMemo(
@@ -314,6 +320,9 @@ export function BrowserPanel({ agent: _agent, className }: BrowserPanelProps) {
 		setLoadFailure(null)
 		setIsLoading(true)
 		try {
+			if (activeLane.surfaceKind === "direct-iframe") {
+				setFrameNonce((current) => current + 1)
+			}
 			await fetchBrowserLaneHealth(activeLane.id).then((health) => setLaneHealth(health))
 		} catch (error) {
 			setLoadFailure(error instanceof Error ? error.message : String(error))
@@ -709,7 +718,7 @@ export function BrowserPanel({ agent: _agent, className }: BrowserPanelProps) {
 				{loadFailure ? (
 					<div className="mx-2 mt-2 rounded-md border border-destructive/30 bg-destructive/5 px-3 py-2 text-xs text-destructive">
 						<div className="font-medium">Lane failed: {loadFailure}</div>
-						<div className="mt-1 text-[11px] opacity-80">Use restart or refresh to recover stream state.</div>
+						<div className="mt-1 text-[11px] opacity-80">{failureHint}</div>
 					</div>
 				) : null}
 				<div
@@ -721,6 +730,7 @@ export function BrowserPanel({ agent: _agent, className }: BrowserPanelProps) {
 				>
 					{activeLane && panelState.showFrame ? (
 						<iframe
+							key={activeLane.surfaceKind === "direct-iframe" ? `${activeLane.id}:${frameNonce}` : activeLane.id}
 							src={activeLane.surfaceKind === "direct-iframe" ? currentUrl : streamUrl}
 							title={`Browser lane ${activeLane.label}`}
 							className="h-full w-full rounded-lg border-0 bg-background"

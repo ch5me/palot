@@ -78,13 +78,19 @@ if ! command -v socat >/dev/null 2>&1; then
     exit 0
   }
 fi
-pkill -f 'socat.*TCP-LISTEN:9222' >/dev/null 2>&1 || true
+pkill -f 'socat.*TCP-LISTEN:9223' >/dev/null 2>&1 || true
 sleep 0.1
+TARGET_HOST=127.0.0.1
+if curl -sf --max-time 1 http://127.0.0.1:9222/json/version >/dev/null 2>&1; then
+  TARGET_HOST=127.0.0.1
+elif curl -g -sf --max-time 1 http://[::1]:9222/json/version >/dev/null 2>&1; then
+  TARGET_HOST='[::1]'
+fi
 nohup socat \\
-  TCP-LISTEN:9222,fork,reuseaddr,bind=0.0.0.0 \\
-  TCP:[::1]:9222 \\
+  TCP-LISTEN:9223,fork,reuseaddr,bind=0.0.0.0 \\
+  TCP:$TARGET_HOST:9222 \\
   > /tmp/elf-cdp-relay.log 2>&1 &
-echo "[elf-cdp-relay] pid=$! relaying 0.0.0.0:9222 -> [::1]:9222" >&2
+echo "[elf-cdp-relay] pid=$! relaying 0.0.0.0:9223 -> $TARGET_HOST:9222" >&2
 `
 
 export interface BrowserLaneRuntimeConfig {
@@ -188,7 +194,7 @@ export function renderBrowserLaneCompose(config: BrowserLaneRuntimeConfig): stri
 		`      - CHROME_CLI=${chromeCliForConfig(config)}`,
 		"    ports:",
 		`      - \"${config.streamPort}:3000\"`,
-		`      - \"${config.cdpPort}:9222\"`,
+		`      - \"${config.cdpPort}:9223\"`,
 		"    volumes:",
 		`      - ${config.profilePath}:/config`,
 		`      - ${path.join(config.runtimeDir, "custom-cont-init.d")}:/custom-cont-init.d`,

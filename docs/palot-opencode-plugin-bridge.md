@@ -10,6 +10,43 @@ This is the canonical explanation of:
 - how browser and UI control flow through main/preload/renderer seams
 - where schemas are typed today and where Zod is still missing
 
+## Browser lane canonical model <!-- oc:id=sec_ab0 -->
+
+Browser lanes are configured surface-first. Four concepts stay separate:
+
+- `surfaceKind`: what the panel renders.
+  - `direct-iframe` renders `targetUrl` directly and does not require Selkies or CDP.
+  - `selkies-stream` renders a streamed browser surface and may expose CDP separately.
+- `runtimeOwnership`: who owns runtime lifecycle.
+  - `managed-local` means Palot creates runtime files, owns the local profile, and may start/stop/restart/reset the lane.
+  - `attached` means Palot attaches to an existing surface and only probes/proxies it.
+- `deploymentLocation`: where that runtime happens to live right now (`local`, `remote`, `unknown`). This is metadata, not the lifecycle control.
+- `cdpEndpoint`: whether automation can drive the surface. It is orthogonal capability, not the top-level mode.
+
+### Supported combinations <!-- oc:id=sec_ab1 -->
+
+| Surface kind | Runtime ownership | Deployment location | Required fields | Truthful panel/runtime behavior |
+|---|---|---|---|---|
+| `direct-iframe` | `attached` | `local`, `remote`, or `unknown` | `targetUrl` | Reachability-only health, no Selkies shim, no CDP requirement, refresh/open-target actions only |
+| `selkies-stream` | `attached` | `local`, `remote`, or `unknown` | `streamBackendUrl`, optional `cdpEndpoint` | Stream proxy stays same-origin, CDP is optional capability, no managed-local lifecycle controls |
+| `selkies-stream` | `managed-local` | `local` | managed runtime config, optional initial target URL | Palot prepares runtime/profile locally and can start/stop/restart/reset profile |
+
+### Invalid combinations <!-- oc:id=sec_ab2 -->
+
+| Invalid combination | Why it is blocked |
+|---|---|
+| `direct-iframe` + `managed-local` | Direct iframe renders a target URL directly. There is no managed Selkies runtime to own. |
+| `direct-iframe` + `streamBackendUrl` | Direct iframe lanes must not masquerade as stream-backed surfaces. |
+| attached `selkies-stream` without `streamBackendUrl` | Attached stream lanes need a real upstream stream origin to proxy. |
+| `selkies-stream` + `targetUrl` | Stream lanes render stream transport, not a direct target. |
+| `managed-local` + non-`local` deployment location | Managed-local means Palot owns a runtime on this machine. |
+
+### Operator examples <!-- oc:id=sec_ab3 -->
+
+- Local app preview inside the panel: `direct-iframe` + `attached` + `targetUrl=http://127.0.0.1:8077`
+- Existing remote streamed browser with optional automation: `selkies-stream` + `attached` + `streamBackendUrl` + optional `cdpEndpoint`
+- Palot-managed local browser runtime: `selkies-stream` + `managed-local` + `deploymentLocation=local`
+
 ## Scope and current truth <!-- oc:id=sec_ab -->
 
 Current implementation is desktop-first and managed-server-first.

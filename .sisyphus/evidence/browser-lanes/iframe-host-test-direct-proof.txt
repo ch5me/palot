@@ -1,0 +1,13 @@
+{
+  "url": "http://127.0.0.1:30206/browser/iframe-host-test/",
+  "status": 200,
+  "headers": {
+    "cache-control": "no-store",
+    "content-length": "2397",
+    "content-type": "text/html; charset=utf-8",
+    "date": "Sat, 13 Jun 2026 15:23:24 GMT",
+    "server": "SimpleHTTP/0.6 Python/3.14.3",
+    "vary": "Origin"
+  },
+  "bodyPreview": "<!DOCTYPE HTML>\n<html lang=\"en\">\n<head>\n<meta charset=\"utf-8\">\n<style type=\"text/css\">\n:root {\ncolor-scheme: light dark;\n}\n</style>\n<title>Directory listing for /</title>\n</head>\n<body>\n<h1>Directory listing for /</h1>\n<hr>\n<ul>\n<li><a href=\".agents/\">.agents/</a></li>\n<li><a href=\".ch5/\">.ch5/</a></li>\n<li><a href=\".ch5rc\">.ch5rc</a></li>\n<li><a href=\".changeset/\">.changeset/</a></li>\n<li><a href=\".codex-artifacts/\">.codex-artifacts/</a></li>\n<li><a href=\".git/\">.git/</a></li>\n<li><a href=\".github/\">.github/</a></li>\n<li><a href=\".gitignore\">.gitignore</a></li>\n<li><a href=\".hush/\">.hush/</a></li>\n<li><a href=\".ignore\">.ignore</a></li>\n<li><a href=\".npmrc\">.npmrc</a></li>\n<li><a href=\".omo/\">.omo/</a></li>\n<li><a href=\".opencode/\">.opencode/</a></li>\n<li><a href=\".playwright-mcp/\">.playwright-mcp/</a></li>\n<li><a href=\".sisyphus/\">.sisyphus/</a></li>\n<li><a href=\".sops.yaml\">.sops.yaml</a></li>\n<li><a href=\".turbo/\">.turbo/</a></li>\n<li><a href=\".worktrees/\">.worktrees/</a></li>\n<li><a href=\"AGENTS.md\">AGENTS.md</a></li>\n<li><a href=\"apps/\">apps/</a></li>\n<li><a href=\"assets/\">assets/</a></li>\n<li><a href=\"bin/\">bin/</a></li>\n<li><a href=\"biome.json\">biome.json</a></li>\n<li><a href=\"bun.lock\">bun.lock</a></li>\n<li><a href=\"bunfig.toml\">bunfig.toml</a></li>\n<li><a href=\"CODE_OF_CONDUCT.md\">CODE_OF_CONDUCT.md</a></li>\n<li><a href=\"config/\">config/</a></li>\n<li><a href=\"CONTRIBUTING.md\">CONTRIBUTING.md</a></li>\n<li><a href=\"devmux.config.json\">devmux.config.json</a></li>\n<li><a href=\"docs/\">docs/</a></li>\n<li><a href=\"handoff-20260603-190852.md\">handoff-20260603-190852.md</a></li>\n<li><a href=\"handoff-20260608-active-session-presence.md\">handoff-20260608-active-session-presence.md</a></li>\n<li><a href=\"LICENSE\">LICENSE</a></li>\n<li><a href=\"local_agents.md\">local_agents.md</a></li>\n<li><a href=\"node_modules/\">node_modules/</a></li>\n<li><a href=\"opencode.json\">opencode.json</a></li>\n<li><a href=\"out/\">out/</a></li>\n<li><a href=\"package.json\">package.json</a></li>\n<li><"
+}

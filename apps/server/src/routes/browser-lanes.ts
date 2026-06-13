@@ -288,7 +288,9 @@ function normalizeUpstreamUrl(
 	if (!upstreamBase) return null
 	const base = new URL(upstreamBase)
 	const cleaned = remainder.startsWith("/") ? remainder : `/${remainder}`
-	base.pathname = cleaned === "/" ? "/" : cleaned
+	const normalizedBase = base.pathname.endsWith("/") ? base.pathname.slice(0, -1) : base.pathname
+	const normalizedRemainder = cleaned === "/" ? "" : cleaned
+	base.pathname = `${normalizedBase}${normalizedRemainder}` || "/"
 	base.search = search
 	return base.toString()
 }
@@ -772,10 +774,14 @@ const routes = app
 		let cdpProbeOk = cdpReady
 		if (streamReady) {
 			try {
+				const headers =
+					lane.runtimeOwnership === "managed-local" && !directIframe
+						? { authorization: LOCAL_LANE_AUTH_HEADER }
+						: undefined
 				const res = await fetch(surfaceUrl as string, {
 					method: "HEAD",
 					signal: AbortSignal.timeout(2500),
-					headers: { authorization: `Basic ${Buffer.from("abc:abc").toString("base64")}` },
+					headers,
 				})
 				streamProbeOk = res.ok
 			} catch {
@@ -802,12 +808,18 @@ const routes = app
 			(!cdpReady || !cdpProbeOk)
 		const directIframeOk = directIframe && streamReady && streamProbeOk
 		const localBothOk = !directIframe && streamReady && streamProbeOk && cdpReady && cdpProbeOk
+		const localStreamOnly =
+			lane.runtimeOwnership === "managed-local" && !directIframe && streamReady && streamProbeOk && !cdpProbeOk
+		const localCdpOnly =
+			lane.runtimeOwnership === "managed-local" && !directIframe && !streamProbeOk && cdpReady && cdpProbeOk
 		const status = remoteFailure
 			? "error"
 			: remoteDegraded
 				? "degraded"
 				: directIframeOk || localBothOk
 					? "running"
+					: localStreamOnly || localCdpOnly
+						? "degraded"
 					: lane.runtimeOwnership === "managed-local" && lane.profilePath
 						? "profile-locked"
 						: "stopped"
@@ -823,6 +835,10 @@ const routes = app
 						? lane.runtimeOwnership === "attached"
 							? "Attached stream and CDP ready"
 							: "Stream and CDP ready"
+						: localStreamOnly
+							? "Stream route ready, CDP probe pending"
+							: localCdpOnly
+								? "CDP ready, stream unavailable"
 					: lane.runtimeOwnership === "managed-local" && lane.profilePath
 						? "Profile exists but runtime has not started yet"
 						: "Lane stopped"

@@ -50,16 +50,16 @@ Ship a decision-complete browser lane model where:
 - Updated docs/runbook for operators.
 
 ### Definition of Done
-- [ ] No persisted or runtime model uses `mode` as the primary user-facing concept.
-- [ ] Shared types expose explicit `surfaceKind`, runtime ownership, and deployment location.
-- [ ] Existing saved lane rows migrate without data loss.
-- [ ] `direct-iframe` lanes never surface fake Selkies/CDP failure states.
-- [ ] `managed-local` logic is the only path that creates runtime files, profile dirs, or runs Docker Compose.
-- [ ] `attached` logic never attempts runtime generation or startup.
-- [ ] Browser panel create flow starts with surface kind, then runtime ownership, then only relevant config fields.
-- [ ] Actions are conditionally visible and valid only for compatible lane types.
-- [ ] Electron protocol/proxy and browser-mode server route both preserve direct-iframe semantics and Selkies-specific behavior correctly.
-- [ ] Typecheck, targeted tests, and lane verification scenarios pass.
+- [x] No persisted or runtime model uses `mode` as the primary user-facing concept. (Verified: `shared/browser-lanes.ts` canonical model + legacy `mode` only as migration input.)
+- [x] Shared types expose explicit `surfaceKind`, runtime ownership, and deployment location. (Verified: `BrowserLane`/`BrowserLaneRecord` + preload `api.d.ts`.)
+- [x] Existing saved lane rows migrate without data loss. (Verified: `migrateBrowserLaneRecord` + `browser-lanes.test.ts` migration/bootstrap fixtures pass.)
+- [x] `direct-iframe` lanes never surface fake Selkies/CDP failure states. (Verified: view-model + route/protocol tests keep CDP `not-applicable` and skip Selkies shim for direct-iframe.)
+- [x] `managed-local` logic is the only path that creates runtime files, profile dirs, or runs Docker Compose. (Verified: `browser-lane-manager.ts` gates compose/profile on `isManagedBrowserLane`; manager tests pass.)
+- [x] `attached` logic never attempts runtime generation or startup. (Verified: attached lanes throw typed `only available for managed-local` errors on start/stop/reset/ensure.)
+- [x] Browser panel create flow starts with surface kind, then runtime ownership, then only relevant config fields. (Verified: `browser-panel.tsx` + `browser-panel-form.ts` surface-first view model; form tests pass.)
+- [x] Actions are conditionally visible and valid only for compatible lane types. (Verified: `browser-panel-view-model.ts` action labels/gating; view-model tests pass.)
+- [x] Electron protocol/proxy and browser-mode server route both preserve direct-iframe semantics and Selkies-specific behavior correctly. (Verified: task-9 protocol/route auth-scoping; protocol + server-route tests pass.)
+- [~] Typecheck, targeted tests, and lane verification scenarios pass. (Targeted browser-lane tests GREEN: 74 pass / 0 fail across 13 files. Server `tsgo` typecheck CLEAN. Desktop `tsgo` has ZERO browser-lane errors but is RED on UNRELATED in-flight sidebar/storybook refactor — `app-bar.tsx`, `nav-sidebar-tabs.tsx`, `nav-sidebar-shell.tsx` — plus 2 pre-existing `streamdown`/shiki errors that also exist on `main`. Not resolvable from the browser-lane slice; blocks a clean merge until the sidebar work lands.)
 
 ### Must Have
 - Explicit invalid-combination handling: `direct-iframe + managed-local` is unsupported and blocked.
@@ -491,9 +491,9 @@ Wave 4: docs, migration proof, regression verification
   - `.sisyphus/plans/palot-browser-lane-virtual-stream.md:50`
 
   **Acceptance Criteria**:
-  - [ ] Docs explain surface kind, runtime ownership, deployment location, and CDP as separate concepts.
-  - [ ] Docs include supported combinations and one invalid-combination table.
-  - [ ] Evidence exists for canonical direct-iframe, attached Selkies, and managed-local Selkies flows.
+  - [x] Docs explain surface kind, runtime ownership, deployment location, and CDP as separate concepts. Verified in `README.md` and `docs/palot-opencode-plugin-bridge.md`.
+  - [x] Docs include supported combinations and one invalid-combination table. Verified in `README.md` and `docs/palot-opencode-plugin-bridge.md`.
+  - [ ] Evidence exists for canonical direct-iframe, attached Selkies, and managed-local Selkies flows. Blocked: direct-iframe and attached Selkies now have route/health proof, and managed-local now has live `200 OK` stream-route proof plus truthful `degraded` health, but CDP is still unreachable because the Selkies runtime is panicking, so the full running proof remains incomplete.
 
   **QA Scenarios**:
   ```text
