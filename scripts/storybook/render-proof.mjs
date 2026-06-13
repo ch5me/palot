@@ -159,15 +159,38 @@ async function verifyStory({ baseUrl, outDir, port, storyId, viewport }) {
 				returnByValue: true,
 			})
 
-			rendered = result.result.value
-			if (
-				rendered.ready === "complete" &&
-				rendered.width > 0 &&
-				rendered.height > 0 &&
-				rendered.childCount > 0 &&
-				!rendered.errorText
-			) {
-				break
+			if (result.exceptionDetails) {
+				rendered = {
+					ready: "probe-error",
+					width: 0,
+					height: 0,
+					childCount: 0,
+					textLength: 0,
+					errorText:
+						result.exceptionDetails.exception?.description ?? result.exceptionDetails.text ?? "Unknown",
+				}
+			} else {
+				rendered = result.result.value
+				if (!rendered) {
+					rendered = {
+						ready: "probe-empty",
+						width: 0,
+						height: 0,
+						childCount: 0,
+						textLength: 0,
+						errorText: "Runtime.evaluate returned no value",
+					}
+				}
+
+				if (
+					rendered.ready === "complete" &&
+					rendered.width > 0 &&
+					rendered.height > 0 &&
+					rendered.childCount > 0 &&
+					!rendered.errorText
+				) {
+					break
+				}
 			}
 
 			await wait(250)

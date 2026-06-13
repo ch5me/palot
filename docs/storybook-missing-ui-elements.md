@@ -1,17 +1,19 @@
 # Missing Storybook Coverage
 
-Generated from `ch5 coverage elf --json` on 2026-06-13T23:29:43.504Z.
+Generated from `ch5 coverage elf --json` on 2026-06-13T23:41:16.480Z.
 
 ## Current Coverage
 
 - Visual UI components: 134
-- Covered by Storybook/route coverage: 25
-- Missing Storybook representation: 109
-- Story files: 26
-- Story screenshot proof missing in CH5 formal coverage: 50 viewport targets
+- Covered by Storybook/route coverage: 35
+- Missing Storybook representation: 99
+- Story files: 36
+- Story screenshot proof missing in CH5 formal coverage: 70 viewport targets
 - Batch 01 local render proof: `.sisyphus/evidence/storybook-coverage/batch-01/render-proof.json`
 - Batch 02 local render proof: `.sisyphus/evidence/storybook-coverage/batch-02/render-proof.json`
 - Batch 02 CH5 coverage proof: `.sisyphus/evidence/storybook-coverage/batch-02/ch5-coverage.json`
+- Batch 03 local render proof: `.sisyphus/evidence/storybook-coverage/batch-03/render-proof.json`
+- Batch 03 CH5 coverage proof: `.sisyphus/evidence/storybook-coverage/batch-03/ch5-coverage.json`
 - Reusable render proof helper: `bun run verify:storybook-render -- --out <proof-dir> <story-id> [...]`
 - CH5 gap source scope: local `packages/ui/src/components/**` files only.
 - Imported components from other packages/libraries are out of scope here. Trust their upstream stories/tests.
@@ -22,17 +24,26 @@ Covered components today:
 - [x] button (packages/storybook/src/stories/foundations/button.stories.tsx)
 - [x] discrete-tabs (packages/storybook/src/stories/foundations/discrete-tabs.stories.tsx)
 - [x] sidebar (packages/storybook/src/stories/foundations/sidebar.stories.tsx)
+- [x] accordion (packages/storybook/src/stories/foundations/accordion.stories.tsx)
 - [x] alert (packages/storybook/src/stories/foundations/alert.stories.tsx)
+- [x] alert-dialog (packages/storybook/src/stories/foundations/alert-dialog.stories.tsx)
+- [x] aspect-ratio (packages/storybook/src/stories/foundations/aspect-ratio.stories.tsx)
 - [x] avatar (packages/storybook/src/stories/foundations/avatar.stories.tsx)
 - [x] badge (packages/storybook/src/stories/foundations/badge.stories.tsx)
+- [x] breadcrumb (packages/storybook/src/stories/foundations/breadcrumb.stories.tsx)
+- [x] button-group (packages/storybook/src/stories/foundations/button-group.stories.tsx)
 - [x] card (packages/storybook/src/stories/foundations/card.stories.tsx)
 - [x] checkbox (packages/storybook/src/stories/foundations/checkbox.stories.tsx)
+- [x] collapsible (packages/storybook/src/stories/foundations/collapsible.stories.tsx)
+- [x] dialog (packages/storybook/src/stories/foundations/dialog.stories.tsx)
+- [x] dropdown-menu (packages/storybook/src/stories/foundations/dropdown-menu.stories.tsx)
 - [x] empty (packages/storybook/src/stories/foundations/empty.stories.tsx)
 - [x] field (packages/storybook/src/stories/foundations/field.stories.tsx)
 - [x] input (packages/storybook/src/stories/foundations/input.stories.tsx)
 - [x] kbd (packages/storybook/src/stories/foundations/kbd.stories.tsx)
 - [x] label (packages/storybook/src/stories/foundations/label.stories.tsx)
 - [x] native-select (packages/storybook/src/stories/foundations/native-select.stories.tsx)
+- [x] popover (packages/storybook/src/stories/foundations/popover.stories.tsx)
 - [x] progress (packages/storybook/src/stories/foundations/progress.stories.tsx)
 - [x] radio-group (packages/storybook/src/stories/foundations/radio-group.stories.tsx)
 - [x] separator (packages/storybook/src/stories/foundations/separator.stories.tsx)
@@ -44,6 +55,7 @@ Covered components today:
 - [x] textarea (packages/storybook/src/stories/foundations/textarea.stories.tsx)
 - [x] toggle (packages/storybook/src/stories/foundations/toggle.stories.tsx)
 - [x] toggle-group (packages/storybook/src/stories/foundations/toggle-group.stories.tsx)
+- [x] tooltip (packages/storybook/src/stories/foundations/tooltip.stories.tsx)
 
 ## Missing Stories
 
@@ -51,27 +63,27 @@ Add one or more useful Storybook stories for each unchecked local component. Che
 
 ### UI Primitives (56)
 
-- [ ] accordion - `packages/ui/src/components/accordion.tsx`
+- [x] accordion - `packages/ui/src/components/accordion.tsx`
 - [x] alert - `packages/ui/src/components/alert.tsx`
-- [ ] alert-dialog - `packages/ui/src/components/alert-dialog.tsx`
-- [ ] aspect-ratio - `packages/ui/src/components/aspect-ratio.tsx`
+- [x] alert-dialog - `packages/ui/src/components/alert-dialog.tsx`
+- [x] aspect-ratio - `packages/ui/src/components/aspect-ratio.tsx`
 - [x] avatar - `packages/ui/src/components/avatar.tsx`
 - [x] badge - `packages/ui/src/components/badge.tsx`
-- [ ] breadcrumb - `packages/ui/src/components/breadcrumb.tsx`
-- [ ] button-group - `packages/ui/src/components/button-group.tsx`
+- [x] breadcrumb - `packages/ui/src/components/breadcrumb.tsx`
+- [x] button-group - `packages/ui/src/components/button-group.tsx`
 - [ ] calendar - `packages/ui/src/components/calendar.tsx`
 - [x] card - `packages/ui/src/components/card.tsx`
 - [ ] carousel - `packages/ui/src/components/carousel.tsx`
 - [ ] chart - `packages/ui/src/components/chart.tsx`
 - [x] checkbox - `packages/ui/src/components/checkbox.tsx`
-- [ ] collapsible - `packages/ui/src/components/collapsible.tsx`
+- [x] collapsible - `packages/ui/src/components/collapsible.tsx`
 - [ ] combobox - `packages/ui/src/components/combobox.tsx`
 - [ ] command - `packages/ui/src/components/command.tsx`
 - [ ] context-menu - `packages/ui/src/components/context-menu.tsx`
-- [ ] dialog - `packages/ui/src/components/dialog.tsx`
+- [x] dialog - `packages/ui/src/components/dialog.tsx`
 - [ ] direction - `packages/ui/src/components/direction.tsx`
 - [ ] drawer - `packages/ui/src/components/drawer.tsx`
-- [ ] dropdown-menu - `packages/ui/src/components/dropdown-menu.tsx`
+- [x] dropdown-menu - `packages/ui/src/components/dropdown-menu.tsx`
 - [x] empty - `packages/ui/src/components/empty.tsx`
 - [x] field - `packages/ui/src/components/field.tsx`
 - [ ] form - `packages/ui/src/components/form.tsx`
@@ -87,7 +99,7 @@ Add one or more useful Storybook stories for each unchecked local component. Che
 - [ ] nav-sidebar-shell - `packages/ui/src/components/nav-sidebar-shell.tsx`
 - [ ] navigation-menu - `packages/ui/src/components/navigation-menu.tsx`
 - [ ] pagination - `packages/ui/src/components/pagination.tsx`
-- [ ] popover - `packages/ui/src/components/popover.tsx`
+- [x] popover - `packages/ui/src/components/popover.tsx`
 - [x] progress - `packages/ui/src/components/progress.tsx`
 - [x] radio-group - `packages/ui/src/components/radio-group.tsx`
 - [ ] resizable - `packages/ui/src/components/resizable.tsx`
@@ -106,7 +118,7 @@ Add one or more useful Storybook stories for each unchecked local component. Che
 - [x] textarea - `packages/ui/src/components/textarea.tsx`
 - [x] toggle - `packages/ui/src/components/toggle.tsx`
 - [x] toggle-group - `packages/ui/src/components/toggle-group.tsx`
-- [ ] tooltip - `packages/ui/src/components/tooltip.tsx`
+- [x] tooltip - `packages/ui/src/components/tooltip.tsx`
 
 ### AI Elements (50)
 
