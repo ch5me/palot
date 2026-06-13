@@ -29,6 +29,7 @@
 		"dev:storybook": "bun run --cwd packages/storybook storybook",
 		"storybook": "bun run --cwd packages/storybook storybook",
 		"build:storybook": "bun run --cwd packages/storybook build",
+		"verify:storybook-render": "node scripts/storybook/render-proof.mjs",
 		"svc:status": "bunx devmux status",
 		"svc:attach": "bunx devmux attach",
 		"svc:stop": "bunx devmux stop",

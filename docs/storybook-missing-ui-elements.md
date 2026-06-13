@@ -1,14 +1,16 @@
 # Missing Storybook Coverage
 
-Generated from `ch5 coverage elf --json` on 2026-06-13T23:00:37.267Z.
+Generated from `ch5 coverage elf --json` on 2026-06-13T23:24:15.908Z.
 
 ## Current Coverage
 
 - Visual UI components: 134
-- Covered by Storybook/route coverage: 3
-- Missing Storybook representation: 131
-- Story files: 4
-- Story screenshot proof missing: 6 viewport captures
+- Covered by Storybook/route coverage: 13
+- Missing Storybook representation: 121
+- Story files: 14
+- Story screenshot proof missing in CH5 formal coverage: 26 viewport captures
+- Batch 01 local render proof: `.sisyphus/evidence/storybook-coverage/batch-01/render-proof.json`
+- Reusable render proof helper: `bun run verify:storybook-render -- --out <proof-dir> <story-id> [...]`
 - CH5 gap source scope: local `packages/ui/src/components/**` files only.
 - Imported components from other packages/libraries are out of scope here. Trust their upstream stories/tests.
 - Thin local wrappers around imported components need Palot stories only when they add local behavior, styling, composition, or app-specific states. Pure pass-through wrappers can become documented exceptions.
@@ -18,6 +20,16 @@ Covered components today:
 - [x] button (packages/storybook/src/stories/foundations/button.stories.tsx)
 - [x] discrete-tabs (packages/storybook/src/stories/foundations/discrete-tabs.stories.tsx)
 - [x] sidebar (packages/storybook/src/stories/foundations/sidebar.stories.tsx)
+- [x] alert (packages/storybook/src/stories/foundations/alert.stories.tsx)
+- [x] avatar (packages/storybook/src/stories/foundations/avatar.stories.tsx)
+- [x] badge (packages/storybook/src/stories/foundations/badge.stories.tsx)
+- [x] card (packages/storybook/src/stories/foundations/card.stories.tsx)
+- [x] empty (packages/storybook/src/stories/foundations/empty.stories.tsx)
+- [x] kbd (packages/storybook/src/stories/foundations/kbd.stories.tsx)
+- [x] progress (packages/storybook/src/stories/foundations/progress.stories.tsx)
+- [x] separator (packages/storybook/src/stories/foundations/separator.stories.tsx)
+- [x] skeleton (packages/storybook/src/stories/foundations/skeleton.stories.tsx)
+- [x] spinner (packages/storybook/src/stories/foundations/spinner.stories.tsx)
 
 ## Missing Stories
 
@@ -26,15 +38,15 @@ Add one or more useful Storybook stories for each unchecked local component. Che
 ### UI Primitives (56)
 
 - [ ] accordion - `packages/ui/src/components/accordion.tsx`
-- [ ] alert - `packages/ui/src/components/alert.tsx`
+- [x] alert - `packages/ui/src/components/alert.tsx`
 - [ ] alert-dialog - `packages/ui/src/components/alert-dialog.tsx`
 - [ ] aspect-ratio - `packages/ui/src/components/aspect-ratio.tsx`
-- [ ] avatar - `packages/ui/src/components/avatar.tsx`
-- [ ] badge - `packages/ui/src/components/badge.tsx`
+- [x] avatar - `packages/ui/src/components/avatar.tsx`
+- [x] badge - `packages/ui/src/components/badge.tsx`
 - [ ] breadcrumb - `packages/ui/src/components/breadcrumb.tsx`
 - [ ] button-group - `packages/ui/src/components/button-group.tsx`
 - [ ] calendar - `packages/ui/src/components/calendar.tsx`
-- [ ] card - `packages/ui/src/components/card.tsx`
+- [x] card - `packages/ui/src/components/card.tsx`
 - [ ] carousel - `packages/ui/src/components/carousel.tsx`
 - [ ] chart - `packages/ui/src/components/chart.tsx`
 - [ ] checkbox - `packages/ui/src/components/checkbox.tsx`
@@ -46,7 +58,7 @@ Add one or more useful Storybook stories for each unchecked local component. Che
 - [ ] direction - `packages/ui/src/components/direction.tsx`
 - [ ] drawer - `packages/ui/src/components/drawer.tsx`
 - [ ] dropdown-menu - `packages/ui/src/components/dropdown-menu.tsx`
-- [ ] empty - `packages/ui/src/components/empty.tsx`
+- [x] empty - `packages/ui/src/components/empty.tsx`
 - [ ] field - `packages/ui/src/components/field.tsx`
 - [ ] form - `packages/ui/src/components/form.tsx`
 - [ ] hover-card - `packages/ui/src/components/hover-card.tsx`
@@ -54,7 +66,7 @@ Add one or more useful Storybook stories for each unchecked local component. Che
 - [ ] input-group - `packages/ui/src/components/input-group.tsx`
 - [ ] input-otp - `packages/ui/src/components/input-otp.tsx`
 - [ ] item - `packages/ui/src/components/item.tsx`
-- [ ] kbd - `packages/ui/src/components/kbd.tsx`
+- [x] kbd - `packages/ui/src/components/kbd.tsx`
 - [ ] label - `packages/ui/src/components/label.tsx`
 - [ ] menubar - `packages/ui/src/components/menubar.tsx`
 - [ ] native-select - `packages/ui/src/components/native-select.tsx`
@@ -62,18 +74,18 @@ Add one or more useful Storybook stories for each unchecked local component. Che
 - [ ] navigation-menu - `packages/ui/src/components/navigation-menu.tsx`
 - [ ] pagination - `packages/ui/src/components/pagination.tsx`
 - [ ] popover - `packages/ui/src/components/popover.tsx`
-- [ ] progress - `packages/ui/src/components/progress.tsx`
+- [x] progress - `packages/ui/src/components/progress.tsx`
 - [ ] radio-group - `packages/ui/src/components/radio-group.tsx`
 - [ ] resizable - `packages/ui/src/components/resizable.tsx`
 - [ ] scroll-area - `packages/ui/src/components/scroll-area.tsx`
 - [ ] searchable-list-popover - `packages/ui/src/components/searchable-list-popover.tsx`
 - [ ] select - `packages/ui/src/components/select.tsx`
-- [ ] separator - `packages/ui/src/components/separator.tsx`
+- [x] separator - `packages/ui/src/components/separator.tsx`
 - [ ] sheet - `packages/ui/src/components/sheet.tsx`
-- [ ] skeleton - `packages/ui/src/components/skeleton.tsx`
+- [x] skeleton - `packages/ui/src/components/skeleton.tsx`
 - [ ] slider - `packages/ui/src/components/slider.tsx`
 - [ ] sonner - `packages/ui/src/components/sonner.tsx`
-- [ ] spinner - `packages/ui/src/components/spinner.tsx`
+- [x] spinner - `packages/ui/src/components/spinner.tsx`
 - [ ] switch - `packages/ui/src/components/switch.tsx`
 - [ ] table - `packages/ui/src/components/table.tsx`
 - [ ] tabs - `packages/ui/src/components/tabs.tsx`
