@@ -9,6 +9,7 @@ import {
 	type NavSidebarShellProps,
 	STATUS_COLOR,
 } from "@ch5me/elf-ui/components/nav-sidebar-shell"
+import { SidebarProvider } from "@ch5me/elf-ui/components/sidebar"
 import { BlocksIcon, CopyIcon, PanelRightIcon, SparklesIcon } from "lucide-react"
 import { useMemo, useState } from "react"
 
@@ -219,13 +220,13 @@ function ShellCanvas({
 			activeTab={isPluginSeam ? "built-in-duplicate" : activeTab}
 			onTabChange={setActiveTab}
 			serverConnected
-			hasContent={isPluginSeam ? false : true}
+			hasContent={!isPluginSeam}
 			showAutomations={!isPluginSeam}
 			activeSessions={isPluginSeam ? [] : activeAgents}
 			pinnedSessions={isPluginSeam ? [] : pinnedAgents}
 			recentSessions={isPluginSeam ? [] : recentAgents}
 			pmSessions={isPluginSeam ? [] : pmSessions}
-			projects={seamProjects}
+			projects={isPluginSeam ? projects.map((project) => ({ ...project, agents: [], hasMore: false })) : projects}
 			sectionsOpen={sectionsOpen}
 			onSectionOpenChange={(section, open) =>
 				setSectionsOpen((current) => ({
@@ -261,6 +262,7 @@ function ShellCanvas({
 			}
 		/>
 	)
+
 
 	const selectionPanelContent = selectedAgent ? (
 		<div className="mt-5 space-y-5">
@@ -406,7 +408,7 @@ function ShellCanvas({
 					sidebarVisible={!isSidebarHidden}
 				/>
 			) : (
-					<>
+					<SidebarProvider defaultOpen embedded>
 						{shellSidebar}
 						<div className="flex min-w-0 flex-1 flex-col bg-background/80 p-8">
 							<div className="space-y-3">
@@ -469,7 +471,7 @@ function ShellCanvas({
 								</div>
 							) : null}
 						</div>
-					</>
+					</SidebarProvider>
 				)}
 			</div>
 	)
@@ -492,11 +494,11 @@ export const CurrentRealImplementation: Story = {
 }
 
 export const IntendedPluginifiedVersion: Story = {
-	render: () => <ShellCanvas />,
+	render: () => <ShellCanvas previewMode="plugin-seam" />,
 	parameters: {
 		docs: {
 			description: {
-				story: "This uses the same shell but frames the second tab as the future plugin-projected sidebar seam rather than a permanent duplicate host body.",
+				story: "This keeps the shared shell but disables host actions and treats the Folio tab as a projected plugin seam instead of a duplicate live host sidebar.",
 			},
 		},
 	},

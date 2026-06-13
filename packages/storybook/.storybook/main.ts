@@ -31,6 +31,7 @@ const config: StorybookConfig = {
 				],
 			},
 			server: {
+				allowedHosts: ["storybook.elf.localhost"],
 				fs: {
 					allow: [searchForWorkspaceRoot(process.cwd()), uiRoot],
 				},
