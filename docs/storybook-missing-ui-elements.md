@@ -1,19 +1,22 @@
 # Missing Storybook Coverage
 
-Generated from `ch5 coverage elf --json` on 2026-06-13T23:41:16.480Z.
+Generated from `ch5 coverage elf --json` on 2026-06-13T23:48:26.688Z.
 
 ## Current Coverage
 
 - Visual UI components: 134
-- Covered by Storybook/route coverage: 35
-- Missing Storybook representation: 99
-- Story files: 36
-- Story screenshot proof missing in CH5 formal coverage: 70 viewport targets
+- Covered by Storybook/route coverage: 43
+- Missing Storybook representation: 91
+- Story files: 44
+- Story screenshot proof missing in CH5 formal coverage: 86 viewport targets
+- Documented exceptions: 1
 - Batch 01 local render proof: `.sisyphus/evidence/storybook-coverage/batch-01/render-proof.json`
 - Batch 02 local render proof: `.sisyphus/evidence/storybook-coverage/batch-02/render-proof.json`
 - Batch 02 CH5 coverage proof: `.sisyphus/evidence/storybook-coverage/batch-02/ch5-coverage.json`
 - Batch 03 local render proof: `.sisyphus/evidence/storybook-coverage/batch-03/render-proof.json`
 - Batch 03 CH5 coverage proof: `.sisyphus/evidence/storybook-coverage/batch-03/ch5-coverage.json`
+- Batch 04 local render proof: `.sisyphus/evidence/storybook-coverage/batch-04/render-proof.json`
+- Batch 04 CH5 coverage proof: `.sisyphus/evidence/storybook-coverage/batch-04/ch5-coverage.json`
 - Reusable render proof helper: `bun run verify:storybook-render -- --out <proof-dir> <story-id> [...]`
 - CH5 gap source scope: local `packages/ui/src/components/**` files only.
 - Imported components from other packages/libraries are out of scope here. Trust their upstream stories/tests.
@@ -39,23 +42,35 @@ Covered components today:
 - [x] dropdown-menu (packages/storybook/src/stories/foundations/dropdown-menu.stories.tsx)
 - [x] empty (packages/storybook/src/stories/foundations/empty.stories.tsx)
 - [x] field (packages/storybook/src/stories/foundations/field.stories.tsx)
+- [x] form (packages/storybook/src/stories/foundations/form.stories.tsx)
 - [x] input (packages/storybook/src/stories/foundations/input.stories.tsx)
+- [x] input-group (packages/storybook/src/stories/foundations/input-group.stories.tsx)
+- [x] input-otp (packages/storybook/src/stories/foundations/input-otp.stories.tsx)
+- [x] item (packages/storybook/src/stories/foundations/item.stories.tsx)
 - [x] kbd (packages/storybook/src/stories/foundations/kbd.stories.tsx)
 - [x] label (packages/storybook/src/stories/foundations/label.stories.tsx)
 - [x] native-select (packages/storybook/src/stories/foundations/native-select.stories.tsx)
+- [x] pagination (packages/storybook/src/stories/foundations/pagination.stories.tsx)
 - [x] popover (packages/storybook/src/stories/foundations/popover.stories.tsx)
 - [x] progress (packages/storybook/src/stories/foundations/progress.stories.tsx)
 - [x] radio-group (packages/storybook/src/stories/foundations/radio-group.stories.tsx)
+- [x] resizable (packages/storybook/src/stories/foundations/resizable.stories.tsx)
+- [x] scroll-area (packages/storybook/src/stories/foundations/scroll-area.stories.tsx)
 - [x] separator (packages/storybook/src/stories/foundations/separator.stories.tsx)
 - [x] skeleton (packages/storybook/src/stories/foundations/skeleton.stories.tsx)
 - [x] slider (packages/storybook/src/stories/foundations/slider.stories.tsx)
 - [x] spinner (packages/storybook/src/stories/foundations/spinner.stories.tsx)
 - [x] switch (packages/storybook/src/stories/foundations/switch.stories.tsx)
+- [x] table (packages/storybook/src/stories/foundations/table.stories.tsx)
 - [x] tabs (packages/storybook/src/stories/foundations/tabs.stories.tsx)
 - [x] textarea (packages/storybook/src/stories/foundations/textarea.stories.tsx)
 - [x] toggle (packages/storybook/src/stories/foundations/toggle.stories.tsx)
 - [x] toggle-group (packages/storybook/src/stories/foundations/toggle-group.stories.tsx)
 - [x] tooltip (packages/storybook/src/stories/foundations/tooltip.stories.tsx)
+
+Documented exceptions today:
+
+- [x] direction - `packages/ui/src/components/direction.tsx` is a pure `@base-ui/react/direction-provider` re-export with no Palot-owned styling, behavior, composition, or app state.
 
 ## Missing Stories
 
@@ -81,29 +96,29 @@ Add one or more useful Storybook stories for each unchecked local component. Che
 - [ ] command - `packages/ui/src/components/command.tsx`
 - [ ] context-menu - `packages/ui/src/components/context-menu.tsx`
 - [x] dialog - `packages/ui/src/components/dialog.tsx`
-- [ ] direction - `packages/ui/src/components/direction.tsx`
+- [x] direction - `packages/ui/src/components/direction.tsx` (documented exception: pure `@base-ui/react/direction-provider` re-export)
 - [ ] drawer - `packages/ui/src/components/drawer.tsx`
 - [x] dropdown-menu - `packages/ui/src/components/dropdown-menu.tsx`
 - [x] empty - `packages/ui/src/components/empty.tsx`
 - [x] field - `packages/ui/src/components/field.tsx`
-- [ ] form - `packages/ui/src/components/form.tsx`
+- [x] form - `packages/ui/src/components/form.tsx`
 - [ ] hover-card - `packages/ui/src/components/hover-card.tsx`
 - [x] input - `packages/ui/src/components/input.tsx`
-- [ ] input-group - `packages/ui/src/components/input-group.tsx`
-- [ ] input-otp - `packages/ui/src/components/input-otp.tsx`
-- [ ] item - `packages/ui/src/components/item.tsx`
+- [x] input-group - `packages/ui/src/components/input-group.tsx`
+- [x] input-otp - `packages/ui/src/components/input-otp.tsx`
+- [x] item - `packages/ui/src/components/item.tsx`
 - [x] kbd - `packages/ui/src/components/kbd.tsx`
 - [x] label - `packages/ui/src/components/label.tsx`
 - [ ] menubar - `packages/ui/src/components/menubar.tsx`
 - [x] native-select - `packages/ui/src/components/native-select.tsx`
 - [ ] nav-sidebar-shell - `packages/ui/src/components/nav-sidebar-shell.tsx`
 - [ ] navigation-menu - `packages/ui/src/components/navigation-menu.tsx`
-- [ ] pagination - `packages/ui/src/components/pagination.tsx`
+- [x] pagination - `packages/ui/src/components/pagination.tsx`
 - [x] popover - `packages/ui/src/components/popover.tsx`
 - [x] progress - `packages/ui/src/components/progress.tsx`
 - [x] radio-group - `packages/ui/src/components/radio-group.tsx`
-- [ ] resizable - `packages/ui/src/components/resizable.tsx`
-- [ ] scroll-area - `packages/ui/src/components/scroll-area.tsx`
+- [x] resizable - `packages/ui/src/components/resizable.tsx`
+- [x] scroll-area - `packages/ui/src/components/scroll-area.tsx`
 - [ ] searchable-list-popover - `packages/ui/src/components/searchable-list-popover.tsx`
 - [ ] select - `packages/ui/src/components/select.tsx`
 - [x] separator - `packages/ui/src/components/separator.tsx`
@@ -113,7 +128,7 @@ Add one or more useful Storybook stories for each unchecked local component. Che
 - [ ] sonner - `packages/ui/src/components/sonner.tsx`
 - [x] spinner - `packages/ui/src/components/spinner.tsx`
 - [x] switch - `packages/ui/src/components/switch.tsx`
-- [ ] table - `packages/ui/src/components/table.tsx`
+- [x] table - `packages/ui/src/components/table.tsx`
 - [x] tabs - `packages/ui/src/components/tabs.tsx`
 - [x] textarea - `packages/ui/src/components/textarea.tsx`
 - [x] toggle - `packages/ui/src/components/toggle.tsx`
