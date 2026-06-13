@@ -1,15 +1,17 @@
 # Missing Storybook Coverage
 
-Generated from `ch5 coverage elf --json` on 2026-06-13T23:24:15.908Z.
+Generated from `ch5 coverage elf --json` on 2026-06-13T23:29:43.504Z.
 
 ## Current Coverage
 
 - Visual UI components: 134
-- Covered by Storybook/route coverage: 13
-- Missing Storybook representation: 121
-- Story files: 14
-- Story screenshot proof missing in CH5 formal coverage: 26 viewport captures
+- Covered by Storybook/route coverage: 25
+- Missing Storybook representation: 109
+- Story files: 26
+- Story screenshot proof missing in CH5 formal coverage: 50 viewport targets
 - Batch 01 local render proof: `.sisyphus/evidence/storybook-coverage/batch-01/render-proof.json`
+- Batch 02 local render proof: `.sisyphus/evidence/storybook-coverage/batch-02/render-proof.json`
+- Batch 02 CH5 coverage proof: `.sisyphus/evidence/storybook-coverage/batch-02/ch5-coverage.json`
 - Reusable render proof helper: `bun run verify:storybook-render -- --out <proof-dir> <story-id> [...]`
 - CH5 gap source scope: local `packages/ui/src/components/**` files only.
 - Imported components from other packages/libraries are out of scope here. Trust their upstream stories/tests.
@@ -24,12 +26,24 @@ Covered components today:
 - [x] avatar (packages/storybook/src/stories/foundations/avatar.stories.tsx)
 - [x] badge (packages/storybook/src/stories/foundations/badge.stories.tsx)
 - [x] card (packages/storybook/src/stories/foundations/card.stories.tsx)
+- [x] checkbox (packages/storybook/src/stories/foundations/checkbox.stories.tsx)
 - [x] empty (packages/storybook/src/stories/foundations/empty.stories.tsx)
+- [x] field (packages/storybook/src/stories/foundations/field.stories.tsx)
+- [x] input (packages/storybook/src/stories/foundations/input.stories.tsx)
 - [x] kbd (packages/storybook/src/stories/foundations/kbd.stories.tsx)
+- [x] label (packages/storybook/src/stories/foundations/label.stories.tsx)
+- [x] native-select (packages/storybook/src/stories/foundations/native-select.stories.tsx)
 - [x] progress (packages/storybook/src/stories/foundations/progress.stories.tsx)
+- [x] radio-group (packages/storybook/src/stories/foundations/radio-group.stories.tsx)
 - [x] separator (packages/storybook/src/stories/foundations/separator.stories.tsx)
 - [x] skeleton (packages/storybook/src/stories/foundations/skeleton.stories.tsx)
+- [x] slider (packages/storybook/src/stories/foundations/slider.stories.tsx)
 - [x] spinner (packages/storybook/src/stories/foundations/spinner.stories.tsx)
+- [x] switch (packages/storybook/src/stories/foundations/switch.stories.tsx)
+- [x] tabs (packages/storybook/src/stories/foundations/tabs.stories.tsx)
+- [x] textarea (packages/storybook/src/stories/foundations/textarea.stories.tsx)
+- [x] toggle (packages/storybook/src/stories/foundations/toggle.stories.tsx)
+- [x] toggle-group (packages/storybook/src/stories/foundations/toggle-group.stories.tsx)
 
 ## Missing Stories
 
@@ -49,7 +63,7 @@ Add one or more useful Storybook stories for each unchecked local component. Che
 - [x] card - `packages/ui/src/components/card.tsx`
 - [ ] carousel - `packages/ui/src/components/carousel.tsx`
 - [ ] chart - `packages/ui/src/components/chart.tsx`
-- [ ] checkbox - `packages/ui/src/components/checkbox.tsx`
+- [x] checkbox - `packages/ui/src/components/checkbox.tsx`
 - [ ] collapsible - `packages/ui/src/components/collapsible.tsx`
 - [ ] combobox - `packages/ui/src/components/combobox.tsx`
 - [ ] command - `packages/ui/src/components/command.tsx`
@@ -59,23 +73,23 @@ Add one or more useful Storybook stories for each unchecked local component. Che
 - [ ] drawer - `packages/ui/src/components/drawer.tsx`
 - [ ] dropdown-menu - `packages/ui/src/components/dropdown-menu.tsx`
 - [x] empty - `packages/ui/src/components/empty.tsx`
-- [ ] field - `packages/ui/src/components/field.tsx`
+- [x] field - `packages/ui/src/components/field.tsx`
 - [ ] form - `packages/ui/src/components/form.tsx`
 - [ ] hover-card - `packages/ui/src/components/hover-card.tsx`
-- [ ] input - `packages/ui/src/components/input.tsx`
+- [x] input - `packages/ui/src/components/input.tsx`
 - [ ] input-group - `packages/ui/src/components/input-group.tsx`
 - [ ] input-otp - `packages/ui/src/components/input-otp.tsx`
 - [ ] item - `packages/ui/src/components/item.tsx`
 - [x] kbd - `packages/ui/src/components/kbd.tsx`
-- [ ] label - `packages/ui/src/components/label.tsx`
+- [x] label - `packages/ui/src/components/label.tsx`
 - [ ] menubar - `packages/ui/src/components/menubar.tsx`
-- [ ] native-select - `packages/ui/src/components/native-select.tsx`
+- [x] native-select - `packages/ui/src/components/native-select.tsx`
 - [ ] nav-sidebar-shell - `packages/ui/src/components/nav-sidebar-shell.tsx`
 - [ ] navigation-menu - `packages/ui/src/components/navigation-menu.tsx`
 - [ ] pagination - `packages/ui/src/components/pagination.tsx`
 - [ ] popover - `packages/ui/src/components/popover.tsx`
 - [x] progress - `packages/ui/src/components/progress.tsx`
-- [ ] radio-group - `packages/ui/src/components/radio-group.tsx`
+- [x] radio-group - `packages/ui/src/components/radio-group.tsx`
 - [ ] resizable - `packages/ui/src/components/resizable.tsx`
 - [ ] scroll-area - `packages/ui/src/components/scroll-area.tsx`
 - [ ] searchable-list-popover - `packages/ui/src/components/searchable-list-popover.tsx`
@@ -83,15 +97,15 @@ Add one or more useful Storybook stories for each unchecked local component. Che
 - [x] separator - `packages/ui/src/components/separator.tsx`
 - [ ] sheet - `packages/ui/src/components/sheet.tsx`
 - [x] skeleton - `packages/ui/src/components/skeleton.tsx`
-- [ ] slider - `packages/ui/src/components/slider.tsx`
+- [x] slider - `packages/ui/src/components/slider.tsx`
 - [ ] sonner - `packages/ui/src/components/sonner.tsx`
 - [x] spinner - `packages/ui/src/components/spinner.tsx`
-- [ ] switch - `packages/ui/src/components/switch.tsx`
+- [x] switch - `packages/ui/src/components/switch.tsx`
 - [ ] table - `packages/ui/src/components/table.tsx`
-- [ ] tabs - `packages/ui/src/components/tabs.tsx`
-- [ ] textarea - `packages/ui/src/components/textarea.tsx`
-- [ ] toggle - `packages/ui/src/components/toggle.tsx`
-- [ ] toggle-group - `packages/ui/src/components/toggle-group.tsx`
+- [x] tabs - `packages/ui/src/components/tabs.tsx`
+- [x] textarea - `packages/ui/src/components/textarea.tsx`
+- [x] toggle - `packages/ui/src/components/toggle.tsx`
+- [x] toggle-group - `packages/ui/src/components/toggle-group.tsx`
 - [ ] tooltip - `packages/ui/src/components/tooltip.tsx`
 
 ### AI Elements (50)

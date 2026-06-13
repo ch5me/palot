@@ -34,9 +34,10 @@ Close Storybook coverage for all local Palot UI components tracked in `docs/stor
 ## Current State
 
 - Tracker exists at `docs/storybook-missing-ui-elements.md`.
-- Current CH5 coverage after batch 01 from 2026-06-13T23:24:15.908Z: 134 visual components, 13 covered, 121 visual component gaps.
-- Existing covered components: `button`, `discrete-tabs`, `sidebar`, `alert`, `avatar`, `badge`, `card`, `empty`, `kbd`, `progress`, `separator`, `skeleton`, `spinner`.
+- Current CH5 coverage after batch 02 from 2026-06-13T23:29:43.504Z: 134 visual components, 25 covered, 109 visual component gaps.
+- Existing covered components: `button`, `discrete-tabs`, `sidebar`, `alert`, `avatar`, `badge`, `card`, `checkbox`, `empty`, `field`, `input`, `kbd`, `label`, `native-select`, `progress`, `radio-group`, `separator`, `skeleton`, `slider`, `spinner`, `switch`, `tabs`, `textarea`, `toggle`, `toggle-group`.
 - Batch 01 proof: Storybook typecheck passed, static Storybook build passed, CH5 coverage mapped all 10 new stories, and Chrome rendered desktop/mobile screenshots under `.sisyphus/evidence/storybook-coverage/batch-01/`.
+- Batch 02 proof: Storybook typecheck passed, static Storybook build passed, CH5 coverage mapped 12 form/action/navigation primitives, and Chrome rendered desktop/mobile screenshots under `.sisyphus/evidence/storybook-coverage/batch-02/`.
 - Current worktree has unrelated browser-lane changes; do not sweep them into Storybook commits.
 
 ## Plan
