@@ -183,48 +183,34 @@ function buildHealth(input: {
 	}
 }
 
-function buildAttachedLaneConfiguredHealth(
-	lane: Pick<BrowserLane, "surfaceKind" | "targetUrl" | "streamBackendUrl" | "cdpEndpoint">,
-	messageOverride?: string,
-): BrowserLaneHealth {
+async function probeLaneHealth(
+	lane: Pick<
+		BrowserLane,
+		"runtimeOwnership" | "surfaceKind" | "targetUrl" | "streamBackendUrl" | "cdpEndpoint" | "profilePath"
+	>,
+	profileResetAt: number | null,
+): Promise<BrowserLaneHealth> {
 	const surfaceUrl = getBrowserLaneSurfaceUrl(lane)
-	return buildHealth({
-		status: surfaceUrl
-			? isDirectIframeBrowserLane(lane)
-				? "running"
-				: lane.cdpEndpoint
-					? "running"
-					: "degraded"
-			: lane.cdpEndpoint && !isDirectIframeBrowserLane(lane)
-				? "degraded"
-				: "error",
-		message:
-			messageOverride ??
-			(surfaceUrl
-				? isDirectIframeBrowserLane(lane)
-					? "Direct iframe ready"
-					: lane.cdpEndpoint
-						? "Attached stream and CDP ready"
-						: "Attached stream ready, CDP unavailable"
-				: lane.cdpEndpoint && !isDirectIframeBrowserLane(lane)
-					? "Attached CDP ready, stream unavailable"
-					: isDirectIframeBrowserLane(lane)
-						? "Direct iframe unreachable or not configured"
-						: "Attached lane unreachable or not configured"),
+	const directIframe = isDirectIframeBrowserLane(lane)
+	const probe = await probeBrowserLaneEndpoints({
 		streamUrl: surfaceUrl,
-		streamState: surfaceUrl ? "ready" : "failed",
-		streamError: surfaceUrl ? null : "Browser surface URL missing",
 		cdpUrl: lane.cdpEndpoint,
-		cdpState: isDirectIframeBrowserLane(lane)
-			? "not-applicable"
-			: lane.cdpEndpoint
-				? "ready"
-				: "failed",
-		cdpError: isDirectIframeBrowserLane(lane)
-			? null
-			: lane.cdpEndpoint
-				? null
-				: "CDP endpoint missing",
+		auth:
+			lane.runtimeOwnership === "managed-local" && !directIframe
+				? LOCAL_LANE_AUTH
+				: { user: "", password: "" },
+	})
+	return buildHealthFromProbe({
+		streamUrl: surfaceUrl,
+		cdpUrl: lane.cdpEndpoint,
+		streamReady: probe.streamReady,
+		cdpReady: probe.cdpReady,
+		streamError: probe.streamError,
+		cdpError: probe.cdpError,
+		runtimeOwnership: lane.runtimeOwnership,
+		surfaceKind: lane.surfaceKind,
+		profilePath: lane.profilePath,
+		profileResetAt,
 	})
 }
 
@@ -360,7 +346,7 @@ async function ensureBrowserLanePrepared(id: string): Promise<BrowserLane> {
 	const lane = await getBrowserLane(id)
 	if (!lane) throw new Error(`Browser lane ${id} not found`)
 	if (isAttachedBrowserLane(lane)) {
-		setLaneHealth(id, buildAttachedLaneConfiguredHealth(lane))
+		setLaneHealth(id, await probeLaneHealth(lane, getLaneState(id).profileResetAt))
 		return await getBrowserLane(id).then((entry) => {
 			if (!entry) throw new Error(`Browser lane ${id} disappeared during ensure`)
 			return entry
@@ -761,94 +747,7 @@ export async function refreshBrowserLaneHealth(id: string): Promise<BrowserLaneH
 	const lane = await getBrowserLane(id)
 	if (!lane) throw new Error(`Browser lane ${id} not found`)
 	const state = getLaneState(id)
-	const health: BrowserLaneHealth = await (async () => {
-		if (isManagedBrowserLane(lane)) {
-			const probe = await probeBrowserLaneEndpoints({
-				streamUrl: getBrowserLaneSurfaceUrl(lane),
-				cdpUrl: lane.cdpEndpoint,
-				auth: LOCAL_LANE_AUTH,
-			})
-			return buildHealthFromProbe({
-				streamUrl: getBrowserLaneSurfaceUrl(lane),
-				cdpUrl: lane.cdpEndpoint,
-				streamReady: probe.streamReady,
-				cdpReady: probe.cdpReady,
-				streamError: probe.streamError,
-				cdpError: probe.cdpError,
-				runtimeOwnership: lane.runtimeOwnership,
-				surfaceKind: lane.surfaceKind,
-				profilePath: lane.profilePath,
-				profileResetAt: state.profileResetAt,
-			})
-		}
-		if (isDirectIframeBrowserLane(lane) && lane.targetUrl) {
-			return buildHealth({
-				status: "running",
-				message: "Direct iframe ready",
-				streamUrl: lane.targetUrl,
-				streamState: "ready",
-				cdpUrl: lane.cdpEndpoint,
-				cdpState: "not-applicable",
-			})
-		}
-		if (lane.streamBackendUrl && lane.cdpEndpoint) {
-			return buildHealth({
-				status: "running",
-				message: "Attached stream and CDP ready",
-				streamUrl: lane.streamBackendUrl,
-				streamState: "ready",
-				cdpUrl: lane.cdpEndpoint,
-				cdpState: "ready",
-			})
-		}
-		if (lane.streamBackendUrl) {
-			return buildHealth({
-				status: "degraded",
-				message: "Attached stream ready, CDP unavailable",
-				streamUrl: lane.streamBackendUrl,
-				streamState: "ready",
-				cdpUrl: lane.cdpEndpoint,
-				cdpState: "failed",
-				cdpError: "CDP endpoint missing",
-			})
-		}
-		if (lane.cdpEndpoint) {
-			return buildHealth({
-				status: "degraded",
-				message: "Attached CDP ready, stream unavailable",
-				streamUrl: lane.targetUrl ?? lane.streamBackendUrl,
-				streamState: "failed",
-				streamError: "Browser surface URL missing",
-				cdpUrl: lane.cdpEndpoint,
-				cdpState: "ready",
-			})
-		}
-		return buildHealth({
-			status: isAttachedBrowserLane(lane) ? "error" : lane.profilePath ? "profile-locked" : "stopped",
-			message:
-				isAttachedBrowserLane(lane)
-					? isDirectIframeBrowserLane(lane)
-						? "Direct iframe unreachable or not configured"
-						: "Attached lane unreachable or not configured"
-					: lane.profilePath
-						? buildProfileLockMessage(lane.profilePath, state.profileResetAt)
-						: "Lane stopped",
-			streamUrl: getBrowserLaneSurfaceUrl(lane),
-			streamState: isAttachedBrowserLane(lane) ? "failed" : "unknown",
-			streamError: isAttachedBrowserLane(lane) ? "Browser surface URL missing" : null,
-			cdpUrl: lane.cdpEndpoint,
-			cdpState: isAttachedBrowserLane(lane)
-				? isDirectIframeBrowserLane(lane)
-					? "not-applicable"
-					: "failed"
-				: "unknown",
-			cdpError: isAttachedBrowserLane(lane)
-				? isDirectIframeBrowserLane(lane)
-					? null
-					: "CDP endpoint missing"
-				: null,
-		})
-	})()
+	const health = await probeLaneHealth(lane, state.profileResetAt)
 	setLaneHealth(id, health)
 	return health
 }

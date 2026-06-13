@@ -82,7 +82,9 @@ test("browser lane manager persists created remote lane", async () => {
 
 test("browser lane manager reports remote lane health without local docker", async () => {
 	const cleanup = setupTempXdg()
+	const originalFetch = globalThis.fetch
 	try {
+		globalThis.fetch = Object.assign(async () => new Response(null, { status: 200 }), originalFetch)
 		const manager = await loadManager()
 		await manager.shutdownBrowserLaneManager()
 		await manager.initBrowserLaneManager()
@@ -101,6 +103,7 @@ test("browser lane manager reports remote lane health without local docker", asy
 		assert.equal(health.cdp.state, "ready")
 		assert.equal(health.message, "Attached stream and CDP ready")
 	} finally {
+		globalThis.fetch = originalFetch
 		cleanup()
 	}
 })
@@ -346,6 +349,38 @@ test("browser lane manager probes local stream and cdp on refresh", async () => 
 		assert.equal(health.stream.state, "failed")
 		assert.equal(health.cdp.state, "failed")
 	} finally {
+		cleanup()
+	}
+})
+
+test("browser lane manager probes attached direct iframe lanes without local auth", async () => {
+	const cleanup = setupTempXdg()
+	const originalFetch = globalThis.fetch
+	try {
+		const seenAuth: Array<string | null> = []
+		globalThis.fetch = Object.assign(
+			async (_input: RequestInfo | URL, init?: RequestInit) => {
+				seenAuth.push(new Headers(init?.headers).get("authorization"))
+				return new Response(null, { status: 200 })
+			},
+			originalFetch,
+		) as typeof fetch
+		const manager = await loadManager()
+		await manager.shutdownBrowserLaneManager()
+		await manager.initBrowserLaneManager()
+		await manager.createRemoteBrowserLane({
+			id: "attached-direct-probe",
+			label: "Attached Direct Probe",
+			surfaceKind: "direct-iframe",
+			targetUrl: "https://example.com/app",
+			cdpEndpoint: null,
+		})
+		const health = await manager.refreshBrowserLaneHealth("attached-direct-probe")
+		assert.equal(health.status, "running")
+		assert.equal(health.message, "Direct iframe ready")
+		assert.deepEqual(seenAuth, [null])
+	} finally {
+		globalThis.fetch = originalFetch
 		cleanup()
 	}
 })

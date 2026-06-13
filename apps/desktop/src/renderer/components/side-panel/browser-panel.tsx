@@ -68,6 +68,27 @@ const USER_DEFAULT_URL = "https://example.com"
 const STARTUP_HEALTH_POLL_INTERVAL_MS = 1000
 const STARTUP_HEALTH_MAX_POLLS = 60
 
+export function buildDirectIframeHealth(url: string, reachable: boolean): BrowserLaneHealth {
+	const checkedAt = Date.now()
+	const cleared = url === FALLBACK_URL
+	return {
+		status: cleared ? "stopped" : reachable ? "running" : "error",
+		stream: {
+			url: cleared ? null : url,
+			checkedAt,
+			state: cleared ? "unknown" : reachable ? "ready" : "failed",
+			error: cleared || reachable ? null : "Target URL unreachable",
+		},
+		cdp: {
+			url: null,
+			checkedAt,
+			state: "not-applicable",
+			error: null,
+		},
+		message: cleared ? "Target cleared" : reachable ? "Direct iframe ready" : "Direct iframe unreachable or not configured",
+	}
+}
+
 function pickInitialUserUrl(persisted: string | undefined): string {
 	if (!persisted || persisted === FALLBACK_URL) return USER_DEFAULT_URL
 	// Never seed the user input with a same-origin stream URL — those are iframe-only.
@@ -99,6 +120,7 @@ export function BrowserPanel({ agent: _agent, className }: BrowserPanelProps) {
 	const [createError, setCreateError] = useState<string | null>(null)
 	const [createBusy, setCreateBusy] = useState(false)
 	const [frameNonce, setFrameNonce] = useState(0)
+	const [directIframeHealth, setDirectIframeHealth] = useState<BrowserLaneHealth | null>(null)
 
 	const activeLane = useMemo(
 		() =>
@@ -118,9 +140,17 @@ export function BrowserPanel({ agent: _agent, className }: BrowserPanelProps) {
 		})
 	}, [activeLane])
 
+	const effectiveLaneHealth = useMemo(() => {
+		if (!activeLane || activeLane.surfaceKind !== "direct-iframe") return laneHealth
+		if (currentUrl === FALLBACK_URL) return directIframeHealth
+		const persistedTargetUrl = activeLane.targetUrl ?? FALLBACK_URL
+		if (currentUrl !== persistedTargetUrl) return directIframeHealth
+		return directIframeHealth ?? laneHealth
+	}, [activeLane, currentUrl, directIframeHealth, laneHealth])
+
 	const healthSummary = useMemo(
-		() => (laneHealth ? summarizeBrowserLaneHealth(laneHealth) : "No lane health yet"),
-		[laneHealth],
+		() => (effectiveLaneHealth ? summarizeBrowserLaneHealth(effectiveLaneHealth) : "No lane health yet"),
+		[effectiveLaneHealth],
 	)
 
 	const actionLabels = useMemo(() => getBrowserPanelActionLabels(activeLane), [activeLane])
@@ -128,8 +158,8 @@ export function BrowserPanel({ agent: _agent, className }: BrowserPanelProps) {
 	const createFormView = useMemo(() => getBrowserPanelCreateFormViewModel(createForm), [createForm])
 
 	const panelState = useMemo(
-		() => getBrowserPanelState({ activeLane, laneHealth, loadFailure, healthSummary }),
-		[activeLane, healthSummary, laneHealth, loadFailure],
+		() => getBrowserPanelState({ activeLane, laneHealth: effectiveLaneHealth, loadFailure, healthSummary }),
+		[activeLane, effectiveLaneHealth, healthSummary, loadFailure],
 	)
 
 	useEffect(() => {
@@ -176,6 +206,7 @@ export function BrowserPanel({ agent: _agent, className }: BrowserPanelProps) {
 			const nextUrl = persistedUrl && persistedUrl !== FALLBACK_URL ? persistedUrl : streamUrl
 			setCurrentUrl(nextUrl)
 			setInputValue(nextUrl)
+			setDirectIframeHealth(nextUrl === FALLBACK_URL ? buildDirectIframeHealth(nextUrl, false) : null)
 		}
 		return () => {
 			cancelled = true
@@ -272,8 +303,8 @@ export function BrowserPanel({ agent: _agent, className }: BrowserPanelProps) {
 				setInputValue(nextUrl)
 				setPersistedUrl(nextUrl)
 				setHistory((current) => pushBrowserHistory(current, nextUrl))
-				const health = await fetchBrowserLaneHealth(activeLane.id)
-				setLaneHealth(health)
+				setLaneHealth(buildDirectIframeHealth(nextUrl, false))
+				setDirectIframeHealth(buildDirectIframeHealth(nextUrl, false))
 				return
 			}
 			await navigateBrowserLane(activeLane.id, nextUrl)
@@ -321,7 +352,11 @@ export function BrowserPanel({ agent: _agent, className }: BrowserPanelProps) {
 		setIsLoading(true)
 		try {
 			if (activeLane.surfaceKind === "direct-iframe") {
+				const nextHealth = buildDirectIframeHealth(currentUrl, false)
 				setFrameNonce((current) => current + 1)
+				setLaneHealth(nextHealth)
+				setDirectIframeHealth(nextHealth)
+				return
 			}
 			await fetchBrowserLaneHealth(activeLane.id).then((health) => setLaneHealth(health))
 		} catch (error) {
@@ -366,11 +401,14 @@ export function BrowserPanel({ agent: _agent, className }: BrowserPanelProps) {
 	}
 
 	const handleReset = () => {
+		const clearedHealth = buildDirectIframeHealth(FALLBACK_URL, false)
 		setInputValue(FALLBACK_URL)
 		setCurrentUrl(FALLBACK_URL)
 		setInputError(null)
 		setLoadFailure(null)
 		setPersistedUrl(FALLBACK_URL)
+		setLaneHealth(clearedHealth)
+		setDirectIframeHealth(clearedHealth)
 	}
 
 	const canOpenExternal = useMemo(() => {
@@ -734,6 +772,21 @@ export function BrowserPanel({ agent: _agent, className }: BrowserPanelProps) {
 							src={activeLane.surfaceKind === "direct-iframe" ? currentUrl : streamUrl}
 							title={`Browser lane ${activeLane.label}`}
 							className="h-full w-full rounded-lg border-0 bg-background"
+							onLoad={() => {
+								if (activeLane.surfaceKind !== "direct-iframe") return
+								const nextHealth = buildDirectIframeHealth(currentUrl, true)
+								setLoadFailure(null)
+								setLaneHealth(nextHealth)
+								setDirectIframeHealth(nextHealth)
+							}}
+							onError={() => {
+								if (activeLane.surfaceKind !== "direct-iframe") return
+								const nextHealth = buildDirectIframeHealth(currentUrl, false)
+								setLoadFailure("The embedded target could not be reached.")
+								setLaneHealth(nextHealth)
+								setDirectIframeHealth(nextHealth)
+							}}
+
 						/>
 					) : (
 						<div className="flex h-full flex-col items-center justify-center gap-3 p-6 text-center">
