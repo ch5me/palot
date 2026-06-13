@@ -49,6 +49,10 @@ export default defineConfig({
 			"@ch5me/effects/text": EFFECTS_GRADIENT_BRAND_TEXT_ENTRY,
 			"@ch5me/motion": MOTION_WEB_ENTRY,
 			"@ch5me/workspace": WORKSPACE_ENTRY,
+			"@ch5me/ch5-ui-web/animate/discrete-tabs": path.resolve(
+				__dirname,
+				"../../../../../ch5-packages/packages/web/ch5-ui-web/src/animate/discrete-tabs.tsx",
+			),
 			"@ch5me/elf-ui": path.resolve(__dirname, "../../../../packages/ui/src"),
 			"@ch5me/elf-server/client": path.resolve(__dirname, "../../../server/src/client.ts"),
 			"@react-spring/core": REACT_SPRING_CORE_ENTRY,

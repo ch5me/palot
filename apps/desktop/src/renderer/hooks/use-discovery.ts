@@ -260,7 +260,9 @@ export function useDiscovery() {
 			void syncActiveSessionPresence()
 			unsubscribe = subscribeToActiveOpenCodeSessionEvents({
 				onError: (message) => {
-					log.warn("Active OpenCode session stream error", { message })
+					if (message !== "active session stream unavailable") {
+						log.warn("Active OpenCode session stream error", { message })
+					}
 				},
 				onSnapshot: (snapshot) => {
 					void syncActiveSessionPresence(snapshot)

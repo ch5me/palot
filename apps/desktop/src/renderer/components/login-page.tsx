@@ -4,6 +4,7 @@ import { useRouter } from "@tanstack/react-router"
 import { AlertCircleIcon, ExternalLinkIcon } from "lucide-react"
 import { useEffect, useState } from "react"
 import type { DeviceCodeUi, ElfAuthStateDto } from "../../preload/api"
+import { isElectron, openExternalUrl } from "../services/backend"
 
 const FIREFLY_DESKTOP_CLIENT_ID = "firefly-desktop"
 
@@ -29,6 +30,7 @@ export function LoginPage() {
 	const [authState, setAuthState] = useState<ElfAuthStateDto | null>(null)
 
 	useEffect(() => {
+		if (!isElectron) return
 		let cancelled = false
 
 		window.elf.auth.getState().then((state) => {
@@ -54,6 +56,14 @@ export function LoginPage() {
 	}, [authState?.hasToken, router])
 
 	async function handleSignIn() {
+		if (!isElectron) {
+			setError({
+				kind: "signin_failed",
+				message: "Firefly sign-in is only available in Electron right now.",
+			})
+			setPhase("error")
+			return
+		}
 		setError(null)
 		try {
 			const code = await window.elf.auth.signIn(FIREFLY_DESKTOP_CLIENT_ID)
@@ -71,6 +81,7 @@ export function LoginPage() {
 	}
 
 	async function pollForToken() {
+		if (!isElectron) return
 		setPolling(true)
 		try {
 			const state = await window.elf.auth.poll()
@@ -96,7 +107,9 @@ export function LoginPage() {
 	}
 
 	async function handleCancel() {
-		await window.elf.auth.cancelSignIn()
+		if (isElectron) {
+			await window.elf.auth.cancelSignIn()
+		}
 		setDeviceCode(null)
 		setPhase("idle")
 		setError(null)
@@ -104,7 +117,7 @@ export function LoginPage() {
 
 	async function handleOpenUrl() {
 		if (deviceCode?.verificationUriComplete) {
-			window.open(deviceCode.verificationUriComplete, "_system")
+			await openExternalUrl(deviceCode.verificationUriComplete)
 		}
 	}
 

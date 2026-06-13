@@ -54,7 +54,7 @@ function applyAccentColor(hex: string): void {
 
 export function useSystemAccentColor(): void {
 	useEffect(() => {
-		if (!("elf" in window)) return
+		if (typeof window === "undefined" || !("elf" in window)) return
 
 		// Read initial value
 		window.elf.getAccentColor().then((color) => {

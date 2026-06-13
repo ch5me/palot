@@ -254,14 +254,21 @@ export function subscribeToActiveOpenCodeSessionEvents(
 		return () => {}
 	}
 
+	let closedByCaller = false
+	let hasOpened = false
 	const source = new EventSource(`${BASE_URL}${ACTIVE_SESSION_EVENTS_PATH}`)
 
 	source.onopen = () => {
+		hasOpened = true
 		handlers.onOpen?.()
 	}
 
 	source.onerror = () => {
-		handlers.onError?.("active session stream reconnecting")
+		if (closedByCaller) return
+		if (!hasOpened) {
+			handlers.onError?.("active session stream unavailable")
+			return
+		}
 	}
 
 	source.addEventListener("presence", (event) => {
@@ -286,6 +293,7 @@ export function subscribeToActiveOpenCodeSessionEvents(
 	})
 
 	return () => {
+		closedByCaller = true
 		source.close()
 	}
 }
