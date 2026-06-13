@@ -268,4 +268,47 @@ describe("injectBrowserLanePageShim", () => {
 			cleanup()
 		}
 	})
+
+	test("does not inject managed local auth header for direct iframe transport", async () => {
+		const cleanup = setupTempRegistry()
+		const originalFetch = globalThis.fetch
+		try {
+			let forwardedAuthorization: string | null = null
+			globalThis.fetch = (async (_input: RequestInfo | URL, init?: RequestInit) => {
+				forwardedAuthorization = new Headers(init?.headers).get("authorization")
+				return new Response("<html><body>direct</body></html>", {
+					headers: { "content-type": "text/html" },
+				})
+			}) as typeof fetch
+
+			writeRegistry({
+				version: 2,
+				lanes: [
+					{
+						id: "direct-html",
+						label: "Direct Html",
+						surfaceKind: "direct-iframe",
+						runtimeOwnership: "attached",
+						deploymentLocation: "remote",
+						targetUrl: "https://example.com/app",
+						streamBackendUrl: null,
+						cdpEndpoint: null,
+						profilePath: null,
+						host: "example.com",
+						createdAt: 1,
+						updatedAt: 2,
+					},
+				],
+			})
+
+			const response = await browserLaneRoutes.request("/direct-html", {
+				headers: { accept: "text/html" },
+			})
+			expect(response.status).toBe(200)
+			expect(forwardedAuthorization).toBeNull()
+		} finally {
+			globalThis.fetch = originalFetch
+			cleanup()
+		}
+	})
 })

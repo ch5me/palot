@@ -1,0 +1,11 @@
+{
+  "url": "http://127.0.0.1:30206/browser/default/health",
+  "status": 200,
+  "headers": {
+    "content-length": "329",
+    "content-type": "application/json",
+    "date": "Thu, 11 Jun 2026 03:29:17 GMT",
+    "vary": "Origin"
+  },
+  "bodyPreview": "{\"status\":\"profile-locked\",\"stream\":{\"url\":\"http://127.0.0.1:63302\",\"checkedAt\":1781362233759,\"state\":\"failed\",\"error\":\"Stream backend URL unreachable\"},\"cdp\":{\"url\":\"http://127.0.0.1:63303\",\"checkedAt\":1781362233759,\"state\":\"failed\",\"error\":\"CDP endpoint unreachable\"},\"message\":\"Profile exists but runtime has not started yet\"}"
+}

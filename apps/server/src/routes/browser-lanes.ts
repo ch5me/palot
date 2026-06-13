@@ -345,7 +345,9 @@ async function proxyLaneRequest(
 
 	const upstreamHeaders = new Headers(request.headers)
 	upstreamHeaders.delete("host")
-	upstreamHeaders.set("authorization", LOCAL_LANE_AUTH_HEADER)
+	if (lane.runtimeOwnership === "managed-local" && lane.surfaceKind === "selkies-stream") {
+		upstreamHeaders.set("authorization", LOCAL_LANE_AUTH_HEADER)
+	}
 	const upstreamResponse = await fetch(upstreamUrl, {
 		method: request.method,
 		headers: upstreamHeaders,

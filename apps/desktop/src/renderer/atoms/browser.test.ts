@@ -1,5 +1,12 @@
 import { describe, expect, test } from "bun:test"
-import { buildBrowserLaneDisplayUrl, buildNavigableUrl, pushBrowserHistory } from "./browser"
+import {
+	buildBrowserPanelSurfaceUrl,
+	buildNavigableUrl,
+	getBrowserPanelNavigationStrategy,
+	getBoundBrowserLaneId,
+	pushBrowserHistory,
+	resolveBrowserPanelLaneId,
+} from "./browser"
 
 describe("buildNavigableUrl", () => {
 	test("passes through http(s) URLs unchanged", () => {
@@ -53,21 +60,21 @@ describe("pushBrowserHistory", () => {
 	})
 })
 
-describe("buildBrowserLaneDisplayUrl", () => {
+describe("buildBrowserPanelSurfaceUrl", () => {
 	const lane = {
 		streamPath: "/browser/default/",
 		desktopStreamUrl: "http://elf-browser-lane.local/browser/default/",
 	}
 
 	test("uses desktop protocol URL inside Electron", () => {
-		expect(buildBrowserLaneDisplayUrl(lane, { isElectron: true })).toBe(
+		expect(buildBrowserPanelSurfaceUrl(lane, { isElectron: true })).toBe(
 			"http://elf-browser-lane.local/browser/default/",
 		)
 	})
 
 	test("uses HTTP backend URL in browser mode", () => {
 		expect(
-			buildBrowserLaneDisplayUrl(lane, {
+			buildBrowserPanelSurfaceUrl(lane, {
 				isElectron: false,
 				backendBaseUrl: "http://127.0.0.1:30206",
 			}),
@@ -76,12 +83,46 @@ describe("buildBrowserLaneDisplayUrl", () => {
 
 	test("uses direct iframe target for direct-iframe lanes", () => {
 		expect(
-			buildBrowserLaneDisplayUrl({
+			buildBrowserPanelSurfaceUrl({
 				streamPath: "/browser/direct/",
-				desktopStreamUrl: "http://elf-browser-lane.local/browser/direct/",
-				streamBackendUrl: "http://127.0.0.1:8077",
+				desktopStreamUrl: "http://127.0.0.1:8077",
 				surfaceKind: "direct-iframe",
 			}),
 		).toBe("http://127.0.0.1:8077")
+	})
+})
+
+describe("browser panel navigation strategy", () => {
+	test("bypasses cdp for direct iframe surfaces", () => {
+		expect(getBrowserPanelNavigationStrategy("direct-iframe")).toBe("direct-url")
+	})
+
+	test("uses cdp for streamed surfaces", () => {
+		expect(getBrowserPanelNavigationStrategy("selkies-stream")).toBe("cdp")
+	})
+})
+
+describe("browser panel lane binding", () => {
+	test("prefers bound lane over global fallback", () => {
+		expect(resolveBrowserPanelLaneId("lane_bound", "lane_global")).toBe("lane_bound")
+	})
+
+	test("falls back to global lane when no binding exists", () => {
+		expect(resolveBrowserPanelLaneId(null, "lane_global")).toBe("lane_global")
+	})
+
+	test("ignores released bindings", () => {
+		expect(
+			getBoundBrowserLaneId({
+				id: "binding-1",
+				openCodeSessionId: "ses_1",
+				browserLaneId: "lane_bound",
+				magicBrowserSessionId: null,
+				status: "released",
+				createdAt: 1,
+				updatedAt: 2,
+				releasedAt: 3,
+			}),
+		).toBeNull()
 	})
 })

@@ -5,7 +5,13 @@ import { getBrowserLaneConfigDir } from "./automation/paths"
 
 const BROWSER_LANE_ORIGIN = "http://elf-browser-lane.local"
 const LOCAL_LANE_AUTH_HEADER = `Basic ${Buffer.from("abc:abc").toString("base64")}`
-const REGISTRY_FILE = path.join(getBrowserLaneConfigDir(), "lanes.json")
+
+// Resolve the registry path lazily so it always honors the current
+// XDG_CONFIG_HOME. Freezing it at module load made the path untestable and
+// would have ignored a config-dir override changed after import.
+function getRegistryFile(): string {
+	return path.join(getBrowserLaneConfigDir(), "lanes.json")
+}
 
 interface BrowserLaneProtocolRecord {
 	id: string
@@ -65,12 +71,13 @@ function isLoopbackUrl(rawUrl: string): boolean {
 	}
 }
 
-function readLocalBrowserLaneStreamOrigins(): Set<string> {
+function readManagedLocalBrowserLaneStreamOrigins(): Set<string> {
 	try {
-		const data = JSON.parse(fs.readFileSync(REGISTRY_FILE, "utf-8")) as BrowserLaneProtocolRegistry
+		const data = JSON.parse(fs.readFileSync(getRegistryFile(), "utf-8")) as BrowserLaneProtocolRegistry
 		return new Set(
 			(data.lanes ?? [])
-				.filter((lane) => lane.runtimeOwnership !== "attached")
+				.filter((lane) => lane.runtimeOwnership === "managed-local")
+				.filter((lane) => lane.surfaceKind !== "direct-iframe")
 				.map((lane) => lane.streamBackendUrl)
 				.filter((url): url is string => Boolean(url))
 				.filter((url) => isLoopbackUrl(url))
@@ -85,7 +92,7 @@ function readLocalBrowserLaneStreamOrigins(): Set<string> {
 function isKnownLocalBrowserLaneRequest(rawUrl: string): boolean {
 	const origin = normalizeHttpOrigin(rawUrl)
 	if (!origin) return false
-	return readLocalBrowserLaneStreamOrigins().has(origin)
+	return readManagedLocalBrowserLaneStreamOrigins().has(origin)
 }
 
 function withLocalLaneAuthorizationHeader(
@@ -146,7 +153,9 @@ export async function registerBrowserLaneProtocol(
 		const upstreamUrl = createBrowserLaneUrl(upstream, `${BROWSER_LANE_ORIGIN}${remainder}${url.search}`)
 		const upstreamHeaders = new Headers(request.headers)
 		upstreamHeaders.delete("host")
-		upstreamHeaders.set("authorization", LOCAL_LANE_AUTH_HEADER)
+		if (isKnownLocalBrowserLaneRequest(upstreamUrl)) {
+			upstreamHeaders.set("authorization", LOCAL_LANE_AUTH_HEADER)
+		}
 		return await fetchImpl(upstreamUrl, {
 			method: request.method,
 			headers: upstreamHeaders,

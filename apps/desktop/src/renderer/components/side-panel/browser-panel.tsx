@@ -22,15 +22,16 @@ import React, { useEffect, useMemo, useState } from "react"
 import {
 	activeBrowserLaneIdAtom,
 	browserHistoryAtom,
-	buildBrowserLaneDisplayUrl,
+	buildBrowserPanelSurfaceUrl,
 	buildNavigableUrl,
+	getBrowserPanelNavigationStrategy,
 	lastBrowserUrlAtom,
 	pushBrowserHistory,
 } from "../../atoms/browser"
 import {
 	createBrowserLane,
-	createRemoteBrowserLane,
 	ELF_SERVER_BASE_URL,
+	fetchPalotSessionBinding,
 	fetchBrowserLaneHealth,
 	fetchBrowserLanes,
 	isElectron,
@@ -48,6 +49,9 @@ import {
 	createDefaultBrowserPanelFormState,
 	getBrowserPanelCreateFormViewModel,
 } from "./browser-panel-form"
+import { selectBrowserPanelLane } from "./browser-panel-selection"
+import { getBrowserPanelActionLabels, getBrowserPanelState } from "./browser-panel-view-model"
+import type { SessionBinding } from "../../../preload/api"
 import type { Agent, BrowserLane, BrowserLaneHealth } from "../../lib/types"
 
 interface BrowserPanelProps {
@@ -83,6 +87,7 @@ export function BrowserPanel({ agent: _agent, className }: BrowserPanelProps) {
 	const [inputError, setInputError] = useState<string | null>(null)
 	const [laneList, setLaneList] = useState<BrowserLane[]>([])
 	const [laneHealth, setLaneHealth] = useState<BrowserLaneHealth | null>(null)
+	const [sessionBinding, setSessionBinding] = useState<SessionBinding | null>(null)
 	const [isLoading, setIsLoading] = useState(false)
 	const [loadFailure, setLoadFailure] = useState<string | null>(null)
 	const [isCreateOpen, setIsCreateOpen] = useState(false)
@@ -91,13 +96,18 @@ export function BrowserPanel({ agent: _agent, className }: BrowserPanelProps) {
 	const [createBusy, setCreateBusy] = useState(false)
 
 	const activeLane = useMemo(
-		() => laneList.find((lane) => lane.id === activeLaneId) ?? laneList[0] ?? null,
-		[laneList, activeLaneId],
+		() =>
+			selectBrowserPanelLane({
+				lanes: laneList,
+				activeLaneId,
+				binding: sessionBinding,
+			}),
+		[laneList, activeLaneId, sessionBinding],
 	)
 
 	const streamUrl = useMemo(() => {
 		if (!activeLane) return FALLBACK_URL
-		return buildBrowserLaneDisplayUrl(activeLane, {
+		return buildBrowserPanelSurfaceUrl(activeLane, {
 			isElectron,
 			backendBaseUrl: ELF_SERVER_BASE_URL,
 		})
@@ -108,88 +118,20 @@ export function BrowserPanel({ agent: _agent, className }: BrowserPanelProps) {
 		[laneHealth],
 	)
 
-	const canRestartManagedLane = activeLane?.runtimeOwnership === "managed-local"
-	const canResetManagedProfile =
-		activeLane?.runtimeOwnership === "managed-local" && activeLane.surfaceKind === "selkies-stream"
+	const actionLabels = useMemo(() => getBrowserPanelActionLabels(activeLane), [activeLane])
 	const createFormView = useMemo(() => getBrowserPanelCreateFormViewModel(createForm), [createForm])
 
-	const panelState = useMemo(() => {
-		if (!activeLane) {
-			return {
-				title: "No browser lane ready",
-				detail: "Create or start a browser lane to render the browser surface.",
-				showFrame: false,
-			}
-		}
-		if (!laneHealth) {
-			return {
-				title: "Checking browser lane",
-				detail:
-					activeLane.surfaceKind === "direct-iframe"
-						? "Waiting for target reachability."
-						: activeLane.runtimeOwnership === "managed-local"
-							? "Waiting for managed stream and CDP status."
-							: "Waiting for attached stream and CDP status.",
-				showFrame: false,
-			}
-		}
-		if (loadFailure) {
-			return {
-				title: "Lane request failed",
-				detail: loadFailure,
-				showFrame: false,
-			}
-		}
-		if (laneHealth.stream.state === "ready") {
-			return {
-				title:
-					activeLane.surfaceKind === "direct-iframe"
-						? "Target live"
-						: activeLane.runtimeOwnership === "managed-local"
-							? "Managed stream live"
-							: "Attached stream live",
-				detail: healthSummary,
-				showFrame: true,
-			}
-		}
-		if (laneHealth.cdp.state === "ready") {
-			return {
-				title: "CDP live, surface missing",
-				detail:
-					activeLane.runtimeOwnership === "managed-local"
-						? "Managed automation can connect, but the rendered stream is stale. Refresh or restart the lane."
-						: "Attached automation can connect, but the rendered stream is stale. Check the attached surface URL.",
-				showFrame: false,
-			}
-		}
-		if (laneHealth.status === "profile-locked") {
-			return {
-				title: "Managed profile waiting",
-				detail: laneHealth.message,
-				showFrame: false,
-			}
-		}
-		if (laneHealth.status === "error") {
-			return {
-				title:
-					activeLane.surfaceKind === "direct-iframe"
-						? "Browser target unreachable"
-						: activeLane.runtimeOwnership === "managed-local"
-							? "Managed browser lane broken"
-							: "Attached browser lane unavailable",
-				detail: laneHealth.message,
-				showFrame: false,
-			}
-		}
-		return {
-			title: "Browser lane not visible yet",
-			detail: healthSummary,
-			showFrame: false,
-		}
-	}, [activeLane, healthSummary, laneHealth, loadFailure])
+	const panelState = useMemo(
+		() => getBrowserPanelState({ activeLane, laneHealth, loadFailure, healthSummary }),
+		[activeLane, healthSummary, laneHealth, loadFailure],
+	)
 
 	useEffect(() => {
 		let cancelled = false
+		void fetchPalotSessionBinding(_agent.sessionId).then((binding) => {
+			if (cancelled) return
+			setSessionBinding(binding)
+		})
 		setIsLoading(true)
 		void fetchBrowserLanes()
 			.then((lanes) => {
@@ -206,7 +148,7 @@ export function BrowserPanel({ agent: _agent, className }: BrowserPanelProps) {
 		return () => {
 			cancelled = true
 		}
-	}, [activeLaneId, setActiveLaneId])
+	}, [_agent.sessionId, activeLaneId, setActiveLaneId])
 
 	const autoStartAttemptedRef = React.useRef<Set<string>>(new Set())
 	const startupHealthPollAttemptsRef = React.useRef<Map<string, number>>(new Map())
@@ -319,7 +261,7 @@ export function BrowserPanel({ agent: _agent, className }: BrowserPanelProps) {
 		setLoadFailure(null)
 		setIsLoading(true)
 		try {
-			if (activeLane.surfaceKind === "direct-iframe") {
+			if (getBrowserPanelNavigationStrategy(activeLane.surfaceKind) === "direct-url") {
 				setCurrentUrl(nextUrl)
 				setInputValue(nextUrl)
 				setPersistedUrl(nextUrl)
@@ -582,9 +524,9 @@ export function BrowserPanel({ agent: _agent, className }: BrowserPanelProps) {
 									))}
 								</select>
 							</div>
-							<DropdownMenuItem onClick={() => void handleRestart()} disabled={!canRestartManagedLane}>
+							<DropdownMenuItem onClick={() => void handleRestart()} disabled={!actionLabels.canRestartManagedLane}>
 								<RotateCcwIcon className="size-3.5" aria-hidden="true" />
-								{activeLane?.runtimeOwnership === "managed-local" ? "Restart managed lane" : "Restart unavailable for attached lanes"}
+								{actionLabels.restartLabel}
 							</DropdownMenuItem>
 							<DropdownMenuItem onClick={() => void handlePasteFromHost()}>
 								Paste host clipboard
@@ -599,10 +541,8 @@ export function BrowserPanel({ agent: _agent, className }: BrowserPanelProps) {
 							<DropdownMenuItem onClick={handleReset} disabled={currentUrl === FALLBACK_URL}>
 								Reset URL
 							</DropdownMenuItem>
-							<DropdownMenuItem onClick={() => void handleResetProfile()} disabled={!canResetManagedProfile}>
-								{activeLane?.runtimeOwnership === "managed-local"
-									? "Reset managed profile"
-									: "Profile reset unavailable for attached lanes"}
+							<DropdownMenuItem onClick={() => void handleResetProfile()} disabled={!actionLabels.canResetManagedProfile}>
+								{actionLabels.resetProfileLabel}
 							</DropdownMenuItem>
 						</DropdownMenuContent>
 					</DropdownMenu>
@@ -794,19 +734,19 @@ export function BrowserPanel({ agent: _agent, className }: BrowserPanelProps) {
 							</div>
 							<div className="flex flex-wrap justify-center gap-2">
 								<Button type="button" variant="outline" size="sm" onClick={() => void handleRefresh()}>
-									{activeLane?.surfaceKind === "direct-iframe" ? "Refresh target" : "Refresh route"}
+									{actionLabels.refreshLabel}
 								</Button>
 								<Button
 									type="button"
 									variant="outline"
 									size="sm"
 									onClick={() => void handleRestart()}
-									disabled={!canRestartManagedLane}
+									disabled={!actionLabels.canRestartManagedLane}
 								>
-									Restart managed lane
+									{actionLabels.restartLabel}
 								</Button>
 								<Button type="button" variant="outline" size="sm" onClick={handleOpenExternal} disabled={!canOpenExternal}>
-									{activeLane?.surfaceKind === "direct-iframe" ? "Open target" : "Open diagnostics"}
+									{actionLabels.openExternalLabel}
 								</Button>
 							</div>
 						</div>

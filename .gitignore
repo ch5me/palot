@@ -50,3 +50,8 @@ AGENTS.local.md
 
 # Storybook build output
 storybook-static/
+
+# Stray TS build output for shared browser-lane module (source is the .ts)
+apps/desktop/src/shared/browser-lanes.js
+apps/desktop/src/shared/browser-lanes.d.ts
+apps/desktop/src/shared/browser-lanes.d.ts.map

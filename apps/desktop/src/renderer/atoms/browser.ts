@@ -1,4 +1,5 @@
 import { atomWithStorage } from "jotai/utils"
+import type { SessionBinding } from "../../preload/api"
 
 const PERSISTED_KEY = "elf:browser-panel:last-url"
 const MAX_HISTORY = 8
@@ -8,6 +9,13 @@ export const lastBrowserUrlAtom = atomWithStorage<string>(PERSISTED_KEY, "about:
 export const activeBrowserLaneIdAtom = atomWithStorage<string>("elf:browser-panel:lane-id", DEFAULT_LANE_ID)
 
 export const browserHistoryAtom = atomWithStorage<string[]>(PERSISTED_KEY + ":history", [])
+
+export function resolveBrowserPanelLaneId(
+	boundLaneId: string | null,
+	activeLaneId: string,
+): string {
+	return boundLaneId ?? activeLaneId
+}
 
 export function pushBrowserHistory(current: string[], nextUrl: string): string[] {
 	if (!nextUrl || nextUrl === "about:blank") return current
@@ -35,21 +43,21 @@ export function buildNavigableUrl(input: string): string | null {
 	return `https://${trimmed}`
 }
 
-interface BrowserLaneDisplayUrlInput {
+interface BrowserPanelSurfaceUrlInput {
 	desktopStreamUrl?: string | null
 	streamPath: string
 	streamBackendUrl?: string | null
 	surfaceKind?: "selkies-stream" | "direct-iframe"
 }
 
-interface BrowserLaneDisplayUrlOptions {
+interface BrowserPanelSurfaceUrlOptions {
 	isElectron: boolean
 	backendBaseUrl?: string
 }
 
-export function buildBrowserLaneDisplayUrl(
-	input: BrowserLaneDisplayUrlInput,
-	options: BrowserLaneDisplayUrlOptions = { isElectron: true },
+export function buildBrowserPanelSurfaceUrl(
+	input: BrowserPanelSurfaceUrlInput,
+	options: BrowserPanelSurfaceUrlOptions = { isElectron: true },
 ): string {
 	if (input.surfaceKind === "direct-iframe" && input.desktopStreamUrl) {
 		return input.desktopStreamUrl
@@ -59,4 +67,21 @@ export function buildBrowserLaneDisplayUrl(
 		return new URL(input.streamPath, options.backendBaseUrl).toString()
 	}
 	return input.streamPath
+}
+
+export function buildBrowserLaneDisplayUrl(
+	input: BrowserPanelSurfaceUrlInput,
+	options: BrowserPanelSurfaceUrlOptions = { isElectron: true },
+): string {
+	return buildBrowserPanelSurfaceUrl(input, options)
+}
+
+export function getBrowserPanelNavigationStrategy(
+	surfaceKind: "selkies-stream" | "direct-iframe",
+): "direct-url" | "cdp" {
+	return surfaceKind === "direct-iframe" ? "direct-url" : "cdp"
+}
+
+export function getBoundBrowserLaneId(binding: SessionBinding | null): string | null {
+	return binding?.status === "released" ? null : binding?.browserLaneId ?? null
 }

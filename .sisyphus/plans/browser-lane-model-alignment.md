@@ -352,7 +352,7 @@ Wave 4: docs, migration proof, regression verification
 
   **Commit**: YES | Message: `refactor(browser-bridge): propagate canonical lane contract` | Files: preload, backend wrappers, tests
 
-- [ ] 7. Rebuild the browser panel UX around surface kind first
+- [x] 7. Rebuild the browser panel UX around surface kind first
 
   **What to do**: Redesign the browser panel create/edit/display flow so operators choose surface kind first, runtime ownership second, and then see only relevant fields. Direct-iframe should ask for target URL. Attached Selkies should ask for stream URL and optional CDP. Managed-local Selkies should default most runtime details and hide irrelevant attached fields. Update lane metadata displays and action labels accordingly.
   **Must NOT do**: Do not keep the current implementation-first “new remote lane” form. Do not expose managed-runtime controls for attached lanes.
@@ -393,7 +393,7 @@ Wave 4: docs, migration proof, regression verification
 
   **Commit**: YES | Message: `feat(browser-panel): make surface kind the primary UX axis` | Files: browser panel, local state helpers, component tests
 
-- [ ] 8. Preserve and clarify lane binding, display URL, and action routing behavior
+- [x] 8. Preserve and clarify lane binding, display URL, and action routing behavior
 
   **What to do**: Update lane resolution and display URL helpers so session-bound lane selection remains first-class and global lane remains fallback only. Rename helpers to reflect surface semantics, and ensure navigation/action routing respects direct-iframe vs Selkies differences. Keep browser panel persistence stable through migration.
   **Must NOT do**: Do not drop session binding semantics accidentally. Do not route direct-iframe navigation through CDP actions.
@@ -433,7 +433,7 @@ Wave 4: docs, migration proof, regression verification
 
   **Commit**: YES | Message: `refactor(browser-panel): preserve binding and surface-aware navigation` | Files: browser atoms/helpers, panel binding tests, related consumers
 
-- [ ] 9. Constrain Selkies-only protocol and proxy behavior to streamed surfaces
+- [x] 9. Constrain Selkies-only protocol and proxy behavior to streamed surfaces
 
   **What to do**: Audit and tighten protocol/proxy behavior so Selkies-specific auth-header injection, body rewriting, and same-origin desktop URL conventions apply only when a lane actually uses a streamed Selkies surface. Direct-iframe surfaces should keep the simplest possible transport path consistent with Electron/browser-mode needs.
   **Must NOT do**: Do not spray local lane auth headers onto arbitrary direct-iframe targets. Do not keep Selkies UI-hiding shims active for generic pages.
