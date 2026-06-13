@@ -1,0 +1,15 @@
+bun test v1.3.14 (0d9b296a)
+
+apps/desktop/src/main/browser-lane-runtime.test.ts:
+(pass) builds distinct stream and cdp endpoints
+(pass) managed-local runtime config honors explicit target url as start url
+(pass) chrome cli keeps CDP flags and target url
+(pass) relay script waits for CDP readiness and fails loudly when unavailable
+(pass) renders persistent profile volume in compose
+
+apps/desktop/src/main/browser-lane-runtime.node.test.ts:
+(pass) browser lane compose keeps persistent profile volume and split ports
+
+ 6 pass
+ 0 fail
+Ran 6 tests across 2 files.

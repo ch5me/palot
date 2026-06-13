@@ -74,24 +74,30 @@ set -e
 if ! command -v socat >/dev/null 2>&1; then
   apt-get update >/dev/null 2>&1
   apt-get install -y --no-install-recommends socat >/dev/null 2>&1 || {
-    echo "[elf-cdp-relay] socat install failed; CDP will only be reachable from inside the container" >&2
-    exit 0
+    echo "[elf-cdp-relay] socat install failed; managed-local CDP relay unavailable" >&2
+    exit 1
   }
 fi
-pkill -f 'socat.*TCP-LISTEN:9223' >/dev/null 2>&1 || true
-sleep 0.1
-TARGET_HOST=127.0.0.1
-if curl -sf --max-time 1 http://127.0.0.1:9222/json/version >/dev/null 2>&1; then
-  TARGET_HOST=127.0.0.1
-elif curl -g -sf --max-time 1 http://[::1]:9222/json/version >/dev/null 2>&1; then
-  TARGET_HOST='[::1]'
+pkill -f 'socat.*TCP-LISTEN:9222' >/dev/null 2>&1 || true
+CDP_READY=0
+for _attempt in $(seq 1 60); do
+  if curl -sf --max-time 1 http://127.0.0.1:9222/json/version >/tmp/elf-cdp-version.json 2>/tmp/elf-cdp-probe.log; then
+    CDP_READY=1
+    break
+  fi
+  if curl -g -sf --max-time 1 http://[::1]:9222/json/version >/tmp/elf-cdp-version.json 2>/tmp/elf-cdp-probe.log; then
+    CDP_READY=1
+    break
+  fi
+  sleep 1
+done
+if [ "$CDP_READY" -ne 1 ]; then
+  echo "[elf-cdp-relay] CDP never became reachable on 9222; relay not started" >&2
+  exit 1
 fi
-nohup socat \\
-  TCP-LISTEN:9223,fork,reuseaddr,bind=0.0.0.0 \\
-  TCP:$TARGET_HOST:9222 \\
-  > /tmp/elf-cdp-relay.log 2>&1 &
-echo "[elf-cdp-relay] pid=$! relaying 0.0.0.0:9223 -> $TARGET_HOST:9222" >&2
+echo "[elf-cdp-relay] CDP answered on 9222; exposing container port 9222 directly" >&2
 `
+
 
 export interface BrowserLaneRuntimeConfig {
 	laneId: string
@@ -194,7 +200,7 @@ export function renderBrowserLaneCompose(config: BrowserLaneRuntimeConfig): stri
 		`      - CHROME_CLI=${chromeCliForConfig(config)}`,
 		"    ports:",
 		`      - \"${config.streamPort}:3000\"`,
-		`      - \"${config.cdpPort}:9223\"`,
+		`      - \"${config.cdpPort}:9222\"`,
 		"    volumes:",
 		`      - ${config.profilePath}:/config`,
 		`      - ${path.join(config.runtimeDir, "custom-cont-init.d")}:/custom-cont-init.d`,
@@ -202,7 +208,7 @@ export function renderBrowserLaneCompose(config: BrowserLaneRuntimeConfig): stri
 	].join("\n")
 }
 
-function chromeCliForConfig(config: BrowserLaneRuntimeConfig): string {
+export function chromeCliForConfig(config: BrowserLaneRuntimeConfig): string {
 	return [
 		"--remote-debugging-port=9222",
 		"--remote-allow-origins=*",
