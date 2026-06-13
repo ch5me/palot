@@ -47,6 +47,8 @@ contextBridge.exposeInMainWorld("elf", {
 	getActiveOpenCodeSessions: () => ipcRenderer.invoke("opencode:active-sessions"),
 	browserLanes: {
 		list: () => ipcRenderer.invoke("browser-lanes:list"),
+		create: (input: import("./api").CreateBrowserLaneInput) =>
+			ipcRenderer.invoke("browser-lanes:create", input),
 		createRemote: (input: import("./api").CreateRemoteBrowserLaneInput) =>
 			ipcRenderer.invoke("browser-lanes:create-remote", input),
 		ensure: (laneId: string) => ipcRenderer.invoke("browser-lanes:ensure", laneId),

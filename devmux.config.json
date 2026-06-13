@@ -1,12 +1,20 @@
 {
 	"version": 1,
 	"project": "elf",
+	"proxy": {
+		"enabled": true,
+		"hostnamePattern": "{service}.{project}.localhost"
+	},
+	"defaults": {
+		"startupTimeoutSeconds": 120
+	},
 	"services": {
 		"server": {
 			"cwd": "apps/server",
 			"command": "bun run dev",
 			"health": { "type": "port", "port": 30206 },
 			"dependsOn": [],
+			"proxy": true,
 			"env": {
 				"PORT": "30206",
 				"OPENCODE_PORT": "4096",
@@ -19,9 +27,16 @@
 			"command": "bun run dev:web",
 			"health": { "type": "port", "port": 20883 },
 			"dependsOn": ["server"],
+			"proxy": true,
 			"env": {
 				"PORT": "20883"
 			}
+		},
+		"storybook": {
+			"cwd": ".",
+			"command": "bun run storybook",
+			"health": { "type": "port", "port": 6006 },
+			"proxy": true
 		},
 		"desktop": {
 			"cwd": "apps/desktop",

@@ -11,11 +11,11 @@ export interface OpenCodeServerInfo {
 	managed: boolean
 }
 
-export type BrowserLaneMode = "local" | "remote"
-
-export type BrowserLaneRuntime = "docker-chromium" | "remote-attached"
-
 export type BrowserLaneSurfaceKind = "selkies-stream" | "direct-iframe"
+
+export type BrowserLaneRuntimeOwnership = "managed-local" | "attached"
+
+export type BrowserLaneDeploymentLocation = "local" | "remote" | "unknown"
 
 export type BrowserLaneStatus =
 	| "installing"
@@ -45,10 +45,11 @@ export interface BrowserLaneHealth {
 export interface BrowserLane {
 	id: string
 	label: string
-	mode: BrowserLaneMode
-	runtime: BrowserLaneRuntime
 	surfaceKind: BrowserLaneSurfaceKind
+	runtimeOwnership: BrowserLaneRuntimeOwnership
+	deploymentLocation: BrowserLaneDeploymentLocation
 	streamPath: string
+	targetUrl: string | null
 	streamBackendUrl: string | null
 	desktopStreamUrl?: string | null
 	cdpEndpoint: string | null
@@ -96,9 +97,10 @@ export interface GenUiArtifactRecord {
 export interface BrowserLaneRecord {
 	id: string
 	label: string
-	mode: BrowserLaneMode
-	runtime: BrowserLaneRuntime
-	surfaceKind?: BrowserLaneSurfaceKind
+	surfaceKind: BrowserLaneSurfaceKind
+	runtimeOwnership: BrowserLaneRuntimeOwnership
+	deploymentLocation: BrowserLaneDeploymentLocation
+	targetUrl: string | null
 	streamBackendUrl: string | null
 	cdpEndpoint: string | null
 	profilePath: string | null
@@ -107,14 +109,22 @@ export interface BrowserLaneRecord {
 	updatedAt: number
 }
 
-export interface CreateRemoteBrowserLaneInput {
+export interface CreateBrowserLaneInput {
 	id: string
 	label: string
-	surfaceKind?: BrowserLaneSurfaceKind
-	streamBackendUrl: string
+	surfaceKind: BrowserLaneSurfaceKind
+	runtimeOwnership: BrowserLaneRuntimeOwnership
+	targetUrl?: string | null
+	streamBackendUrl?: string | null
 	cdpEndpoint: string | null
+	deploymentLocation: BrowserLaneDeploymentLocation
 	host?: string | null
 	profilePath?: string | null
+}
+
+export interface CreateRemoteBrowserLaneInput
+	extends Omit<CreateBrowserLaneInput, "runtimeOwnership" | "deploymentLocation"> {
+	deploymentLocation?: BrowserLaneDeploymentLocation
 }
 
 export interface BrowserLaneTab {
@@ -1133,6 +1143,7 @@ export interface ElfAPI {
 	getActiveOpenCodeSessions: () => Promise<ActiveOpenCodeSessionsSnapshot>
 	browserLanes: {
 		list: () => Promise<BrowserLane[]>
+		create: (input: CreateBrowserLaneInput) => Promise<BrowserLane>
 		createRemote: (input: CreateRemoteBrowserLaneInput) => Promise<BrowserLane>
 		ensure: (laneId: string) => Promise<BrowserLane>
 		start: (laneId: string) => Promise<BrowserLane>

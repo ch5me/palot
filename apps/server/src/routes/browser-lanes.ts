@@ -11,12 +11,46 @@ import {
 	navigateBrowserLaneCdp,
 } from "../services/browser-lane-cdp"
 
+type BrowserLaneSurfaceKind = "selkies-stream" | "direct-iframe"
+type BrowserLaneRuntimeOwnership = "managed-local" | "attached"
+type BrowserLaneDeploymentLocation = "local" | "remote" | "unknown"
+
+interface BrowserLaneRecord {
+	id: string
+	label: string
+	surfaceKind: BrowserLaneSurfaceKind
+	runtimeOwnership: BrowserLaneRuntimeOwnership
+	deploymentLocation: BrowserLaneDeploymentLocation
+	targetUrl: string | null
+	streamBackendUrl: string | null
+	cdpEndpoint: string | null
+	profilePath: string | null
+	host: string | null
+	createdAt: number
+	updatedAt: number
+}
+
+interface LegacyBrowserLaneRecord {
+	id: string
+	label: string
+	mode?: "local" | "remote"
+	runtime?: "docker-chromium" | "remote-attached"
+	surfaceKind?: BrowserLaneSurfaceKind
+	streamBackendUrl: string | null
+	cdpEndpoint?: string | null
+	profilePath?: string | null
+	host?: string | null
+	createdAt?: number
+	updatedAt?: number
+}
+
 interface BrowserLaneRouteEntry {
 	id: string
 	label: string
-	mode: "local" | "remote"
-	runtime: "docker-chromium" | "remote-attached"
 	surfaceKind: "selkies-stream" | "direct-iframe"
+	runtimeOwnership: "managed-local" | "attached"
+	deploymentLocation: "local" | "remote" | "unknown"
+	targetUrl: string | null
 	streamBackendUrl: string | null
 	streamPath: string
 	desktopStreamUrl: string | null
@@ -29,19 +63,25 @@ interface BrowserLaneRouteEntry {
 
 interface BrowserLaneRegistryFile {
 	version: number
-	lanes: Array<{
-		id: string
-		label: string
-		mode?: "local" | "remote"
-		runtime?: "docker-chromium" | "remote-attached"
-		surfaceKind?: "selkies-stream" | "direct-iframe"
-		streamBackendUrl: string | null
-		cdpEndpoint?: string | null
-		profilePath?: string | null
-		host?: string | null
-		createdAt?: number
-		updatedAt?: number
-	}>
+	lanes: BrowserLaneRecord[]
+}
+
+function createDefaultRecord(): BrowserLaneRecord {
+	const now = Date.now()
+	return {
+		id: "default",
+		label: "Default",
+		surfaceKind: "selkies-stream",
+		runtimeOwnership: "managed-local",
+		deploymentLocation: "local",
+		targetUrl: null,
+		streamBackendUrl: null,
+		cdpEndpoint: null,
+		profilePath: null,
+		host: "127.0.0.1",
+		createdAt: now,
+		updatedAt: now,
+	}
 }
 
 const app = new Hono()
@@ -49,47 +89,162 @@ export const LOCAL_LANE_AUTH_HEADER = `Basic ${Buffer.from("abc:abc").toString("
 const BROWSER_LANE_PAGE_SHIM = `<script data-elf-browser-lane-shim>(()=>{const warn=console.warn.bind(console);console.warn=(...args)=>{if(args[0]==="Received non-object message via window.postMessage:"&&typeof args[1]==="string"&&args[1].startsWith("setImmediate$"))return;warn(...args)};const HIDE_SELECTORS=["#nav",".nav",".sidebar","[class*='sidebar']","[class*='SideBar']","[class*='control-bar']","[class*='control_bar']","[class*='toolbar']","[aria-label='Sidebar']","[title='Sidebar']"];const HIDE_TEXT=["Selkies Logo","Selkies","Toggle Theme","Enter Fullscreen","Gaming Mode","Video Settings","Screen Settings","Audio Settings","Stats","Clipboard","Files","Apps","Sharing","Gamepads","Disable Video Stream","Disable Audio Stream","Enable Microphone","Disable Gamepad Input"];const injectStyle=()=>{if(document.getElementById("elf-browser-lane-style"))return;const style=document.createElement("style");style.id="elf-browser-lane-style";style.textContent="html,body{background:#000!important;overflow:hidden!important;}iframe{border:0!important;}#nav,.nav,[class*='sidebar'],[class*='SideBar'],[class*='control-bar'],[class*='control_bar'],[class*='toolbar']{display:none!important;visibility:hidden!important;pointer-events:none!important;}[data-elf-browser-main]{position:fixed!important;inset:0!important;width:100vw!important;height:100vh!important;margin:0!important;border:0!important;}";document.head.appendChild(style)};const shouldHideByText=(text)=>HIDE_TEXT.includes((text||"").trim());const hideNode=(node)=>{if(!(node instanceof HTMLElement))return false;node.style.setProperty("display","none","important");node.style.setProperty("visibility","hidden","important");node.style.setProperty("pointer-events","none","important");node.setAttribute("data-elf-hidden","true");return true};const scan=()=>{injectStyle();for(const selector of HIDE_SELECTORS){document.querySelectorAll(selector).forEach((node)=>hideNode(node))}document.querySelectorAll("button,[role='button'],a,h1,h2,h3,div,span").forEach((node)=>{const element=node;const text=element.textContent?.trim()||"";if(text&&shouldHideByText(text)){const container=element.closest("button,[role='button'],a,section,header,aside,nav,div")||element;hideNode(container)}});const searchboxes=[...document.querySelectorAll("input[type='text'],input[type='search']")].filter((node)=>node instanceof HTMLElement);if(searchboxes.length>1){searchboxes.slice(0,-1).forEach((node)=>hideNode(node))}const candidates=[...document.querySelectorAll("canvas,video,img")].filter((node)=>node instanceof HTMLElement&&node.getBoundingClientRect().width>200&&node.getBoundingClientRect().height>120);let best=null;for(const node of candidates){const rect=node.getBoundingClientRect();if(!best||rect.width*rect.height>best.rect.width*best.rect.height){best={node,rect}}}if(best){const target=(best.node.closest("main,section,article,div")||best.node);if(target instanceof HTMLElement){target.setAttribute("data-elf-browser-main","true")}}};const setEditableValue=(target,text)=>{if(target instanceof HTMLInputElement||target instanceof HTMLTextAreaElement){const start=target.selectionStart??target.value.length;const end=target.selectionEnd??start;target.setRangeText(text,start,end,"end");target.dispatchEvent(new Event("input",{bubbles:true}));return true}return false};const writeHostClipboard=async(text)=>{if(typeof text!=="string")return;const value=text.trim();if(!value)return;try{if(window.parent!==window&&window.parent?.postMessage){window.parent.postMessage({type:"elf-browser-lane-clipboard-copy",text:value},"*")}}catch(error){warn("elf browser lane parent clipboard bridge failed",error)}};document.addEventListener("copy",()=>{const text=window.getSelection?.()?.toString()||"";void writeHostClipboard(text)},true);document.addEventListener("cut",()=>{const text=window.getSelection?.()?.toString()||"";void writeHostClipboard(text)},true);window.addEventListener("message",(event)=>{const data=event.data;if(!data||typeof data!=="object")return;if(data.type==="elf-browser-lane-host-paste"&&typeof data.text==="string"){const target=document.activeElement;if(setEditableValue(target,data.text))return;document.execCommand?.("insertText",false,data.text)}});const start=()=>{scan();const observer=new MutationObserver(()=>scan());observer.observe(document.documentElement,{childList:true,subtree:true,attributes:true});window.addEventListener("load",scan,{once:true});setTimeout(scan,250);setTimeout(scan,1000)};if(document.readyState==="loading"){document.addEventListener("DOMContentLoaded",start,{once:true})}else{start()}})();</script>`
 const activeBrowserLaneTabIds = new Map<string, string | null>()
 
-function inferSurfaceKind(input: {
-	surfaceKind?: "selkies-stream" | "direct-iframe"
-	cdpEndpoint?: string | null
-}) {
-	if (input.surfaceKind) {
-		return input.surfaceKind
+function assertValidBrowserLaneRecord(record: BrowserLaneRecord): void {
+	if (record.surfaceKind === "direct-iframe" && record.runtimeOwnership === "managed-local") {
+		throw new Error("direct-iframe lanes must use attached runtime ownership")
 	}
+	if (record.surfaceKind === "direct-iframe" && !record.targetUrl) {
+		throw new Error("direct-iframe lanes require targetUrl")
+	}
+	if (record.surfaceKind === "direct-iframe" && record.streamBackendUrl) {
+		throw new Error("direct-iframe lanes must not set streamBackendUrl")
+	}
+	if (
+		record.surfaceKind === "selkies-stream" &&
+		record.runtimeOwnership === "attached" &&
+		!record.streamBackendUrl
+	) {
+		throw new Error("attached Selkies lanes require streamBackendUrl")
+	}
+	if (record.surfaceKind === "selkies-stream" && record.targetUrl) {
+		throw new Error("selkies-stream lanes must not set targetUrl")
+	}
+	if (record.runtimeOwnership === "managed-local" && record.deploymentLocation !== "local") {
+		throw new Error("managed-local lanes must use local deploymentLocation")
+	}
+}
+
+function getBrowserLaneSurfaceKind(input: {
+	surfaceKind?: BrowserLaneSurfaceKind
+	runtime?: "docker-chromium" | "remote-attached"
+	cdpEndpoint?: string | null
+}): BrowserLaneSurfaceKind {
+	if (input.surfaceKind) return input.surfaceKind
+	if (input.runtime === "docker-chromium") return "selkies-stream"
 	return input.cdpEndpoint ? "selkies-stream" : "direct-iframe"
+}
+
+function inferLegacyRuntimeOwnership(record: LegacyBrowserLaneRecord): BrowserLaneRuntimeOwnership {
+	if (record.mode === "local" || record.runtime === "docker-chromium") {
+		return "managed-local"
+	}
+	return "attached"
+}
+
+function inferLegacyDeploymentLocation(record: LegacyBrowserLaneRecord): BrowserLaneDeploymentLocation {
+	const host = record.host?.trim()
+	if (!host) {
+		return record.mode === "local" ? "local" : "unknown"
+	}
+	if (host === "127.0.0.1" || host === "localhost" || host === "::1") {
+		return "local"
+	}
+	return "remote"
+}
+
+function migrateBrowserLaneRecord(
+	record: BrowserLaneRecord | LegacyBrowserLaneRecord,
+): BrowserLaneRecord {
+	if ("runtimeOwnership" in record && "deploymentLocation" in record && "targetUrl" in record) {
+		assertValidBrowserLaneRecord(record)
+		return record
+	}
+	const surfaceKind = getBrowserLaneSurfaceKind(record)
+	const migrated: BrowserLaneRecord = {
+		id: record.id,
+		label: record.label,
+		surfaceKind,
+		runtimeOwnership: inferLegacyRuntimeOwnership(record),
+		deploymentLocation: inferLegacyDeploymentLocation(record),
+		targetUrl: surfaceKind === "direct-iframe" ? record.streamBackendUrl : null,
+		streamBackendUrl: surfaceKind === "selkies-stream" ? record.streamBackendUrl : null,
+		cdpEndpoint: record.cdpEndpoint ?? null,
+		profilePath: record.profilePath ?? null,
+		host: record.host ?? null,
+		createdAt: record.createdAt ?? Date.now(),
+		updatedAt: record.updatedAt ?? record.createdAt ?? Date.now(),
+	}
+	assertValidBrowserLaneRecord(migrated)
+	return migrated
 }
 
 function normalizeRemoteLaneInput(input: {
 	id?: string
 	label?: string
 	surfaceKind?: "selkies-stream" | "direct-iframe"
-	streamBackendUrl?: string
+	targetUrl?: string | null
+	streamBackendUrl?: string | null
 	cdpEndpoint?: string | null
+	deploymentLocation?: "local" | "remote" | "unknown"
 	host?: string | null
 	profilePath?: string | null
 }) {
-	if (!input.id || !input.label || !input.streamBackendUrl) {
-		throw new Error("Remote lane requires id, label, and streamBackendUrl")
+	if (!input.id || !input.label || !input.surfaceKind) {
+		throw new Error("Remote lane requires id, label, and surfaceKind")
 	}
-	return {
+	if (input.surfaceKind === "direct-iframe" && !input.targetUrl) {
+		throw new Error("Direct iframe lane requires targetUrl")
+	}
+	if (input.surfaceKind === "selkies-stream" && !input.streamBackendUrl) {
+		throw new Error("Selkies stream lane requires streamBackendUrl")
+	}
+	const lane: BrowserLaneRecord = {
 		id: input.id,
 		label: input.label,
-		mode: "remote" as const,
-		runtime: "remote-attached" as const,
-		surfaceKind: inferSurfaceKind(input),
-		streamBackendUrl: input.streamBackendUrl,
+		surfaceKind: input.surfaceKind,
+		runtimeOwnership: "attached" as const,
+		deploymentLocation: input.deploymentLocation ?? "remote",
+		targetUrl: input.targetUrl ?? null,
+		streamBackendUrl: input.streamBackendUrl ?? null,
 		cdpEndpoint: input.cdpEndpoint ?? null,
 		profilePath: input.profilePath ?? null,
 		host: input.host ?? null,
 		createdAt: Date.now(),
 		updatedAt: Date.now(),
 	}
+	assertValidBrowserLaneRecord(lane)
+	return lane
+}
+
+function normalizeLaneInput(input: {
+	id?: string
+	label?: string
+	surfaceKind?: "selkies-stream" | "direct-iframe"
+	runtimeOwnership?: "managed-local" | "attached"
+	deploymentLocation?: "local" | "remote" | "unknown"
+	targetUrl?: string | null
+	streamBackendUrl?: string | null
+	cdpEndpoint?: string | null
+	host?: string | null
+	profilePath?: string | null
+}) {
+	if (!input.id || !input.label || !input.surfaceKind || !input.runtimeOwnership || !input.deploymentLocation) {
+		throw new Error(
+			"Browser lane create requires id, label, surfaceKind, runtimeOwnership, and deploymentLocation",
+		)
+	}
+	const lane: BrowserLaneRecord = {
+		id: input.id,
+		label: input.label,
+		surfaceKind: input.surfaceKind,
+		runtimeOwnership: input.runtimeOwnership,
+		deploymentLocation: input.deploymentLocation,
+		targetUrl: input.targetUrl ?? null,
+		streamBackendUrl: input.streamBackendUrl ?? null,
+		cdpEndpoint: input.cdpEndpoint ?? null,
+		profilePath: input.profilePath ?? null,
+		host: input.host ?? "127.0.0.1",
+		createdAt: Date.now(),
+		updatedAt: Date.now(),
+	}
+	assertValidBrowserLaneRecord(lane)
+	return lane
 }
 
 async function writeBrowserLaneRoutes(lanes: BrowserLaneRegistryFile["lanes"]): Promise<void> {
 	const registryPath = getRegistryPath()
 	await fs.mkdir(path.dirname(registryPath), { recursive: true })
-	const payload: BrowserLaneRegistryFile = { version: 1, lanes }
+	const payload: BrowserLaneRegistryFile = { version: 2, lanes }
 	await fs.writeFile(registryPath, JSON.stringify(payload, null, "\t"), "utf-8")
 }
 
@@ -102,31 +257,25 @@ async function readBrowserLaneRoutes(): Promise<BrowserLaneRouteEntry[]> {
 	try {
 		const raw = await fs.readFile(getRegistryPath(), "utf-8")
 		const data = JSON.parse(raw) as BrowserLaneRegistryFile
-		return Array.isArray(data.lanes)
-			? data.lanes.map((lane) => ({
-					id: lane.id,
-					label: lane.label,
-					mode: lane.mode ?? "local",
-					runtime: lane.runtime ?? "docker-chromium",
-					surfaceKind:
-						lane.surfaceKind ??
-						(lane.runtime === "docker-chromium"
-							? "selkies-stream"
-							: lane.cdpEndpoint
-								? "selkies-stream"
-								: "direct-iframe"),
-					streamBackendUrl: lane.streamBackendUrl,
-					streamPath: `/browser/${lane.id}/`,
-					desktopStreamUrl: `http://elf-browser-lane.local/browser/${lane.id}/`,
-					cdpEndpoint: lane.cdpEndpoint ?? null,
-					profilePath: lane.profilePath ?? null,
-					host: lane.host ?? null,
-					createdAt: lane.createdAt ?? 0,
-					updatedAt: lane.updatedAt ?? 0,
-				}))
-			: []
+		const lanes = Array.isArray(data.lanes) && data.lanes.length > 0 ? data.lanes : [createDefaultRecord()]
+		const migrated = lanes.map((entry) => migrateBrowserLaneRecord(entry))
+		await writeBrowserLaneRoutes(migrated)
+		return migrated.map((lane) => ({
+			...lane,
+			streamPath: `/browser/${lane.id}/`,
+			desktopStreamUrl:
+				lane.surfaceKind === "direct-iframe"
+					? lane.targetUrl
+					: `http://elf-browser-lane.local/browser/${lane.id}/`,
+		}))
 	} catch {
-		return []
+		const lanes = [createDefaultRecord()]
+		await writeBrowserLaneRoutes(lanes)
+		return lanes.map((lane) => ({
+			...lane,
+			streamPath: `/browser/${lane.id}/`,
+			desktopStreamUrl: `http://elf-browser-lane.local/browser/${lane.id}/`,
+		}))
 	}
 }
 
@@ -135,8 +284,9 @@ function normalizeUpstreamUrl(
 	remainder: string,
 	search = "",
 ): string | null {
-	if (!lane.streamBackendUrl) return null
-	const base = new URL(lane.streamBackendUrl)
+	const upstreamBase = lane.surfaceKind === "direct-iframe" ? lane.targetUrl : lane.streamBackendUrl
+	if (!upstreamBase) return null
+	const base = new URL(upstreamBase)
 	const cleaned = remainder.startsWith("/") ? remainder : `/${remainder}`
 	base.pathname = cleaned === "/" ? "/" : cleaned
 	base.search = search
@@ -314,26 +464,33 @@ const routes = app
 				id?: string
 				label?: string
 				surfaceKind?: "selkies-stream" | "direct-iframe"
-				streamBackendUrl?: string
+				runtimeOwnership?: "managed-local" | "attached"
+				targetUrl?: string | null
+				streamBackendUrl?: string | null
 				cdpEndpoint?: string | null
+				deploymentLocation?: "local" | "remote" | "unknown"
 				host?: string | null
 				profilePath?: string | null
 			}
 		}
-		if (body.action !== "create-remote") {
+		if (body.action !== "create-remote" && body.action !== "create") {
 			return c.json({ error: "Unsupported browser lane collection action" }, 400)
 		}
 		try {
-			const lane = normalizeRemoteLaneInput(body.lane ?? {})
+			const lane =
+				body.action === "create-remote"
+					? normalizeRemoteLaneInput(body.lane ?? {})
+					: normalizeLaneInput(body.lane ?? {})
 			const current = await readBrowserLaneRoutes()
 			const next = current
 				.filter((entry) => entry.id !== lane.id)
 				.map((entry) => ({
 					id: entry.id,
 					label: entry.label,
-					mode: entry.mode,
-					runtime: entry.runtime,
 					surfaceKind: entry.surfaceKind,
+					runtimeOwnership: entry.runtimeOwnership,
+					deploymentLocation: entry.deploymentLocation,
+					targetUrl: entry.targetUrl,
 					streamBackendUrl: entry.streamBackendUrl,
 					cdpEndpoint: entry.cdpEndpoint,
 					profilePath: entry.profilePath,
@@ -347,16 +504,19 @@ const routes = app
 			return c.json({
 				...lane,
 				streamPath: `/browser/${lane.id}/`,
-				desktopStreamUrl: `http://elf-browser-lane.local/browser/${lane.id}/`,
+				desktopStreamUrl:
+					lane.surfaceKind === "direct-iframe"
+						? lane.targetUrl
+						: `http://elf-browser-lane.local/browser/${lane.id}/`,
 				health: {
 					status:
 						lane.surfaceKind === "direct-iframe"
 							? "running"
 							: lane.cdpEndpoint
 								? "running"
-								: "degraded",
+							: "degraded",
 					stream: {
-						url: lane.streamBackendUrl,
+						url: lane.targetUrl ?? lane.streamBackendUrl,
 						checkedAt,
 						state: "ready",
 						error: null,
@@ -379,10 +539,10 @@ const routes = app
 					},
 					message:
 						lane.surfaceKind === "direct-iframe"
-							? "Direct iframe route attached"
+							? "Direct iframe ready"
 							: lane.cdpEndpoint
-								? "Remote stream attached, CDP ready"
-								: "Remote stream attached, CDP unavailable",
+								? "Attached stream and CDP ready"
+								: "Attached stream ready, CDP unavailable",
 				},
 			})
 		} catch (error) {
@@ -556,18 +716,21 @@ const routes = app
 							? "Lane starting"
 							: "Lane runtime prepared"
 		const checkedAt = Date.now()
+		const surfaceUrl = lane.targetUrl ?? lane.streamBackendUrl
 		return c.json(
 			{
 				...lane,
 				health: {
 					status:
 						action === "reset-profile"
-							? "profile-locked"
+							? lane.runtimeOwnership === "managed-local"
+								? "profile-locked"
+								: "error"
 							: action === "stop"
 								? "stopped"
 								: "starting",
 					stream: {
-						url: lane.streamBackendUrl,
+						url: surfaceUrl,
 						checkedAt,
 						state: action === "stop" || action === "reset-profile" ? "unknown" : "pending",
 						error: null,
@@ -580,7 +743,7 @@ const routes = app
 								? "unknown"
 								: lane.surfaceKind === "direct-iframe"
 									? "not-applicable"
-									: lane.mode === "remote"
+									: lane.runtimeOwnership === "attached"
 										? "ready"
 										: "pending",
 
@@ -600,13 +763,14 @@ const routes = app
 		}
 		const checkedAt = Date.now()
 		const directIframe = lane.surfaceKind === "direct-iframe"
-		const streamReady = Boolean(lane.streamBackendUrl)
+		const surfaceUrl = directIframe ? lane.targetUrl : lane.streamBackendUrl
+		const streamReady = Boolean(surfaceUrl)
 		const cdpReady = Boolean(lane.cdpEndpoint)
 		let streamProbeOk = streamReady
 		let cdpProbeOk = cdpReady
 		if (streamReady) {
 			try {
-				const res = await fetch(lane.streamBackendUrl as string, {
+				const res = await fetch(surfaceUrl as string, {
 					method: "HEAD",
 					signal: AbortSignal.timeout(2500),
 					headers: { authorization: `Basic ${Buffer.from("abc:abc").toString("base64")}` },
@@ -627,9 +791,9 @@ const routes = app
 				cdpProbeOk = false
 			}
 		}
-		const remoteFailure = lane.mode === "remote" && (!streamReady || !streamProbeOk)
+		const remoteFailure = lane.runtimeOwnership === "attached" && (!streamReady || !streamProbeOk)
 		const remoteDegraded =
-			lane.mode === "remote" &&
+			lane.runtimeOwnership === "attached" &&
 			!directIframe &&
 			streamReady &&
 			streamProbeOk &&
@@ -642,27 +806,29 @@ const routes = app
 				? "degraded"
 				: directIframeOk || localBothOk
 					? "running"
-					: lane.profilePath
+					: lane.runtimeOwnership === "managed-local" && lane.profilePath
 						? "profile-locked"
 						: "stopped"
 		const message = remoteFailure
-			? "Remote lane unreachable or not configured"
+			? directIframe
+				? "Direct iframe unreachable or not configured"
+				: "Attached lane unreachable or not configured"
 			: remoteDegraded
-				? "Remote stream reachable, CDP unavailable"
+				? "Attached stream ready, CDP unavailable"
 				: directIframeOk
-					? "Direct iframe reachable"
+					? "Direct iframe ready"
 					: localBothOk
-						? lane.mode === "remote"
-							? "Remote lane attached and reachable"
+						? lane.runtimeOwnership === "attached"
+							? "Attached stream and CDP ready"
 							: "Stream and CDP ready"
-						: lane.profilePath
-							? "Profile exists but runtime has not started yet"
-							: "Lane stopped"
+					: lane.runtimeOwnership === "managed-local" && lane.profilePath
+						? "Profile exists but runtime has not started yet"
+						: "Lane stopped"
 		return c.json(
 			{
 				status,
 				stream: {
-					url: lane.streamBackendUrl,
+					url: surfaceUrl,
 					checkedAt,
 					state: streamProbeOk ? "ready" : "failed",
 					error: streamProbeOk ? null : "Stream backend URL unreachable",

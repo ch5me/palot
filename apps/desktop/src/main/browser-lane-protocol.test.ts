@@ -7,5 +7,20 @@ test("browser lane desktop url uses same local origin path", () => {
 })
 
 test("browser lane desktop url uses loopback backend when ready", () => {
-	assert.equal(getBrowserLaneDesktopUrl("default", "http://127.0.0.1:58406"), "http://127.0.0.1:58406/")
+	assert.equal(
+		getBrowserLaneDesktopUrl("default", null, "http://127.0.0.1:58406"),
+		"http://127.0.0.1:58406/",
+	)
+})
+
+test("browser lane desktop url uses target url for direct iframe", () => {
+	assert.equal(
+		getBrowserLaneDesktopUrl(
+			"default",
+			"https://example.com/app",
+			null,
+			"direct-iframe",
+		),
+		"https://example.com/app",
+	)
 })

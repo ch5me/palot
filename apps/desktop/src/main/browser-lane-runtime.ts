@@ -125,7 +125,8 @@ export async function createBrowserLaneRuntimeConfig(
 		streamBackendUrl: `http://${DEFAULT_HOST}:${streamPort}`,
 		cdpEndpoint: `http://${DEFAULT_HOST}:${cdpPort}`,
 		auth: DEFAULT_AUTH,
-		startUrl: process.env.ELF_BROWSER_LANE_START_URL?.trim() || DEFAULT_START_URL,
+		startUrl:
+			record.targetUrl || process.env.ELF_BROWSER_LANE_START_URL?.trim() || DEFAULT_START_URL,
 	}
 }
 

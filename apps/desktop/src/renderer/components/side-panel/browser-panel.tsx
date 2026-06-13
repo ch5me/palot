@@ -28,6 +28,7 @@ import {
 	pushBrowserHistory,
 } from "../../atoms/browser"
 import {
+	createBrowserLane,
 	createRemoteBrowserLane,
 	ELF_SERVER_BASE_URL,
 	fetchBrowserLaneHealth,
@@ -42,8 +43,11 @@ import {
 } from "../../services/backend"
 import {
 	summarizeBrowserLaneHealth,
-	type BrowserLaneSurfaceKind,
 } from "../../../shared/browser-lanes"
+import {
+	createDefaultBrowserPanelFormState,
+	getBrowserPanelCreateFormViewModel,
+} from "./browser-panel-form"
 import type { Agent, BrowserLane, BrowserLaneHealth } from "../../lib/types"
 
 interface BrowserPanelProps {
@@ -55,10 +59,6 @@ const FALLBACK_URL = "about:blank"
 const USER_DEFAULT_URL = "https://example.com"
 const STARTUP_HEALTH_POLL_INTERVAL_MS = 1000
 const STARTUP_HEALTH_MAX_POLLS = 60
-
-function defaultSurfaceKindForCreateForm(streamBackendUrl: string, cdpEndpoint: string): BrowserLaneSurfaceKind {
-	return cdpEndpoint.trim() ? "selkies-stream" : streamBackendUrl.trim() ? "direct-iframe" : "selkies-stream"
-}
 
 function pickInitialUserUrl(persisted: string | undefined): string {
 	if (!persisted || persisted === FALLBACK_URL) return USER_DEFAULT_URL
@@ -86,23 +86,7 @@ export function BrowserPanel({ agent: _agent, className }: BrowserPanelProps) {
 	const [isLoading, setIsLoading] = useState(false)
 	const [loadFailure, setLoadFailure] = useState<string | null>(null)
 	const [isCreateOpen, setIsCreateOpen] = useState(false)
-	const [createForm, setCreateForm] = useState<{
-		id: string
-		label: string
-		surfaceKind: BrowserLaneSurfaceKind
-		streamBackendUrl: string
-		cdpEndpoint: string
-		host: string
-		profilePath: string
-	}>({
-		id: "",
-		label: "",
-		surfaceKind: "selkies-stream",
-		streamBackendUrl: "",
-		cdpEndpoint: "",
-		host: "",
-		profilePath: "",
-	})
+	const [createForm, setCreateForm] = useState(createDefaultBrowserPanelFormState)
 	const [createError, setCreateError] = useState<string | null>(null)
 	const [createBusy, setCreateBusy] = useState(false)
 
@@ -124,6 +108,11 @@ export function BrowserPanel({ agent: _agent, className }: BrowserPanelProps) {
 		[laneHealth],
 	)
 
+	const canRestartManagedLane = activeLane?.runtimeOwnership === "managed-local"
+	const canResetManagedProfile =
+		activeLane?.runtimeOwnership === "managed-local" && activeLane.surfaceKind === "selkies-stream"
+	const createFormView = useMemo(() => getBrowserPanelCreateFormViewModel(createForm), [createForm])
+
 	const panelState = useMemo(() => {
 		if (!activeLane) {
 			return {
@@ -137,8 +126,10 @@ export function BrowserPanel({ agent: _agent, className }: BrowserPanelProps) {
 				title: "Checking browser lane",
 				detail:
 					activeLane.surfaceKind === "direct-iframe"
-						? "Waiting for iframe reachability."
-						: "Waiting for stream and CDP status.",
+						? "Waiting for target reachability."
+						: activeLane.runtimeOwnership === "managed-local"
+							? "Waiting for managed stream and CDP status."
+							: "Waiting for attached stream and CDP status.",
 				showFrame: false,
 			}
 		}
@@ -151,28 +142,41 @@ export function BrowserPanel({ agent: _agent, className }: BrowserPanelProps) {
 		}
 		if (laneHealth.stream.state === "ready") {
 			return {
-				title: activeLane.surfaceKind === "direct-iframe" ? "Iframe live" : "Stream live",
+				title:
+					activeLane.surfaceKind === "direct-iframe"
+						? "Target live"
+						: activeLane.runtimeOwnership === "managed-local"
+							? "Managed stream live"
+							: "Attached stream live",
 				detail: healthSummary,
 				showFrame: true,
 			}
 		}
 		if (laneHealth.cdp.state === "ready") {
 			return {
-				title: "CDP alive, stream missing",
-				detail: "Restart or refresh lane route. Automation can connect but panel stream is stale.",
+				title: "CDP live, surface missing",
+				detail:
+					activeLane.runtimeOwnership === "managed-local"
+						? "Managed automation can connect, but the rendered stream is stale. Refresh or restart the lane."
+						: "Attached automation can connect, but the rendered stream is stale. Check the attached surface URL.",
 				showFrame: false,
 			}
 		}
 		if (laneHealth.status === "profile-locked") {
 			return {
-				title: "Profile waiting",
+				title: "Managed profile waiting",
 				detail: laneHealth.message,
 				showFrame: false,
 			}
 		}
 		if (laneHealth.status === "error") {
 			return {
-				title: "Browser lane broken",
+				title:
+					activeLane.surfaceKind === "direct-iframe"
+						? "Browser target unreachable"
+						: activeLane.runtimeOwnership === "managed-local"
+							? "Managed browser lane broken"
+							: "Attached browser lane unavailable",
 				detail: laneHealth.message,
 				showFrame: false,
 			}
@@ -215,7 +219,7 @@ export function BrowserPanel({ agent: _agent, className }: BrowserPanelProps) {
 			setLaneHealth(health)
 			if (
 				health.status === "profile-locked" ||
-				(health.status === "stopped" && activeLane.mode === "local" && activeLane.runtime === "docker-chromium")
+				(health.status === "stopped" && activeLane.runtimeOwnership === "managed-local")
 			) {
 				autoStartAttemptedRef.current.delete(activeLane.id)
 			}
@@ -233,7 +237,7 @@ export function BrowserPanel({ agent: _agent, className }: BrowserPanelProps) {
 	useEffect(() => {
 		if (!activeLane) return
 		if (activeLane.surfaceKind === "direct-iframe") return
-		if (activeLane.mode !== "local" || activeLane.runtime !== "docker-chromium") return
+		if (activeLane.runtimeOwnership !== "managed-local") return
 		if (autoStartAttemptedRef.current.has(activeLane.id)) return
 		const health = laneHealth
 		if (!health) return
@@ -266,7 +270,7 @@ export function BrowserPanel({ agent: _agent, className }: BrowserPanelProps) {
 	useEffect(() => {
 		if (!activeLane) return
 		if (activeLane.surfaceKind === "direct-iframe") return
-		if (activeLane.mode !== "local" || activeLane.runtime !== "docker-chromium") return
+		if (activeLane.runtimeOwnership !== "managed-local") return
 		if (!laneHealth) return
 		if (laneHealth.status === "error") return
 		if (laneHealth.stream.state === "ready" && laneHealth.cdp.state === "ready") {
@@ -378,6 +382,7 @@ export function BrowserPanel({ agent: _agent, className }: BrowserPanelProps) {
 
 	const handleRestart = async () => {
 		if (!activeLane) return
+		if (activeLane.runtimeOwnership !== "managed-local") return
 		startupHealthPollAttemptsRef.current.delete(activeLane.id)
 		setLoadFailure(null)
 		setIsLoading(true)
@@ -394,6 +399,7 @@ export function BrowserPanel({ agent: _agent, className }: BrowserPanelProps) {
 
 	const handleResetProfile = async () => {
 		if (!activeLane) return
+		if (activeLane.runtimeOwnership !== "managed-local") return
 		startupHealthPollAttemptsRef.current.delete(activeLane.id)
 		setLoadFailure(null)
 		setIsLoading(true)
@@ -449,30 +455,36 @@ export function BrowserPanel({ agent: _agent, className }: BrowserPanelProps) {
 		setCreateError(null)
 		const id = createForm.id.trim()
 		const label = createForm.label.trim() || id
+		const targetUrl = createForm.targetUrl.trim()
 		const streamBackendUrl = createForm.streamBackendUrl.trim()
 		const cdpEndpoint = createForm.cdpEndpoint.trim() || null
+		const runtimeOwnership = createFormView.runtimeOwnership
+		const deploymentLocation = createFormView.deploymentLocation
 		if (!id) {
 			setCreateError("Lane id is required")
 			return
 		}
-		if (!streamBackendUrl) {
-			setCreateError(
-				createForm.surfaceKind === "direct-iframe"
-					? "Target URL is required"
-					: "Stream backend URL is required",
-			)
+		if (createForm.surfaceKind === "direct-iframe" && !targetUrl) {
+			setCreateError("Target URL is required")
+			return
+		}
+		if (createForm.surfaceKind === "selkies-stream" && !streamBackendUrl) {
+			setCreateError("Stream backend URL is required")
 			return
 		}
 		setCreateBusy(true)
 		try {
-			const lane = await createRemoteBrowserLane({
+			const lane = await createBrowserLane({
 				id,
 				label,
 				surfaceKind: createForm.surfaceKind,
-				streamBackendUrl,
+				runtimeOwnership,
+				targetUrl: createForm.surfaceKind === "direct-iframe" ? targetUrl : null,
+				streamBackendUrl: createForm.surfaceKind === "direct-iframe" ? null : streamBackendUrl,
 				cdpEndpoint,
-				host: createForm.host.trim() || null,
-				profilePath: createForm.profilePath.trim() || null,
+				deploymentLocation,
+				host: null,
+				profilePath: null,
 			})
 			setLaneList((current) => {
 				const filtered = current.filter((entry) => entry.id !== lane.id)
@@ -481,15 +493,7 @@ export function BrowserPanel({ agent: _agent, className }: BrowserPanelProps) {
 			setActiveLaneId(lane.id)
 			setIsCreateOpen(false)
 
-			setCreateForm({
-				id: "",
-				label: "",
-				surfaceKind: "selkies-stream",
-				streamBackendUrl: "",
-				cdpEndpoint: "",
-				host: "",
-				profilePath: "",
-			})
+			setCreateForm(createDefaultBrowserPanelFormState())
 		} catch (error) {
 			setCreateError(error instanceof Error ? error.message : String(error))
 		} finally {
@@ -559,9 +563,9 @@ export function BrowserPanel({ agent: _agent, className }: BrowserPanelProps) {
 						</DropdownMenuTrigger>
 						<DropdownMenuContent align="end" className="w-64">
 							<div className="px-2 py-1.5 text-[11px] text-muted-foreground">
-								<div className="truncate font-medium text-foreground">{activeLane?.label ?? "No lane"}</div>
-								<div className="truncate">{currentUrl || FALLBACK_URL}</div>
-								{laneHealth ? <div className="mt-1 truncate">{panelState.title}: {panelState.detail}</div> : null}
+							<div className="truncate font-medium text-foreground">{activeLane?.label ?? "No lane"}</div>
+							<div className="truncate">{currentUrl || FALLBACK_URL}</div>
+							{laneHealth ? <div className="mt-1 truncate">{panelState.title}: {panelState.detail}</div> : null}
 							</div>
 							<DropdownMenuSeparator />
 							<div className="px-2 py-1.5">
@@ -578,9 +582,9 @@ export function BrowserPanel({ agent: _agent, className }: BrowserPanelProps) {
 									))}
 								</select>
 							</div>
-							<DropdownMenuItem onClick={() => void handleRestart()}>
+							<DropdownMenuItem onClick={() => void handleRestart()} disabled={!canRestartManagedLane}>
 								<RotateCcwIcon className="size-3.5" aria-hidden="true" />
-								Restart lane
+								{activeLane?.runtimeOwnership === "managed-local" ? "Restart managed lane" : "Restart unavailable for attached lanes"}
 							</DropdownMenuItem>
 							<DropdownMenuItem onClick={() => void handlePasteFromHost()}>
 								Paste host clipboard
@@ -595,8 +599,10 @@ export function BrowserPanel({ agent: _agent, className }: BrowserPanelProps) {
 							<DropdownMenuItem onClick={handleReset} disabled={currentUrl === FALLBACK_URL}>
 								Reset URL
 							</DropdownMenuItem>
-							<DropdownMenuItem onClick={() => void handleResetProfile()}>
-								Reset profile
+							<DropdownMenuItem onClick={() => void handleResetProfile()} disabled={!canResetManagedProfile}>
+								{activeLane?.runtimeOwnership === "managed-local"
+									? "Reset managed profile"
+									: "Profile reset unavailable for attached lanes"}
 							</DropdownMenuItem>
 						</DropdownMenuContent>
 					</DropdownMenu>
@@ -614,7 +620,7 @@ export function BrowserPanel({ agent: _agent, className }: BrowserPanelProps) {
 						onSubmit={handleCreateLane}
 						className="mx-2 mt-2 flex flex-col gap-2 rounded-md border border-border/70 bg-muted/20 p-3 text-xs"
 					>
-						<div className="font-medium text-foreground">Register remote browser lane</div>
+						<div className="font-medium text-foreground">Configure browser lane</div>
 						<div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
 							<label className="flex flex-col gap-1 text-foreground">
 								<span className="text-[11px] text-muted-foreground">ID (required)</span>
@@ -642,7 +648,7 @@ export function BrowserPanel({ agent: _agent, className }: BrowserPanelProps) {
 									onChange={(event) =>
 										setCreateForm((form) => ({
 											...form,
-											surfaceKind: event.target.value as BrowserLaneSurfaceKind,
+											surfaceKind: event.target.value as typeof form.surfaceKind,
 										}))
 									}
 									className="h-8 w-full rounded-md border border-border bg-background px-2 text-xs text-foreground"
@@ -652,70 +658,88 @@ export function BrowserPanel({ agent: _agent, className }: BrowserPanelProps) {
 								</select>
 							</label>
 							<label className="flex flex-col gap-1 text-foreground sm:col-span-2">
+								<span className="text-[11px] text-muted-foreground">Runtime ownership</span>
+								<select
+									value={createFormView.runtimeOwnership}
+									onChange={(event) =>
+										setCreateForm((form) => ({
+											...form,
+											runtimeOwnership: event.target.value as typeof form.runtimeOwnership,
+										}))
+									}
+									className="h-8 w-full rounded-md border border-border bg-background px-2 text-xs text-foreground"
+								>
+									{createFormView.runtimeOwnershipOptions.map((option) => (
+										<option key={option} value={option}>
+											{option === "attached" ? "Attach to existing runtime" : "Managed local runtime"}
+										</option>
+									))}
+								</select>
+							</label>
+							{createFormView.showDeploymentLocation ? (
+								<label className="flex flex-col gap-1 text-foreground sm:col-span-2">
+									<span className="text-[11px] text-muted-foreground">Deployment location</span>
+									<select
+										value={createForm.deploymentLocation}
+										onChange={(event) =>
+											setCreateForm((form) => ({
+												...form,
+												deploymentLocation: event.target.value as typeof form.deploymentLocation,
+											}))
+										}
+										className="h-8 w-full rounded-md border border-border bg-background px-2 text-xs text-foreground"
+									>
+										<option value="remote">Remote</option>
+										<option value="local">Local</option>
+										<option value="unknown">Unknown</option>
+									</select>
+								</label>
+							) : (
+								<div className="sm:col-span-2 rounded-md border border-border/60 bg-background/50 px-2 py-2 text-[11px] text-muted-foreground">
+									Managed local lanes always run on the local machine and fill runtime details automatically.
+								</div>
+							)}
+							<label className="flex flex-col gap-1 text-foreground sm:col-span-2">
 								<span className="text-[11px] text-muted-foreground">
-									{createForm.surfaceKind === "direct-iframe"
+									{createFormView.showTargetUrl
 										? "Target URL (required)"
-										: "Stream backend URL (required)"}
+										: createFormView.runtimeOwnership === "managed-local"
+											? "Initial page URL (optional)"
+											: "Stream backend URL (required)"}
 								</span>
 								<Input
-									value={createForm.streamBackendUrl}
+									value={createFormView.showTargetUrl ? createForm.targetUrl : createForm.streamBackendUrl}
 									onChange={(event) =>
-										setCreateForm((form) => ({
-											...form,
-											streamBackendUrl: event.target.value,
-											surfaceKind: defaultSurfaceKindForCreateForm(
-												event.target.value,
-												form.cdpEndpoint,
-											),
-										}))
+										setCreateForm((form) =>
+											createFormView.showTargetUrl
+												? { ...form, targetUrl: event.target.value }
+												: { ...form, streamBackendUrl: event.target.value },
+										)
 									}
 									placeholder={
-										createForm.surfaceKind === "direct-iframe"
+										createFormView.showTargetUrl
 											? "http://127.0.0.1:8077"
-											: "http://host:3000"
+											: createFormView.runtimeOwnership === "managed-local"
+												? "https://example.com"
+												: "http://host:3000"
 									}
 									className="h-8"
-									required
+									required={createFormView.showTargetUrl || createFormView.runtimeOwnership === "attached"}
 								/>
 							</label>
-							<label className="flex flex-col gap-1 text-foreground">
-								<span className="text-[11px] text-muted-foreground">CDP endpoint</span>
-								<Input
-									value={createForm.cdpEndpoint}
-									onChange={(event) =>
-										setCreateForm((form) => ({
-											...form,
-											cdpEndpoint: event.target.value,
-											surfaceKind: defaultSurfaceKindForCreateForm(
-												form.streamBackendUrl,
-												event.target.value,
-											),
-										}))
-									}
-									placeholder="http://host:9222"
-									className="h-8"
-								/>
-							</label>
-							<label className="flex flex-col gap-1 text-foreground">
-								<span className="text-[11px] text-muted-foreground">Host</span>
-								<Input
-									value={createForm.host}
-									onChange={(event) => setCreateForm((form) => ({ ...form, host: event.target.value }))}
-									placeholder="stream.example.com"
-									className="h-8"
-								/>
-							</label>
-							<label className="flex flex-col gap-1 text-foreground sm:col-span-2">
-								<span className="text-[11px] text-muted-foreground">Profile path</span>
-								<Input
-									value={createForm.profilePath}
-									onChange={(event) =>
-										setCreateForm((form) => ({ ...form, profilePath: event.target.value }))
-									}
-									placeholder="~/.local/share/elf/browser-profiles/remote"
-									className="h-8"
-								/>
-							</label>
+							{createFormView.showCdpEndpoint ? (
+								<label className="flex flex-col gap-1 text-foreground sm:col-span-2">
+									<span className="text-[11px] text-muted-foreground">CDP endpoint (optional)</span>
+									<Input
+										value={createForm.cdpEndpoint}
+										onChange={(event) =>
+											setCreateForm((form) => ({ ...form, cdpEndpoint: event.target.value }))
+										}
+										placeholder="http://host:9222"
+										className="h-8"
+									/>
+								</label>
+							) : null}
 						</div>
 						{createError ? (
 							<div className="flex items-start gap-2 rounded-md border border-destructive/30 bg-destructive/5 px-2 py-1.5 text-destructive">
@@ -770,13 +794,19 @@ export function BrowserPanel({ agent: _agent, className }: BrowserPanelProps) {
 							</div>
 							<div className="flex flex-wrap justify-center gap-2">
 								<Button type="button" variant="outline" size="sm" onClick={() => void handleRefresh()}>
-									Refresh route
+									{activeLane?.surfaceKind === "direct-iframe" ? "Refresh target" : "Refresh route"}
 								</Button>
-								<Button type="button" variant="outline" size="sm" onClick={() => void handleRestart()}>
-									Restart lane
+								<Button
+									type="button"
+									variant="outline"
+									size="sm"
+									onClick={() => void handleRestart()}
+									disabled={!canRestartManagedLane}
+								>
+									Restart managed lane
 								</Button>
 								<Button type="button" variant="outline" size="sm" onClick={handleOpenExternal} disabled={!canOpenExternal}>
-									Open diagnostics
+									{activeLane?.surfaceKind === "direct-iframe" ? "Open target" : "Open diagnostics"}
 								</Button>
 							</div>
 						</div>

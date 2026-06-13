@@ -9,8 +9,9 @@ const REGISTRY_FILE = path.join(getBrowserLaneConfigDir(), "lanes.json")
 
 interface BrowserLaneProtocolRecord {
 	id: string
+	targetUrl?: string | null
 	streamBackendUrl: string | null
-	mode?: "local" | "remote"
+	runtimeOwnership?: "managed-local" | "attached"
 	surfaceKind?: "selkies-stream" | "direct-iframe"
 }
 
@@ -33,12 +34,14 @@ async function resolveLaneRegistry(fetchImpl: typeof fetch): Promise<Map<string,
 	}
 	const lanes = (await response.json()) as Array<{
 		id: string
+		targetUrl: string | null
 		streamBackendUrl: string | null
+		surfaceKind: "selkies-stream" | "direct-iframe"
 	}>
 	return new Map(
 		lanes
-			.filter((lane) => lane.streamBackendUrl)
-			.map((lane) => [lane.id, lane.streamBackendUrl as string]),
+			.map((lane) => [lane.id, lane.surfaceKind === "direct-iframe" ? lane.targetUrl : lane.streamBackendUrl])
+			.filter((entry): entry is [string, string] => Boolean(entry[1])),
 	)
 }
 
@@ -67,7 +70,7 @@ function readLocalBrowserLaneStreamOrigins(): Set<string> {
 		const data = JSON.parse(fs.readFileSync(REGISTRY_FILE, "utf-8")) as BrowserLaneProtocolRegistry
 		return new Set(
 			(data.lanes ?? [])
-				.filter((lane) => lane.mode !== "remote")
+				.filter((lane) => lane.runtimeOwnership !== "attached")
 				.map((lane) => lane.streamBackendUrl)
 				.filter((url): url is string => Boolean(url))
 				.filter((url) => isLoopbackUrl(url))
@@ -155,11 +158,12 @@ export async function registerBrowserLaneProtocol(
 
 export function getBrowserLaneDesktopUrl(
 	laneId: string,
+	targetUrl?: string | null,
 	streamBackendUrl?: string | null,
 	surfaceKind?: "selkies-stream" | "direct-iframe",
 ): string {
-	if (surfaceKind === "direct-iframe" && streamBackendUrl) {
-		return streamBackendUrl
+	if (surfaceKind === "direct-iframe" && targetUrl) {
+		return targetUrl
 	}
 	if (streamBackendUrl && isLoopbackUrl(streamBackendUrl)) {
 		return new URL("/", streamBackendUrl).toString()

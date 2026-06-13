@@ -54,7 +54,7 @@ import { getDiscoveredServers } from "./mdns-scanner"
 import { bridgeActivity, listBridges } from "./bridges"
 import { deleteContact, loadCrmStore, saveContact } from "./crm"
 import { customerThread, listCustomers, sendMessage as sendInboxMessage } from "./inbox"
-import type { InboxChannel } from "../preload/api"
+import type { CreateBrowserLaneInput, CreateRemoteBrowserLaneInput, InboxChannel } from "../preload/api"
 import {
 	palotOpenSidePanelInputSchema,
 	publishBrowserActionInputSchema,
@@ -110,6 +110,7 @@ import {
 import {
 	activateBrowserLaneTab,
 	closeBrowserLaneTab,
+	createBrowserLane,
 	createBrowserLaneTab,
 	createRemoteBrowserLane,
 	ensureBrowserLane,
@@ -331,20 +332,17 @@ export function registerIpcHandlers(): void {
 		withLogging("browser-lanes:list", async () => await listBrowserLanes()),
 	)
 	ipcMain.handle(
+		"browser-lanes:create",
+		withLogging(
+			"browser-lanes:create",
+			async (_, input: CreateBrowserLaneInput) => await createBrowserLane(input),
+		),
+	)
+	ipcMain.handle(
 		"browser-lanes:create-remote",
 		withLogging(
 			"browser-lanes:create-remote",
-			async (
-				_,
-				input: {
-					id: string
-					label: string
-					streamBackendUrl: string
-					cdpEndpoint: string | null
-					host?: string | null
-					profilePath?: string | null
-				},
-			) => await createRemoteBrowserLane(input),
+			async (_, input: CreateRemoteBrowserLaneInput) => await createRemoteBrowserLane(input),
 		),
 	)
 	ipcMain.handle(

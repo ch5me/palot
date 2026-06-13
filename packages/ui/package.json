@@ -17,6 +17,8 @@
 	"scripts": {
 		"lint": "biome check .",
 		"check-types": "bunx tsgo --noEmit",
+		"storybook": "bun run --cwd ../storybook storybook",
+		"build:storybook": "bun run --cwd ../storybook build",
 		"clean": "rm -rf dist node_modules .turbo storybook-static"
 	},
 	"dependencies": {

@@ -11,12 +11,11 @@
 		"resolveJsonModule": true,
 		"isolatedModules": true,
 		"noEmit": true,
-		"noUnusedLocals": true,
-		"noUnusedParameters": true,
+		"types": ["node", "vite/client"],
 		"paths": {
-			"@ch5me/elf-ui/*": ["./src/*"]
+			"@ch5me/elf-ui/*": ["../ui/src/*"]
 		}
 	},
-	"include": ["src/**/*.ts", "src/**/*.tsx", "src/**/*.mdx"],
-	"exclude": ["node_modules", "dist"]
+	"include": [".storybook/**/*.ts", ".storybook/**/*.tsx", "src/**/*.ts", "src/**/*.tsx"],
+	"exclude": ["node_modules", "dist", "storybook-static"]
 }

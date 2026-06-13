@@ -41,18 +41,21 @@ export type {
 import type { BrowserLane as PreloadBrowserLane } from "../../preload/api"
 
 export type {
+	BrowserLaneDeploymentLocation,
 	BrowserLaneCapabilityReport,
 	BrowserLaneEndpoint,
 	BrowserLaneHealth,
-	BrowserLaneMode,
 	BrowserLaneReadiness,
 	BrowserLaneRecord,
-	BrowserLaneRuntime,
+	BrowserLaneRuntimeOwnership,
+	BrowserLaneSurfaceKind,
 	BrowserLaneStatus,
 	BrowserLaneTab,
 	BrowserLaneTabActionResult,
 	BrowserLaneTabsState,
+	CreateBrowserLaneInput,
 	CreateBrowserLaneTabInput,
+	CreateRemoteBrowserLaneInput,
 	NavigateBrowserLaneTabInput,
 } from "../../preload/api"
 

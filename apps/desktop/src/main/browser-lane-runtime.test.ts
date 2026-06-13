@@ -10,8 +10,10 @@ test("builds distinct stream and cdp endpoints", async () => {
 		{
 			id: "default",
 			label: "Default",
-			mode: "local",
-			runtime: "docker-chromium",
+			surfaceKind: "selkies-stream",
+			runtimeOwnership: "managed-local",
+			deploymentLocation: "local",
+			targetUrl: null,
 			streamBackendUrl: null,
 			cdpEndpoint: null,
 			profilePath: "/tmp/browser-profile-default",
@@ -33,6 +35,36 @@ test("builds distinct stream and cdp endpoints", async () => {
 	assert.match(config.cdpEndpoint, /:/)
 	assert.notEqual(config.streamBackendUrl, config.cdpEndpoint)
 	assert.equal(config.startUrl, "https://example.com")
+})
+
+test("managed-local runtime config honors explicit target url as start url", async () => {
+	const config = await createBrowserLaneRuntimeConfig(
+		{
+			id: "managed-target",
+			label: "Managed Target",
+			surfaceKind: "selkies-stream",
+			runtimeOwnership: "managed-local",
+			deploymentLocation: "local",
+			targetUrl: "https://example.com/start-here",
+			streamBackendUrl: null,
+			cdpEndpoint: null,
+			profilePath: "/tmp/browser-profile-default",
+			host: null,
+			createdAt: 1,
+			updatedAt: 2,
+		},
+		{
+			platform: process.platform,
+			localRuntimeSupported: true,
+			remoteAttachSupported: process.platform !== "win32",
+			docker: { installed: true, version: "Docker version 27" },
+			compose: { available: true, command: "docker compose", version: "v2" },
+			unsupportedReason: null,
+			remediation: null,
+		},
+	)
+
+	assert.equal(config.startUrl, "https://example.com/start-here")
 })
 
 test("renders persistent profile volume in compose", () => {

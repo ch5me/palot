@@ -15,6 +15,7 @@ import type {
 	BridgeActivityResult as BridgeActivityResultApi,
 	BridgesResult as BridgesResultApi,
 	BrowserActionEvent,
+	CreateBrowserLaneInput,
 	CrmContact,
 	CrmStore,
 	Customer,
@@ -238,6 +239,14 @@ export async function fetchBrowserLanes(): Promise<BrowserLane[]> {
 	}
 	const { fetchBrowserLanes: httpFetch } = await import("./elf-server")
 	return (await httpFetch()) as BrowserLane[]
+}
+
+export async function createBrowserLane(input: CreateBrowserLaneInput): Promise<BrowserLane> {
+	if (isElectron) {
+		return window.elf.browserLanes.create(input) as Promise<BrowserLane>
+	}
+	const { createBrowserLane: httpCreate } = await import("./elf-server")
+	return (await httpCreate(input)) as BrowserLane
 }
 
 export async function createRemoteBrowserLane(input: CreateRemoteBrowserLaneInput): Promise<BrowserLane> {

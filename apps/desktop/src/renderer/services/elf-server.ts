@@ -11,6 +11,7 @@ import {
 	Ch5PmAttentionActionError,
 	extractAttentionErrorMessage,
 } from "../ch5pm-dashboard/attention"
+import type { CreateBrowserLaneInput, CreateRemoteBrowserLaneInput } from "../../preload/api"
 
 export const ELF_SERVER_BASE_URL = "http://127.0.0.1:30206"
 const BASE_URL = ELF_SERVER_BASE_URL
@@ -89,14 +90,19 @@ export async function fetchBrowserLanes() {
 	return res.json()
 }
 
-export async function createRemoteBrowserLane(input: {
-	id: string
-	label: string
-	streamBackendUrl: string
-	cdpEndpoint: string | null
-	host?: string | null
-	profilePath?: string | null
-}) {
+export async function createBrowserLane(input: CreateBrowserLaneInput) {
+	const res = await fetch(`${BASE_URL}/browser`, {
+		method: "POST",
+		headers: { "Content-Type": "application/json" },
+		body: JSON.stringify({ action: "create", lane: input }),
+	})
+	if (!res.ok) {
+		throw new Error(`Browser lane create failed: ${res.status} ${res.statusText}`)
+	}
+	return res.json()
+}
+
+export async function createRemoteBrowserLane(input: CreateRemoteBrowserLaneInput) {
 	const res = await fetch(`${BASE_URL}/browser`, {
 		method: "POST",
 		headers: { "Content-Type": "application/json" },

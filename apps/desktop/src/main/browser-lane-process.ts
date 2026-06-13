@@ -130,17 +130,18 @@ export interface HealthFromProbeInput {
 	cdpReady: boolean
 	streamError: string | null
 	cdpError: string | null
-	mode: "local" | "remote"
+	runtimeOwnership: "managed-local" | "attached"
+	surfaceKind: "selkies-stream" | "direct-iframe"
 	profilePath: string | null
 	profileResetAt: number | null
 }
 
 export function buildHealthFromProbe(input: HealthFromProbeInput): BrowserLaneHealth {
 	const checkedAt = Date.now()
-	const { streamReady, cdpReady, mode, profilePath, profileResetAt } = input
+	const { streamReady, cdpReady, runtimeOwnership, surfaceKind, profilePath, profileResetAt } = input
 	let status: BrowserLaneHealth["status"]
 	let message: string
-	if (mode === "local") {
+	if (runtimeOwnership === "managed-local") {
 		if (streamReady && cdpReady) {
 			status = "running"
 			message = "Stream and CDP ready"
@@ -159,12 +160,21 @@ export function buildHealthFromProbe(input: HealthFromProbeInput): BrowserLaneHe
 			status = "stopped"
 			message = "Lane stopped"
 		}
+	} else if (surfaceKind === "direct-iframe") {
+		status = streamReady ? "running" : "error"
+		message = streamReady ? "Direct iframe ready" : "Direct iframe unreachable or not configured"
 	} else if (streamReady && cdpReady) {
+		status = "running"
+		message = "Attached stream and CDP ready"
+	} else if (streamReady) {
 		status = "degraded"
-		message = "Remote lane attached and reachable"
+		message = "Attached stream ready, CDP unavailable"
+	} else if (cdpReady) {
+		status = "degraded"
+		message = "Attached CDP ready, stream unavailable"
 	} else {
 		status = "error"
-		message = "Remote lane unreachable or not configured"
+		message = "Attached lane unreachable or not configured"
 	}
 	return {
 		status,
@@ -177,8 +187,9 @@ export function buildHealthFromProbe(input: HealthFromProbeInput): BrowserLaneHe
 		cdp: {
 			url: input.cdpUrl,
 			checkedAt,
-			state: cdpReady ? "ready" : "failed",
-			error: cdpReady ? null : input.cdpError,
+			state: surfaceKind === "direct-iframe" ? "not-applicable" : cdpReady ? "ready" : "failed",
+			error:
+				surfaceKind === "direct-iframe" ? null : cdpReady ? null : input.cdpError,
 		},
 		message,
 	}

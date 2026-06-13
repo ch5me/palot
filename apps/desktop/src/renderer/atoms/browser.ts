@@ -51,8 +51,8 @@ export function buildBrowserLaneDisplayUrl(
 	input: BrowserLaneDisplayUrlInput,
 	options: BrowserLaneDisplayUrlOptions = { isElectron: true },
 ): string {
-	if (input.surfaceKind === "direct-iframe" && input.streamBackendUrl) {
-		return input.streamBackendUrl
+	if (input.surfaceKind === "direct-iframe" && input.desktopStreamUrl) {
+		return input.desktopStreamUrl
 	}
 	if (options.isElectron && input.desktopStreamUrl) return input.desktopStreamUrl
 	if (!options.isElectron && options.backendBaseUrl) {
