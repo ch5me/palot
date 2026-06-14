@@ -1,0 +1,14 @@
+Task 2 — Stable host lifecycle callbacks
+
+Verification command:
+- `bun test apps/desktop/src/renderer/components/workspace-dock/stable-panel-host-runtime.test.ts`
+
+Lifecycle proof:
+- PASS
+- `fires lifecycle callbacks in stable order across hide, show, resize, and detach`
+- Callback order asserted for attach, visibility false/true, resize, and detach
+- Hidden `suspend` mode verified without remounting the protected host
+
+Type safety proof:
+- `bun run check-types`
+- PASS

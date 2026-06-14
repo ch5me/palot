@@ -171,3 +171,8 @@ readable. New workspace model can extend the snapshot but not break the old shap
 - Preserved old caller surface in `apps/desktop/src/renderer/atoms/ui.ts`; `openSidePanelTabAtom`, `sidePanelActiveTabAtom`, `sidePanelOpenAtom`, and `paneRoutingStateAtom` still compile as adapters over workspace state.
 - Widened `FireflySurfaceTarget` in `apps/desktop/src/renderer/lib/types.ts` so callers can target either legacy `side-panel` or future canonical `workspace-panel` routes without changing visible UI.
 - Command palette now opens via target-aware adapter atom, preserving current side-panel behavior while keeping future workspace-panel targets type-safe.
+
+## 7. TASK 2 IMPLEMENTATION NOTES (2026-06-13)
+- Added `apps/desktop/src/renderer/components/workspace-dock/stable-panel-host-runtime.ts` with explicit stable-host states (`detached`, `attaching`, `attached`, `suspended`, `unavailable`), attach/detach/resize lifecycle hooks, hidden-zone suspension policy, and remount instrumentation.
+- Added `apps/desktop/src/renderer/components/workspace-dock/reverse-portal-transport.tsx` as the first `SurfaceTransport` implementation, backed by `react-reverse-portal` and isolated behind a host-runtime seam so future `moveBefore()` transport can swap in without surface churn.
+- Added `apps/desktop/src/renderer/components/workspace-dock/stable-panel-host-runtime.test.ts` to prove remount preservation, lifecycle callback order, and remount detection memory for protected hosts.

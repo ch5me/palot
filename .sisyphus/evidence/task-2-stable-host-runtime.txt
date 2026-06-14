@@ -1,0 +1,21 @@
+Task 2 — Stable panel host runtime
+
+Changed files:
+- apps/desktop/src/renderer/components/workspace-dock/stable-panel-host-runtime.ts
+- apps/desktop/src/renderer/components/workspace-dock/reverse-portal-transport.tsx
+- apps/desktop/src/renderer/components/workspace-dock/stable-panel-host-runtime.test.ts
+- apps/desktop/package.json
+- bun.lock
+
+Verification command:
+- `bun test apps/desktop/src/renderer/components/workspace-dock/stable-panel-host-runtime.test.ts`
+
+Result:
+- PASS
+- 4 tests passed
+- remount-preservation proof covered by `reattaches a protected host without remounting`
+
+Notes:
+- Runtime keeps host identity stable per `hostId`
+- Transport seam is explicit via `SurfaceTransport`
+- Default transport path is `reverse-portal`
