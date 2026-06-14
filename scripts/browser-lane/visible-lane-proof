@@ -26,9 +26,9 @@ function getLaneEndpoints(laneId: string) {
 	)
 	return {
 		streamBackendUrl: `http://127.0.0.1:${env.STREAM_PORT}`,
-		cdpEndpoint: `http://127.0.0.1:${env.CDP_PORT}`,
-		cdpRelayEndpoint: env.CDP_CONTAINER_ENDPOINT || `http://127.0.0.1:${env.CDP_PORT}`,
-		cdpInternalEndpoint: env.CDP_INTERNAL_ENDPOINT || "http://127.0.0.1:9222",
+		hostPublishedCdpEndpoint: `http://127.0.0.1:${env.CDP_PORT}`,
+		relayCdpEndpoint: env.CDP_CONTAINER_ENDPOINT || `http://127.0.0.1:${env.CDP_PORT}`,
+		internalCdpEndpoint: env.CDP_INTERNAL_ENDPOINT || "http://127.0.0.1:9222",
 		auth: readBrowserLaneAuthFromEnv(env),
 	}
 }
@@ -49,7 +49,9 @@ try {
 		args.mode === "remote"
 			? {
 				streamBackendUrl: args.streamBackendUrl || "http://127.0.0.1:3000",
-				cdpEndpoint: args.cdpEndpoint || "http://127.0.0.1:9222",
+				hostPublishedCdpEndpoint: args.cdpEndpoint || "http://127.0.0.1:9222",
+				relayCdpEndpoint: args.cdpEndpoint || "http://127.0.0.1:9222",
+				internalCdpEndpoint: "http://127.0.0.1:9222",
 				auth:
 					args.streamUser && args.streamPassword
 						? { user: args.streamUser, password: args.streamPassword }
@@ -57,7 +59,7 @@ try {
 			}
 			: getLaneEndpoints(laneId)
 	const authHeader = endpoints.auth ? encodeBrowserLaneAuth(endpoints.auth) : undefined
-	const cdpRelayUrl = `${endpoints.cdpEndpoint}/json/version`
+	const hostPublishedCdpUrl = `${endpoints.hostPublishedCdpEndpoint}/json/version`
 	if (args.mode === "remote" && args.ssh) {
 		const streamProbe = await runRemoteCommand(
 			args.ssh,
@@ -65,11 +67,11 @@ try {
 				? `curl -sf -u ${JSON.stringify(endpoints.auth?.user)}:${JSON.stringify(endpoints.auth?.password)} ${JSON.stringify(endpoints.streamBackendUrl)}`
 				: `curl -sf ${JSON.stringify(endpoints.streamBackendUrl)}`,
 		)
-		const cdpProbe = await runRemoteCommand(
+		const hostPublishedCdpProbe = await runRemoteCommand(
 			args.ssh,
 			authHeader
-				? `curl -sf -u ${JSON.stringify(endpoints.auth?.user)}:${JSON.stringify(endpoints.auth?.password)} ${JSON.stringify(`${endpoints.cdpEndpoint}/json/version`)}`
-				: `curl -sf ${JSON.stringify(`${endpoints.cdpEndpoint}/json/version`)}`,
+				? `curl -sf -u ${JSON.stringify(endpoints.auth?.user)}:${JSON.stringify(endpoints.auth?.password)} ${JSON.stringify(hostPublishedCdpUrl)}`
+				: `curl -sf ${JSON.stringify(hostPublishedCdpUrl)}`,
 		)
 		writeFileSync(
 			output,
@@ -79,28 +81,34 @@ try {
 					laneId,
 					ssh: args.ssh,
 					streamUrl: endpoints.streamBackendUrl,
-					cdpUrl: cdpRelayUrl,
-					cdpRelayNote: "Host-published CDP is the relay listener; Chromium remains on container loopback 127.0.0.1:9222.",
+					hostPublishedCdpUrl,
+					relayCdpUrl: `${endpoints.relayCdpEndpoint}/json/version`,
+					internalCdpUrl: `${endpoints.internalCdpEndpoint}/json/version`,
+					naming: {
+						hostPublished: "Host port exposed to Palot and external clients.",
+						relay: "Managed listener that forwards host traffic into Chromium loopback.",
+						internal: "Chromium-owned loopback endpoint inside the container namespace.",
+					},
 					streamOk: streamProbe.code === 0,
-					cdpOk: cdpProbe.code === 0,
+					hostPublishedCdpOk: hostPublishedCdpProbe.code === 0,
 					streamStdout: streamProbe.stdout,
 					streamStderr: streamProbe.stderr,
-					cdpStdout: cdpProbe.stdout,
-					cdpStderr: cdpProbe.stderr,
+					hostPublishedCdpStdout: hostPublishedCdpProbe.stdout,
+					hostPublishedCdpStderr: hostPublishedCdpProbe.stderr,
 				},
 				null,
 				2,
 			),
 			"utf-8",
 		)
-		process.exit(streamProbe.code === 0 && cdpProbe.code === 0 ? 0 : 1)
+		process.exit(streamProbe.code === 0 && hostPublishedCdpProbe.code === 0 ? 0 : 1)
 	}
 	const [streamResponse, cdpResponse] = await Promise.all([
 		fetch(endpoints.streamBackendUrl, {
 			signal: AbortSignal.timeout(5000),
 			headers: authHeader ? { authorization: authHeader } : undefined,
 		}),
-		fetch(cdpRelayUrl, {
+		fetch(hostPublishedCdpUrl, {
 			signal: AbortSignal.timeout(5000),
 			headers: authHeader ? { authorization: authHeader } : undefined,
 		}),
@@ -114,13 +122,19 @@ try {
 				mode: args.mode,
 				laneId,
 				streamUrl: endpoints.streamBackendUrl,
-				cdpUrl: cdpRelayUrl,
-				cdpRelayNote: "Host-published CDP hits the relay listener; Chromium itself stays on container loopback 127.0.0.1:9222.",
+				hostPublishedCdpUrl,
+				relayCdpUrl: `${endpoints.relayCdpEndpoint}/json/version`,
+				internalCdpUrl: `${endpoints.internalCdpEndpoint}/json/version`,
+				naming: {
+					hostPublished: "Host port exposed to Palot and external clients.",
+					relay: "Managed listener that forwards host traffic into Chromium loopback.",
+					internal: "Chromium-owned loopback endpoint inside the container namespace.",
+				},
 				streamStatus: streamResponse.status,
-				cdpStatus: cdpResponse.status,
+				hostPublishedCdpStatus: cdpResponse.status,
 				streamContainsSignal,
 				streamBodyPreview: streamBody.slice(0, 1500),
-				cdpBody,
+				hostPublishedCdpBody: cdpBody,
 			},
 			null,
 			2,

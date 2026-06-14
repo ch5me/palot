@@ -78,9 +78,9 @@ console.log(JSON.stringify({
 	laneId,
 	streamBackendUrl: `http://127.0.0.1:${env.STREAM_PORT}`,
 	streamPath: `/browser/${laneId}/`,
-	cdpEndpoint: `http://127.0.0.1:${env.CDP_PORT}`,
-	cdpRelayEndpoint: env.CDP_CONTAINER_ENDPOINT || `http://127.0.0.1:${env.CDP_PORT}`,
-	cdpInternalEndpoint: env.CDP_INTERNAL_ENDPOINT || "http://127.0.0.1:9222",
+	hostPublishedCdpEndpoint: `http://127.0.0.1:${env.CDP_PORT}`,
+	relayCdpEndpoint: env.CDP_CONTAINER_ENDPOINT || `http://127.0.0.1:${env.CDP_PORT}`,
+	internalCdpEndpoint: env.CDP_INTERNAL_ENDPOINT || "http://127.0.0.1:9222",
 	cdpNotes: {
 		hostPublished: "Host CDP terminates at the managed relay listener.",
 		internalChromium: "Chromium itself stays on in-container loopback 127.0.0.1:9222.",

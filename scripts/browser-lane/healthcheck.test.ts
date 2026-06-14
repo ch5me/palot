@@ -3,11 +3,11 @@ import test from "node:test"
 
 function buildHealthcheckShape(input: {
 	streamBackendUrl: string
-	hostCdpEndpoint: string
-	relayContainerEndpoint: string
+	hostPublishedCdpEndpoint: string
+	relayCdpEndpoint: string
 	internalCdpEndpoint: string
 	stream: { ok: boolean; status: number; error?: string }
-	hostCdp: { ok: boolean; status: number }
+	hostPublishedCdp: { ok: boolean; status: number }
 	verboseInternal?: {
 		ok: boolean
 		status: number
@@ -21,25 +21,25 @@ function buildHealthcheckShape(input: {
 		laneId: "default",
 		streamBackendUrl: input.streamBackendUrl,
 		streamPath: "/browser/default/",
-		cdpEndpoint: input.hostCdpEndpoint,
-		cdp: input.hostCdp,
-		cdpRelay: {
-			url: input.relayContainerEndpoint,
-			ok: input.relayContainerEndpoint === input.hostCdpEndpoint ? input.hostCdp.ok : null,
-			status: input.relayContainerEndpoint === input.hostCdpEndpoint ? input.hostCdp.status : null,
+		hostPublishedCdpEndpoint: input.hostPublishedCdpEndpoint,
+		hostPublishedCdp: input.hostPublishedCdp,
+		relayCdp: {
+			url: input.relayCdpEndpoint,
+			ok: input.relayCdpEndpoint === input.hostPublishedCdpEndpoint ? input.hostPublishedCdp.ok : null,
+			status: input.relayCdpEndpoint === input.hostPublishedCdpEndpoint ? input.hostPublishedCdp.status : null,
 			note:
-				input.relayContainerEndpoint === input.hostCdpEndpoint
+				input.relayCdpEndpoint === input.hostPublishedCdpEndpoint
 					? "Host-published port terminates at the relay listener"
 					: "Relay endpoint is container-only from this host context",
 		},
-		cdpInternal: {
+		internalCdp: {
 			url: input.internalCdpEndpoint,
 			note: "Chromium binds this loopback endpoint inside the container namespace only; verify with docker exec or cdp-smoke.",
 		},
 		stream: input.stream,
 	}
 	if (input.verboseInternal) {
-		details.cdpInternal = {
+		details.internalCdp = {
 			url: input.internalCdpEndpoint,
 			...input.verboseInternal,
 			note: "Verified via docker exec inside the managed container namespace.",
@@ -51,22 +51,22 @@ function buildHealthcheckShape(input: {
 test("healthcheck local shape reports host relay semantics by default", () => {
 	const output = buildHealthcheckShape({
 		streamBackendUrl: "http://127.0.0.1:3000",
-		hostCdpEndpoint: "http://127.0.0.1:57589",
-		relayContainerEndpoint: "http://127.0.0.1:57589",
+		hostPublishedCdpEndpoint: "http://127.0.0.1:57589",
+		relayCdpEndpoint: "http://127.0.0.1:57589",
 		internalCdpEndpoint: "http://127.0.0.1:9222",
 		stream: { ok: false, status: 0, error: "stream offline" },
-		hostCdp: { ok: true, status: 200 },
+		hostPublishedCdp: { ok: true, status: 200 },
 	})
 
-	assert.equal(output.cdpEndpoint, "http://127.0.0.1:57589")
-	assert.deepEqual(output.cdp, { ok: true, status: 200 })
-	assert.deepEqual(output.cdpRelay, {
+	assert.equal(output.hostPublishedCdpEndpoint, "http://127.0.0.1:57589")
+	assert.deepEqual(output.hostPublishedCdp, { ok: true, status: 200 })
+	assert.deepEqual(output.relayCdp, {
 		url: "http://127.0.0.1:57589",
 		ok: true,
 		status: 200,
 		note: "Host-published port terminates at the relay listener",
 	})
-	assert.deepEqual(output.cdpInternal, {
+	assert.deepEqual(output.internalCdp, {
 		url: "http://127.0.0.1:9222",
 		note: "Chromium binds this loopback endpoint inside the container namespace only; verify with docker exec or cdp-smoke.",
 	})
@@ -75,15 +75,15 @@ test("healthcheck local shape reports host relay semantics by default", () => {
 test("healthcheck verbose shape promotes internal docker-exec proof", () => {
 	const output = buildHealthcheckShape({
 		streamBackendUrl: "http://127.0.0.1:3000",
-		hostCdpEndpoint: "http://127.0.0.1:57589",
-		relayContainerEndpoint: "http://127.0.0.1:57589",
+		hostPublishedCdpEndpoint: "http://127.0.0.1:57589",
+		relayCdpEndpoint: "http://127.0.0.1:57589",
 		internalCdpEndpoint: "http://127.0.0.1:9222",
 		stream: { ok: false, status: 0, error: "stream offline" },
-		hostCdp: { ok: true, status: 200 },
+		hostPublishedCdp: { ok: true, status: 200 },
 		verboseInternal: { ok: true, status: 200, stdout: '{"Browser":"Chrome/148"}' },
 	})
 
-	assert.deepEqual(output.cdpInternal, {
+	assert.deepEqual(output.internalCdp, {
 		url: "http://127.0.0.1:9222",
 		ok: true,
 		status: 200,

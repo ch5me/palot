@@ -26,9 +26,9 @@ function getLaneEndpoints(laneId: string) {
 	)
 	return {
 		streamBackendUrl: `http://127.0.0.1:${env.STREAM_PORT}`,
-		cdpEndpoint: `http://127.0.0.1:${env.CDP_PORT}`,
-		cdpContainerEndpoint: env.CDP_CONTAINER_ENDPOINT || `http://127.0.0.1:${env.CDP_PORT}`,
-		cdpInternalEndpoint:
+		hostPublishedCdpEndpoint: `http://127.0.0.1:${env.CDP_PORT}`,
+		relayCdpEndpoint: env.CDP_CONTAINER_ENDPOINT || `http://127.0.0.1:${env.CDP_PORT}`,
+		internalCdpEndpoint:
 			(env.CDP_CONTAINER_ENDPOINT || `http://127.0.0.1:${env.CDP_PORT}`) === `http://127.0.0.1:${env.CDP_PORT}`
 				? "http://127.0.0.1:9222"
 				: (env.CDP_CONTAINER_ENDPOINT || `http://127.0.0.1:${env.CDP_PORT}`).replace(/:\d+$/, ':9222'),
@@ -94,14 +94,14 @@ if (args.mode === "remote") {
 }
 
 try {
-	const { cdpEndpoint, cdpContainerEndpoint, cdpInternalEndpoint, auth } = getLaneEndpoints(laneId)
+	const { hostPublishedCdpEndpoint, relayCdpEndpoint, internalCdpEndpoint, auth } = getLaneEndpoints(laneId)
 	const authHeader = auth ? encodeBrowserLaneAuth(auth) : undefined
-	const [hostResponse, containerResponse, internalResponse] = await Promise.all([
-		fetch(`${cdpEndpoint}/json/version`, {
+	const [hostPublishedResponse, relayResponse, internalResponse] = await Promise.all([
+		fetch(`${hostPublishedCdpEndpoint}/json/version`, {
 			signal: AbortSignal.timeout(5000),
 			headers: authHeader ? { authorization: authHeader } : undefined,
 		}),
-		fetch(`${cdpContainerEndpoint}/json/version`, {
+		fetch(`${relayCdpEndpoint}/json/version`, {
 			signal: AbortSignal.timeout(5000),
 			headers: authHeader ? { authorization: authHeader } : undefined,
 		}),
@@ -110,9 +110,9 @@ try {
 			headers: authHeader ? { authorization: authHeader } : undefined,
 		}),
 	])
-	const [hostBody, containerBody, internalBody] = await Promise.all([
-		hostResponse.text(),
-		containerResponse.text(),
+	const [hostPublishedBody, relayBody, internalBody] = await Promise.all([
+		hostPublishedResponse.text(),
+		relayResponse.text(),
 		internalResponse.text(),
 	])
 	writeFileSync(
@@ -121,22 +121,27 @@ try {
 			{
 				mode: "local",
 				laneId,
-				hostUrl: `${cdpEndpoint}/json/version`,
-				hostStatus: hostResponse.status,
-				hostBody,
-				containerUrl: `${cdpContainerEndpoint}/json/version`,
-				containerStatus: containerResponse.status,
-				containerBody,
-				internalUrl: `${cdpInternalEndpoint}/json/version`,
+				hostPublishedUrl: `${hostPublishedCdpEndpoint}/json/version`,
+				hostPublishedStatus: hostPublishedResponse.status,
+				hostPublishedBody,
+				relayUrl: `${relayCdpEndpoint}/json/version`,
+				relayStatus: relayResponse.status,
+				relayBody,
+				internalUrl: `${internalCdpEndpoint}/json/version`,
 				internalStatus: internalResponse.status,
 				internalBody,
+				naming: {
+					hostPublished: "Host port exposed to Palot and external clients.",
+					relay: "Managed listener that forwards host traffic into Chromium loopback.",
+					internal: "Chromium-owned loopback endpoint inside the container namespace.",
+				},
 			},
 			null,
 			2,
 		),
 		"utf-8",
 	)
-	process.exit(hostResponse.ok && containerResponse.ok && internalResponse.ok ? 0 : 1)
+	process.exit(hostPublishedResponse.ok && relayResponse.ok && internalResponse.ok ? 0 : 1)
 } catch (error) {
 	writeFileSync(
 		output,

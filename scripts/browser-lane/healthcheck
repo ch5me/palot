@@ -105,14 +105,14 @@ if (!existsSync(envFile)) {
 }
 const env = parseEnv(envFile)
 const streamBackendUrl = `http://127.0.0.1:${env.STREAM_PORT}`
-const hostCdpEndpoint = `http://127.0.0.1:${env.CDP_PORT}`
-const relayContainerEndpoint = env.CDP_CONTAINER_ENDPOINT || `http://127.0.0.1:${env.CDP_PORT}`
+const hostPublishedCdpEndpoint = `http://127.0.0.1:${env.CDP_PORT}`
+const relayCdpEndpoint = env.CDP_CONTAINER_ENDPOINT || `http://127.0.0.1:${env.CDP_PORT}`
 const internalCdpEndpoint = env.CDP_INTERNAL_ENDPOINT || "http://127.0.0.1:9222"
 const localAuth = readBrowserLaneAuthFromEnv(env)
 const authHeader = localAuth ? encodeBrowserLaneAuth(localAuth) : undefined
-const [stream, hostCdp] = await Promise.all([
+const [stream, hostPublishedCdp] = await Promise.all([
 	check(streamBackendUrl, "", authHeader),
-	check(hostCdpEndpoint, "/json/version", authHeader),
+	check(hostPublishedCdpEndpoint, "/json/version", authHeader),
 ])
 const details: Record<string, unknown> = {
 	action: "healthcheck",
@@ -120,15 +120,15 @@ const details: Record<string, unknown> = {
 	laneId,
 	streamBackendUrl,
 	streamPath: `/browser/${laneId}/`,
-	cdpEndpoint: hostCdpEndpoint,
-	cdp: hostCdp,
-	cdpRelay: {
-		url: relayContainerEndpoint,
-		ok: relayContainerEndpoint === hostCdpEndpoint ? hostCdp.ok : null,
-		status: relayContainerEndpoint === hostCdpEndpoint ? hostCdp.status : null,
-		note: relayContainerEndpoint === hostCdpEndpoint ? "Host-published port terminates at the relay listener" : "Relay endpoint is container-only from this host context",
+	hostPublishedCdpEndpoint,
+	hostPublishedCdp,
+	relayCdp: {
+		url: relayCdpEndpoint,
+		ok: relayCdpEndpoint === hostPublishedCdpEndpoint ? hostPublishedCdp.ok : null,
+		status: relayCdpEndpoint === hostPublishedCdpEndpoint ? hostPublishedCdp.status : null,
+		note: relayCdpEndpoint === hostPublishedCdpEndpoint ? "Host-published port terminates at the relay listener" : "Relay endpoint is container-only from this host context",
 	},
-	cdpInternal: {
+	internalCdp: {
 		url: internalCdpEndpoint,
 		note: "Chromium binds this loopback endpoint inside the container namespace only; verify with docker exec or cdp-smoke.",
 	},
@@ -148,7 +148,7 @@ if (args.verbose) {
 			{ capture: true },
 		)
 		: { code: 1, stdout: "", stderr: `No running managed container found for lane ${laneId}` }
-	details.cdpInternal = {
+	details.internalCdp = {
 		url: internalCdpEndpoint,
 		ok: internalProbe.code === 0,
 		status: internalProbe.code === 0 ? 200 : 0,
@@ -160,7 +160,7 @@ if (args.verbose) {
 console.log(JSON.stringify(details, null, 2))
 const internalOk =
 	!args.verbose ||
-	(typeof details.cdpInternal === "object" && details.cdpInternal !== null && "ok" in details.cdpInternal
-		? Boolean((details.cdpInternal as { ok?: boolean }).ok)
+	(typeof details.internalCdp === "object" && details.internalCdp !== null && "ok" in details.internalCdp
+		? Boolean((details.internalCdp as { ok?: boolean }).ok)
 		: false)
-process.exit(stream.ok || (hostCdp.ok && internalOk) ? 0 : 1)
+process.exit(stream.ok || (hostPublishedCdp.ok && internalOk) ? 0 : 1)
