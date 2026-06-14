@@ -440,7 +440,7 @@ function SessionDockviewShell({
 	onSidePanelOpenChange: (open: boolean) => void
 	onBottomDockOpenChange: (open: boolean) => void
 }) {
-	const { panels, stableHosts } = useAgentSplitDockAdapters({
+	const { panels, stableHosts, handleTransfer } = useAgentSplitDockAdapters({
 		agent,
 		chatContent,
 		sidePanelContent,
@@ -458,6 +458,7 @@ function SessionDockviewShell({
 				rightDockWidth={sidePanelWidth}
 				onRightDockOpenChange={onSidePanelOpenChange}
 				onBottomDockOpenChange={onBottomDockOpenChange}
+				onTransfer={handleTransfer}
 			/>
 		</div>
 	)

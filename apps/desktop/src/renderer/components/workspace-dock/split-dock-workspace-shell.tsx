@@ -4,16 +4,24 @@ import {
 	type DockviewApi,
 	type DockviewReadyEvent,
 	type IDockviewPanelProps,
-	positionToDirection,
 } from "dockview"
-import { type FunctionComponent, type ReactNode, useCallback, useEffect, useMemo, useRef, useState } from "react"
+import { type FunctionComponent, type ReactNode, useCallback, useEffect, useMemo, useState } from "react"
 import {
 	canDragSplitDockPanel,
 	type SplitDockPanelProtection,
 	type SplitDockZone,
 } from "./split-dock-protection"
+import {
+	createSplitDockDragPayload,
+	hasSplitDockDragMime,
+	parseSplitDockDragPayload,
+	serializeSplitDockDragPayload,
+	SPLIT_DOCK_DRAG_MIME,
+	type SplitDockTransferPolicy,
+	type SplitDockTransferRequest,
+	validateSplitDockTransferPayload,
+} from "./split-dock-transfer-bridge"
 
-const SPLIT_DOCK_DRAG_MIME = "application/x-palot-split-dock-panel"
 const RIGHT_DOCK_WIDTH = 392
 const BOTTOM_DOCK_HEIGHT = 196
 
@@ -26,6 +34,7 @@ export interface SplitDockPanelDescriptor {
 	initialWidth?: number
 	initialHeight?: number
 	protection?: SplitDockPanelProtection
+	transferPolicies?: readonly SplitDockTransferPolicy[]
 }
 
 export interface SplitDockWorkspaceShellProps {
@@ -35,13 +44,7 @@ export interface SplitDockWorkspaceShellProps {
 	rightDockWidth?: number
 	onRightDockOpenChange?: (open: boolean) => void
 	onBottomDockOpenChange?: (open: boolean) => void
-}
-
-interface SplitDockDragPayload {
-	id: string
-	title: string
-	component: string
-	sourceZone: SplitDockZone
+	onTransfer?: (request: SplitDockTransferRequest) => boolean
 }
 
 interface ZoneDockSurfaceProps {
@@ -58,9 +61,9 @@ export function SplitDockWorkspaceShell({
 	rightDockWidth = RIGHT_DOCK_WIDTH,
 	onRightDockOpenChange,
 	onBottomDockOpenChange,
+	onTransfer,
 }: SplitDockWorkspaceShellProps) {
 	const panelsByZone = useMemo(() => groupPanelsByZone(panels), [panels])
-	const dockApisRef = useRef<Partial<Record<SplitDockZone, DockviewApi>>>({})
 
 	const panelDescriptorsById = useMemo(() => {
 		const entries = panels.map((panel) => [panel.id, panel] as const)
@@ -80,11 +83,17 @@ export function SplitDockWorkspaceShell({
 
 	const handleReady = useCallback(
 		(zone: SplitDockZone, event: DockviewReadyEvent) => {
-			dockApisRef.current[zone] = event.api
-			registerSplitDockBridge(zone, event.api, dockApisRef, panelDescriptorsById)
+			registerSplitDockBridge(
+				zone,
+				event.api,
+				panelDescriptorsById,
+				onTransfer,
+				onRightDockOpenChange,
+				onBottomDockOpenChange,
+			)
 			reconcileZonePanels(event.api, panelsByZone[zone])
 		},
-		[panelDescriptorsById, panelsByZone],
+		[onBottomDockOpenChange, onRightDockOpenChange, onTransfer, panelDescriptorsById, panelsByZone],
 	)
 
 	return (
@@ -177,6 +186,15 @@ function groupPanelsByZone(panels: SplitDockPanelDescriptor[]): Record<SplitDock
 }
 
 function reconcileZonePanels(api: DockviewApi, panels: SplitDockPanelDescriptor[]) {
+	const allowedPanelIds = new Set(panels.map((panel) => panel.id))
+	for (const panel of [...api.panels]) {
+		if (allowedPanelIds.has(panel.id)) {
+			continue
+		}
+
+		panel.api.close()
+	}
+
 	for (const panel of panels) {
 		if (api.getPanel(panel.id)) {
 			continue
@@ -195,8 +213,10 @@ function reconcileZonePanels(api: DockviewApi, panels: SplitDockPanelDescriptor[
 function registerSplitDockBridge(
 	zone: SplitDockZone,
 	api: DockviewApi,
-	apisRef: { current: Partial<Record<SplitDockZone, DockviewApi>> },
 	panelDescriptorsById: Map<string, SplitDockPanelDescriptor>,
+	onTransfer?: (request: SplitDockTransferRequest) => boolean,
+	onRightDockOpenChange?: (open: boolean) => void,
+	onBottomDockOpenChange?: (open: boolean) => void,
 ) {
 	api.onWillDragPanel((event) => {
 		if (!(event.nativeEvent instanceof DragEvent)) {
@@ -220,19 +240,44 @@ function registerSplitDockBridge(
 			return
 		}
 
-		event.nativeEvent.dataTransfer?.setData(
-			SPLIT_DOCK_DRAG_MIME,
-			JSON.stringify({
-				id: descriptor.id,
-				title: descriptor.title,
-				component: descriptor.component,
-				sourceZone: zone,
-			}),
-		)
+		const payload = createSplitDockDragPayload({
+			id: descriptor.id,
+			zone,
+			transferPolicies: descriptor.transferPolicies,
+		})
+		if (!payload) {
+			event.nativeEvent.preventDefault()
+			return
+		}
+
+		event.nativeEvent.dataTransfer?.setData(SPLIT_DOCK_DRAG_MIME, serializeSplitDockDragPayload(payload))
 	})
 
 	api.onUnhandledDragOverEvent((event) => {
-		if (!hasSplitDockDragData(event.nativeEvent)) {
+		if (!(event.nativeEvent instanceof DragEvent)) {
+			return
+		}
+
+		if (!hasSplitDockDragMime(event.nativeEvent)) {
+			return
+		}
+
+		const raw = event.nativeEvent.dataTransfer?.getData(SPLIT_DOCK_DRAG_MIME)
+		if (!raw) {
+			return
+		}
+
+		const payload = parseSplitDockDragPayload(raw)
+		if (
+			!payload ||
+			!validateSplitDockTransferPayload({
+				payload,
+				targetZone: zone,
+				descriptorsById: panelDescriptorsById,
+				targetPanelId: event.group?.activePanel?.id,
+				targetPosition: normalizeDropPosition(event),
+			})
+		) {
 			return
 		}
 
@@ -244,75 +289,48 @@ function registerSplitDockBridge(
 			return
 		}
 
-		const payload = parseSplitDockDragData(event.nativeEvent, panelDescriptorsById)
-		if (!payload || payload.sourceZone === zone) {
+		const raw = event.nativeEvent.dataTransfer?.getData(SPLIT_DOCK_DRAG_MIME)
+		if (!raw) {
 			return
 		}
 
-		const descriptor = panelDescriptorsById.get(payload.id)
-		if (!descriptor) {
+		const payload = parseSplitDockDragPayload(raw)
+		if (!payload) {
 			return
 		}
 
-		if (descriptor.protection?.requiredZone && descriptor.protection.requiredZone !== zone) {
+		const request = validateSplitDockTransferPayload({
+			payload,
+			targetZone: zone,
+			descriptorsById: panelDescriptorsById,
+			targetPanelId: event.group?.activePanel?.id,
+			targetPosition: normalizeDropPosition(event),
+		})
+		if (!request) {
 			return
 		}
 
-		if (!api.getPanel(payload.id)) {
-			api.addPanel({
-				id: payload.id,
-				title: payload.title,
-				component: payload.component,
-				position: event.group
-					? {
-							referenceGroup: event.group,
-							direction: positionToDirection(event.position),
-						}
-					: undefined,
-			})
+		if (!onTransfer?.(request)) {
+			return
 		}
 
-		const sourceApi = apisRef.current[payload.sourceZone]
-		sourceApi?.getPanel(payload.id)?.api.close()
+		if (request.targetZone === "right") {
+			onRightDockOpenChange?.(true)
+		}
+
+		if (request.targetZone === "bottom") {
+			onBottomDockOpenChange?.(true)
+		}
 	})
 }
 
-function hasSplitDockDragData(event: DragEvent | PointerEvent) {
-	return event instanceof DragEvent && Array.from(event.dataTransfer?.types ?? []).includes(SPLIT_DOCK_DRAG_MIME)
-}
-
-function parseSplitDockDragData(
-	event: DragEvent,
-	panelDescriptorsById: Map<string, SplitDockPanelDescriptor>,
-): SplitDockDragPayload | null {
-	const raw = event.dataTransfer?.getData(SPLIT_DOCK_DRAG_MIME)
-	if (!raw) {
-		return null
-	}
-
-	try {
-		const parsed = JSON.parse(raw) as Partial<SplitDockDragPayload>
-		if (
-			typeof parsed.id !== "string" ||
-			typeof parsed.title !== "string" ||
-			typeof parsed.component !== "string" ||
-			!isSplitDockZone(parsed.sourceZone) ||
-			!panelDescriptorsById.has(parsed.id)
-		) {
-			return null
-		}
-
-		return {
-			id: parsed.id,
-			title: parsed.title,
-			component: parsed.component,
-			sourceZone: parsed.sourceZone,
-		}
-	} catch {
-		return null
-	}
-}
-
-function isSplitDockZone(value: unknown): value is SplitDockZone {
-	return value === "main" || value === "right" || value === "bottom"
+function normalizeDropPosition(event: { position?: string }):
+	| "left"
+	| "right"
+	| "top"
+	| "bottom"
+	| undefined {
+	return event.position === "left" || event.position === "right" || event.position === "top" || event.position === "bottom"
+		? event.position
+		: undefined
 }

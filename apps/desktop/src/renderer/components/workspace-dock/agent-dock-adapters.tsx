@@ -1,4 +1,4 @@
-import { useMemo } from "react"
+import { useCallback, useEffect, useMemo, useState } from "react"
 import type { ReactNode } from "react"
 import {
 	renderSessionWidgetRuntime,
@@ -11,10 +11,12 @@ import {
 	StablePanelHostAttachmentOutlet,
 	StablePanelHostInPortal,
 } from "./reverse-portal-transport"
+import { applySplitDockTransfer, createSplitDockPlacementState } from "./split-dock-placement-state"
 import type { ReversePortalTransportHandle } from "./reverse-portal-transport"
 import { StablePanelHostRuntime } from "./stable-panel-host-runtime"
 import type { StablePanelAttachmentTarget } from "./stable-panel-host-runtime"
 import type { SplitDockPanelDescriptor } from "./split-dock-workspace-shell"
+import type { SplitDockTransferRequest } from "./split-dock-transfer-bridge"
 
 const SESSION_CHAT_PANEL = "session-chat"
 const SESSION_WIDGETS_PANEL = "session-widgets"
@@ -31,10 +33,12 @@ interface AgentSplitDockAdapterOptions {
 export interface AgentSplitDockAdapterResult {
 	panels: SplitDockPanelDescriptor[]
 	stableHosts: ReactNode
+	handleTransfer: (request: SplitDockTransferRequest) => boolean
 	proof: {
 		chatMountCount: number
 		chatRemountDetected: boolean
 		chatAttachmentId: string
+		chatZone: SplitDockPanelDescriptor["zone"]
 		rightVisible: boolean
 		bottomVisible: boolean
 	}
@@ -43,12 +47,16 @@ export interface AgentSplitDockAdapterResult {
 interface StableDockHostConfig {
 	panelId: string
 	title: string
-	zone: SplitDockPanelDescriptor["zone"]
+	defaultZone: SplitDockPanelDescriptor["zone"]
 	content: ReactNode
 	visible: boolean
 	initialWidth?: number
 	initialHeight?: number
-	protected?: boolean
+	hostPolicy: "stable" | "remount-ok"
+}
+
+interface StableDockHostPlacementConfig extends StableDockHostConfig {
+	zone: SplitDockPanelDescriptor["zone"]
 }
 
 export function useAgentSplitDockAdapters({
@@ -66,76 +74,127 @@ export function useAgentSplitDockAdapters({
 			{
 				panelId: SESSION_CHAT_PANEL,
 				title: "Chat",
-				zone: "main",
+				defaultZone: "main",
 				content: chatContent,
 				visible: true,
-				protected: true,
+				hostPolicy: "stable",
 			},
 			{
 				panelId: SESSION_WIDGETS_PANEL,
 				title: "Session",
-				zone: "bottom",
+				defaultZone: "bottom",
 				content: <SessionDockWidgets agent={agent} />,
 				visible: bottomDockOpen,
 				initialHeight: 196,
+				hostPolicy: "remount-ok",
 			},
 			{
 				panelId: SESSION_SURFACE_PANEL,
 				title: "Surface",
-				zone: "right",
+				defaultZone: "right",
 				content: sidePanelContent,
 				visible: rightDockOpen,
 				initialWidth: 392,
+				hostPolicy: "stable",
 			},
 		],
 		[agent, bottomDockOpen, chatContent, rightDockOpen, sidePanelContent],
 	)
 
+	const defaultPlacementState = useMemo(
+		() => createSplitDockPlacementState(configs.map((config) => ({ id: config.panelId, zone: config.defaultZone }))),
+		[agent.sessionId],
+	)
+
+	const [placementState, setPlacementState] = useState(defaultPlacementState)
+
+	useEffect(() => {
+		setPlacementState(defaultPlacementState)
+	}, [defaultPlacementState])
+
+	const configsWithPlacement = useMemo(
+		(): StableDockHostPlacementConfig[] =>
+			configs.map((config) => ({
+				...config,
+				zone: placementState.panelZones[config.panelId] ?? config.defaultZone,
+			})),
+		[configs, placementState.panelZones],
+	)
+
+	const stableConfigs = useMemo(
+		() => configsWithPlacement.filter((config) => config.hostPolicy === "stable"),
+		[configsWithPlacement],
+	)
+
+	const handleTransfer = useCallback((request: SplitDockTransferRequest) => {
+		let accepted = false
+		setPlacementState((currentState) => {
+			const nextState = applySplitDockTransfer(currentState, request)
+			if (!nextState) {
+				return currentState
+			}
+
+			accepted = true
+			return nextState
+		})
+		return accepted
+	}, [])
+
 	const hostSnapshots = useMemo(
-		() => configs.map((config) => registerAndAttachHost(runtime, transport, agent.sessionId, config)),
-		[agent.sessionId, configs, runtime, transport],
+		() => stableConfigs.map((config) => registerAndAttachHost(runtime, transport, agent.sessionId, config)),
+		[agent.sessionId, runtime, stableConfigs, transport],
 	)
 
 	return useMemo(
 		() => ({
-			panels: configs.map((config) => ({
+			panels: configsWithPlacement.map((config) => ({
 				id: config.panelId,
 				title: config.title,
 				zone: config.zone,
 				component: config.panelId,
-				content: (
-					<StablePanelHostAttachmentOutlet
-						handle={runtime.getSnapshot(hostIdForPanel(agent.sessionId, config.panelId)).handle}
-						attachmentId={attachmentIdForPanel(agent.sessionId, config.panelId, config.zone)}
-					/>
-				),
+				content:
+					config.hostPolicy === "stable" ? (
+						<StablePanelHostAttachmentOutlet
+							handle={runtime.getSnapshot(hostIdForPanel(agent.sessionId, config.panelId)).handle}
+							attachmentId={attachmentIdForPanel(agent.sessionId, config.panelId, config.zone)}
+						/>
+					) : (
+						config.content
+					),
 				initialWidth: config.initialWidth,
 				initialHeight: config.initialHeight,
-				protection: config.protected
+				protection: config.hostPolicy === "stable"
 					? {
 							protected: true,
-							requiredZone: "main",
-						}
+							requiredZone: config.panelId === SESSION_CHAT_PANEL ? "main" : undefined,
+					  }
 					: undefined,
+				transferPolicies: ["move"],
 			})),
 			stableHosts: (
 				<>
 					{hostSnapshots.map((snapshot, index) => (
 						<StablePanelHostInPortal key={snapshot.hostId} handle={snapshot.handle}>
-							{configs[index]?.content}
+							{stableConfigs[index]?.content}
 						</StablePanelHostInPortal>
 					))}
 				</>
 			),
+			handleTransfer,
 			proof: {
 				chatMountCount: runtime.getSnapshot(hostIdForPanel(agent.sessionId, SESSION_CHAT_PANEL)).mountCount,
 				chatRemountDetected: runtime.getSnapshot(hostIdForPanel(agent.sessionId, SESSION_CHAT_PANEL)).remountDetected,
-				chatAttachmentId: attachmentIdForPanel(agent.sessionId, SESSION_CHAT_PANEL, "main"),
+				chatAttachmentId: attachmentIdForPanel(
+					agent.sessionId,
+					SESSION_CHAT_PANEL,
+					placementState.panelZones[SESSION_CHAT_PANEL] ?? "main",
+				),
+				chatZone: placementState.panelZones[SESSION_CHAT_PANEL] ?? "main",
 				rightVisible: rightDockOpen,
 				bottomVisible: bottomDockOpen,
 			},
 		}),
-		[agent.sessionId, bottomDockOpen, configs, hostSnapshots, rightDockOpen, runtime],
+		[agent.sessionId, bottomDockOpen, configsWithPlacement, handleTransfer, hostSnapshots, placementState.panelZones, rightDockOpen, runtime, stableConfigs],
 	)
 }
 
@@ -143,7 +202,7 @@ function registerAndAttachHost(
 	runtime: StablePanelHostRuntime<ReversePortalTransportHandle>,
 	transport: ReturnType<typeof createReversePortalTransport>,
 	sessionId: string,
-	config: StableDockHostConfig,
+	config: StableDockHostPlacementConfig,
 ) {
 	const hostId = hostIdForPanel(sessionId, config.panelId)
 	runtime.registerHost({
@@ -162,7 +221,7 @@ function registerAndAttachHost(
 
 function attachmentTargetForPanel(
 	sessionId: string,
-	config: StableDockHostConfig,
+	config: StableDockHostPlacementConfig,
 ): StablePanelAttachmentTarget {
 	return {
 		attachmentId: attachmentIdForPanel(sessionId, config.panelId, config.zone),

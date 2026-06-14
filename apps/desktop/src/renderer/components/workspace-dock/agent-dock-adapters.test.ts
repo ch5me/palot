@@ -2,6 +2,7 @@ import { describe, expect, test } from "bun:test"
 import type { DockviewApi, DockviewGroupPanel, IDockviewPanel } from "dockview"
 
 import { canDragSplitDockPanel } from "./split-dock-protection"
+import { applySplitDockTransfer, createSplitDockPlacementState } from "./split-dock-placement-state"
 import { StablePanelHostRuntime, type SurfaceTransport, type SurfaceTransportHandle } from "./stable-panel-host-runtime"
 
 interface FakeHandle extends SurfaceTransportHandle {
@@ -108,5 +109,41 @@ describe("agent dock adapters", () => {
 		expect(snapshot.mountCount).toBe(1)
 		expect(snapshot.remountDetected).toBe(false)
 		expect(snapshot.activeTarget?.attachmentId).toBe("attachment:main:chat")
+	})
+
+	test("protected stable host zone moves keep mount count unchanged while attachment changes", () => {
+		const runtime = new StablePanelHostRuntime<FakeHandle>()
+		runtime.registerHost({
+			hostId: "host:session-surface",
+			transport: createFakeTransport(),
+			hiddenMode: "keep-attached",
+			instrumentation: { mode: "error" },
+		})
+
+		runtime.recordMount("host:session-surface")
+		runtime.attachHost("host:session-surface", {
+			attachmentId: "attachment:right:surface",
+			visible: true,
+			zoneId: "right",
+		})
+
+		const placement = createSplitDockPlacementState([{ id: "session-surface", zone: "right" }])
+		const moved = applySplitDockTransfer(placement, {
+			panelId: "session-surface",
+			sourceZone: "right",
+			targetZone: "bottom",
+			policy: "move",
+		})
+		expect(moved).not.toBeNull()
+
+		const snapshot = runtime.attachHost("host:session-surface", {
+			attachmentId: "attachment:bottom:surface",
+			visible: true,
+			zoneId: moved?.panelZones["session-surface"],
+		})
+
+		expect(snapshot.mountCount).toBe(1)
+		expect(snapshot.remountDetected).toBe(false)
+		expect(snapshot.activeTarget?.attachmentId).toBe("attachment:bottom:surface")
 	})
 })

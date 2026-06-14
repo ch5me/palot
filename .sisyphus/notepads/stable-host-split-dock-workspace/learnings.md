@@ -298,3 +298,9 @@ Current `sidePanelOpenAtom` / `sidePanelActiveTabAtom` must decompose into per-z
 - `apps/desktop/src/renderer/components/workspace-dock/agent-dock-adapters.tsx` now maps chat/right/bottom logical placements onto stable-host attachment outlets, so `agent-detail.tsx` no longer remounts the dock tree on side-panel toggle.
 - Protected drag policy moved into `apps/desktop/src/renderer/components/workspace-dock/split-dock-protection.ts`; the lone chat panel in the main zone is blocked when it would orphan the protected host.
 - Toggle proof remains targeted: stable-host runtime mount count for `session-chat` stays at 1 while right/bottom visibility flips reuse the same attachment id.
+
+## 11. TASK 5 IMPLEMENTATION — STATE-DRIVEN TRANSFER BRIDGE (2026-06-14)
+- Cross-zone drag now serializes a thin `version: 1` payload in `split-dock-transfer-bridge.ts`, validates MIME/zone/policy/descriptor protection on drop, and emits a transfer request instead of calling Dockview `addPanel`/`close` as source of truth.
+- `useAgentSplitDockAdapters` now owns zone placement state via `split-dock-placement-state.ts`; Dockview zones reconcile from that state, while stable hosts reattach to new attachment ids when moved and keep `mountCount === 1`.
+- Protected hosts stay remount-safe because the bridge mutates placement state only; only remount-ok panels are direct-rendered. Future clone support has a reserved policy branch but current reducers intentionally accept `move` only.
+- Proof artifacts for task 5 live at `.sisyphus/evidence/task-5-protected-transfer.txt` and `.sisyphus/evidence/task-5-transfer-guard.txt`.
