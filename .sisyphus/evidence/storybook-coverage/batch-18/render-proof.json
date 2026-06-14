@@ -1,0 +1,125 @@
+{
+  "generatedAt": "2026-06-14T02:01:14.292Z",
+  "results": [
+    {
+      "storyId": "foundations-navigation-navsidebarshell--default",
+      "viewport": "desktop",
+      "width": 456,
+      "height": 932,
+      "childCount": 214,
+      "textLength": 320,
+      "screenshot": "/Users/hassoncs/src/ch5/palot/.sisyphus/evidence/storybook-coverage/batch-18/foundations-navigation-navsidebarshell--default-desktop.png",
+      "warnings": 1
+    },
+    {
+      "storyId": "foundations-navigation-navsidebarshell--default",
+      "viewport": "mobile",
+      "width": 456,
+      "height": 876,
+      "childCount": 214,
+      "textLength": 320,
+      "screenshot": "/Users/hassoncs/src/ch5/palot/.sisyphus/evidence/storybook-coverage/batch-18/foundations-navigation-navsidebarshell--default-mobile.png",
+      "warnings": 1
+    },
+    {
+      "storyId": "animate-layouts-animatedcollection--default",
+      "viewport": "desktop",
+      "width": 656,
+      "height": 932,
+      "childCount": 52,
+      "textLength": 112,
+      "screenshot": "/Users/hassoncs/src/ch5/palot/.sisyphus/evidence/storybook-coverage/batch-18/animate-layouts-animatedcollection--default-desktop.png",
+      "warnings": 0
+    },
+    {
+      "storyId": "animate-layouts-animatedcollection--default",
+      "viewport": "mobile",
+      "width": 656,
+      "height": 876,
+      "childCount": 52,
+      "textLength": 112,
+      "screenshot": "/Users/hassoncs/src/ch5/palot/.sisyphus/evidence/storybook-coverage/batch-18/animate-layouts-animatedcollection--default-mobile.png",
+      "warnings": 0
+    },
+    {
+      "storyId": "animate-forms-multistepform--default",
+      "viewport": "desktop",
+      "width": 616,
+      "height": 932,
+      "childCount": 27,
+      "textLength": 64,
+      "screenshot": "/Users/hassoncs/src/ch5/palot/.sisyphus/evidence/storybook-coverage/batch-18/animate-forms-multistepform--default-desktop.png",
+      "warnings": 0
+    },
+    {
+      "storyId": "animate-forms-multistepform--default",
+      "viewport": "mobile",
+      "width": 616,
+      "height": 876,
+      "childCount": 27,
+      "textLength": 64,
+      "screenshot": "/Users/hassoncs/src/ch5/palot/.sisyphus/evidence/storybook-coverage/batch-18/animate-forms-multistepform--default-mobile.png",
+      "warnings": 0
+    },
+    {
+      "storyId": "animate-commerce-pricingcard--default",
+      "viewport": "desktop",
+      "width": 536,
+      "height": 932,
+      "childCount": 71,
+      "textLength": 231,
+      "screenshot": "/Users/hassoncs/src/ch5/palot/.sisyphus/evidence/storybook-coverage/batch-18/animate-commerce-pricingcard--default-desktop.png",
+      "warnings": 0
+    },
+    {
+      "storyId": "animate-commerce-pricingcard--default",
+      "viewport": "mobile",
+      "width": 536,
+      "height": 876,
+      "childCount": 71,
+      "textLength": 231,
+      "screenshot": "/Users/hassoncs/src/ch5/palot/.sisyphus/evidence/storybook-coverage/batch-18/animate-commerce-pricingcard--default-mobile.png",
+      "warnings": 0
+    },
+    {
+      "storyId": "animate-layouts-stackedlist--default",
+      "viewport": "desktop",
+      "width": 616,
+      "height": 932,
+      "childCount": 74,
+      "textLength": 326,
+      "screenshot": "/Users/hassoncs/src/ch5/palot/.sisyphus/evidence/storybook-coverage/batch-18/animate-layouts-stackedlist--default-desktop.png",
+      "warnings": 0
+    },
+    {
+      "storyId": "animate-layouts-stackedlist--default",
+      "viewport": "mobile",
+      "width": 616,
+      "height": 876,
+      "childCount": 74,
+      "textLength": 326,
+      "screenshot": "/Users/hassoncs/src/ch5/palot/.sisyphus/evidence/storybook-coverage/batch-18/animate-layouts-stackedlist--default-mobile.png",
+      "warnings": 0
+    },
+    {
+      "storyId": "animate-navigation-verticaltabs--default",
+      "viewport": "desktop",
+      "width": 956,
+      "height": 932,
+      "childCount": 42,
+      "textLength": 215,
+      "screenshot": "/Users/hassoncs/src/ch5/palot/.sisyphus/evidence/storybook-coverage/batch-18/animate-navigation-verticaltabs--default-desktop.png",
+      "warnings": 0
+    },
+    {
+      "storyId": "animate-navigation-verticaltabs--default",
+      "viewport": "mobile",
+      "width": 956,
+      "height": 1003,
+      "childCount": 42,
+      "textLength": 215,
+      "screenshot": "/Users/hassoncs/src/ch5/palot/.sisyphus/evidence/storybook-coverage/batch-18/animate-navigation-verticaltabs--default-mobile.png",
+      "warnings": 0
+    }
+  ]
+}

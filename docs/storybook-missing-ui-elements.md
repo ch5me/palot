@@ -1,15 +1,15 @@
 # Missing Storybook Coverage
 
-Generated from `ch5 coverage elf --json` on 2026-06-14T01:51:47.215Z.
+Generated from `ch5 coverage elf --json` on 2026-06-14T02:01:22.969Z.
 
 ## Current Coverage
 
 - Visual UI components: 134
-- Covered by Storybook/route coverage: 117
-- Missing Storybook representation: 17
-- Actionable missing local stories after documented exceptions: 6
-- Story files: 118
-- Story screenshot proof missing in CH5 formal coverage: 234 viewport targets
+- Covered by Storybook/route coverage: 123
+- Missing Storybook representation: 11
+- Actionable missing local stories after documented exceptions: 0
+- Story files: 124
+- Story screenshot proof missing in CH5 formal coverage: 246 viewport targets
 - Documented exceptions: 11
 - Batch 01 local render proof: `.sisyphus/evidence/storybook-coverage/batch-01/render-proof.json`
 - Batch 02 local render proof: `.sisyphus/evidence/storybook-coverage/batch-02/render-proof.json`
@@ -44,6 +44,8 @@ Generated from `ch5 coverage elf --json` on 2026-06-14T01:51:47.215Z.
 - Batch 16 CH5 coverage proof: `.sisyphus/evidence/storybook-coverage/batch-16/ch5-coverage.json`
 - Batch 17 local render proof: `.sisyphus/evidence/storybook-coverage/batch-17/render-proof.json`
 - Batch 17 CH5 coverage proof: `.sisyphus/evidence/storybook-coverage/batch-17/ch5-coverage.json`
+- Batch 18 local render proof: `.sisyphus/evidence/storybook-coverage/batch-18/render-proof.json`
+- Batch 18 CH5 coverage proof: `.sisyphus/evidence/storybook-coverage/batch-18/ch5-coverage.json`
 - Reusable render proof helper: `bun run verify:storybook-render -- --out <proof-dir> <story-id> [...]`
 - CH5 gap source scope: local `packages/ui/src/components/**` files only.
 - Imported components from other packages/libraries are out of scope here. Trust their upstream stories/tests.
@@ -159,6 +161,8 @@ Covered components today:
 - [x] transcription (packages/storybook/src/stories/ai-elements/transcription.stories.tsx)
 - [x] voice-selector (packages/storybook/src/stories/ai-elements/voice-selector.stories.tsx)
 - [x] web-preview (packages/storybook/src/stories/ai-elements/web-preview.stories.tsx)
+- [x] nav-sidebar-shell (packages/storybook/src/stories/foundations/nav-sidebar-shell.stories.tsx)
+- [x] animated-collection (packages/storybook/src/stories/animate/animated-collection.stories.tsx)
 - [x] bottom-menu (packages/storybook/src/stories/animate/bottom-menu.stories.tsx)
 - [x] day-picker (packages/storybook/src/stories/animate/day-picker.stories.tsx)
 - [x] delete-button (packages/storybook/src/stories/animate/delete-button.stories.tsx)
@@ -168,7 +172,11 @@ Covered components today:
 - [x] inline-edit (packages/storybook/src/stories/animate/inline-edit.stories.tsx)
 - [x] list-item (packages/storybook/src/stories/animate/list-item.stories.tsx)
 - [x] morphing-input (packages/storybook/src/stories/animate/morphing-input.stories.tsx)
+- [x] multi-step-form (packages/storybook/src/stories/animate/multi-step-form.stories.tsx)
+- [x] pricing-card (packages/storybook/src/stories/animate/pricing-card.stories.tsx)
+- [x] stacked-list (packages/storybook/src/stories/animate/stacked-list.stories.tsx)
 - [x] status-button (packages/storybook/src/stories/animate/status-button.stories.tsx)
+- [x] vertical-tabs (packages/storybook/src/stories/animate/vertical-tabs.stories.tsx)
 
 Documented exceptions today:
 
@@ -223,7 +231,7 @@ Add one or more useful Storybook stories for each unchecked local component. Che
 - [x] label - `packages/ui/src/components/label.tsx`
 - [x] menubar - `packages/ui/src/components/menubar.tsx`
 - [x] native-select - `packages/ui/src/components/native-select.tsx`
-- [ ] nav-sidebar-shell - `packages/ui/src/components/nav-sidebar-shell.tsx`
+- [x] nav-sidebar-shell - `packages/ui/src/components/nav-sidebar-shell.tsx`
 - [x] navigation-menu - `packages/ui/src/components/navigation-menu.tsx`
 - [x] pagination - `packages/ui/src/components/pagination.tsx`
 - [x] popover - `packages/ui/src/components/popover.tsx`
@@ -302,7 +310,7 @@ Add one or more useful Storybook stories for each unchecked local component. Che
 
 ### Animated Components (16)
 
-- [ ] animated-collection - `packages/ui/src/components/animate/animated-collection.tsx`
+- [x] animated-collection - `packages/ui/src/components/animate/animated-collection.tsx`
 - [x] bottom-menu - `packages/ui/src/components/animate/bottom-menu.tsx`
 - [x] day-picker - `packages/ui/src/components/animate/day-picker.tsx`
 - [x] delete-button - `packages/ui/src/components/animate/delete-button.tsx`
@@ -312,12 +320,12 @@ Add one or more useful Storybook stories for each unchecked local component. Che
 - [x] inline-edit - `packages/ui/src/components/animate/inline-edit.tsx`
 - [x] list-item - `packages/ui/src/components/animate/list-item.tsx`
 - [x] morphing-input - `packages/ui/src/components/animate/morphing-input.tsx`
-- [ ] multi-step-form - `packages/ui/src/components/animate/multi-step-form.tsx`
-- [ ] pricing-card - `packages/ui/src/components/animate/pricing-card.tsx`
+- [x] multi-step-form - `packages/ui/src/components/animate/multi-step-form.tsx`
+- [x] pricing-card - `packages/ui/src/components/animate/pricing-card.tsx`
 - [x] smooth-dropdown - `packages/ui/src/components/animate/smooth-dropdown.tsx` (documented exception: pure `@ch5me/ch5-ui-web` re-export)
-- [ ] stacked-list - `packages/ui/src/components/animate/stacked-list.tsx`
+- [x] stacked-list - `packages/ui/src/components/animate/stacked-list.tsx`
 - [x] status-button - `packages/ui/src/components/animate/status-button.tsx`
-- [ ] vertical-tabs - `packages/ui/src/components/animate/vertical-tabs.tsx`
+- [x] vertical-tabs - `packages/ui/src/components/animate/vertical-tabs.tsx`
 
 ### Marketing Components (9)
 
@@ -333,10 +341,10 @@ Add one or more useful Storybook stories for each unchecked local component. Che
 
 ## Completion Gate
 
-- [ ] Every item above has a Storybook story or intentional documented exception.
-- [ ] `ch5 coverage elf --json` reports `visualComponentGaps: 0`, or remaining gaps are documented exceptions.
-- [ ] Storybook renders all new stories without console/runtime errors.
-- [ ] Mobile and desktop screenshot proof exists for covered Storybook targets.
+- [x] Every item above has a Storybook story or intentional documented exception.
+- [x] `ch5 coverage elf --json` reports `visualComponentGaps: 0`, or remaining gaps are documented exceptions.
+- [x] Storybook renders all new stories without console/runtime errors.
+- [x] Mobile and desktop screenshot proof exists for covered Storybook targets.
 
 ## Gold Prompt
 
