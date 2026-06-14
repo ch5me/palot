@@ -1,6 +1,6 @@
 # Missing Storybook Coverage
 
-Generated from `ch5 coverage elf --json` on 2026-06-14T02:01:22.969Z.
+Generated from `ch5 coverage elf --json` on 2026-06-14T02:07:32.343Z.
 
 ## Current Coverage
 

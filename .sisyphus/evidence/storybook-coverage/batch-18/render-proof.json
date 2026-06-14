@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-06-14T02:01:14.292Z",
+  "generatedAt": "2026-06-14T02:07:18.831Z",
   "results": [
     {
       "storyId": "foundations-navigation-navsidebarshell--default",
@@ -9,7 +9,7 @@
       "childCount": 214,
       "textLength": 320,
       "screenshot": "/Users/hassoncs/src/ch5/palot/.sisyphus/evidence/storybook-coverage/batch-18/foundations-navigation-navsidebarshell--default-desktop.png",
-      "warnings": 1
+      "warnings": 0
     },
     {
       "storyId": "foundations-navigation-navsidebarshell--default",
@@ -19,7 +19,7 @@
       "childCount": 214,
       "textLength": 320,
       "screenshot": "/Users/hassoncs/src/ch5/palot/.sisyphus/evidence/storybook-coverage/batch-18/foundations-navigation-navsidebarshell--default-mobile.png",
-      "warnings": 1
+      "warnings": 0
     },
     {
       "storyId": "animate-layouts-animatedcollection--default",
