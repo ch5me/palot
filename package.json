@@ -21,6 +21,7 @@
 		"../ch5-packages/packages/web/react-dev-surface"
 	],
 	"scripts": {
+		"preflight": "bash scripts/ci-preflight.sh",
 		"build": "bunx turbo build",
 		"dev": "bunx devmux ensure web",
 		"dev:desktop": "bunx devmux ensure desktop",
