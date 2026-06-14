@@ -1,3 +1,5 @@
+import { type ModelRef, getModelInputCapabilities, getModelVariants, resolveEffectiveModel, useConfig, useModelState, useOpenCodeAgents, useProviders, useVcs } from "../hooks/use-opencode-data";
+import { Popover, PopoverContent, PopoverTrigger, Tooltip, TooltipContent, TooltipTrigger } from "@ch5me/ch5-ui-web";
 import {
 	PromptInput,
 	PromptInputFooter,
@@ -5,15 +7,13 @@ import {
 	PromptInputTextarea,
 	PromptInputTools,
 	usePromptInputController,
-} from "@ch5me/elf-ui/components/ai-elements/prompt-input"
+} from "@ch5me/agent-ui-web"
 import { type MentionOption, MentionPopover, type MentionPopoverHandle } from "./chat/mention-popover"
 import {
 	createAgentMention,
 	createFileMention,
 	insertMentionIntoText,
 } from "./chat/prompt-mentions"
-import { Popover, PopoverContent, PopoverTrigger } from "@ch5me/elf-ui/components/popover"
-import { Tooltip, TooltipContent, TooltipTrigger } from "@ch5me/elf-ui/components/tooltip"
 import { useNavigate, useParams } from "@tanstack/react-router"
 import { useAtomValue } from "jotai"
 import { serverConnectedAtom } from "../atoms/connection"
@@ -42,17 +42,6 @@ import {
 import { appStore } from "../atoms/store"
 import { useAgents, useProjectList } from "../hooks/use-agents"
 import { NEW_CHAT_DRAFT_KEY, useDraftActions, useDraftSnapshot } from "../hooks/use-draft"
-import type { ModelRef } from "../hooks/use-opencode-data"
-import {
-	getModelInputCapabilities,
-	getModelVariants,
-	resolveEffectiveModel,
-	useConfig,
-	useModelState,
-	useOpenCodeAgents,
-	useProviders,
-	useVcs,
-} from "../hooks/use-opencode-data"
 import { useAgentActions } from "../hooks/use-server"
 import { gateAgentSelection, resolveToolbarGating } from "../lib/profile"
 import type { FileAttachment } from "../lib/types"

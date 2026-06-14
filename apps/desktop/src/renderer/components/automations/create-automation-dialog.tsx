@@ -1,31 +1,5 @@
-/**
- * Create/edit automation dialog -- modal overlay for creating or editing an automation.
- *
- * In edit mode, shows metadata header (started date, run count, status),
- * pre-fills fields from the automation, and shows Delete/Test/Pause actions.
- */
-
-import { Badge } from "@ch5me/elf-ui/components/badge"
-import { Button } from "@ch5me/elf-ui/components/button"
-import {
-	Combobox,
-	ComboboxContent,
-	ComboboxEmpty,
-	ComboboxInput,
-	ComboboxItem,
-	ComboboxList,
-} from "@ch5me/elf-ui/components/combobox"
-import {
-	Dialog,
-	DialogContent,
-	DialogFooter,
-	DialogHeader,
-	DialogTitle,
-} from "@ch5me/elf-ui/components/dialog"
-import { Input } from "@ch5me/elf-ui/components/input"
-import { Label } from "@ch5me/elf-ui/components/label"
-import { Separator } from "@ch5me/elf-ui/components/separator"
-import { Textarea } from "@ch5me/elf-ui/components/textarea"
+import { useModelState, useOpenCodeAgents, useProviders, type ModelRef, getModelVariants } from "../../hooks/use-opencode-data";
+import { Badge, Button, Combobox, ComboboxContent, ComboboxEmpty, ComboboxInput, ComboboxItem, ComboboxList, Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, Input, Label, Separator, Textarea } from "@ch5me/ch5-ui-web";
 import { useAtomValue } from "jotai"
 import {
 	FolderIcon,
@@ -41,21 +15,14 @@ import type { Automation } from "../../../preload/api"
 import { activeServerConfigAtom } from "../../atoms/connection"
 import { discoveryProjectsAtom } from "../../atoms/discovery"
 import {
-	useModelState,
-	useOpenCodeAgents,
-	useProviders,
-} from "../../hooks/use-opencode-data"
-import {
 	createAutomation,
 	deleteAutomation,
 	pickDirectory,
 	runAutomationNow,
 	updateAutomation,
 } from "../../services/backend"
-import type { ModelRef } from "../../hooks/use-opencode-data"
 import { AgentSelector, ModelSelector, VariantSelector } from "../chat/prompt-toolbar"
 import { SchedulePicker } from "./schedule-picker"
-import { getModelVariants } from "../../hooks/use-opencode-data"
 
 interface CreateAutomationDialogProps {
 	open: boolean

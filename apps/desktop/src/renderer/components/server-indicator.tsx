@@ -1,16 +1,4 @@
-/**
- * Compact server indicator for the sidebar footer.
- *
- * Shows the active server name with a connection status dot.
- * Clicking opens a popover with a server switcher (including mDNS-discovered
- * servers) and link to settings.
- *
- * When the popover opens, non-active remote servers are health-checked
- * on demand via a quick fetch to /global/health.
- */
-
-import { Popover, PopoverContent, PopoverTrigger } from "@ch5me/elf-ui/components/popover"
-import { SidebarMenu, SidebarMenuButton, SidebarMenuItem } from "@ch5me/elf-ui/components/sidebar"
+import { Popover, PopoverContent, PopoverTrigger, SidebarMenu, SidebarMenuButton, SidebarMenuItem } from "@ch5me/ch5-ui-web";
 import { useNavigate } from "@tanstack/react-router"
 import { useAtomValue } from "jotai"
 import { CheckIcon, GlobeIcon, MonitorIcon, RadarIcon, SettingsIcon } from "lucide-react"

@@ -9,7 +9,7 @@ import {
 	ContextOutputUsage,
 	ContextReasoningUsage,
 	ContextTrigger,
-} from "@ch5me/elf-ui/components/ai-elements/context"
+} from "@ch5me/agent-ui-web"
 import type { Meta, StoryObj } from "@storybook/react-vite"
 
 const usage = {

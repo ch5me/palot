@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react"
-import { Button } from "@ch5me/elf-ui/components/button"
+import { Button } from "@ch5me/ch5-ui-web"
 import { MicIcon } from "lucide-react"
 import type { Agent } from "../../lib/types"
 import { paneWriters } from "../../atoms/pane-bus"

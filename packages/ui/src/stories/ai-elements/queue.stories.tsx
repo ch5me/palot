@@ -13,7 +13,7 @@ import {
 	QueueSectionContent,
 	QueueSectionLabel,
 	QueueSectionTrigger,
-} from "@ch5me/elf-ui/components/ai-elements/queue"
+} from "@ch5me/agent-ui-web"
 import type { Meta, StoryObj } from "@storybook/react-vite"
 import { CheckIcon, ListChecksIcon, XIcon } from "lucide-react"
 

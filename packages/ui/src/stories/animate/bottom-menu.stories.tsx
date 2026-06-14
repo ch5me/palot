@@ -1,8 +1,4 @@
-import {
-	BottomMenu,
-	BottomMenuOptionGroup,
-	BottomMenuRow,
-} from "@ch5me/elf-ui/components/animate/bottom-menu"
+import { BottomMenu, BottomMenuOptionGroup, BottomMenuRow } from "@ch5me/ch5-ui-web"
 import type { Meta, StoryObj } from "@storybook/react-vite"
 import { Code2Icon, SearchIcon, SettingsIcon, SlidersHorizontalIcon, ZapIcon } from "lucide-react"
 

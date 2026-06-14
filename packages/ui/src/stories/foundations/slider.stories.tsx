@@ -1,5 +1,4 @@
-import { Label } from "@ch5me/elf-ui/components/label"
-import { Slider } from "@ch5me/elf-ui/components/slider"
+import { Label, Slider } from "@ch5me/ch5-ui-web"
 import type { Meta, StoryObj } from "@storybook/react-vite"
 
 const meta = {

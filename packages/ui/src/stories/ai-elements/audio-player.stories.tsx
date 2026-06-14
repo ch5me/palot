@@ -10,7 +10,7 @@ import {
 	AudioPlayerTimeDisplay,
 	AudioPlayerTimeRange,
 	AudioPlayerVolumeRange,
-} from "@ch5me/elf-ui/components/ai-elements/audio-player"
+} from "@ch5me/agent-ui-web"
 import type { Meta, StoryObj } from "@storybook/react-vite"
 
 const silentAudio =

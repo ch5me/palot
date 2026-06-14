@@ -1,5 +1,5 @@
-import { Button } from "@ch5me/elf-ui/components/button"
 import {
+	Button,
 	Sheet,
 	SheetContent,
 	SheetDescription,
@@ -7,7 +7,7 @@ import {
 	SheetHeader,
 	SheetTitle,
 	SheetTrigger,
-} from "@ch5me/elf-ui/components/sheet"
+} from "@ch5me/ch5-ui-web"
 import type { Meta, StoryObj } from "@storybook/react-vite"
 
 const meta = {

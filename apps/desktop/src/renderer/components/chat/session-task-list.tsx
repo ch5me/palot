@@ -1,4 +1,4 @@
-import { cn } from "@ch5me/elf-ui/lib/utils"
+import { cn } from "@ch5me/ch5-ui-web"
 import { useAtomValue } from "jotai"
 import { CheckCircle2Icon, CircleDotIcon, Loader2Icon, XCircleIcon } from "lucide-react"
 import { useEffect, useMemo, useRef, useState } from "react"

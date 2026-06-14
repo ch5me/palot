@@ -8,10 +8,6 @@
 		"access": "public"
 	},
 	"exports": {
-		"./components/*": "./src/components/*.tsx",
-		"./components/ai-elements/*": "./src/components/ai-elements/*.tsx",
-		"./hooks/*": "./src/hooks/*.ts",
-		"./lib/*": "./src/lib/*.ts",
 		"./styles/globals.css": "./src/styles/globals.css"
 	},
 	"scripts": {

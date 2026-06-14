@@ -1,10 +1,10 @@
-import { Button } from "@ch5me/elf-ui/components/button"
 import {
+	Button,
 	ButtonGroup,
 	ButtonGroupSeparator,
 	ButtonGroupText,
-} from "@ch5me/elf-ui/components/button-group"
-import { Input } from "@ch5me/elf-ui/components/input"
+	Input,
+} from "@ch5me/ch5-ui-web"
 import type { Meta, StoryObj } from "@storybook/react-vite"
 import { CheckIcon, CopyIcon, PlayIcon } from "lucide-react"
 

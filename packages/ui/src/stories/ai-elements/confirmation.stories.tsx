@@ -4,7 +4,7 @@ import {
 	ConfirmationActions,
 	ConfirmationRequest,
 	ConfirmationTitle,
-} from "@ch5me/elf-ui/components/ai-elements/confirmation"
+} from "@ch5me/agent-ui-web"
 import type { Meta, StoryObj } from "@storybook/react-vite"
 
 const meta = {

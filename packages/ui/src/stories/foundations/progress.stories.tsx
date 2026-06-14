@@ -1,4 +1,4 @@
-import { Progress, ProgressLabel, ProgressValue } from "@ch5me/elf-ui/components/progress"
+import { Progress, ProgressLabel, ProgressValue } from "@ch5me/ch5-ui-web"
 import type { Meta, StoryObj } from "@storybook/react-vite"
 
 const meta = {

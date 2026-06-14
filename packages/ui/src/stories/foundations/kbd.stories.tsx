@@ -1,4 +1,4 @@
-import { Kbd, KbdGroup } from "@ch5me/elf-ui/components/kbd"
+import { Kbd, KbdGroup } from "@ch5me/ch5-ui-web"
 import type { Meta, StoryObj } from "@storybook/react-vite"
 import { CommandIcon } from "lucide-react"
 

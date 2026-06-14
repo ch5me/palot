@@ -4,7 +4,7 @@ import {
 	AgentHeader,
 	AgentInstructions,
 	AgentOutput,
-} from "@ch5me/elf-ui/components/ai-elements/agent"
+} from "@ch5me/agent-ui-web"
 import type { Meta, StoryObj } from "@storybook/react-vite"
 
 const outputSchema = `interface StorybookServiceOrder {

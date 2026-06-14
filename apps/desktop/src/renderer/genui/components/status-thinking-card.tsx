@@ -1,4 +1,4 @@
-import { cn } from "@ch5me/elf-ui/lib/utils"
+import { cn } from "@ch5me/ch5-ui-web"
 import { CheckCircle2, CircleDashed, Loader2, OctagonAlert } from "lucide-react"
 import { memo } from "react"
 import { z } from "zod"

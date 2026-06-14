@@ -1,9 +1,4 @@
-import {
-	Source,
-	Sources,
-	SourcesContent,
-	SourcesTrigger,
-} from "@ch5me/elf-ui/components/ai-elements/sources"
+import { Source, Sources, SourcesContent, SourcesTrigger } from "@ch5me/agent-ui-web"
 import type { Meta, StoryObj } from "@storybook/react-vite"
 
 const openByDefault = { defaultOpen: true }

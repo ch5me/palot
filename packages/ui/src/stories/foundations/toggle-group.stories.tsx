@@ -1,4 +1,4 @@
-import { ToggleGroup, ToggleGroupItem } from "@ch5me/elf-ui/components/toggle-group"
+import { ToggleGroup, ToggleGroupItem } from "@ch5me/ch5-ui-web"
 import type { Meta, StoryObj } from "@storybook/react-vite"
 import { Columns3Icon, PanelLeftIcon, PanelRightIcon } from "lucide-react"
 

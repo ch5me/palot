@@ -1,6 +1,4 @@
-import { Button } from "@ch5me/elf-ui/components/button"
-import { Input } from "@ch5me/elf-ui/components/input"
-import { cn } from "@ch5me/elf-ui/lib/utils"
+import { Button, Input, cn } from "@ch5me/ch5-ui-web";
 import { type ChangeEvent, useEffect, useMemo, useState } from "react"
 import {
 	ChevronRightIcon,

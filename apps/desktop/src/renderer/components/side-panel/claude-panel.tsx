@@ -1,5 +1,6 @@
+import { fetchProviderDetections, restoreMigrationBackup, isElectron } from "../../services/backend";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
-import { Button } from "@ch5me/elf-ui/components/button"
+import { Button } from "@ch5me/ch5-ui-web"
 import {
 	AlertTriangleIcon,
 	ArrowDownToLineIcon,
@@ -17,11 +18,6 @@ import {
 } from "lucide-react"
 import { toast } from "sonner"
 import type { Agent } from "../../lib/types"
-import {
-	fetchProviderDetections,
-	restoreMigrationBackup,
-} from "../../services/backend"
-import { isElectron } from "../../services/backend"
 
 interface ClaudePanelProps {
 	agent: Agent

@@ -1,9 +1,4 @@
-import { Button } from "@ch5me/elf-ui/components/button"
-import {
-	Collapsible,
-	CollapsibleContent,
-	CollapsibleTrigger,
-} from "@ch5me/elf-ui/components/collapsible"
+import { Button, Collapsible, CollapsibleContent, CollapsibleTrigger } from "@ch5me/ch5-ui-web"
 import type { Meta, StoryObj } from "@storybook/react-vite"
 import { ChevronsUpDownIcon } from "lucide-react"
 

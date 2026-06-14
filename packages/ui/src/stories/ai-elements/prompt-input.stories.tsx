@@ -13,7 +13,7 @@ import {
 	PromptInputSubmit,
 	PromptInputTextarea,
 	PromptInputTools,
-} from "@ch5me/elf-ui/components/ai-elements/prompt-input"
+} from "@ch5me/agent-ui-web"
 import type { Meta, StoryObj } from "@storybook/react-vite"
 import { BrainCircuitIcon, PaperclipIcon, SearchIcon, SparklesIcon } from "lucide-react"
 

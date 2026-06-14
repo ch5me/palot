@@ -23,7 +23,7 @@ import {
 	type FireflyPluginEntry,
 	type FireflyPluginProjectionSummary,
 } from "../../hooks/use-firefly-plugins"
-import { Button } from "@ch5me/elf-ui/components/button"
+import { Button } from "@ch5me/ch5-ui-web"
 
 interface V2PluginsPanelProps {
 	agent: { sessionId: string; directory: string; project: string }

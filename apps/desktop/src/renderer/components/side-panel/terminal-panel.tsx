@@ -1,12 +1,11 @@
-import { Button } from "@ch5me/elf-ui/components/button"
-import { Input } from "@ch5me/elf-ui/components/input"
+import { Button, Input } from "@ch5me/ch5-ui-web";
 import {
 	Terminal,
 	TerminalContent,
 	TerminalCopyButton,
 	TerminalHeader,
 	TerminalTitle,
-} from "@ch5me/elf-ui/components/ai-elements/terminal"
+} from "@ch5me/agent-ui-web"
 import { useEffect, useMemo, useRef, useState } from "react"
 import { DEFAULT_LOCAL_SERVER_PORT } from "../../../shared/server-config"
 import { paneSubmitters, paneWriters } from "../../atoms/pane-bus"

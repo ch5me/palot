@@ -1,4 +1,4 @@
-import { Alert, AlertAction, AlertDescription, AlertTitle } from "@ch5me/elf-ui/components/alert"
+import { Alert, AlertAction, AlertDescription, AlertTitle } from "@ch5me/ch5-ui-web"
 import type { Meta, StoryObj } from "@storybook/react-vite"
 import { AlertTriangleIcon, CheckCircle2Icon } from "lucide-react"
 

@@ -9,8 +9,8 @@ import {
 	AlertDialogMedia,
 	AlertDialogTitle,
 	AlertDialogTrigger,
-} from "@ch5me/elf-ui/components/alert-dialog"
-import { Button } from "@ch5me/elf-ui/components/button"
+	Button,
+} from "@ch5me/ch5-ui-web"
 import type { Meta, StoryObj } from "@storybook/react-vite"
 import { TriangleAlertIcon } from "lucide-react"
 

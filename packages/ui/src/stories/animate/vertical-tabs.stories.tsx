@@ -1,4 +1,4 @@
-import { VerticalTabs } from "@ch5me/elf-ui/components/animate/vertical-tabs"
+import { VerticalTabs } from "@ch5me/ch5-ui-web"
 import type { Meta, StoryObj } from "@storybook/react-vite"
 
 const Panel = ({ title, detail }: { title: string; detail: string }) => (

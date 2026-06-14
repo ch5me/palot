@@ -1,3 +1,4 @@
+import { Component, lazy, Suspense, useMemo, type ComponentType, type ErrorInfo, type LazyExoticComponent, type ReactNode, useEffect } from "react";
 /**
  * Firefly Plugin System V2 — catalog-served surface tabs (React layer)
  *
@@ -22,21 +23,8 @@
  */
 
 import { BookTextIcon, PlugIcon, type LucideIcon } from "lucide-react"
-import {
-	Component,
-	lazy,
-	Suspense,
-	useMemo,
-	type ComponentType,
-	type ErrorInfo,
-	type LazyExoticComponent,
-	type ReactNode,
-} from "react"
-
-import { Button } from "@ch5me/elf-ui/components/button"
+import { Button } from "@ch5me/ch5-ui-web"
 import { useQuery, useQueryClient } from "@tanstack/react-query"
-import { useEffect } from "react"
-
 import type { ProjectedSidePanel } from "../shared/firefly-plugin/renderer-projection"
 import type { FireflySidePanelTab } from "./firefly-surface-registry"
 import {

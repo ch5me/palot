@@ -21,7 +21,7 @@ import {
 	CommitMetadata,
 	CommitSeparator,
 	CommitTimestamp,
-} from "@ch5me/elf-ui/components/ai-elements/commit"
+} from "@ch5me/agent-ui-web"
 import type { Meta, StoryObj } from "@storybook/react-vite"
 
 const commitDate = new Date("2026-06-14T00:33:22Z")

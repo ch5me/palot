@@ -7,7 +7,7 @@ import {
 	CommandList,
 	CommandSeparator,
 	CommandShortcut,
-} from "@ch5me/elf-ui/components/command"
+} from "@ch5me/ch5-ui-web"
 import { useNavigate, useParams } from "@tanstack/react-router"
 import { useAtom, useAtomValue, useSetAtom } from "jotai"
 import {

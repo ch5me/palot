@@ -11,7 +11,7 @@
  * per project per re-render.
  */
 
-import { Button } from "@ch5me/elf-ui/components/button"
+import { Button } from "@ch5me/ch5-ui-web"
 import { GitForkIcon, Loader2Icon, RotateCcwIcon, TrashIcon } from "lucide-react"
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { useProjectList } from "../../hooks/use-agents"

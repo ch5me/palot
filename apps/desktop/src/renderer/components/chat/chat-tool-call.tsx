@@ -1,22 +1,6 @@
-import {
-	CodeBlock,
-	CodeBlockActions,
-	CodeBlockContent,
-	CodeBlockCopyButton,
-	CodeBlockHeader,
-	CodeBlockTitle,
-} from "@ch5me/elf-ui/components/ai-elements/code-block"
-import { Diff, DiffContent } from "@ch5me/elf-ui/components/ai-elements/diff"
-import {
-	Terminal,
-	TerminalContent,
-	TerminalCopyButton,
-	TerminalHeader,
-	TerminalTitle,
-} from "@ch5me/elf-ui/components/ai-elements/terminal"
-import { Dialog, DialogContent, DialogTitle, DialogTrigger } from "@ch5me/elf-ui/components/dialog"
-import { cn } from "@ch5me/elf-ui/lib/utils"
-
+import { type ReactNode, memo, useCallback, useMemo } from "react";
+import { Dialog, DialogContent, DialogTitle, DialogTrigger, cn } from "@ch5me/ch5-ui-web";
+import { CodeBlock, CodeBlockActions, CodeBlockContent, CodeBlockCopyButton, CodeBlockHeader, CodeBlockTitle, Diff, DiffContent, Terminal, TerminalContent, TerminalCopyButton, TerminalHeader, TerminalTitle } from "@ch5me/agent-ui-web";
 import { useSetAtom } from "jotai"
 import {
 	AlertTriangleIcon,
@@ -38,8 +22,6 @@ import {
 	XIcon,
 	ZapIcon,
 } from "lucide-react"
-import type { ReactNode } from "react"
-import { memo, useCallback, useMemo } from "react"
 import { useToolElapsedTime } from "../../hooks/use-elapsed-time"
 import type { BundledLanguage } from "shiki"
 import { getPartFirstSeenAt } from "../../atoms/parts"

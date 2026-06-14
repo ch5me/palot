@@ -1,4 +1,4 @@
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@ch5me/elf-ui/components/tabs"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@ch5me/ch5-ui-web"
 import type { Meta, StoryObj } from "@storybook/react-vite"
 import { BotIcon, FolderIcon, GlobeIcon } from "lucide-react"
 

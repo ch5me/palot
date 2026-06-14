@@ -7,7 +7,7 @@ import {
 	AnimatedCollectionList,
 	type AnimatedCollectionView,
 	AnimatedCollectionViewToggle,
-} from "@ch5me/elf-ui/components/animate/animated-collection"
+} from "@ch5me/ch5-ui-web"
 import type { Meta, StoryObj } from "@storybook/react-vite"
 import { Grid2X2Icon, Layers3Icon, ListIcon } from "lucide-react"
 import { useState } from "react"

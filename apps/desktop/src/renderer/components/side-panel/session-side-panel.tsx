@@ -1,5 +1,4 @@
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@ch5me/elf-ui/components/tabs"
-import { cn } from "@ch5me/elf-ui/lib/utils"
+import { Tabs, TabsContent, TabsList, TabsTrigger, cn } from "@ch5me/ch5-ui-web";
 import { useAtom, useSetAtom } from "jotai"
 import { XIcon } from "lucide-react"
 import { useCallback, useEffect, useMemo } from "react"

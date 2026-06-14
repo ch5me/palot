@@ -1,14 +1,6 @@
-import {
-	Collapsible,
-	CollapsibleContent,
-	CollapsibleTrigger,
-} from "@ch5me/elf-ui/components/collapsible"
-import { Tooltip, TooltipContent, TooltipTrigger } from "@ch5me/elf-ui/components/tooltip"
-import { cn } from "@ch5me/elf-ui/lib/utils"
+import { type ReactNode, memo, useState } from "react";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger, Tooltip, TooltipContent, TooltipTrigger, cn } from "@ch5me/ch5-ui-web";
 import { ChevronRightIcon } from "lucide-react"
-import type { ReactNode } from "react"
-import { memo, useState } from "react"
-
 // ============================================================
 // Tool category colors — left-border accent for visual landmarks
 // ============================================================

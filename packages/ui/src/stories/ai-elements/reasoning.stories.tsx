@@ -1,8 +1,4 @@
-import {
-	Reasoning,
-	ReasoningContent,
-	ReasoningTrigger,
-} from "@ch5me/elf-ui/components/ai-elements/reasoning"
+import { Reasoning, ReasoningContent, ReasoningTrigger } from "@ch5me/agent-ui-web"
 import type { Meta, StoryObj } from "@storybook/react-vite"
 
 const reasoning = `Coverage closes only when both signals agree:

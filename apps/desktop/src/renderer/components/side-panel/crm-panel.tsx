@@ -1,7 +1,5 @@
+import { Button, Input, Textarea } from "@ch5me/ch5-ui-web";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
-import { Button } from "@ch5me/elf-ui/components/button"
-import { Input } from "@ch5me/elf-ui/components/input"
-import { Textarea } from "@ch5me/elf-ui/components/textarea"
 import {
 	AlertTriangleIcon,
 	AtSignIcon,

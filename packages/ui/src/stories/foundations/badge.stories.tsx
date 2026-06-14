@@ -1,4 +1,4 @@
-import { Badge } from "@ch5me/elf-ui/components/badge"
+import { Badge } from "@ch5me/ch5-ui-web"
 import type { Meta, StoryObj } from "@storybook/react-vite"
 import { CheckIcon, GitBranchIcon } from "lucide-react"
 

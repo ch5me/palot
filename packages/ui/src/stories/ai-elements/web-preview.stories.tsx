@@ -5,7 +5,7 @@ import {
 	WebPreviewNavigation,
 	WebPreviewNavigationButton,
 	WebPreviewUrl,
-} from "@ch5me/elf-ui/components/ai-elements/web-preview"
+} from "@ch5me/agent-ui-web"
 import type { Meta, StoryObj } from "@storybook/react-vite"
 import { ArrowLeftIcon, ArrowRightIcon, ExternalLinkIcon, RefreshCcwIcon } from "lucide-react"
 

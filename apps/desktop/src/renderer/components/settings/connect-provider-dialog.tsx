@@ -1,24 +1,4 @@
-/**
- * Dialog for connecting an AI provider via API key or OAuth.
- *
- * Supports multi-step flows: method selection -> authentication.
- * For multi-env providers, shows either a structured credential form
- * (when auth.set + config options can cover all fields) or improved
- * env-var instructions with copy buttons and docs links.
- */
-
-import { Button } from "@ch5me/elf-ui/components/button"
-import {
-	Dialog,
-	DialogContent,
-	DialogDescription,
-	DialogFooter,
-	DialogHeader,
-	DialogTitle,
-} from "@ch5me/elf-ui/components/dialog"
-import { Input } from "@ch5me/elf-ui/components/input"
-import { Label } from "@ch5me/elf-ui/components/label"
-import { Spinner } from "@ch5me/elf-ui/components/spinner"
+import { Button, Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, Input, Label, Spinner } from "@ch5me/ch5-ui-web";
 import {
 	AlertCircleIcon,
 	CheckCircle2Icon,

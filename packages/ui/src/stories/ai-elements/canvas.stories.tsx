@@ -1,23 +1,21 @@
-import { Canvas } from "@ch5me/elf-ui/components/ai-elements/canvas"
-import { Connection } from "@ch5me/elf-ui/components/ai-elements/connection"
-import { Controls } from "@ch5me/elf-ui/components/ai-elements/controls"
-import { Edge } from "@ch5me/elf-ui/components/ai-elements/edge"
 import {
+	Canvas,
 	Node as CanvasNode,
+	Connection,
+	Controls,
+	Edge,
 	NodeAction,
 	NodeContent,
 	NodeDescription,
 	NodeFooter,
 	NodeHeader,
 	NodeTitle,
-} from "@ch5me/elf-ui/components/ai-elements/node"
-import { Panel } from "@ch5me/elf-ui/components/ai-elements/panel"
-import { Toolbar } from "@ch5me/elf-ui/components/ai-elements/toolbar"
-import { Badge } from "@ch5me/elf-ui/components/badge"
-import { Button } from "@ch5me/elf-ui/components/button"
+	Panel,
+	Toolbar,
+} from "@ch5me/agent-ui-web"
+import { Badge, Button } from "@ch5me/ch5-ui-web"
 import type { Meta, StoryObj } from "@storybook/react-vite"
-import type { Edge as ReactFlowEdge, Node as ReactFlowNode } from "@xyflow/react"
-import { MarkerType } from "@xyflow/react"
+import { MarkerType, type Edge as ReactFlowEdge, type Node as ReactFlowNode } from "@xyflow/react"
 import { CheckIcon, CopyIcon, PlayIcon } from "lucide-react"
 
 const nodes: ReactFlowNode[] = [

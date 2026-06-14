@@ -3,7 +3,18 @@
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
 
-@source "../components";
+/*
+ * Components now live in the CH5-owned packages, not in this repo. Tailwind v4
+ * auto-detection ignores node_modules, so we must explicitly scan the upstream
+ * package builds (resolved via the workspace symlinks) or their utility classes
+ * (bg-primary, h-9, px-4, inline-flex, …) never get generated and components
+ * render unstyled. Path is relative to THIS file, so it works for every
+ * consumer of globals.css (app + Storybook). Keep ../stories for story-local
+ * utilities.
+ */
+@source "../stories";
+@source "../../../../node_modules/@ch5me/ch5-ui-web/dist";
+@source "../../../../node_modules/@ch5me/agent-ui-web/dist";
 
 @custom-variant dark (&:is(.dark *));
 

@@ -1,5 +1,5 @@
-import { Button } from "@ch5me/elf-ui/components/button"
 import {
+	Button,
 	SearchableListPopover,
 	SearchableListPopoverContent,
 	SearchableListPopoverGroup,
@@ -7,7 +7,7 @@ import {
 	SearchableListPopoverList,
 	SearchableListPopoverSearch,
 	SearchableListPopoverTrigger,
-} from "@ch5me/elf-ui/components/searchable-list-popover"
+} from "@ch5me/ch5-ui-web"
 import type { Meta, StoryObj } from "@storybook/react-vite"
 import { SearchIcon } from "lucide-react"
 

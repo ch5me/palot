@@ -1,14 +1,14 @@
-import { Button } from "@ch5me/elf-ui/components/button"
-import { Input } from "@ch5me/elf-ui/components/input"
-import { Label } from "@ch5me/elf-ui/components/label"
 import {
+	Button,
+	Input,
+	Label,
 	Popover,
 	PopoverContent,
 	PopoverDescription,
 	PopoverHeader,
 	PopoverTitle,
 	PopoverTrigger,
-} from "@ch5me/elf-ui/components/popover"
+} from "@ch5me/ch5-ui-web"
 import type { Meta, StoryObj } from "@storybook/react-vite"
 
 const meta = {

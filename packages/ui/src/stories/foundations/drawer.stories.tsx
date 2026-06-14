@@ -1,5 +1,5 @@
-import { Button } from "@ch5me/elf-ui/components/button"
 import {
+	Button,
 	Drawer,
 	DrawerClose,
 	DrawerContent,
@@ -8,7 +8,7 @@ import {
 	DrawerHeader,
 	DrawerTitle,
 	DrawerTrigger,
-} from "@ch5me/elf-ui/components/drawer"
+} from "@ch5me/ch5-ui-web"
 import type { Meta, StoryObj } from "@storybook/react-vite"
 
 const meta = {

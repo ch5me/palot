@@ -1,4 +1,4 @@
-import { ExpandableGallery } from "@ch5me/elf-ui/components/animate/expandable-gallery"
+import { ExpandableGallery } from "@ch5me/ch5-ui-web"
 import type { Meta, StoryObj } from "@storybook/react-vite"
 
 const image = (from: string, to: string, label: string) =>

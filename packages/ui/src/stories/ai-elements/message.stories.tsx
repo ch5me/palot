@@ -11,7 +11,7 @@ import {
 	MessageContent,
 	MessageResponse,
 	MessageToolbar,
-} from "@ch5me/elf-ui/components/ai-elements/message"
+} from "@ch5me/agent-ui-web"
 import type { Meta, StoryObj } from "@storybook/react-vite"
 import { CopyIcon, RefreshCcwIcon, ThumbsUpIcon } from "lucide-react"
 

@@ -1,6 +1,5 @@
-import { Canvas } from "@ch5me/elf-ui/components/ai-elements/canvas"
-import { Panel } from "@ch5me/elf-ui/components/ai-elements/panel"
-import { Badge } from "@ch5me/elf-ui/components/badge"
+import { Canvas, Panel } from "@ch5me/agent-ui-web"
+import { Badge } from "@ch5me/ch5-ui-web"
 import type { Meta, StoryObj } from "@storybook/react-vite"
 
 const meta = {

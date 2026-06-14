@@ -1,12 +1,12 @@
-import { Button } from "@ch5me/elf-ui/components/button"
 import {
+	Button,
 	Empty,
 	EmptyContent,
 	EmptyDescription,
 	EmptyHeader,
 	EmptyMedia,
 	EmptyTitle,
-} from "@ch5me/elf-ui/components/empty"
+} from "@ch5me/ch5-ui-web"
 import type { Meta, StoryObj } from "@storybook/react-vite"
 import { InboxIcon } from "lucide-react"
 

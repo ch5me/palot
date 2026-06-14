@@ -1,42 +1,5 @@
-/**
- * Provider management settings tab.
- * Shows connected providers and allows connecting/disconnecting AI providers.
- *
- * Uses two endpoints:
- * - GET /provider/ (full catalog + connected IDs)
- * - GET /config/providers (connected providers with source field)
- *
- * The source field tells us HOW a provider is connected:
- * - "env"    -- via environment variable (e.g. ANTHROPIC_API_KEY)
- * - "api"    -- via API key stored in auth.json
- * - "custom" -- via OAuth or plugin (e.g. Claude Pro/Max)
- * - "config" -- via opencode.json config (overrides other sources)
- *
- * Key UX decisions:
- * - OpenCode Zen: always sorted first, shows free/paid tier indicator
- * - Env-only providers: show "Environment" badge, no disconnect
- * - OAuth/API key providers: show source badge + disconnect button
- * - "Browse all providers" button opens a dialog with search + full catalog
- */
-
-import { Badge } from "@ch5me/elf-ui/components/badge"
-import { Button } from "@ch5me/elf-ui/components/button"
-import {
-	Dialog,
-	DialogContent,
-	DialogDescription,
-	DialogHeader,
-	DialogTitle,
-} from "@ch5me/elf-ui/components/dialog"
-import { Input } from "@ch5me/elf-ui/components/input"
-import { ScrollArea } from "@ch5me/elf-ui/components/scroll-area"
-import { Skeleton } from "@ch5me/elf-ui/components/skeleton"
-import {
-	Tooltip,
-	TooltipContent,
-	TooltipProvider,
-	TooltipTrigger,
-} from "@ch5me/elf-ui/components/tooltip"
+import { type ConnectedProviderInfo, type SdkProviderAuthMethod as ProviderAuthMethod, type CatalogProvider, queryKeys, useAllProviders, useConnectedProviders, useProviderAuthMethods } from "../../hooks/use-opencode-data";
+import { Badge, Button, Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Input, ScrollArea, Skeleton, Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@ch5me/ch5-ui-web";
 import { useQueryClient } from "@tanstack/react-query"
 import {
 	AlertCircleIcon,
@@ -49,17 +12,6 @@ import {
 	ZapIcon,
 } from "lucide-react"
 import { useCallback, useEffect, useRef, useState } from "react"
-import type {
-	ConnectedProviderInfo,
-	SdkProviderAuthMethod as ProviderAuthMethod,
-} from "../../hooks/use-opencode-data"
-import {
-	type CatalogProvider,
-	queryKeys,
-	useAllProviders,
-	useConnectedProviders,
-	useProviderAuthMethods,
-} from "../../hooks/use-opencode-data"
 import { createLogger } from "../../lib/logger"
 import {
 	compareByPopularity,

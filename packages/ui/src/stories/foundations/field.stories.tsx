@@ -1,5 +1,5 @@
-import { Checkbox } from "@ch5me/elf-ui/components/checkbox"
 import {
+	Checkbox,
 	Field,
 	FieldContent,
 	FieldDescription,
@@ -10,9 +10,10 @@ import {
 	FieldSeparator,
 	FieldSet,
 	FieldTitle,
-} from "@ch5me/elf-ui/components/field"
-import { Input } from "@ch5me/elf-ui/components/input"
-import { RadioGroup, RadioGroupItem } from "@ch5me/elf-ui/components/radio-group"
+	Input,
+	RadioGroup,
+	RadioGroupItem,
+} from "@ch5me/ch5-ui-web"
 import type { Meta, StoryObj } from "@storybook/react-vite"
 
 const meta = {

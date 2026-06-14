@@ -7,7 +7,7 @@ import {
 	SandboxTabsBar,
 	SandboxTabsList,
 	SandboxTabsTrigger,
-} from "@ch5me/elf-ui/components/ai-elements/sandbox"
+} from "@ch5me/agent-ui-web"
 import type { Meta, StoryObj } from "@storybook/react-vite"
 
 const meta = {

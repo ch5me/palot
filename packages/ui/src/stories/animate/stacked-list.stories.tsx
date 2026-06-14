@@ -12,7 +12,7 @@ import {
 	StackedListStatusDot,
 	StackedListTag,
 	useStackedList,
-} from "@ch5me/elf-ui/components/animate/stacked-list"
+} from "@ch5me/ch5-ui-web"
 import type { Meta, StoryObj } from "@storybook/react-vite"
 import { CheckCircle2Icon, Clock3Icon } from "lucide-react"
 

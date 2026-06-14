@@ -1,5 +1,4 @@
-import { Button } from "@ch5me/elf-ui/components/button"
-import { Input } from "@ch5me/elf-ui/components/input"
+import { Button, Input } from "@ch5me/ch5-ui-web";
 import { useEffect, useMemo, useRef, useState } from "react"
 import type * as Monaco from "monaco-editor"
 import { CheckIcon, CircleIcon, ExternalLinkIcon, FileIcon, Loader2Icon } from "lucide-react"

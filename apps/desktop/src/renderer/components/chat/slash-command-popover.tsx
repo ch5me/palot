@@ -1,15 +1,4 @@
-/**
- * Slash command popover — appears when the user types `/` in the input.
- *
- * Matches the OpenCode TUI pattern:
- * - Flat command list with fuzzy search
- * - Skills are excluded (accessible via /skills → opens a dedicated picker)
- * - MCP commands show a `:mcp` badge
- * - Keyboard navigation (Arrow keys, Enter/Tab, Escape)
- */
-
-import { ScrollArea } from "@ch5me/elf-ui/components/scroll-area"
-import { cn } from "@ch5me/elf-ui/lib/utils"
+import { ScrollArea, cn } from "@ch5me/ch5-ui-web";
 import fuzzysort from "fuzzysort"
 import {
 	BookOpenIcon,

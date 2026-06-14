@@ -16,7 +16,7 @@ import {
 	TestSuiteContent,
 	TestSuiteName,
 	TestSuiteStats,
-} from "@ch5me/elf-ui/components/ai-elements/test-results"
+} from "@ch5me/agent-ui-web"
 import type { Meta, StoryObj } from "@storybook/react-vite"
 
 const summary = {

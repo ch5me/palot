@@ -1,5 +1,5 @@
-import { Canvas } from "@ch5me/elf-ui/components/ai-elements/canvas"
 import {
+	Canvas,
 	Node,
 	NodeAction,
 	NodeContent,
@@ -7,8 +7,8 @@ import {
 	NodeFooter,
 	NodeHeader,
 	NodeTitle,
-} from "@ch5me/elf-ui/components/ai-elements/node"
-import { Badge } from "@ch5me/elf-ui/components/badge"
+} from "@ch5me/agent-ui-web"
+import { Badge } from "@ch5me/ch5-ui-web"
 import type { Meta, StoryObj } from "@storybook/react-vite"
 import { CheckCircleIcon } from "lucide-react"
 

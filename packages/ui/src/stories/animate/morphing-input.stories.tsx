@@ -1,4 +1,4 @@
-import { MorphingInput } from "@ch5me/elf-ui/components/animate/morphing-input"
+import { MorphingInput } from "@ch5me/ch5-ui-web"
 import type { Meta, StoryObj } from "@storybook/react-vite"
 import { Code2Icon, SearchIcon, SparklesIcon } from "lucide-react"
 

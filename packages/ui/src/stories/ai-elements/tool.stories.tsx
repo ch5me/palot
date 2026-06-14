@@ -1,10 +1,4 @@
-import {
-	Tool,
-	ToolContent,
-	ToolHeader,
-	ToolInput,
-	ToolOutput,
-} from "@ch5me/elf-ui/components/ai-elements/tool"
+import { Tool, ToolContent, ToolHeader, ToolInput, ToolOutput } from "@ch5me/agent-ui-web"
 import type { Meta, StoryObj } from "@storybook/react-vite"
 
 const input = {

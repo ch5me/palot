@@ -1,10 +1,4 @@
-import { Button } from "@ch5me/elf-ui/components/button"
-import {
-	Tooltip,
-	TooltipContent,
-	TooltipProvider,
-	TooltipTrigger,
-} from "@ch5me/elf-ui/components/tooltip"
+import { Button, Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@ch5me/ch5-ui-web"
 import type { Meta, StoryObj } from "@storybook/react-vite"
 import { InfoIcon } from "lucide-react"
 

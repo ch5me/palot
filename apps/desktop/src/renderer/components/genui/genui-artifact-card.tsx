@@ -6,8 +6,8 @@ import {
 	ArtifactDescription,
 	ArtifactHeader,
 	ArtifactTitle,
-} from "@ch5me/elf-ui/components/ai-elements/artifact"
-import { Badge } from "@ch5me/elf-ui/components/badge"
+} from "@ch5me/agent-ui-web"
+import { Badge } from "@ch5me/ch5-ui-web"
 import { PinIcon, PinOffIcon } from "lucide-react"
 import { useMemo } from "react"
 import { GenUiBlock } from "../../genui/genui-renderer"

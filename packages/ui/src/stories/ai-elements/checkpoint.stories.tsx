@@ -1,8 +1,4 @@
-import {
-	Checkpoint,
-	CheckpointIcon,
-	CheckpointTrigger,
-} from "@ch5me/elf-ui/components/ai-elements/checkpoint"
+import { Checkpoint, CheckpointIcon, CheckpointTrigger } from "@ch5me/agent-ui-web"
 import type { Meta, StoryObj } from "@storybook/react-vite"
 
 const meta = {

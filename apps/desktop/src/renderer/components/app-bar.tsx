@@ -1,5 +1,4 @@
-import { Button } from "@ch5me/elf-ui/components/button"
-import { Tooltip, TooltipContent, TooltipTrigger } from "@ch5me/elf-ui/components/tooltip"
+import { Button, Tooltip, TooltipContent, TooltipTrigger } from "@ch5me/ch5-ui-web";
 import { useSetAtom } from "jotai"
 import { PanelLeftIcon, PlusIcon } from "lucide-react"
 import { useCallback } from "react"

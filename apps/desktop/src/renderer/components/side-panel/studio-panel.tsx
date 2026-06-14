@@ -1,5 +1,4 @@
-import { Button } from "@ch5me/elf-ui/components/button"
-import { Input } from "@ch5me/elf-ui/components/input"
+import { Button, Input } from "@ch5me/ch5-ui-web";
 import { useMemo, useState } from "react"
 import {
 	ExternalLinkIcon,

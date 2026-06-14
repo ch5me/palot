@@ -1,7 +1,6 @@
-import { Connection } from "@ch5me/elf-ui/components/ai-elements/connection"
+import { Connection } from "@ch5me/agent-ui-web"
 import type { Meta, StoryObj } from "@storybook/react-vite"
-import type { Handle, InternalNode } from "@xyflow/react"
-import { ConnectionLineType, Position } from "@xyflow/react"
+import { ConnectionLineType, type Handle, type InternalNode, Position } from "@xyflow/react"
 
 const sourceNode = {
 	id: "source",

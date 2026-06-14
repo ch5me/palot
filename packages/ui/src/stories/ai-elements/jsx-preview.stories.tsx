@@ -1,8 +1,4 @@
-import {
-	JSXPreview,
-	JSXPreviewContent,
-	JSXPreviewError,
-} from "@ch5me/elf-ui/components/ai-elements/jsx-preview"
+import { JSXPreview, JSXPreviewContent, JSXPreviewError } from "@ch5me/agent-ui-web"
 import type { Meta, StoryObj } from "@storybook/react-vite"
 import type { ReactNode } from "react"
 

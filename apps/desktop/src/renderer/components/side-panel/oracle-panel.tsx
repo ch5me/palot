@@ -1,6 +1,6 @@
+import { createOracle, deleteOracle, fetchOracles, fetchTmuxSessions, killTmuxSession, renameOracle, type OracleInfo, type TmuxSessionInfo, spawnPtyOracle, spawnPtyTmux } from "../../services/backend";
+import { Button, Input } from "@ch5me/ch5-ui-web";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
-import { Button } from "@ch5me/elf-ui/components/button"
-import { Input } from "@ch5me/elf-ui/components/input"
 import {
 	AlertTriangleIcon,
 	EyeIcon,
@@ -15,17 +15,6 @@ import {
 import { useCallback, useEffect, useMemo, useState } from "react"
 import { toast } from "sonner"
 import type { Agent } from "../../lib/types"
-import {
-	createOracle,
-	deleteOracle,
-	fetchOracles,
-	fetchTmuxSessions,
-	killTmuxSession,
-	renameOracle,
-	type OracleInfo,
-	type TmuxSessionInfo,
-} from "../../services/backend"
-import { spawnPtyOracle, spawnPtyTmux } from "../../services/backend"
 
 interface OraclePanelProps {
 	agent: Agent

@@ -5,8 +5,8 @@ import {
 	InputGroupInput,
 	InputGroupText,
 	InputGroupTextarea,
-} from "@ch5me/elf-ui/components/input-group"
-import { Kbd } from "@ch5me/elf-ui/components/kbd"
+	Kbd,
+} from "@ch5me/ch5-ui-web"
 import type { Meta, StoryObj } from "@storybook/react-vite"
 import { LinkIcon, SearchIcon, SendIcon } from "lucide-react"
 

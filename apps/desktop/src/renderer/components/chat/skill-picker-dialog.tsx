@@ -1,21 +1,4 @@
-/**
- * Skill picker dialog — opened via /skills slash command.
- *
- * Matches the OpenCode TUI pattern: a dedicated dialog for browsing
- * and selecting skills, separate from the main slash command popover.
- * Uses the SDK's app.skills() endpoint for the full skill list.
- */
-
-import {
-	Dialog,
-	DialogContent,
-	DialogDescription,
-	DialogHeader,
-	DialogTitle,
-} from "@ch5me/elf-ui/components/dialog"
-import { Input } from "@ch5me/elf-ui/components/input"
-import { ScrollArea } from "@ch5me/elf-ui/components/scroll-area"
-import { cn } from "@ch5me/elf-ui/lib/utils"
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Input, ScrollArea, cn } from "@ch5me/ch5-ui-web";
 import { useQuery } from "@tanstack/react-query"
 import fuzzysort from "fuzzysort"
 import { BookOpenIcon, SearchIcon } from "lucide-react"

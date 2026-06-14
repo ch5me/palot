@@ -1,4 +1,4 @@
-import { Toaster } from "@ch5me/elf-ui/components/sonner"
+import { Toaster } from "@ch5me/ch5-ui-web"
 import type { Meta, StoryObj } from "@storybook/react-vite"
 import { useEffect } from "react"
 import { toast } from "sonner"

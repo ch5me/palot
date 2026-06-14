@@ -1,21 +1,8 @@
-import {
-	Conversation,
-	ConversationContent,
-	ConversationScrollButton,
-	useStickToBottomContext,
-} from "@ch5me/elf-ui/components/ai-elements/conversation"
-import {
-	PromptInput,
-	PromptInputButton,
-	PromptInputFooter,
-	PromptInputProvider,
-	PromptInputSubmit,
-	PromptInputTextarea,
-	PromptInputTools,
-	usePromptInputAttachments,
-	usePromptInputController,
-} from "@ch5me/elf-ui/components/ai-elements/prompt-input"
-import { cn } from "@ch5me/elf-ui/lib/utils"
+import { type MentionOption, MentionPopover, type MentionPopoverHandle } from "./mention-popover";
+import { type ConfigData, type ModelRef, type ProvidersData, type SdkAgent, type VcsData, getModelInputCapabilities, getModelVariants, resolveEffectiveModel, useModelState } from "../../hooks/use-opencode-data";
+import { type SessionSetupPhase, sessionFamily } from "../../atoms/sessions";
+import { Conversation, ConversationContent, ConversationScrollButton, useStickToBottomContext, PromptInput, PromptInputButton, PromptInputFooter, PromptInputProvider, PromptInputSubmit, PromptInputTextarea, PromptInputTools, usePromptInputAttachments, usePromptInputController } from "@ch5me/agent-ui-web";
+import { cn } from "@ch5me/ch5-ui-web"
 import { useAtomValue, useSetAtom } from "jotai"
 import { LoomContextProvider } from "../../loom/loom-context"
 import {
@@ -49,27 +36,12 @@ import {
 } from "../../atoms/chat"
 import { loomEnabledAtom } from "../../atoms/feature-flags"
 import { projectModelsAtom, setProjectModelAtom } from "../../atoms/preferences"
-import type { SessionSetupPhase } from "../../atoms/sessions"
-import { sessionFamily } from "../../atoms/sessions"
 import {
 	effectivePermissionFamily,
 	effectiveQuestionFamily,
 } from "../../atoms/derived/session-requests"
 import { appStore } from "../../atoms/store"
 import { useDraftActions, useDraftSnapshot } from "../../hooks/use-draft"
-import type {
-	ConfigData,
-	ModelRef,
-	ProvidersData,
-	SdkAgent,
-	VcsData,
-} from "../../hooks/use-opencode-data"
-import {
-	getModelInputCapabilities,
-	getModelVariants,
-	resolveEffectiveModel,
-	useModelState,
-} from "../../hooks/use-opencode-data"
 import type { ChatTurn } from "../../hooks/use-session-chat"
 import { createLogger } from "../../lib/logger"
 import { computeTurnWorkTimeSplit, formatWorkDuration } from "../../lib/session-metrics"
@@ -87,8 +59,6 @@ import { PermissionItem } from "./chat-permission"
 import { ChatQuestionFlow } from "./chat-question"
 import { ChatTurnComponent } from "./chat-turn"
 import { ContextItems } from "./context-items"
-import type { MentionOption } from "./mention-popover"
-import { MentionPopover, type MentionPopoverHandle } from "./mention-popover"
 import { PromptAttachmentPreview } from "./prompt-attachments"
 import {
 	createAgentMention,

@@ -1,6 +1,6 @@
-import { Badge } from "@ch5me/elf-ui/components/badge"
-import { Button } from "@ch5me/elf-ui/components/button"
 import {
+	Badge,
+	Button,
 	Item,
 	ItemActions,
 	ItemContent,
@@ -9,7 +9,7 @@ import {
 	ItemMedia,
 	ItemSeparator,
 	ItemTitle,
-} from "@ch5me/elf-ui/components/item"
+} from "@ch5me/ch5-ui-web"
 import type { Meta, StoryObj } from "@storybook/react-vite"
 import { BotIcon, CheckCircle2Icon, GlobeIcon } from "lucide-react"
 

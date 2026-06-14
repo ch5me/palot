@@ -1,5 +1,5 @@
-import { Button } from "@ch5me/elf-ui/components/button"
 import {
+	Button,
 	DropdownMenu,
 	DropdownMenuCheckboxItem,
 	DropdownMenuContent,
@@ -9,7 +9,7 @@ import {
 	DropdownMenuSeparator,
 	DropdownMenuShortcut,
 	DropdownMenuTrigger,
-} from "@ch5me/elf-ui/components/dropdown-menu"
+} from "@ch5me/ch5-ui-web"
 import type { Meta, StoryObj } from "@storybook/react-vite"
 import { MoreHorizontalIcon } from "lucide-react"
 

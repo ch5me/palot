@@ -1,14 +1,4 @@
-/**
- * Multi-provider Migration Offer.
- *
- * Scans the selected provider's configuration and lets the user select which
- * categories to migrate to OpenCode format. The user explicitly opted in
- * (from the complete step), so scanning happens on mount.
- */
-
-import { Button } from "@ch5me/elf-ui/components/button"
-import { Checkbox } from "@ch5me/elf-ui/components/checkbox"
-import { Spinner } from "@ch5me/elf-ui/components/spinner"
+import { Button, Checkbox, Spinner } from "@ch5me/ch5-ui-web";
 import {
 	ArrowRightIcon,
 	BotIcon,

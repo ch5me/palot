@@ -1,8 +1,4 @@
-import {
-	NativeSelect,
-	NativeSelectOptGroup,
-	NativeSelectOption,
-} from "@ch5me/elf-ui/components/native-select"
+import { NativeSelect, NativeSelectOptGroup, NativeSelectOption } from "@ch5me/ch5-ui-web"
 import type { Meta, StoryObj } from "@storybook/react-vite"
 
 const meta = {

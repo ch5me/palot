@@ -270,7 +270,7 @@ export function PluginsPanel({ agent, className }: PluginsPanelProps) {
 	)
 }
 
-import { Button } from "@ch5me/elf-ui/components/button"
+import { Button } from "@ch5me/ch5-ui-web"
 
 function Loading({ text }: { text: string }) {
 	return (

@@ -1,4 +1,4 @@
-import { DiscreteTab, DiscreteTabs } from "@ch5me/elf-ui/components/animate/discrete-tabs"
+import { DiscreteTab, DiscreteTabs } from "@ch5me/ch5-ui-web"
 import type { Meta, StoryObj } from "@storybook/react-vite"
 import { BellIcon, CalendarIcon, InboxIcon } from "lucide-react"
 

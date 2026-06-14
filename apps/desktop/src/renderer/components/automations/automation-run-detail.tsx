@@ -9,7 +9,7 @@
  * Marks runs as read on mount when they are unread.
  */
 
-import { MessageResponse } from "@ch5me/elf-ui/components/ai-elements/message"
+import { MessageResponse } from "@ch5me/agent-ui-web"
 import { useParams } from "@tanstack/react-router"
 import { useSetAtom } from "jotai"
 import { InboxIcon, Loader2Icon } from "lucide-react"

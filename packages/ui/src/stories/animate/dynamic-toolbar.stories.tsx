@@ -4,7 +4,7 @@ import {
 	DynamicToolbarPrimary,
 	DynamicToolbarSecondary,
 	DynamicToolbarTrigger,
-} from "@ch5me/elf-ui/components/animate/dynamic-toolbar"
+} from "@ch5me/ch5-ui-web"
 import type { Meta, StoryObj } from "@storybook/react-vite"
 import { ArchiveIcon, Code2Icon, SearchIcon, SettingsIcon, TerminalIcon } from "lucide-react"
 

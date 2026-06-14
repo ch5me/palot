@@ -1,9 +1,8 @@
+import { useAtomValue, useSetAtom, useAtom, useAtomValue as useJotaiValue } from "jotai";
+import { SidebarFooter, Tooltip, TooltipContent, TooltipTrigger, Collapsible, CollapsibleContent, CollapsibleTrigger, ContextMenu, ContextMenuContent, ContextMenuItem, ContextMenuSeparator, ContextMenuTrigger, Input, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarGroupLabel, SidebarMenu, SidebarMenuButton, SidebarMenuItem, SidebarSeparator } from "@ch5me/ch5-ui-web";
 import { DiscreteTab, DiscreteTabs } from "@ch5me/ch5-ui-web/animate/discrete-tabs"
 import { AnimatePresence } from "motion/react"
-import { SidebarFooter } from "@ch5me/elf-ui/components/sidebar"
-import { Tooltip, TooltipContent, TooltipTrigger } from "@ch5me/elf-ui/components/tooltip"
 import { useNavigate } from "@tanstack/react-router"
-import { useAtomValue, useSetAtom } from "jotai"
 import {
 	BlocksIcon,
 	CommandIcon,
@@ -34,31 +33,6 @@ import { appStore } from "../atoms/store"
 import type { Agent, AgentStatus, SidebarProject } from "../lib/types"
 import { loadMoreProjectSessions, loadProjectSessions } from "../services/connection-manager"
 import { ServerIndicator } from "./server-indicator"
-import {
-	Collapsible,
-	CollapsibleContent,
-	CollapsibleTrigger,
-} from "@ch5me/elf-ui/components/collapsible"
-import {
-	ContextMenu,
-	ContextMenuContent,
-	ContextMenuItem,
-	ContextMenuSeparator,
-	ContextMenuTrigger,
-} from "@ch5me/elf-ui/components/context-menu"
-import { Input } from "@ch5me/elf-ui/components/input"
-import {
-	SidebarContent,
-	SidebarGroup,
-	SidebarGroupContent,
-	SidebarGroupLabel,
-	SidebarMenu,
-	SidebarMenuButton,
-	SidebarMenuItem,
-	SidebarSeparator,
-} from "@ch5me/elf-ui/components/sidebar"
-import { useAtom, useAtomValue as useJotaiValue } from "jotai"
-
 const RECENT_COUNT = 5
 
 const STATUS_ICON: Record<AgentStatus, typeof BlocksIcon> = {

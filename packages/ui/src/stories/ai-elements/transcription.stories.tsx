@@ -1,7 +1,4 @@
-import {
-	Transcription,
-	TranscriptionSegment,
-} from "@ch5me/elf-ui/components/ai-elements/transcription"
+import { Transcription, TranscriptionSegment } from "@ch5me/agent-ui-web"
 import type { Meta, StoryObj } from "@storybook/react-vite"
 
 const segments = [

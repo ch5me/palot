@@ -1,25 +1,4 @@
-/**
- * Settings tab for managing OpenCode server connections.
- *
- * Lists all configured servers (local + remote), allows adding/editing/removing
- * remote servers, testing connections, and switching the active server.
- * Includes configuration for the local server's hostname, port, and password.
- */
-
-import { Button } from "@ch5me/elf-ui/components/button"
-import {
-	Dialog,
-	DialogClose,
-	DialogContent,
-	DialogDescription,
-	DialogFooter,
-	DialogHeader,
-	DialogTitle,
-	DialogTrigger,
-} from "@ch5me/elf-ui/components/dialog"
-import { Input } from "@ch5me/elf-ui/components/input"
-import { Label } from "@ch5me/elf-ui/components/label"
-import { Switch } from "@ch5me/elf-ui/components/switch"
+import { Button, Dialog, DialogClose, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger, Input, Label, Switch } from "@ch5me/ch5-ui-web";
 import {
 	CheckCircle2Icon,
 	ChevronRightIcon,

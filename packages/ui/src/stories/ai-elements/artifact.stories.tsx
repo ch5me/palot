@@ -7,7 +7,7 @@ import {
 	ArtifactDescription,
 	ArtifactHeader,
 	ArtifactTitle,
-} from "@ch5me/elf-ui/components/ai-elements/artifact"
+} from "@ch5me/agent-ui-web"
 import type { Meta, StoryObj } from "@storybook/react-vite"
 import { CopyIcon, DownloadIcon, ExternalLinkIcon } from "lucide-react"
 

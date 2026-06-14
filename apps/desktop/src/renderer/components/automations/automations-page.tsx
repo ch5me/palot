@@ -1,16 +1,4 @@
-/**
- * Automations inbox page -- two-panel layout with run list (left) and detail (right).
- *
- * This is the main view rendered at /automations. It uses a ResizablePanelGroup
- * for the split layout and drives the data pipeline via useAutomationData().
- */
-
-import { Alert, AlertAction, AlertDescription } from "@ch5me/elf-ui/components/alert"
-import {
-	ResizableHandle,
-	ResizablePanel,
-	ResizablePanelGroup,
-} from "@ch5me/elf-ui/components/resizable"
+import { Alert, AlertAction, AlertDescription, ResizableHandle, ResizablePanel, ResizablePanelGroup } from "@ch5me/ch5-ui-web";
 import { Outlet } from "@tanstack/react-router"
 import { useAtom } from "jotai"
 import { XIcon } from "lucide-react"

@@ -1,3 +1,5 @@
+import { type ReactNode, useCallback, useEffect, useId, useMemo, useState } from "react";
+import { Tooltip, TooltipContent, TooltipTrigger, cn } from "@ch5me/ch5-ui-web";
 import {
 	type DragEndEvent,
 	type DragStartEvent,
@@ -10,12 +12,8 @@ import {
 	useSensors,
 } from "@dnd-kit/core"
 import { CSS } from "@dnd-kit/utilities"
-import { Tooltip, TooltipContent, TooltipTrigger } from "@ch5me/elf-ui/components/tooltip"
-import { cn } from "@ch5me/elf-ui/lib/utils"
 import { useAtomValue, useSetAtom } from "jotai"
 import { GripVerticalIcon } from "lucide-react"
-import type { ReactNode } from "react"
-import { useCallback, useEffect, useId, useMemo, useState } from "react"
 import {
 	activeWidgetDragAtom,
 	moveSessionWidgetAtom,

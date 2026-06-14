@@ -5,7 +5,7 @@ import {
 	ChartLegendContent,
 	ChartTooltip,
 	ChartTooltipContent,
-} from "@ch5me/elf-ui/components/chart"
+} from "@ch5me/ch5-ui-web"
 import type { Meta, StoryObj } from "@storybook/react-vite"
 import { Bar, BarChart, CartesianGrid, XAxis } from "recharts"
 

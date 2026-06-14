@@ -1,9 +1,4 @@
-import {
-	Accordion,
-	AccordionContent,
-	AccordionItem,
-	AccordionTrigger,
-} from "@ch5me/elf-ui/components/accordion"
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@ch5me/ch5-ui-web"
 import type { Meta, StoryObj } from "@storybook/react-vite"
 
 const meta = {

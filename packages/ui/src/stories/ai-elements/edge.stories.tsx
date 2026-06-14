@@ -1,4 +1,4 @@
-import { Edge } from "@ch5me/elf-ui/components/ai-elements/edge"
+import { Edge } from "@ch5me/agent-ui-web"
 import type { Meta, StoryObj } from "@storybook/react-vite"
 import { Position } from "@xyflow/react"
 

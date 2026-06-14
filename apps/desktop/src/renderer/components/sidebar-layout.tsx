@@ -1,4 +1,4 @@
-import { SidebarProvider } from "@ch5me/elf-ui/components/sidebar"
+import { SidebarProvider } from "@ch5me/ch5-ui-web"
 import { SplitPane } from "@ch5me/workspace"
 import { Outlet, useNavigate } from "@tanstack/react-router"
 import { useAtom, useAtomValue } from "jotai"

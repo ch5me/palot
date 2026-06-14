@@ -1,8 +1,4 @@
-import {
-	FileTree,
-	FileTreeFile,
-	FileTreeFolder,
-} from "@ch5me/elf-ui/components/ai-elements/file-tree"
+import { FileTree, FileTreeFile, FileTreeFolder } from "@ch5me/agent-ui-web"
 import type { Meta, StoryObj } from "@storybook/react-vite"
 
 const expanded = new Set(["packages", "packages/storybook", "packages/storybook/src"])

@@ -4,7 +4,7 @@ import {
 	SnippetCopyButton,
 	SnippetInput,
 	SnippetText,
-} from "@ch5me/elf-ui/components/ai-elements/snippet"
+} from "@ch5me/agent-ui-web"
 import type { Meta, StoryObj } from "@storybook/react-vite"
 
 const command =

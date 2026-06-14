@@ -1,4 +1,3 @@
-import type { FileContents } from "@ch5me/elf-ui/components/ai-elements/diff"
 import {
 	FileChanges,
 	FileChangesAcceptButton,
@@ -11,7 +10,8 @@ import {
 	FileChangesRejectButton,
 	FileChangesStats,
 	FileChangesTitle,
-} from "@ch5me/elf-ui/components/ai-elements/file-changes"
+	type FileContents,
+} from "@ch5me/agent-ui-web"
 import type { Meta, StoryObj } from "@storybook/react-vite"
 
 const oldFile: FileContents = {

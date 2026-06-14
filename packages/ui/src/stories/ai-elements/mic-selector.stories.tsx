@@ -8,7 +8,7 @@ import {
 	MicSelectorList,
 	MicSelectorTrigger,
 	MicSelectorValue,
-} from "@ch5me/elf-ui/components/ai-elements/mic-selector"
+} from "@ch5me/agent-ui-web"
 import type { Meta, StoryObj } from "@storybook/react-vite"
 
 const devices = [

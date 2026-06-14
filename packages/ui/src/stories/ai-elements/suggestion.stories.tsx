@@ -1,4 +1,4 @@
-import { Suggestion, Suggestions } from "@ch5me/elf-ui/components/ai-elements/suggestion"
+import { Suggestion, Suggestions } from "@ch5me/agent-ui-web"
 import type { Meta, StoryObj } from "@storybook/react-vite"
 
 const meta = {

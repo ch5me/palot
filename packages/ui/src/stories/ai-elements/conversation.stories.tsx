@@ -4,12 +4,10 @@ import {
 	ConversationDownload,
 	ConversationEmptyState,
 	type ConversationMessage,
-} from "@ch5me/elf-ui/components/ai-elements/conversation"
-import {
 	Message,
 	MessageContent,
 	MessageResponse,
-} from "@ch5me/elf-ui/components/ai-elements/message"
+} from "@ch5me/agent-ui-web"
 import type { Meta, StoryObj } from "@storybook/react-vite"
 import { MessageSquareIcon } from "lucide-react"
 

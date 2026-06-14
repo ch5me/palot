@@ -3,7 +3,7 @@
  * command palette, and onboarding.
  * Does NOT render any sidebar chrome -- that lives in SidebarLayout.
  */
-import { TooltipProvider } from "@ch5me/elf-ui/components/tooltip"
+import { TooltipProvider } from "@ch5me/ch5-ui-web"
 import { Outlet, useNavigate, useParams } from "@tanstack/react-router"
 import { useAtomValue, useSetAtom } from "jotai"
 import { useCallback, useEffect, useMemo } from "react"

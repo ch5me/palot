@@ -9,7 +9,7 @@ import {
 	StackTraceExpandButton,
 	StackTraceFrames,
 	StackTraceHeader,
-} from "@ch5me/elf-ui/components/ai-elements/stack-trace"
+} from "@ch5me/agent-ui-web"
 import type { Meta, StoryObj } from "@storybook/react-vite"
 
 const trace = `TypeError: Cannot read properties of undefined (reading 'storyId')

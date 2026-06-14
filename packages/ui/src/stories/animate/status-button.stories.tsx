@@ -1,4 +1,4 @@
-import { StatusButton } from "@ch5me/elf-ui/components/animate/status-button"
+import { StatusButton } from "@ch5me/ch5-ui-web"
 import type { Meta, StoryObj } from "@storybook/react-vite"
 
 const meta = {

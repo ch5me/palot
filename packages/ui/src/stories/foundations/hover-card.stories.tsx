@@ -1,5 +1,10 @@
-import { Avatar, AvatarFallback } from "@ch5me/elf-ui/components/avatar"
-import { HoverCard, HoverCardContent, HoverCardTrigger } from "@ch5me/elf-ui/components/hover-card"
+import {
+	Avatar,
+	AvatarFallback,
+	HoverCard,
+	HoverCardContent,
+	HoverCardTrigger,
+} from "@ch5me/ch5-ui-web"
 import type { Meta, StoryObj } from "@storybook/react-vite"
 
 const meta = {

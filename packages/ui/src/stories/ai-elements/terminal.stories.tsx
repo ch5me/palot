@@ -1,4 +1,4 @@
-import { Terminal } from "@ch5me/elf-ui/components/ai-elements/terminal"
+import { Terminal } from "@ch5me/agent-ui-web"
 import type { Meta, StoryObj } from "@storybook/react-vite"
 
 const output = `$ bun run verify:storybook-render -- --out .sisyphus/evidence/storybook-coverage/batch-08

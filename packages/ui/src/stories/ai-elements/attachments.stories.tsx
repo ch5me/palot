@@ -9,7 +9,7 @@ import {
 	AttachmentPreview,
 	AttachmentRemove,
 	Attachments,
-} from "@ch5me/elf-ui/components/ai-elements/attachments"
+} from "@ch5me/agent-ui-web"
 import type { Meta, StoryObj } from "@storybook/react-vite"
 
 const imageAttachment: AttachmentData = {

@@ -1,12 +1,4 @@
-import { Button } from "@ch5me/elf-ui/components/button"
-import {
-	DropdownMenu,
-	DropdownMenuContent,
-	DropdownMenuItem,
-	DropdownMenuSeparator,
-	DropdownMenuTrigger,
-} from "@ch5me/elf-ui/components/dropdown-menu"
-import { Input } from "@ch5me/elf-ui/components/input"
+import { Button, DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger, Input } from "@ch5me/ch5-ui-web";
 import {
 	AlertTriangleIcon,
 	EllipsisIcon,

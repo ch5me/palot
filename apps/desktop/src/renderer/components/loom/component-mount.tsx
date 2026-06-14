@@ -1,10 +1,8 @@
-import { Progress } from "@ch5me/elf-ui/components/progress"
-import { cn } from "@ch5me/elf-ui/lib/utils"
+import { type GenUiEntry, parseGenUiProps, resolveGenUiEntry } from "../../genui/registry";
+import { Progress, cn } from "@ch5me/ch5-ui-web";
 import { useAtomValue } from "jotai"
 import { memo, type ComponentType } from "react"
 import type { ProjectedComponent } from "../../../shared/firefly-plugin"
-import type { GenUiEntry } from "../../genui/registry"
-import { parseGenUiProps, resolveGenUiEntry } from "../../genui/registry"
 import { loomAcmeComponentsAtom, loomV2ComponentsAtom } from "../../atoms/feature-flags"
 
 interface LoomComponentMountProps {

@@ -7,8 +7,8 @@ import {
 	PlanHeader,
 	PlanTitle,
 	PlanTrigger,
-} from "@ch5me/elf-ui/components/ai-elements/plan"
-import { Button } from "@ch5me/elf-ui/components/button"
+} from "@ch5me/agent-ui-web"
+import { Button } from "@ch5me/ch5-ui-web"
 import type { Meta, StoryObj } from "@storybook/react-vite"
 
 const meta = {

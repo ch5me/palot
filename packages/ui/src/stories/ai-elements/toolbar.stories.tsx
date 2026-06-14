@@ -1,7 +1,5 @@
-import { Canvas } from "@ch5me/elf-ui/components/ai-elements/canvas"
-import { Node } from "@ch5me/elf-ui/components/ai-elements/node"
-import { Toolbar } from "@ch5me/elf-ui/components/ai-elements/toolbar"
-import { Button } from "@ch5me/elf-ui/components/button"
+import { Canvas, Node, Toolbar } from "@ch5me/agent-ui-web"
+import { Button } from "@ch5me/ch5-ui-web"
 import type { Meta, StoryObj } from "@storybook/react-vite"
 import { CopyIcon, PlayIcon } from "lucide-react"
 

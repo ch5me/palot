@@ -1,6 +1,5 @@
-import { DagSparkline } from "@ch5me/dag-sparkline"
-import type { DagSparklineDirection, DagSparklineProps } from "@ch5me/dag-sparkline"
-import { cn } from "@ch5me/elf-ui/lib/utils"
+import { DagSparkline, type DagSparklineDirection, type DagSparklineProps } from "@ch5me/dag-sparkline";
+import { cn } from "@ch5me/ch5-ui-web"
 import { memo } from "react"
 import { z } from "zod"
 import type { GenUiEntry } from "../registry"

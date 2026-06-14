@@ -1,4 +1,4 @@
-import { Toggle } from "@ch5me/elf-ui/components/toggle"
+import { Toggle } from "@ch5me/ch5-ui-web"
 import type { Meta, StoryObj } from "@storybook/react-vite"
 import { BoldIcon, ItalicIcon } from "lucide-react"
 

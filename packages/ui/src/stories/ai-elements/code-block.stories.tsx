@@ -6,7 +6,7 @@ import {
 	CodeBlockFilename,
 	CodeBlockHeader,
 	CodeBlockTitle,
-} from "@ch5me/elf-ui/components/ai-elements/code-block"
+} from "@ch5me/agent-ui-web"
 import type { Meta, StoryObj } from "@storybook/react-vite"
 
 const code = `export const verifyStory = async (storyId: string) => {

@@ -1,4 +1,4 @@
-import { Button } from "@ch5me/elf-ui/components/button"
+import { Button } from "@ch5me/ch5-ui-web"
 import { CheckCircle2Icon, DownloadIcon, Loader2Icon } from "lucide-react"
 import { useCallback, useEffect, useState } from "react"
 import { useUpdater } from "../../hooks/use-updater"

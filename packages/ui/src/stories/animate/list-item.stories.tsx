@@ -1,8 +1,4 @@
-import {
-	AnimatedList,
-	AnimatedListItem,
-	AnimatedListItemIndicator,
-} from "@ch5me/elf-ui/components/animate/list-item"
+import { AnimatedList, AnimatedListItem, AnimatedListItemIndicator } from "@ch5me/ch5-ui-web"
 import type { Meta, StoryObj } from "@storybook/react-vite"
 import { useState } from "react"
 

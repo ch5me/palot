@@ -1,5 +1,4 @@
-import { Checkbox } from "@ch5me/elf-ui/components/checkbox"
-import { Label } from "@ch5me/elf-ui/components/label"
+import { Checkbox, Label } from "@ch5me/ch5-ui-web"
 import type { Meta, StoryObj } from "@storybook/react-vite"
 
 const meta = {

@@ -1,13 +1,4 @@
-import { Button } from "@ch5me/elf-ui/components/button"
-import {
-	DropdownMenu,
-	DropdownMenuContent,
-	DropdownMenuItem,
-	DropdownMenuSeparator,
-	DropdownMenuTrigger,
-} from "@ch5me/elf-ui/components/dropdown-menu"
-import { Input } from "@ch5me/elf-ui/components/input"
-import { Tooltip, TooltipContent, TooltipTrigger } from "@ch5me/elf-ui/components/tooltip"
+import { Button, DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger, Input, Tooltip, TooltipContent, TooltipTrigger } from "@ch5me/ch5-ui-web";
 import { SplitPane } from "@ch5me/workspace"
 import { useNavigate, useParams } from "@tanstack/react-router"
 import { useAtom, useAtomValue, useSetAtom } from "jotai"

@@ -1,6 +1,6 @@
-import { Badge } from "@ch5me/elf-ui/components/badge"
-import { Button } from "@ch5me/elf-ui/components/button"
 import {
+	Badge,
+	Button,
 	Card,
 	CardAction,
 	CardContent,
@@ -8,8 +8,8 @@ import {
 	CardFooter,
 	CardHeader,
 	CardTitle,
-} from "@ch5me/elf-ui/components/card"
-import { Progress } from "@ch5me/elf-ui/components/progress"
+	Progress,
+} from "@ch5me/ch5-ui-web"
 import type { Meta, StoryObj } from "@storybook/react-vite"
 
 const meta = {

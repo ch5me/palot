@@ -1,13 +1,4 @@
-/**
- * @mention popover for file and agent references.
- *
- * Shows a searchable list of files and agents when the user types `@`.
- * Matches the design language of the OpenCode TUI — files show with
- * path + filename, agents show with a brain icon.
- */
-
-import { ScrollArea } from "@ch5me/elf-ui/components/scroll-area"
-import { cn } from "@ch5me/elf-ui/lib/utils"
+import { ScrollArea, cn } from "@ch5me/ch5-ui-web";
 import fuzzysort from "fuzzysort"
 import { BrainIcon, FileIcon, FolderIcon, SearchIcon } from "lucide-react"
 import {

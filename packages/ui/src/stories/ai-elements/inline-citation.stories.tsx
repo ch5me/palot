@@ -13,7 +13,7 @@ import {
 	InlineCitationQuote,
 	InlineCitationSource,
 	InlineCitationText,
-} from "@ch5me/elf-ui/components/ai-elements/inline-citation"
+} from "@ch5me/agent-ui-web"
 import type { Meta, StoryObj } from "@storybook/react-vite"
 
 const sources = [

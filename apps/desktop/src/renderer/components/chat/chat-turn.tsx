@@ -1,17 +1,5 @@
-import {
-	Message,
-	MessageAction,
-	MessageActions,
-	MessageContent,
-} from "@ch5me/elf-ui/components/ai-elements/message"
-import {
-	Reasoning,
-	ReasoningContent,
-	ReasoningText,
-	ReasoningTrigger,
-} from "@ch5me/elf-ui/components/ai-elements/reasoning"
-import { Shimmer } from "@ch5me/elf-ui/components/ai-elements/shimmer"
-import { Dialog, DialogContent, DialogTitle, DialogTrigger } from "@ch5me/elf-ui/components/dialog"
+import { Message, MessageAction, MessageActions, MessageContent, Reasoning, ReasoningContent, ReasoningText, ReasoningTrigger, Shimmer } from "@ch5me/agent-ui-web";
+import { Dialog, DialogContent, DialogTitle, DialogTrigger } from "@ch5me/ch5-ui-web"
 
 import {
 	ArrowUpToLineIcon,
