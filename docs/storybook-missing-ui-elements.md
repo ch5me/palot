@@ -1,15 +1,15 @@
 # Missing Storybook Coverage
 
-Generated from `ch5 coverage elf --json` on 2026-06-14T00:02:48.225Z.
+Generated from `ch5 coverage elf --json` on 2026-06-14T00:09:45.960Z.
 
 ## Current Coverage
 
 - Visual UI components: 134
-- Covered by Storybook/route coverage: 54
-- Missing Storybook representation: 80
-- Actionable missing local stories after documented exceptions: 69
-- Story files: 55
-- Story screenshot proof missing in CH5 formal coverage: 108 viewport targets
+- Covered by Storybook/route coverage: 57
+- Missing Storybook representation: 77
+- Actionable missing local stories after documented exceptions: 66
+- Story files: 58
+- Story screenshot proof missing in CH5 formal coverage: 114 viewport targets
 - Documented exceptions: 11
 - Batch 01 local render proof: `.sisyphus/evidence/storybook-coverage/batch-01/render-proof.json`
 - Batch 02 local render proof: `.sisyphus/evidence/storybook-coverage/batch-02/render-proof.json`
@@ -20,6 +20,8 @@ Generated from `ch5 coverage elf --json` on 2026-06-14T00:02:48.225Z.
 - Batch 04 CH5 coverage proof: `.sisyphus/evidence/storybook-coverage/batch-04/ch5-coverage.json`
 - Batch 05 local render proof: `.sisyphus/evidence/storybook-coverage/batch-05/render-proof.json`
 - Batch 05 CH5 coverage proof: `.sisyphus/evidence/storybook-coverage/batch-05/ch5-coverage.json`
+- Batch 06 local render proof: `.sisyphus/evidence/storybook-coverage/batch-06/render-proof.json`
+- Batch 06 CH5 coverage proof: `.sisyphus/evidence/storybook-coverage/batch-06/ch5-coverage.json`
 - Reusable render proof helper: `bun run verify:storybook-render -- --out <proof-dir> <story-id> [...]`
 - CH5 gap source scope: local `packages/ui/src/components/**` files only.
 - Imported components from other packages/libraries are out of scope here. Trust their upstream stories/tests.
@@ -44,6 +46,7 @@ Covered components today:
 - [x] chart (packages/storybook/src/stories/foundations/chart.stories.tsx)
 - [x] checkbox (packages/storybook/src/stories/foundations/checkbox.stories.tsx)
 - [x] collapsible (packages/storybook/src/stories/foundations/collapsible.stories.tsx)
+- [x] combobox (packages/storybook/src/stories/foundations/combobox.stories.tsx)
 - [x] command (packages/storybook/src/stories/foundations/command.stories.tsx)
 - [x] context-menu (packages/storybook/src/stories/foundations/context-menu.stories.tsx)
 - [x] dialog (packages/storybook/src/stories/foundations/dialog.stories.tsx)
@@ -59,7 +62,9 @@ Covered components today:
 - [x] item (packages/storybook/src/stories/foundations/item.stories.tsx)
 - [x] kbd (packages/storybook/src/stories/foundations/kbd.stories.tsx)
 - [x] label (packages/storybook/src/stories/foundations/label.stories.tsx)
+- [x] menubar (packages/storybook/src/stories/foundations/menubar.stories.tsx)
 - [x] native-select (packages/storybook/src/stories/foundations/native-select.stories.tsx)
+- [x] navigation-menu (packages/storybook/src/stories/foundations/navigation-menu.stories.tsx)
 - [x] pagination (packages/storybook/src/stories/foundations/pagination.stories.tsx)
 - [x] popover (packages/storybook/src/stories/foundations/popover.stories.tsx)
 - [x] progress (packages/storybook/src/stories/foundations/progress.stories.tsx)
@@ -116,7 +121,7 @@ Add one or more useful Storybook stories for each unchecked local component. Che
 - [x] chart - `packages/ui/src/components/chart.tsx`
 - [x] checkbox - `packages/ui/src/components/checkbox.tsx`
 - [x] collapsible - `packages/ui/src/components/collapsible.tsx`
-- [ ] combobox - `packages/ui/src/components/combobox.tsx`
+- [x] combobox - `packages/ui/src/components/combobox.tsx`
 - [x] command - `packages/ui/src/components/command.tsx`
 - [x] context-menu - `packages/ui/src/components/context-menu.tsx`
 - [x] dialog - `packages/ui/src/components/dialog.tsx`
@@ -133,10 +138,10 @@ Add one or more useful Storybook stories for each unchecked local component. Che
 - [x] item - `packages/ui/src/components/item.tsx`
 - [x] kbd - `packages/ui/src/components/kbd.tsx`
 - [x] label - `packages/ui/src/components/label.tsx`
-- [ ] menubar - `packages/ui/src/components/menubar.tsx`
+- [x] menubar - `packages/ui/src/components/menubar.tsx`
 - [x] native-select - `packages/ui/src/components/native-select.tsx`
 - [ ] nav-sidebar-shell - `packages/ui/src/components/nav-sidebar-shell.tsx`
-- [ ] navigation-menu - `packages/ui/src/components/navigation-menu.tsx`
+- [x] navigation-menu - `packages/ui/src/components/navigation-menu.tsx`
 - [x] pagination - `packages/ui/src/components/pagination.tsx`
 - [x] popover - `packages/ui/src/components/popover.tsx`
 - [x] progress - `packages/ui/src/components/progress.tsx`

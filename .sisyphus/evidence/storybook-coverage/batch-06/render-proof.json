@@ -1,0 +1,65 @@
+{
+  "generatedAt": "2026-06-14T00:09:17.105Z",
+  "results": [
+    {
+      "storyId": "foundations-forms-combobox--default",
+      "viewport": "desktop",
+      "width": 556,
+      "height": 932,
+      "childCount": 15,
+      "textLength": 0,
+      "screenshot": "/Users/hassoncs/src/ch5/palot/.sisyphus/evidence/storybook-coverage/batch-06/foundations-forms-combobox--default-desktop.png",
+      "warnings": 0
+    },
+    {
+      "storyId": "foundations-forms-combobox--default",
+      "viewport": "mobile",
+      "width": 556,
+      "height": 876,
+      "childCount": 15,
+      "textLength": 0,
+      "screenshot": "/Users/hassoncs/src/ch5/palot/.sisyphus/evidence/storybook-coverage/batch-06/foundations-forms-combobox--default-mobile.png",
+      "warnings": 0
+    },
+    {
+      "storyId": "foundations-navigation-menubar--default",
+      "viewport": "desktop",
+      "width": 616,
+      "height": 932,
+      "childCount": 9,
+      "textLength": 12,
+      "screenshot": "/Users/hassoncs/src/ch5/palot/.sisyphus/evidence/storybook-coverage/batch-06/foundations-navigation-menubar--default-desktop.png",
+      "warnings": 6
+    },
+    {
+      "storyId": "foundations-navigation-menubar--default",
+      "viewport": "mobile",
+      "width": 616,
+      "height": 876,
+      "childCount": 9,
+      "textLength": 12,
+      "screenshot": "/Users/hassoncs/src/ch5/palot/.sisyphus/evidence/storybook-coverage/batch-06/foundations-navigation-menubar--default-mobile.png",
+      "warnings": 6
+    },
+    {
+      "storyId": "foundations-navigation-navigationmenu--default",
+      "viewport": "desktop",
+      "width": 716,
+      "height": 932,
+      "childCount": 16,
+      "textLength": 14,
+      "screenshot": "/Users/hassoncs/src/ch5/palot/.sisyphus/evidence/storybook-coverage/batch-06/foundations-navigation-navigationmenu--default-desktop.png",
+      "warnings": 0
+    },
+    {
+      "storyId": "foundations-navigation-navigationmenu--default",
+      "viewport": "mobile",
+      "width": 716,
+      "height": 876,
+      "childCount": 16,
+      "textLength": 14,
+      "screenshot": "/Users/hassoncs/src/ch5/palot/.sisyphus/evidence/storybook-coverage/batch-06/foundations-navigation-navigationmenu--default-mobile.png",
+      "warnings": 0
+    }
+  ]
+}
