@@ -1,4 +1,15 @@
-import { Button, DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger, Input, Tooltip, TooltipContent, TooltipTrigger } from "@ch5me/ch5-ui-web";
+import {
+	Button,
+	DropdownMenu,
+	DropdownMenuContent,
+	DropdownMenuItem,
+	DropdownMenuSeparator,
+	DropdownMenuTrigger,
+	Input,
+	Tooltip,
+	TooltipContent,
+	TooltipTrigger,
+} from "@ch5me/ch5-ui-web"
 import { SplitPane } from "@ch5me/workspace"
 import { useNavigate, useParams } from "@tanstack/react-router"
 import { useAtom, useAtomValue, useSetAtom } from "jotai"
@@ -7,12 +18,14 @@ import {
 	CheckIcon,
 	CopyIcon,
 	ExternalLinkIcon,
+	FileTextIcon,
 	PanelRightCloseIcon,
 	PanelRightOpenIcon,
 	PencilIcon,
 	TerminalIcon,
 } from "lucide-react"
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
+import { createHtmlPortalNode, InPortal, OutPortal, type HtmlPortalNode } from "react-reverse-portal"
 import type { OpenInTarget } from "../../preload/api"
 import {
 	browserPanelEnabledAtom,
@@ -34,6 +47,7 @@ import {
 } from "../atoms/feature-flags"
 import {
 	getFireflySurfaceTabs,
+	isDocumentSurfaceId,
 	type FireflySurfaceContext,
 } from "../firefly-surface-registry"
 import { mergeSurfaceTabs } from "../firefly-plugin-surface-merge"
@@ -42,6 +56,7 @@ import {
 	reviewPanelSettingsAtom,
 	sessionDiffStatsFamily,
 	setAvailableSidePanelTabsAtom,
+	setSidePanelActiveTabAtom,
 	sidePanelActiveTabAtom,
 	sidePanelOpenAtom,
 } from "../atoms/ui"
@@ -74,6 +89,9 @@ const EXPANDED_SIDE_PANEL_WIDTH = 760
 const MIN_SIDE_PANEL_WIDTH = 280
 const MAX_SIDE_PANEL_WIDTH = 760
 const MAX_EXPANDED_SIDE_PANEL_WIDTH = 1120
+const DEFAULT_DOC_PANEL_WIDTH = 520
+const MIN_DOC_PANEL_WIDTH = 360
+const MAX_DOC_PANEL_WIDTH = 960
 
 interface AgentDetailProps {
 	agent: Agent
@@ -114,6 +132,31 @@ interface AgentDetailProps {
 	onDeletePart?: (sessionId: string, messageId: string, partId: string) => Promise<void>
 }
 
+function DocumentPaneShell({
+	agent,
+	tab,
+	portalNode,
+}: {
+	agent: Agent
+	tab: SidePanelTabDef
+	portalNode: HtmlPortalNode
+}) {
+	return (
+		<div className="flex h-full min-h-0 min-w-0 flex-col bg-background">
+			<div className="border-b border-border px-4 py-3">
+				<div className="flex items-center gap-2 text-sm font-medium text-foreground">
+					<FileTextIcon className="size-4 text-muted-foreground" aria-hidden="true" />
+					<span>{tab.title}</span>
+				</div>
+				<div className="mt-1 text-xs text-muted-foreground">Document lane for {agent.project}</div>
+			</div>
+			<div className="min-h-0 min-w-0 flex-1 overflow-hidden">
+				<OutPortal node={portalNode} />
+			</div>
+		</div>
+	)
+}
+
 export function AgentDetail({
 	agent,
 	chatTurns,
@@ -152,7 +195,8 @@ export function AgentDetail({
 	const titleInputRef = useRef<HTMLInputElement>(null)
 
 	const [sidePanelOpen, setSidePanelOpen] = useAtom(sidePanelOpenAtom)
-	const [sidePanelActiveTab] = useAtom(sidePanelActiveTabAtom)
+	const sidePanelActiveTab = useAtomValue(sidePanelActiveTabAtom)
+	const setSidePanelActiveTab = useSetAtom(setSidePanelActiveTabAtom)
 	const setAvailableSidePanelTabs = useSetAtom(setAvailableSidePanelTabsAtom)
 	const [reviewSettings, setReviewSettings] = useAtom(reviewPanelSettingsAtom)
 
@@ -227,7 +271,7 @@ export function AgentDetail({
 	const pdfReviewSurfaceEnabled = useAtomValue(pdfReviewSurfaceEnabledAtom)
 
 	const catalogSurfaceTabs = useCatalogSurfaceTabs(agent)
-	const sidePanelTabs: SidePanelTabDef[] = useMemo(() => {
+	const surfaceTabs: SidePanelTabDef[] = useMemo(() => {
 		const ctx: FireflySurfaceContext = {
 			agent,
 			diffStats,
@@ -251,9 +295,6 @@ export function AgentDetail({
 			},
 			chatTurnCount: chatTurns.length,
 		}
-		// Migration seam: catalog-served surfaces ∪ remaining registry
-		// rows; a catalog surface wins over a registry row with the
-		// same tab id. See .sisyphus/plans/sidebars-as-first-class-plugins.md.
 		return mergeSurfaceTabs(getFireflySurfaceTabs(ctx), catalogSurfaceTabs)
 	}, [
 		agent,
@@ -277,34 +318,62 @@ export function AgentDetail({
 		pdfReviewSurfaceEnabled,
 		chatTurns.length,
 	])
-	const availableSidePanelTabs = useMemo(
-		() => sidePanelTabs.filter((tab) => tab.availability.available),
-		[sidePanelTabs],
+
+	const availableSurfaceTabs = useMemo(
+		() => surfaceTabs.filter((tab) => tab.availability.available),
+		[surfaceTabs],
 	)
+	const docTabs = useMemo(
+		() => availableSurfaceTabs.filter((tab) => isDocumentSurfaceId(tab.id)),
+		[availableSurfaceTabs],
+	)
+	const utilityTabs = useMemo(
+		() => availableSurfaceTabs.filter((tab) => !isDocumentSurfaceId(tab.id)),
+		[availableSurfaceTabs],
+	)
+	const activeDocTab = useMemo(
+		() => docTabs.find((tab) => tab.id === sidePanelActiveTab) ?? null,
+		[docTabs, sidePanelActiveTab],
+	)
+	const docPanelOpen = activeDocTab !== null
+
+	const docPortalNodesRef = useRef<Partial<Record<SidePanelTabDef["id"], HtmlPortalNode>>>({})
+	for (const tab of docTabs) {
+		if (!docPortalNodesRef.current[tab.id]) {
+			docPortalNodesRef.current[tab.id] = createHtmlPortalNode()
+		}
+	}
+	const docPanelNode = activeDocTab ? docPortalNodesRef.current[activeDocTab.id] ?? null : null
 
 	useEffect(() => {
-		setAvailableSidePanelTabs(availableSidePanelTabs.map((tab) => tab.id))
-	}, [availableSidePanelTabs, setAvailableSidePanelTabs])
+		setAvailableSidePanelTabs(availableSurfaceTabs.map((tab) => tab.id))
+	}, [availableSurfaceTabs, setAvailableSidePanelTabs])
 
 	useEffect(() => {
 		const unsubscribe = subscribeToPalotOpenSidePanel(({ tab }) => {
-			if (!availableSidePanelTabs.some((candidate) => candidate.id === tab)) return
-			setSidePanelOpen(true)
-			setAvailableSidePanelTabs(availableSidePanelTabs.map((candidate) => candidate.id))
+			if (!availableSurfaceTabs.some((candidate) => candidate.id === tab)) return
+			setSidePanelActiveTab(tab)
+			if (!isDocumentSurfaceId(tab)) {
+				setSidePanelOpen(true)
+			}
+			setAvailableSidePanelTabs(availableSurfaceTabs.map((candidate) => candidate.id))
 			void window.elf?.palot.openSidePanel(tab).catch(() => undefined)
 		})
 		return unsubscribe
-	}, [availableSidePanelTabs, setAvailableSidePanelTabs, setSidePanelOpen])
+	}, [availableSurfaceTabs, setAvailableSidePanelTabs, setSidePanelActiveTab, setSidePanelOpen])
 
 	useEffect(() => {
 		void fetchPalotUiStateSnapshot().then((snapshot) => {
 			if (!snapshot) return
 			const tab = snapshot.sidePanel.activeTab
 			if (!snapshot.sidePanel.open || !tab) return
-			if (!availableSidePanelTabs.some((candidate) => candidate.id === tab)) return
-			setSidePanelOpen(true)
+			if (!availableSurfaceTabs.some((candidate) => candidate.id === tab)) return
+			setSidePanelActiveTab(tab)
+			if (!isDocumentSurfaceId(tab)) {
+				setSidePanelOpen(true)
+			}
 		})
-	}, [availableSidePanelTabs, setSidePanelOpen])
+	}, [availableSurfaceTabs, setSidePanelActiveTab, setSidePanelOpen])
 
 	useEffect(() => {
 		setAppBarContent(
@@ -321,8 +390,9 @@ export function AgentDetail({
 				projectSlug={projectSlug}
 				sidePanelOpen={sidePanelOpen}
 				sidePanelActiveTab={sidePanelActiveTab}
-				hasAvailableSidePanel={availableSidePanelTabs.length > 0}
+				hasAvailableSidePanel={utilityTabs.length > 0}
 				onToggleSidePanel={() => setSidePanelOpen((prev) => !prev)}
+				documentTab={activeDocTab}
 			/>,
 		)
 
@@ -340,7 +410,8 @@ export function AgentDetail({
 		sidePanelOpen,
 		setSidePanelOpen,
 		sidePanelActiveTab,
-		availableSidePanelTabs,
+		utilityTabs,
+		activeDocTab,
 	])
 
 	const chatContent = (
@@ -400,27 +471,52 @@ export function AgentDetail({
 	)
 
 	return (
-		<SplitPane
-			key={reviewSettings.expanded ? "side-panel-expanded" : "side-panel-default"}
-			side="right"
-			open={sidePanelOpen}
-			onOpenChange={setSidePanelOpen}
-			defaultPanelWidth={
-				reviewSettings.expanded ? EXPANDED_SIDE_PANEL_WIDTH : DEFAULT_SIDE_PANEL_WIDTH
-			}
-			minPanelWidth={MIN_SIDE_PANEL_WIDTH}
-			maxPanelWidth={
-				reviewSettings.expanded ? MAX_EXPANDED_SIDE_PANEL_WIDTH : MAX_SIDE_PANEL_WIDTH
-			}
-			handleAriaLabel="Resize side panel"
-			panel={
-				<div className="min-h-0 min-w-0 h-full overflow-hidden">
-					<SessionSidePanel agent={agent} tabs={sidePanelTabs} />
-				</div>
-			}
-		>
-			<div className="min-h-0 min-w-0 h-full overflow-hidden flex flex-col">{chatContent}</div>
-		</SplitPane>
+		<>
+			{docTabs.map((tab) => {
+				const portalNode = docPortalNodesRef.current[tab.id]
+				if (!portalNode) return null
+				return (
+					<InPortal key={tab.id} node={portalNode}>
+						{tab.render()}
+					</InPortal>
+				)
+			})}
+			<SplitPane
+				key={reviewSettings.expanded ? "side-panel-expanded" : "side-panel-default"}
+				side="right"
+				open={sidePanelOpen}
+				onOpenChange={setSidePanelOpen}
+				defaultPanelWidth={reviewSettings.expanded ? EXPANDED_SIDE_PANEL_WIDTH : DEFAULT_SIDE_PANEL_WIDTH}
+				minPanelWidth={MIN_SIDE_PANEL_WIDTH}
+				maxPanelWidth={reviewSettings.expanded ? MAX_EXPANDED_SIDE_PANEL_WIDTH : MAX_SIDE_PANEL_WIDTH}
+				handleAriaLabel="Resize utility panel"
+				panel={
+					<div className="min-h-0 h-full min-w-0 overflow-hidden">
+						<SessionSidePanel agent={agent} tabs={utilityTabs} />
+					</div>
+				}
+			>
+				<SplitPane
+					side="right"
+					open={docPanelOpen}
+					defaultPanelWidth={DEFAULT_DOC_PANEL_WIDTH}
+					minPanelWidth={MIN_DOC_PANEL_WIDTH}
+					maxPanelWidth={MAX_DOC_PANEL_WIDTH}
+					handleAriaLabel="Resize document pane"
+					panel={
+						activeDocTab && docPanelNode ? (
+							<DocumentPaneShell agent={agent} tab={activeDocTab} portalNode={docPanelNode} />
+						) : (
+							<div className="flex h-full items-center justify-center bg-background px-6 text-center text-sm text-muted-foreground">
+								Open Studio or PDF Review to use document lane.
+							</div>
+						)
+					}
+				>
+					<div className="flex h-full min-h-0 min-w-0 flex-col overflow-hidden">{chatContent}</div>
+				</SplitPane>
+			</SplitPane>
+		</>
 	)
 }
 
@@ -439,6 +535,7 @@ function SessionAppBarContent({
 	sidePanelActiveTab,
 	hasAvailableSidePanel,
 	onToggleSidePanel,
+	documentTab,
 }: {
 	agent: Agent
 	isEditingTitle: boolean
@@ -454,6 +551,7 @@ function SessionAppBarContent({
 	sidePanelActiveTab: string
 	hasAvailableSidePanel: boolean
 	onToggleSidePanel: () => void
+	documentTab: SidePanelTabDef | null
 }) {
 	const { url } = useServerConnection()
 	const [copied, setCopied] = useState(false)
@@ -542,9 +640,9 @@ function SessionAppBarContent({
 					</TooltipTrigger>
 					<TooltipContent>
 						{hasAvailableSidePanel ? (
-							<>{sidePanelOpen ? "Close" : "Open"} side panel (&#8679;&#8984;D)</>
+							<>{sidePanelOpen ? "Close" : "Open"} utility panel (&#8679;&#8984;D)</>
 						) : (
-							"No side-panel surfaces available"
+							"No utility surfaces available"
 						)}
 					</TooltipContent>
 				</Tooltip>
@@ -582,7 +680,10 @@ function SessionAppBarContent({
 				<WorktreeActions agent={agent} />
 				<SessionMetricsBar sessionId={agent.sessionId} />
 				<div className="rounded-full border border-border/70 px-2 py-1 text-xs text-muted-foreground">
-					{sidePanelOpen ? `Surface · ${sidePanelActiveTab}` : "Surface closed"}
+					{documentTab ? `Doc · ${documentTab.id}` : "Doc closed"}
+				</div>
+				<div className="rounded-full border border-border/70 px-2 py-1 text-xs text-muted-foreground">
+					{sidePanelOpen ? `Utility · ${sidePanelActiveTab}` : "Utility closed"}
 				</div>
 				<div className="flex items-center gap-1 text-xs text-muted-foreground">
 					<TerminalIcon className="size-3.5" />

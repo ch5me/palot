@@ -686,7 +686,7 @@ export function CommandPalette({ open, onOpenChange, agents, onForkSession }: Co
 								<CommandItem
 									key={surface.id}
 									onSelect={() => {
-										openSidePanelTab(surface.target.tab)
+										openSidePanelTab(surface.id)
 										onOpenChange(false)
 									}}
 									disabled={!surface.availability.available}

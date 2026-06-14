@@ -75,6 +75,10 @@ export interface FireflySidePanelTab {
 	render: () => ReactNode
 }
 
+export function isDocumentSurfaceId(surfaceId: FireflySurfaceId): boolean {
+	return surfaceId === "studio" || surfaceId === "pdf-review"
+}
+
 export const FIREFLY_SURFACE_REGISTRY: FireflySurfaceDef[] = [
 	{
 		id: "review",

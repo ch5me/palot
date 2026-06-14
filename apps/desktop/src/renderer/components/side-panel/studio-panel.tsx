@@ -1,4 +1,4 @@
-import { Button, Input } from "@ch5me/ch5-ui-web";
+import { Button, Input } from "@ch5me/ch5-ui-web"
 import { useMemo, useState } from "react"
 import {
 	ExternalLinkIcon,
