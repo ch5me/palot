@@ -2,6 +2,10 @@
 // Types
 // ============================================================
 
+import { existsSync } from "node:fs"
+import { homedir } from "node:os"
+import path from "node:path"
+
 export interface OpenCodeServer {
 	url: string
 	pid: number | null
@@ -37,6 +41,7 @@ const DEFAULT_OPENCODE_PORT = 14096
 // external mode (never spawns). Managed mode defaults elsewhere.
 const OPENCODE_PORT = Number(process.env.OPENCODE_PORT) || DEFAULT_OPENCODE_PORT
 const OPENCODE_HOSTNAME = process.env.OPENCODE_HOSTNAME || "127.0.0.1"
+const PALOT_PLUGIN_ENTRY_RELATIVE_PATH = "apps/desktop/src/main/palot-plugin-entry.js"
 
 /**
  * OPENCODE_MODE selects who owns the OpenCode server lifecycle:
@@ -73,6 +78,33 @@ class OpenCodeExternalServerMissingError extends Error {
 	}
 }
 
+function resolvePalotPluginPath(): string {
+	const candidates = [
+		path.resolve(process.cwd(), PALOT_PLUGIN_ENTRY_RELATIVE_PATH),
+		path.resolve(process.cwd(), "src", "main", "palot-plugin-entry.js"),
+		path.resolve(
+			import.meta.dir,
+			"..",
+			"..",
+			"..",
+			"desktop",
+			"src",
+			"main",
+			"palot-plugin-entry.js",
+		),
+	]
+	const found = candidates.find((candidate) => existsSync(candidate))
+	if (!found) {
+		throw new Error(`Palot plugin entry not found. Checked: ${candidates.join(", ")}`)
+	}
+	return found
+}
+
+function appendPalotPlugin(env: Record<string, string | undefined>): void {
+	const pluginPath = resolvePalotPluginPath()
+	env.OPENCODE_PLUGIN = [env.OPENCODE_PLUGIN, pluginPath].filter(Boolean).join(",")
+}
+
 // ============================================================
 // Public API
 // ============================================================
@@ -95,21 +127,22 @@ export async function ensureSingleServer(): Promise<OpenCodeServer> {
 	}
 
 	if (OPENCODE_MODE === "external") {
-		throw new OpenCodeExternalServerMissingError(
-			`http://${OPENCODE_HOSTNAME}:${OPENCODE_PORT}`,
-		)
+		throw new OpenCodeExternalServerMissingError(`http://${OPENCODE_HOSTNAME}:${OPENCODE_PORT}`)
 	}
 
 	// Start a new one
+	const env = {
+		...process.env,
+		PATH: `${homedir()}/.opencode/bin:${process.env.PATH}`,
+	}
+	appendPalotPlugin(env)
+
 	const proc = Bun.spawn({
 		cmd: [OPENCODE_BIN, "serve", `--hostname=${OPENCODE_HOSTNAME}`, `--port=${OPENCODE_PORT}`],
 		cwd: process.env.HOME, // arbitrary cwd — directory param overrides per-request
 		stdout: "pipe",
 		stderr: "pipe",
-		env: {
-			...process.env,
-			PATH: `${process.env.HOME}/.opencode/bin:${process.env.PATH}`,
-		},
+		env,
 	})
 
 	const stderrChunks: string[] = []
