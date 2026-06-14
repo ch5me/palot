@@ -9,9 +9,13 @@ const uiRoot = resolve(here, "../../ui")
 
 const config: StorybookConfig = {
 	stories: ["../src/**/*.stories.@(js|jsx|mjs|ts|tsx|mdx)"],
-	addons: ["@storybook/addon-docs", "@storybook/addon-links", "@storybook/addon-a11y"],
+	addons: [
+		getAbsolutePath("@storybook/addon-docs"),
+		getAbsolutePath("@storybook/addon-links"),
+		getAbsolutePath("@storybook/addon-a11y"),
+	],
 	framework: {
-		name: "@storybook/react-vite",
+		name: getAbsolutePath("@storybook/react-vite"),
 		options: {},
 	},
 	async viteFinal(config) {
@@ -41,3 +45,7 @@ const config: StorybookConfig = {
 }
 
 export default config
+
+function getAbsolutePath(value: string): string {
+	return dirname(fileURLToPath(import.meta.resolve(`${value}/package.json`)))
+}

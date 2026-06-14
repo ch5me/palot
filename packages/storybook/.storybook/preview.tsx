@@ -15,11 +15,10 @@ const preview: Preview = {
 			},
 		},
 		backgrounds: {
-			default: "canvas",
-			values: [
-				{ name: "canvas", value: "hsl(38 33% 98%)" },
-				{ name: "charcoal", value: "hsl(0 0% 6%)" },
-			],
+			options: {
+				canvas: { name: "canvas", value: "hsl(38 33% 98%)" },
+				charcoal: { name: "charcoal", value: "hsl(0 0% 6%)" },
+			},
 		},
 	},
 	globalTypes: {
@@ -49,6 +48,11 @@ const preview: Preview = {
 			)
 		},
 	],
+	initialGlobals: {
+		backgrounds: {
+			value: "canvas",
+		},
+	},
 }
 
 export default preview
