@@ -1,15 +1,15 @@
 # Missing Storybook Coverage
 
-Generated from `ch5 coverage elf --json` on 2026-06-14T01:41:01.732Z.
+Generated from `ch5 coverage elf --json` on 2026-06-14T01:45:33.874Z.
 
 ## Current Coverage
 
 - Visual UI components: 134
-- Covered by Storybook/route coverage: 107
-- Missing Storybook representation: 27
-- Actionable missing local stories after documented exceptions: 16
-- Story files: 108
-- Story screenshot proof missing in CH5 formal coverage: 214 viewport targets
+- Covered by Storybook/route coverage: 112
+- Missing Storybook representation: 22
+- Actionable missing local stories after documented exceptions: 11
+- Story files: 113
+- Story screenshot proof missing in CH5 formal coverage: 224 viewport targets
 - Documented exceptions: 11
 - Batch 01 local render proof: `.sisyphus/evidence/storybook-coverage/batch-01/render-proof.json`
 - Batch 02 local render proof: `.sisyphus/evidence/storybook-coverage/batch-02/render-proof.json`
@@ -40,6 +40,8 @@ Generated from `ch5 coverage elf --json` on 2026-06-14T01:41:01.732Z.
 - Batch 14 CH5 coverage proof: `.sisyphus/evidence/storybook-coverage/batch-14/ch5-coverage.json`
 - Batch 15 local render proof: `.sisyphus/evidence/storybook-coverage/batch-15/render-proof.json`
 - Batch 15 CH5 coverage proof: `.sisyphus/evidence/storybook-coverage/batch-15/ch5-coverage.json`
+- Batch 16 local render proof: `.sisyphus/evidence/storybook-coverage/batch-16/render-proof.json`
+- Batch 16 CH5 coverage proof: `.sisyphus/evidence/storybook-coverage/batch-16/ch5-coverage.json`
 - Reusable render proof helper: `bun run verify:storybook-render -- --out <proof-dir> <story-id> [...]`
 - CH5 gap source scope: local `packages/ui/src/components/**` files only.
 - Imported components from other packages/libraries are out of scope here. Trust their upstream stories/tests.
@@ -155,6 +157,11 @@ Covered components today:
 - [x] transcription (packages/storybook/src/stories/ai-elements/transcription.stories.tsx)
 - [x] voice-selector (packages/storybook/src/stories/ai-elements/voice-selector.stories.tsx)
 - [x] web-preview (packages/storybook/src/stories/ai-elements/web-preview.stories.tsx)
+- [x] day-picker (packages/storybook/src/stories/animate/day-picker.stories.tsx)
+- [x] delete-button (packages/storybook/src/stories/animate/delete-button.stories.tsx)
+- [x] inline-edit (packages/storybook/src/stories/animate/inline-edit.stories.tsx)
+- [x] morphing-input (packages/storybook/src/stories/animate/morphing-input.stories.tsx)
+- [x] status-button (packages/storybook/src/stories/animate/status-button.stories.tsx)
 
 Documented exceptions today:
 
@@ -290,19 +297,19 @@ Add one or more useful Storybook stories for each unchecked local component. Che
 
 - [ ] animated-collection - `packages/ui/src/components/animate/animated-collection.tsx`
 - [ ] bottom-menu - `packages/ui/src/components/animate/bottom-menu.tsx`
-- [ ] day-picker - `packages/ui/src/components/animate/day-picker.tsx`
-- [ ] delete-button - `packages/ui/src/components/animate/delete-button.tsx`
+- [x] day-picker - `packages/ui/src/components/animate/day-picker.tsx`
+- [x] delete-button - `packages/ui/src/components/animate/delete-button.tsx`
 - [ ] dynamic-toolbar - `packages/ui/src/components/animate/dynamic-toolbar.tsx`
 - [ ] expandable-gallery - `packages/ui/src/components/animate/expandable-gallery.tsx`
 - [ ] fluid-expanding-grid - `packages/ui/src/components/animate/fluid-expanding-grid.tsx`
-- [ ] inline-edit - `packages/ui/src/components/animate/inline-edit.tsx`
+- [x] inline-edit - `packages/ui/src/components/animate/inline-edit.tsx`
 - [ ] list-item - `packages/ui/src/components/animate/list-item.tsx`
-- [ ] morphing-input - `packages/ui/src/components/animate/morphing-input.tsx`
+- [x] morphing-input - `packages/ui/src/components/animate/morphing-input.tsx`
 - [ ] multi-step-form - `packages/ui/src/components/animate/multi-step-form.tsx`
 - [ ] pricing-card - `packages/ui/src/components/animate/pricing-card.tsx`
 - [x] smooth-dropdown - `packages/ui/src/components/animate/smooth-dropdown.tsx` (documented exception: pure `@ch5me/ch5-ui-web` re-export)
 - [ ] stacked-list - `packages/ui/src/components/animate/stacked-list.tsx`
-- [ ] status-button - `packages/ui/src/components/animate/status-button.tsx`
+- [x] status-button - `packages/ui/src/components/animate/status-button.tsx`
 - [ ] vertical-tabs - `packages/ui/src/components/animate/vertical-tabs.tsx`
 
 ### Marketing Components (9)
