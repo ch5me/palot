@@ -1,0 +1,9 @@
+bun test v1.3.14 (0d9b296a)
+
+apps/desktop/src/renderer/__tests__/surface-mirror-lists.test.ts:
+[DEPRECATED] atomFamily is deprecated and will be removed in v3. Please use the `jotai-family` package instead: https://github.com/jotaijs/jotai-family
+
+ 25 pass
+ 0 fail
+ 152 expect() calls
+Ran 25 tests across 3 files. [1210.00ms]

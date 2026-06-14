@@ -14,6 +14,17 @@
 
 import type { SidePanelTabId } from "./atoms/workspace"
 import type { ProjectedSidePanel } from "../shared/firefly-plugin/renderer-projection"
+import type { FireflySurfaceTarget } from "./lib/types"
+import type {
+	HostRenderMode,
+	NormalizedWorkspaceDescriptor,
+	WorkspaceHostDescriptor,
+} from "./workspace-panel-descriptors"
+
+export interface CatalogSurfaceAvailability {
+	readonly available: boolean
+	readonly reason: string | null
+}
 
 /**
  * Canonical visual order of side-panel tabs. Mirrors the registry
@@ -56,14 +67,41 @@ export interface CatalogSurfaceTabDescriptor {
 	readonly id: SidePanelTabId
 	readonly pluginId: string
 	readonly projectedId: string
+	readonly manifestId: string
+	readonly formFactor: "side-panel-tab"
 	readonly title: string
 	readonly iconName: string | null
-	readonly available: boolean
-	readonly unavailableReason: string | null
+	readonly availability: CatalogSurfaceAvailability
 	readonly commandIds: readonly string[]
 	readonly persistenceKey: string
 	readonly telemetryNamespace: string
-	readonly renderMode: "host-reconciler" | "declarative-props" | "iframe"
+	readonly target: FireflySurfaceTarget
+	readonly hostPolicy: WorkspaceHostDescriptor<
+		SidePanelTabId,
+		"side-panel" | "main-pane",
+		ProjectedSidePanel,
+		CatalogSurfaceAvailability
+	>["hostPolicy"]
+	readonly runtime: {
+		readonly kind: "plugin-catalog-entrypoint"
+		readonly renderMode: HostRenderMode
+		readonly pluginId: string
+		readonly projectedId: string
+	}
+}
+
+export interface CatalogResolvedSurfaceDescriptor extends NormalizedWorkspaceDescriptor<
+	SidePanelTabId,
+	"side-panel" | "main-pane",
+	CatalogSurfaceAvailability,
+	CatalogSurfaceTabDescriptor["runtime"],
+	FireflySurfaceTarget
+> {
+	readonly pluginId: string
+	readonly projectedId: string
+	readonly manifestId: string
+	readonly formFactor: "side-panel-tab"
+	readonly iconName: string | null
 }
 
 export function catalogPanelToTabDescriptor(
@@ -75,14 +113,53 @@ export function catalogPanelToTabDescriptor(
 		id: panel.contributionId,
 		pluginId: panel.pluginId,
 		projectedId: panel.projectedId,
+		manifestId: panel.pluginId,
+		formFactor: "side-panel-tab",
 		title: panel.title,
 		iconName: panel.icon,
-		available: panel.availability.available,
-		unavailableReason: panel.availability.reason?.message ?? null,
+		availability: {
+			available: panel.availability.available,
+			reason: panel.availability.reason?.message ?? null,
+		},
 		commandIds: panel.commandIds,
 		persistenceKey: panel.persistenceKey ?? `side-panel.${panel.contributionId}`,
 		telemetryNamespace: panel.telemetryNamespace ?? `firefly.surface.${panel.contributionId}`,
-		renderMode: panel.renderMode,
+		target: { kind: "side-panel", tab: panel.contributionId },
+		hostPolicy: {
+			logicalKind: "firefly-surface",
+			defaultZoneId: panel.hostSlot,
+			hostPolicy: panel.renderMode === "host-reconciler" ? "stable" : "remount-ok",
+			multiplicityPolicy: "singleton",
+		},
+		runtime: {
+			kind: "plugin-catalog-entrypoint",
+			renderMode: panel.renderMode,
+			pluginId: panel.pluginId,
+			projectedId: panel.projectedId,
+		},
+	}
+}
+
+export function resolveCatalogSurfaceDescriptor(
+	descriptor: CatalogSurfaceTabDescriptor,
+	resolveIcon: (iconName: string | null) => CatalogResolvedSurfaceDescriptor["icon"],
+): CatalogResolvedSurfaceDescriptor {
+	return {
+		id: descriptor.id,
+		pluginId: descriptor.pluginId,
+		projectedId: descriptor.projectedId,
+		manifestId: descriptor.manifestId,
+		formFactor: descriptor.formFactor,
+		title: descriptor.title,
+		iconName: descriptor.iconName,
+		icon: resolveIcon(descriptor.iconName),
+		availability: descriptor.availability,
+		hostPolicy: descriptor.hostPolicy,
+		runtime: descriptor.runtime,
+		target: descriptor.target,
+		commandIds: descriptor.commandIds,
+		persistenceKey: descriptor.persistenceKey,
+		telemetryNamespace: descriptor.telemetryNamespace,
 	}
 }
 

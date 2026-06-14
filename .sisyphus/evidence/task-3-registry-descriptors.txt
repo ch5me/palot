@@ -1,0 +1,9 @@
+bun test v1.3.14 (0d9b296a)
+
+apps/desktop/src/renderer/__tests__/workspace-panel-descriptors.test.tsx:
+[DEPRECATED] atomFamily is deprecated and will be removed in v3. Please use the `jotai-family` package instead: https://github.com/jotaijs/jotai-family
+
+ 3 pass
+ 0 fail
+ 8 expect() calls
+Ran 3 tests across 1 file. [1259.00ms]

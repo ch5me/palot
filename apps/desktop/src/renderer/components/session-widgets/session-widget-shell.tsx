@@ -24,7 +24,11 @@ import {
 	type SessionWidgetId,
 	type SessionWidgetZoneId,
 } from "../../atoms/session-widgets"
-import { SESSION_WIDGET_REGISTRY } from "../../session-widget-registry"
+import {
+	renderSessionWidgetRuntime,
+	resolveSessionWidgetDescriptor,
+	SESSION_WIDGET_REGISTRY,
+} from "../../session-widget-registry"
 import type { Agent } from "../../lib/types"
 
 const INLINE_RIGHT_MIN_WIDTH = 1320
@@ -152,7 +156,10 @@ export function SessionWidgetWorkspace({ agent, sidePanelOpen, children }: Sessi
 
 			<DragOverlay>
 				{overlayWidget ? (
-					<WidgetPreview title={overlayWidget.title} icon={overlayWidget.icon} />
+					<WidgetPreview
+						title={resolveSessionWidgetDescriptor(overlayWidget, { agent }).title}
+						icon={resolveSessionWidgetDescriptor(overlayWidget, { agent }).icon}
+					/>
 				) : null}
 			</DragOverlay>
 		</DndContext>
@@ -206,9 +213,10 @@ export function SessionWidgetZone({ agent, zoneId, showDropHint }: SessionWidget
 	)
 }
 
-export function SessionWidgetCard({ agent, widgetId, zoneId }: SessionWidgetCardProps) {
-	const widget = SESSION_WIDGET_REGISTRY[widgetId]
-	const dragId = `${agent.sessionId}:${zoneId}:${widgetId}`
+	export function SessionWidgetCard({ agent, widgetId, zoneId }: SessionWidgetCardProps) {
+		const widget = SESSION_WIDGET_REGISTRY[widgetId]
+		const descriptor = resolveSessionWidgetDescriptor(widget, { agent })
+		const dragId = `${agent.sessionId}:${zoneId}:${widgetId}`
 	const labelId = useId()
 	const { attributes, isDragging, listeners, setNodeRef, transform } = useDraggable({
 		id: dragId,
@@ -250,11 +258,11 @@ export function SessionWidgetCard({ agent, widgetId, zoneId }: SessionWidgetCard
 				</Tooltip>
 				<div className="min-w-0 flex-1">
 					<p id={labelId} className="truncate text-[11px] font-medium text-foreground/80">
-						{widget.title}
+						{descriptor.title}
 					</p>
 				</div>
 			</div>
-			<div className="p-1.5">{widget.render({ agent })}</div>
+			<div className="p-1.5">{renderSessionWidgetRuntime(descriptor.runtime, { agent })}</div>
 		</div>
 	)
 }

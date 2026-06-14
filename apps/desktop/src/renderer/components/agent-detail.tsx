@@ -77,7 +77,11 @@ import { SessionSidePanel } from "./side-panel/session-side-panel"
 import type { SidePanelTabDef } from "./side-panel/side-panel-tabs"
 import { SessionMetricsBar } from "./session-metrics-bar"
 import { WorktreeActions } from "./worktree-actions"
-import { SESSION_WIDGET_REGISTRY } from "../session-widget-registry"
+import {
+	renderSessionWidgetRuntime,
+	resolveSessionWidgetDescriptor,
+	SESSION_WIDGET_REGISTRY,
+} from "../session-widget-registry"
 
 const DEFAULT_SIDE_PANEL_WIDTH = 392
 const EXPANDED_SIDE_PANEL_WIDTH = 760
@@ -498,18 +502,24 @@ function DockPanel({ children }: { children: ReactNode }) {
 function SessionDockWidgets({ agent }: { agent: Agent }) {
 	return (
 		<div className="grid h-full min-h-0 grid-cols-1 gap-3 overflow-auto p-3 lg:grid-cols-2">
-			{Object.values(SESSION_WIDGET_REGISTRY).map((widget) => (
+			{Object.values(SESSION_WIDGET_REGISTRY).map((widget) => {
+				const descriptor = resolveSessionWidgetDescriptor(widget, { agent })
+				const Icon = descriptor.icon
+				return (
 				<div
 					key={widget.id}
 					className="min-h-0 overflow-hidden rounded-lg border border-border/40 bg-background/70"
 				>
 					<div className="flex h-8 items-center gap-2 border-b border-border/40 px-3">
-						<widget.icon className="size-3.5 text-muted-foreground" />
-						<p className="truncate text-xs font-medium text-foreground/80">{widget.title}</p>
+						<Icon className="size-3.5 text-muted-foreground" />
+						<p className="truncate text-xs font-medium text-foreground/80">{descriptor.title}</p>
 					</div>
-					<div className="h-[calc(100%-2rem)] min-h-0 overflow-auto p-2">{widget.render({ agent })}</div>
+					<div className="h-[calc(100%-2rem)] min-h-0 overflow-auto p-2">
+						{renderSessionWidgetRuntime(descriptor.runtime, { agent })}
+					</div>
 				</div>
-			))}
+				)
+			})}
 		</div>
 	)
 }

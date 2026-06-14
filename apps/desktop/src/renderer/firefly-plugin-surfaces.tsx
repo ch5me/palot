@@ -41,6 +41,7 @@ import type { ProjectedSidePanel } from "../shared/firefly-plugin/renderer-proje
 import type { FireflySidePanelTab } from "./firefly-surface-registry"
 import {
 	catalogPanelToTabDescriptor,
+	resolveCatalogSurfaceDescriptor,
 	type CatalogSurfaceTabDescriptor,
 } from "./firefly-plugin-surface-merge"
 import { createLogger } from "./lib/logger"
@@ -173,44 +174,45 @@ export function buildCatalogSurfaceTab(
 	descriptor: CatalogSurfaceTabDescriptor,
 	agent: Agent,
 ): FireflySidePanelTab | null {
-	if (descriptor.renderMode !== "host-reconciler") {
+	const normalized = resolveCatalogSurfaceDescriptor(descriptor, panelIcon)
+	if (normalized.runtime.renderMode !== "host-reconciler") {
 		// declarative-props renders via Loom (wave 6); iframe needs the
 		// sandbox policy task. Neither has a host surface yet.
 		return null
 	}
-	const PanelComponent = PLUGIN_PANEL_COMPONENTS[descriptor.projectedId]
+	const PanelComponent = PLUGIN_PANEL_COMPONENTS[normalized.projectedId]
 	if (!PanelComponent) {
 		// Fail loud: a catalog-served panel without a registered
 		// component is a build/registration bug, not a renderable tab.
 		log.warn("Catalog panel has no registered component; skipping tab", {
-			projectedId: descriptor.projectedId,
-			pluginId: descriptor.pluginId,
+			projectedId: normalized.projectedId,
+			pluginId: normalized.pluginId,
 		})
 		return null
 	}
-	const Icon = panelIcon(descriptor.iconName)
+	const Icon = normalized.icon
 	return {
-		id: descriptor.id,
-		label: descriptor.title,
+		id: normalized.id,
+		label: normalized.title,
 		icon: <Icon className="size-4" />,
-		title: descriptor.title,
-		availability: descriptor.available
+		title: normalized.title,
+		availability: normalized.availability.available
 			? { available: true }
-			: { available: false, reason: descriptor.unavailableReason ?? "Unavailable" },
-		commandIds: [...descriptor.commandIds],
-		persistenceKey: descriptor.persistenceKey,
-		telemetryNamespace: descriptor.telemetryNamespace,
-		target: { kind: "side-panel", tab: descriptor.id },
+			: { available: false, reason: normalized.availability.reason ?? "Unavailable" },
+		commandIds: [...normalized.commandIds],
+		persistenceKey: normalized.persistenceKey,
+		telemetryNamespace: normalized.telemetryNamespace,
+		target: normalized.target,
 		render: () => (
 			<PluginPanelBoundary
-				pluginId={descriptor.pluginId}
-				projectedId={descriptor.projectedId}
-				title={descriptor.title}
+				pluginId={normalized.pluginId}
+				projectedId={normalized.projectedId}
+				title={normalized.title}
 			>
 				<Suspense
 					fallback={
 						<div className="flex h-full items-center justify-center text-xs text-muted-foreground">
-							Loading {descriptor.title}…
+							Loading {normalized.title}…
 						</div>
 					}
 				>

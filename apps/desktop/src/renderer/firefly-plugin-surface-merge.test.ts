@@ -6,6 +6,7 @@ import {
 	catalogPanelToTabDescriptor,
 	isKnownSidePanelTabId,
 	mergeSurfaceTabs,
+	resolveCatalogSurfaceDescriptor,
 	SIDE_PANEL_TAB_ORDER,
 } from "./firefly-plugin-surface-merge"
 
@@ -41,7 +42,9 @@ describe("catalogPanelToTabDescriptor", () => {
 		expect(descriptor?.id).toBe("notes")
 		expect(descriptor?.persistenceKey).toBe("side-panel.notes")
 		expect(descriptor?.telemetryNamespace).toBe("firefly.surface.notes")
-		expect(descriptor?.available).toBe(true)
+		expect(descriptor?.availability.available).toBe(true)
+		expect(descriptor?.hostPolicy.defaultZoneId).toBe("side-panel")
+		expect(descriptor?.runtime.renderMode).toBe("host-reconciler")
 	})
 
 	test("skips main-pane panels", () => {
@@ -75,8 +78,17 @@ describe("catalogPanelToTabDescriptor", () => {
 				},
 			}),
 		)
-		expect(descriptor?.available).toBe(false)
-		expect(descriptor?.unavailableReason).toBe("Plugin is disabled by the host")
+		expect(descriptor?.availability.available).toBe(false)
+		expect(descriptor?.availability.reason).toBe("Plugin is disabled by the host")
+	})
+
+	test("resolves normalized descriptor metadata through renderMode seam", () => {
+		const descriptor = catalogPanelToTabDescriptor(projectedPanel({ renderMode: "declarative-props" }))
+		if (!descriptor) throw new Error("expected descriptor")
+		const normalized = resolveCatalogSurfaceDescriptor(descriptor, () => ({}) as never)
+		expect(normalized.hostPolicy.hostPolicy).toBe("remount-ok")
+		expect(normalized.runtime.renderMode).toBe("declarative-props")
+		expect(normalized.target).toEqual({ kind: "side-panel", tab: "notes" })
 	})
 })
 

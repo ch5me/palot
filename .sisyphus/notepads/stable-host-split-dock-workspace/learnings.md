@@ -176,3 +176,8 @@ readable. New workspace model can extend the snapshot but not break the old shap
 - Added `apps/desktop/src/renderer/components/workspace-dock/stable-panel-host-runtime.ts` with explicit stable-host states (`detached`, `attaching`, `attached`, `suspended`, `unavailable`), attach/detach/resize lifecycle hooks, hidden-zone suspension policy, and remount instrumentation.
 - Added `apps/desktop/src/renderer/components/workspace-dock/reverse-portal-transport.tsx` as the first `SurfaceTransport` implementation, backed by `react-reverse-portal` and isolated behind a host-runtime seam so future `moveBefore()` transport can swap in without surface churn.
 - Added `apps/desktop/src/renderer/components/workspace-dock/stable-panel-host-runtime.test.ts` to prove remount preservation, lifecycle callback order, and remount detection memory for protected hosts.
+
+## 8. TASK 3 IMPLEMENTATION NOTES (2026-06-13)
+- Firefly surface rows now keep canonical metadata in `descriptor` objects inside `apps/desktop/src/renderer/firefly-surface-registry.tsx`; raw render closures are derived later from `runtime` entrypoints instead of being the primary registry contract.
+- Catalog surfaces now normalize through the same descriptor path in `apps/desktop/src/renderer/firefly-plugin-surface-merge.ts` and `apps/desktop/src/renderer/firefly-plugin-surfaces.tsx`; existing `renderMode` now drives host-policy/runtime metadata rather than a separate parallel model.
+- Session widgets now expose descriptor-backed host policy and runtime entrypoints in `apps/desktop/src/renderer/session-widget-registry.tsx`, and both widget shells resolve/render from normalized descriptors instead of direct `render()` registry fields.

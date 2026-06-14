@@ -1,6 +1,6 @@
 import { 	ActivityIcon, BoxesIcon, DatabaseIcon, FileDiffIcon, FileTextIcon, FilesIcon, GlobeIcon, MicIcon, MonitorPlayIcon, PlugIcon, RectangleEllipsisIcon, Share2Icon, SquarePenIcon, TerminalSquareIcon, UsersIcon, WandSparklesIcon, type LucideIcon } from "lucide-react"
 
-import type { ReactNode } from "react"
+import type { ComponentType, ReactNode } from "react"
 
 import { Ch5PmDashboardPanel } from "./ch5pm-dashboard/panel"
 import { ReviewPanel } from "./components/review/review-panel"
@@ -20,6 +20,10 @@ import { V2PluginsPanel } from "./components/side-panel/v2-plugins-panel"
 import { PulsePanel } from "./components/side-panel/pulse-panel"
 import { TerminalPanel } from "./components/side-panel/terminal-panel"
 import type { Agent, FireflySurfaceTarget } from "./lib/types"
+import {
+	type NormalizedWorkspaceDescriptor,
+	type WorkspaceHostDescriptor,
+} from "./workspace-panel-descriptors"
 
 const MemoryPanelHost = (({ className }: { agent: Agent; className?: string }) => (
 	<div className={`flex h-full min-h-0 items-center justify-center px-4 text-center text-xs text-muted-foreground ${className ?? ""}`}>
@@ -47,19 +51,95 @@ export interface FireflySurfaceContext {
 export interface FireflySurfaceDef {
 	id: FireflySurfaceId
 	manifestId: string
-	title: string
-	icon: LucideIcon
 	formFactor: FireflySurfaceFormFactor
 	enabledFlag: {
 		key: string
 	}
 	defaultOn: boolean
-	availability: (ctx: FireflySurfaceContext) => FireflySurfaceAvailability
 	commandIds: string[]
 	persistenceKey: string
 	telemetryNamespace: string
 	target: FireflySurfaceTarget
-	spawn: (ctx: FireflySurfaceContext) => ReactNode
+	descriptor: FireflySurfaceHostDescriptor
+}
+
+export type FireflySurfaceHostDescriptor = WorkspaceHostDescriptor<
+	FireflySurfaceId,
+	"side-panel" | "main-pane",
+	FireflySurfaceContext,
+	FireflySurfaceAvailability
+>
+
+interface StaticPanelProps {
+	agent: Agent
+}
+
+interface ReviewPanelRuntimeProps {
+	sessionId: string
+	directory: string
+}
+
+interface MemoryBoundaryRuntimeProps {
+	pluginId: string
+	contributionId: string
+	hostComponent: ComponentType<{ agent: Agent; className?: string }>
+	hostLazyImport: () => Promise<{ default: ComponentType<{ agent: Agent; className?: string }> }>
+	agent: Agent
+}
+
+type FireflySurfaceComponent = ComponentType<object>
+
+function componentEntrypoint<Props extends object>(
+	Component: ComponentType<Props>,
+	resolveProps: (ctx: FireflySurfaceContext) => Props,
+): FireflySurfaceHostDescriptor["runtime"] {
+	return {
+		kind: "react-host-component",
+		renderMode: "host-reconciler" as const,
+		resolve: (ctx: FireflySurfaceContext) => ({
+			Component: Component as FireflySurfaceComponent,
+			props: resolveProps(ctx),
+		}),
+	}
+}
+
+function sidePanelDescriptor(
+	config: Omit<FireflySurfaceDef, "descriptor"> & {
+		title: string
+		icon: LucideIcon
+		availability: (ctx: FireflySurfaceContext) => FireflySurfaceAvailability
+		runtime: FireflySurfaceHostDescriptor["runtime"]
+		hostPolicy?: FireflySurfaceHostDescriptor["hostPolicy"]["hostPolicy"]
+		multiplicityPolicy?: FireflySurfaceHostDescriptor["hostPolicy"]["multiplicityPolicy"]
+	},
+): FireflySurfaceDef {
+	const defaultZoneId = config.target.kind === "workspace-panel" ? config.target.zoneId : "side-panel"
+	return {
+		id: config.id,
+		manifestId: config.manifestId,
+		formFactor: config.formFactor,
+		enabledFlag: config.enabledFlag,
+		defaultOn: config.defaultOn,
+		commandIds: config.commandIds,
+		persistenceKey: config.persistenceKey,
+		telemetryNamespace: config.telemetryNamespace,
+		target: config.target,
+		descriptor: {
+			id: config.id,
+			hostPolicy: {
+				logicalKind: "firefly-surface",
+				defaultZoneId,
+				hostPolicy: config.hostPolicy ?? "stable",
+				multiplicityPolicy: config.multiplicityPolicy ?? "singleton",
+			},
+			presentation: {
+				getTitle: () => config.title,
+				getIcon: () => config.icon,
+				getAvailability: config.availability,
+			},
+			runtime: config.runtime,
+		},
+	}
 }
 
 export interface FireflySidePanelTab {
@@ -75,8 +155,23 @@ export interface FireflySidePanelTab {
 	render: () => ReactNode
 }
 
+export interface FireflyResolvedSurfaceDescriptor extends NormalizedWorkspaceDescriptor<
+	FireflySurfaceId,
+	"side-panel" | "main-pane",
+	FireflySurfaceAvailability,
+	FireflySurfaceHostDescriptor["runtime"],
+	FireflySurfaceTarget
+> {
+	id: FireflySurfaceId
+	manifestId: string
+	formFactor: FireflySurfaceFormFactor
+	target: FireflySurfaceTarget
+	enabledFlagKey: string
+	defaultOn: boolean
+}
+
 export const FIREFLY_SURFACE_REGISTRY: FireflySurfaceDef[] = [
-	{
+	sidePanelDescriptor({
 		id: "review",
 		manifestId: "firefly.built-in.side-panel.review",
 		title: "Changes",
@@ -98,9 +193,12 @@ export const FIREFLY_SURFACE_REGISTRY: FireflySurfaceDef[] = [
 		persistenceKey: "side-panel.review",
 		telemetryNamespace: "firefly.surface.review",
 		target: { kind: "side-panel", tab: "review" },
-		spawn: (ctx) => <ReviewPanel sessionId={ctx.agent.sessionId} directory={ctx.agent.directory} />,
-	},
-	{
+		runtime: componentEntrypoint(ReviewPanel as ComponentType<ReviewPanelRuntimeProps>, (ctx) => ({
+			sessionId: ctx.agent.sessionId,
+			directory: ctx.agent.directory,
+		})),
+	}),
+	sidePanelDescriptor({
 		id: "browser",
 		manifestId: "firefly.built-in.side-panel.browser",
 		title: "Browser",
@@ -118,11 +216,11 @@ export const FIREFLY_SURFACE_REGISTRY: FireflySurfaceDef[] = [
 		persistenceKey: "side-panel.browser",
 		telemetryNamespace: "firefly.surface.browser",
 		target: { kind: "side-panel", tab: "browser" },
-		spawn: (ctx) => <BrowserPanel agent={ctx.agent} />,
-	},
+		runtime: componentEntrypoint(BrowserPanel as ComponentType<StaticPanelProps>, (ctx) => ({ agent: ctx.agent })),
+	}),
 	// `notes` is served from the plugin catalog (firefly.built-in.surface.notes,
 	// apps/desktop/plugins/notes) — first migrated surface. Do not re-add a row.
-	{
+	sidePanelDescriptor({
 		id: "pulse",
 		manifestId: "firefly.built-in.side-panel.pulse",
 		title: "Pulse",
@@ -140,9 +238,9 @@ export const FIREFLY_SURFACE_REGISTRY: FireflySurfaceDef[] = [
 		persistenceKey: "side-panel.pulse",
 		telemetryNamespace: "firefly.surface.pulse",
 		target: { kind: "side-panel", tab: "pulse" },
-		spawn: (ctx) => <PulsePanel agent={ctx.agent} />,
-	},
-	{
+		runtime: componentEntrypoint(PulsePanel as ComponentType<StaticPanelProps>, (ctx) => ({ agent: ctx.agent })),
+	}),
+	sidePanelDescriptor({
 		id: "artifacts",
 		manifestId: "firefly.built-in.side-panel.artifacts",
 		title: "Artifacts",
@@ -160,9 +258,9 @@ export const FIREFLY_SURFACE_REGISTRY: FireflySurfaceDef[] = [
 		persistenceKey: "side-panel.artifacts",
 		telemetryNamespace: "firefly.surface.artifacts",
 		target: { kind: "side-panel", tab: "artifacts" },
-		spawn: (ctx) => <ArtifactsPanel agent={ctx.agent} />,
-	},
-	{
+		runtime: componentEntrypoint(ArtifactsPanel as ComponentType<StaticPanelProps>, (ctx) => ({ agent: ctx.agent })),
+	}),
+	sidePanelDescriptor({
 		id: "memory",
 		manifestId: "firefly.built-in.side-panel.memory",
 		title: "Memory",
@@ -180,21 +278,18 @@ export const FIREFLY_SURFACE_REGISTRY: FireflySurfaceDef[] = [
 		persistenceKey: "side-panel.memory",
 		telemetryNamespace: "firefly.surface.memory",
 		target: { kind: "side-panel", tab: "memory" },
-		spawn: (ctx) => (
-			<PluginPanelBoundary
-				pluginId="firefly.built-in.surface.memory"
-				contributionId="memory"
-				hostComponent={MemoryPanelHost}
-				hostLazyImport={() =>
-					import("./components/side-panel/memory-panel").then((module) => ({
-						default: module.MemoryPanel,
-					}))
-				}
-				agent={ctx.agent}
-			/>
-		),
-	},
-	{
+		runtime: componentEntrypoint(PluginPanelBoundary as ComponentType<MemoryBoundaryRuntimeProps>, (ctx) => ({
+			pluginId: "firefly.built-in.surface.memory",
+			contributionId: "memory",
+			hostComponent: MemoryPanelHost,
+			hostLazyImport: () =>
+				import("./components/side-panel/memory-panel").then((module) => ({
+					default: module.MemoryPanel,
+				})),
+			agent: ctx.agent,
+		})),
+	}),
+	sidePanelDescriptor({
 		id: "files",
 		manifestId: "firefly.built-in.side-panel.files",
 		title: "Files",
@@ -212,9 +307,9 @@ export const FIREFLY_SURFACE_REGISTRY: FireflySurfaceDef[] = [
 		persistenceKey: "side-panel.files",
 		telemetryNamespace: "firefly.surface.files",
 		target: { kind: "side-panel", tab: "files" },
-		spawn: (ctx) => <FilesPanel agent={ctx.agent} />,
-	},
-	{
+		runtime: componentEntrypoint(FilesPanel as ComponentType<StaticPanelProps>, (ctx) => ({ agent: ctx.agent })),
+	}),
+	sidePanelDescriptor({
 		id: "terminal",
 		manifestId: "firefly.built-in.side-panel.terminal",
 		title: "Terminal",
@@ -232,9 +327,9 @@ export const FIREFLY_SURFACE_REGISTRY: FireflySurfaceDef[] = [
 		persistenceKey: "side-panel.terminal",
 		telemetryNamespace: "firefly.surface.terminal",
 		target: { kind: "side-panel", tab: "terminal" },
-		spawn: (ctx) => <TerminalPanel agent={ctx.agent} />,
-	},
-	{
+		runtime: componentEntrypoint(TerminalPanel as ComponentType<StaticPanelProps>, (ctx) => ({ agent: ctx.agent })),
+	}),
+	sidePanelDescriptor({
 		id: "editor",
 		manifestId: "firefly.built-in.side-panel.editor",
 		title: "Editor",
@@ -252,9 +347,9 @@ export const FIREFLY_SURFACE_REGISTRY: FireflySurfaceDef[] = [
 		persistenceKey: "side-panel.editor",
 		telemetryNamespace: "firefly.surface.editor",
 		target: { kind: "side-panel", tab: "editor" },
-		spawn: (ctx) => <EditorPanel agent={ctx.agent} />,
-	},
-	{
+		runtime: componentEntrypoint(EditorPanel as ComponentType<StaticPanelProps>, (ctx) => ({ agent: ctx.agent })),
+	}),
+	sidePanelDescriptor({
 		id: "plugins",
 		manifestId: "firefly.built-in.side-panel.plugins",
 		title: "Plugins",
@@ -272,9 +367,9 @@ export const FIREFLY_SURFACE_REGISTRY: FireflySurfaceDef[] = [
 		persistenceKey: "side-panel.plugins",
 		telemetryNamespace: "firefly.surface.plugins",
 		target: { kind: "side-panel", tab: "plugins" },
-		spawn: (ctx) => <V2PluginsPanel agent={ctx.agent} />,
-	},
-	{
+		runtime: componentEntrypoint(V2PluginsPanel as ComponentType<StaticPanelProps>, (ctx) => ({ agent: ctx.agent })),
+	}),
+	sidePanelDescriptor({
 		id: "bridges",
 		manifestId: "firefly.built-in.side-panel.bridges",
 		title: "Bridges",
@@ -292,9 +387,9 @@ export const FIREFLY_SURFACE_REGISTRY: FireflySurfaceDef[] = [
 		persistenceKey: "side-panel.bridges",
 		telemetryNamespace: "firefly.surface.bridges",
 		target: { kind: "side-panel", tab: "bridges" },
-		spawn: (ctx) => <BridgesPanel agent={ctx.agent} />,
-	},
-	{
+		runtime: componentEntrypoint(BridgesPanel as ComponentType<StaticPanelProps>, (ctx) => ({ agent: ctx.agent })),
+	}),
+	sidePanelDescriptor({
 		id: "crm",
 		manifestId: "firefly.built-in.side-panel.crm",
 		title: "Contacts / CRM",
@@ -312,9 +407,9 @@ export const FIREFLY_SURFACE_REGISTRY: FireflySurfaceDef[] = [
 		persistenceKey: "side-panel.crm",
 		telemetryNamespace: "firefly.surface.crm",
 		target: { kind: "side-panel", tab: "crm" },
-		spawn: (ctx) => <CrmPanel agent={ctx.agent} />,
-	},
-	{
+		runtime: componentEntrypoint(CrmPanel as ComponentType<StaticPanelProps>, (ctx) => ({ agent: ctx.agent })),
+	}),
+	sidePanelDescriptor({
 		id: "studio",
 		manifestId: "firefly.built-in.side-panel.studio",
 		title: "Studio / Office",
@@ -332,9 +427,9 @@ export const FIREFLY_SURFACE_REGISTRY: FireflySurfaceDef[] = [
 		persistenceKey: "side-panel.studio",
 		telemetryNamespace: "firefly.surface.studio",
 		target: { kind: "side-panel", tab: "studio" },
-		spawn: (ctx) => <StudioPanel agent={ctx.agent} />,
-	},
-	{
+		runtime: componentEntrypoint(StudioPanel as ComponentType<StaticPanelProps>, (ctx) => ({ agent: ctx.agent })),
+	}),
+	sidePanelDescriptor({
 		id: "voice",
 		manifestId: "firefly.built-in.side-panel.voice",
 		title: "Voice",
@@ -352,9 +447,9 @@ export const FIREFLY_SURFACE_REGISTRY: FireflySurfaceDef[] = [
 		persistenceKey: "side-panel.voice",
 		telemetryNamespace: "firefly.surface.voice",
 		target: { kind: "side-panel", tab: "voice" },
-		spawn: (ctx) => <VoicePanel agent={ctx.agent} />,
-	},
-	{
+		runtime: componentEntrypoint(VoicePanel as ComponentType<StaticPanelProps>, (ctx) => ({ agent: ctx.agent })),
+	}),
+	sidePanelDescriptor({
 		id: "oracle",
 		manifestId: "firefly.built-in.side-panel.oracle",
 		title: "Oracle Roster",
@@ -372,9 +467,9 @@ export const FIREFLY_SURFACE_REGISTRY: FireflySurfaceDef[] = [
 		persistenceKey: "side-panel.oracle",
 		telemetryNamespace: "firefly.surface.oracle",
 		target: { kind: "side-panel", tab: "oracle" },
-		spawn: (ctx) => <OraclePanel agent={ctx.agent} />,
-	},
-	{
+		runtime: componentEntrypoint(OraclePanel as ComponentType<StaticPanelProps>, (ctx) => ({ agent: ctx.agent })),
+	}),
+	sidePanelDescriptor({
 		id: "claude",
 		manifestId: "firefly.built-in.side-panel.claude",
 		title: "Claude Code",
@@ -392,9 +487,9 @@ export const FIREFLY_SURFACE_REGISTRY: FireflySurfaceDef[] = [
 		persistenceKey: "side-panel.claude",
 		telemetryNamespace: "firefly.surface.claude",
 		target: { kind: "side-panel", tab: "claude" },
-		spawn: (ctx) => <ClaudePanel agent={ctx.agent} />,
-	},
-	{
+		runtime: componentEntrypoint(ClaudePanel as ComponentType<StaticPanelProps>, (ctx) => ({ agent: ctx.agent })),
+	}),
+	sidePanelDescriptor({
 		id: "ch5pm",
 		manifestId: "firefly.built-in.side-panel.ch5pm",
 		title: "CH5PM Dashboard",
@@ -412,9 +507,9 @@ export const FIREFLY_SURFACE_REGISTRY: FireflySurfaceDef[] = [
 		persistenceKey: "side-panel.ch5pm",
 		telemetryNamespace: "firefly.surface.ch5pm",
 		target: { kind: "side-panel", tab: "ch5pm" },
-		spawn: () => <Ch5PmDashboardPanel />,
-	},
-	{
+		runtime: componentEntrypoint(Ch5PmDashboardPanel as FireflySurfaceComponent, () => ({})),
+	}),
+	sidePanelDescriptor({
 		id: "pdf-review",
 		manifestId: "firefly.built-in.side-panel.pdf-review",
 		title: "PDF Review",
@@ -432,8 +527,8 @@ export const FIREFLY_SURFACE_REGISTRY: FireflySurfaceDef[] = [
 		persistenceKey: "side-panel.pdf-review",
 		telemetryNamespace: "firefly.surface.pdf-review",
 		target: { kind: "side-panel", tab: "pdf-review" },
-		spawn: (ctx) => <PdfReviewPanel agent={ctx.agent} />,
-	},
+		runtime: componentEntrypoint(PdfReviewPanel as ComponentType<StaticPanelProps>, (ctx) => ({ agent: ctx.agent })),
+	}),
 ]
 
 /**
@@ -461,12 +556,46 @@ export const FIREFLY_SURFACE_DEFAULT_ON = Object.fromEntries(
 ) as Readonly<Record<FireflySurfaceId, boolean>>
 
 export const FIREFLY_SURFACE_LABELS = Object.fromEntries(
-	FIREFLY_SURFACE_REGISTRY.map((surface) => [surface.id, surface.title]),
+	FIREFLY_SURFACE_REGISTRY.map((surface) => [surface.id, surface.descriptor.presentation.getTitle(null as never)]),
 ) as Readonly<Record<FireflySurfaceId, string>>
 
 export const FIREFLY_SURFACE_REGISTRY_BY_ID = Object.fromEntries(
 	FIREFLY_SURFACE_REGISTRY.map((surface) => [surface.id, surface]),
 ) as Record<FireflySurfaceId, FireflySurfaceDef>
+
+export function resolveFireflySurfaceDescriptor(
+	surface: FireflySurfaceDef,
+	ctx: FireflySurfaceContext,
+): FireflyResolvedSurfaceDescriptor {
+	return {
+		id: surface.id,
+		manifestId: surface.manifestId,
+		formFactor: surface.formFactor,
+		target: surface.target,
+		enabledFlagKey: surface.enabledFlag.key,
+		defaultOn: surface.defaultOn,
+		commandIds: surface.commandIds,
+		persistenceKey: surface.persistenceKey,
+		telemetryNamespace: surface.telemetryNamespace,
+		title: surface.descriptor.presentation.getTitle(ctx),
+		icon: surface.descriptor.presentation.getIcon(ctx),
+		availability: surface.descriptor.presentation.getAvailability(ctx),
+		hostPolicy: surface.descriptor.hostPolicy,
+		runtime: surface.descriptor.runtime,
+	}
+}
+
+export function renderFireflySurfaceRuntime(
+	runtime: FireflySurfaceHostDescriptor["runtime"],
+	ctx: FireflySurfaceContext,
+): ReactNode {
+	if (runtime.kind !== "react-host-component") {
+		throw new Error(`unsupported firefly surface runtime kind: ${runtime.kind}`)
+	}
+	const resolved = runtime.resolve(ctx)
+	const Component = resolved.Component
+	return <Component {...resolved.props} />
+}
 
 /**
  * Runtime assertion: every entry of `FIREFLY_SURFACE_REGISTRY` has a unique id
@@ -488,19 +617,19 @@ for (const id of FIREFLY_SURFACE_IDS) {
 export function getFireflySurfaceTabs(ctx: FireflySurfaceContext): FireflySidePanelTab[] {
 	return FIREFLY_SURFACE_REGISTRY.filter((surface) => surface.formFactor === "side-panel-tab").map(
 		(surface) => {
-			const availability = surface.availability(ctx)
-			const Icon = surface.icon
+			const descriptor = resolveFireflySurfaceDescriptor(surface, ctx)
+			const Icon = descriptor.icon
 			return {
 				id: surface.id,
-				label: surface.title,
+				label: descriptor.title,
 				icon: <Icon className="size-4" />,
-				title: surface.title,
-				availability,
-				commandIds: surface.commandIds,
-				persistenceKey: surface.persistenceKey,
-				telemetryNamespace: surface.telemetryNamespace,
-				target: surface.target,
-				render: () => surface.spawn(ctx),
+				title: descriptor.title,
+				availability: descriptor.availability,
+				commandIds: [...descriptor.commandIds],
+				persistenceKey: descriptor.persistenceKey,
+				telemetryNamespace: descriptor.telemetryNamespace,
+				target: descriptor.target,
+				render: () => renderFireflySurfaceRuntime(descriptor.runtime, ctx),
 			}
 		},
 	)

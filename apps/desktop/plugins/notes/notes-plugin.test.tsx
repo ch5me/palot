@@ -110,7 +110,7 @@ describe("criterion 2 — Notes serves from the catalog projection", () => {
 		// criterion 6: persistence + telemetry identity survive the cutover.
 		expect(descriptor?.persistenceKey).toBe("side-panel.notes")
 		expect(descriptor?.telemetryNamespace).toBe("firefly.surface.notes")
-		expect(descriptor?.renderMode).toBe("host-reconciler")
+		expect(descriptor?.runtime.renderMode).toBe("host-reconciler")
 	})
 
 	test("notes tools project into the bridge tool surface (OpenCode visibility)", () => {
