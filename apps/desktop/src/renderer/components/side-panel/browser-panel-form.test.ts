@@ -48,4 +48,14 @@ describe("browser panel create form view model", () => {
 		expect(view.showDeploymentLocation).toBe(false)
 		expect(view.deploymentLocation).toBe("local")
 	})
+
+	test("selkies stream exposes both attached and managed-local mode options", () => {
+		const view = getBrowserPanelCreateFormViewModel({
+			...createDefaultBrowserPanelFormState(),
+			surfaceKind: "selkies-stream",
+		})
+
+		expect(view.showRuntimeOwnership).toBe(true)
+		expect(view.runtimeOwnershipOptions).toEqual(["attached", "managed-local"])
+	})
 })
