@@ -10,7 +10,7 @@ Repos compared:
 ## Source Of Truth Used
 
 - `ch5 scan palot --json`: 141 component nodes, 166 story nodes, 6 test nodes, 0 scanner errors.
-- `ch5 scan ch5-packages --json`: 566 story nodes, but only 2 component nodes. This is a CH5 CLI scanner bug for flat `ch5-ui-web/src/*.tsx` components; a side-agent was dispatched to fix it.
+- `ch5 scan ch5-packages --json`: 366 component nodes, 566 story nodes, 0 scanner errors after the CH5 CLI nested-package scanner fix.
 - AST/text inventory over TS/TSX source filled the component/export/prop comparison below.
 
 ## Executive Read
@@ -47,6 +47,76 @@ Repos compared:
 3. Base primitives with same exports but style/engine deltas: `button`, `badge`, `input`, `select`, `dialog`, `dropdown-menu`, `tooltip`, `sidebar`.
 4. API-gap primitives: `avatar`, `card`, `popover`, `progress`, `tabs`, `alert`, AI `file-tree`, AI `terminal`.
 5. AI elements: treat as a separate upstream decision. They are generic in concept but currently Palot-owned and large.
+
+## Recommendations
+
+My recommendation: do not bulk-replace Palot primitives with the current generic CH5 versions yet. Use Palot's desktop density, sizing, radius, icon scale, and compact command-surface feel as the parity target, then backport missing capabilities into `@ch5me/ch5-ui-web` before switching consumers.
+
+### Recommended North Star
+
+- `@ch5me/ch5-ui-web` should own generic primitives, motion/effects, reusable app-shell parts, and reusable agent/chat UI.
+- `@ch5me/elf-ui` should shrink into a temporary compatibility layer plus any truly Palot-only surfaces.
+- Palot app components should import generic primitives, but keep product data binding, routes, IPC, Jotai state, onboarding logic, settings logic, and PM/session panels local.
+- A replacement is ready only when side-by-side Storybook stories match size, shape, spacing, interaction states, and visual weight closely enough that Palot does not feel like it changed product language.
+
+### Backport First
+
+These are missing or stronger in Palot and should move into CH5 UI before app replacement work:
+
+| Priority | Backport target | Why |
+| --- | --- | --- |
+| P0 | `Button` size/variant parity: `xs`, `icon-xs`, `icon-lg`, compact padding, current icon sizing | Too many Palot surfaces assume dense controls. Replacing without this changes app feel everywhere. |
+| P0 | `InputGroup`, `ButtonGroup`, `Item`, `Empty`, `Kbd`, `NativeSelect` | Generic primitives with no current CH5 equivalent; good shared library candidates. |
+| P0 | API-gap compound exports: `CardAction`, `AlertAction`, `AvatarGroup`, `AvatarBadge`, `AvatarGroupCount`, `PopoverHeader/Title/Description`, `ProgressTrack/Label/Value/Indicator`, `tabsListVariants` | Small upstream additions unblock many thin re-export migrations. |
+| P1 | `Combobox` and `SearchableListPopover` | Useful command/search primitives; likely reusable across agent apps, settings, and admin tools. |
+| P1 | `nav-sidebar-shell` as brandless shell pieces: `AppShellChrome`, `AppSidebarShellFrame`, sidebar layout frame | Structure is reusable; Palot labels, data model, wordmark, session grouping stay local. |
+| P1 | Agent/chat core: `PromptInput`, `Message`, `Conversation`, `Reasoning`, `Tool`, `Task`, `CodeBlock`, `FileChanges`, `Diff`, `Terminal`, `InlineCitation`, `Sources` | These are product-domain generic for CH5 agent apps, not Palot-only. Move as an `ai-elements` or `agent-ui` namespace. |
+| P2 | `Chart` | Useful, but only after token/theming contract is clear around Recharts. |
+| P2 | Model/voice/mic selectors | Generic if CH5 standardizes provider/model/voice data shapes; otherwise keep adapters local. |
+
+### Replace Now
+
+- Pass-through marketing wrappers: delete local wrappers after import moves.
+- `animate/smooth-dropdown.tsx`: already generic; direct consumer migration is low risk.
+- Exact-ish primitives can become compatibility re-exports after side-by-side proof: `aspect-ratio`, `calendar`, `resizable`, `spinner`, `toggle-group`, `animate/expandable-gallery`.
+
+### Replace After Upstream Parity
+
+- `button`, `badge`, `input`, `textarea`, `select`, `dialog`, `dropdown-menu`, `tooltip`, `sidebar`, `sheet`, `tabs`, `progress`.
+- These must be judged by screenshots, not just export matching. Current generic versions often differ in primitive engine, transition tokens, padding, border treatment, and compact sizing.
+- If generic looks less dense or less desktop-native, fix `ch5-ui-web` first. Do not preserve a Palot-only fork to keep the app looking right.
+
+### Keep Local For Now
+
+- Product pages/panels: settings, onboarding, PM dashboards, session panels, browser panels, app routes.
+- Data-bound shells: Palot sidebar session grouping, command palette actions, project/session state, automation state.
+- GenUI registry/rendering glue until CH5 has a cross-product GenUI contract.
+- Any component whose props include Palot/OpenCode/Firefly runtime concepts rather than plain UI concerns.
+
+### Genericization Rule
+
+Genericize when at least one is true:
+
+- Component is a primitive shape with no product nouns.
+- Component appears in two CH5 products or clearly will.
+- Component can be configured with data props, not runtime/service imports.
+- Component can be demonstrated in Storybook without Palot atoms, IPC, router state, or backend calls.
+
+Keep local when any is true:
+
+- Component owns Palot routing, session lifecycle, OpenCode state, PM state, or Firefly auth/runtime behavior.
+- Component copy, grouping, or visual hierarchy is product-specific.
+- Genericizing would require exporting Palot data models into CH5 UI.
+- Only benefit is deleting a file, not creating a reusable CH5 primitive.
+
+### Parity Gate
+
+Every replacement/backport should produce one Storybook comparison story before app migration:
+
+- Local Palot component and generic CH5 candidate rendered side by side.
+- Dense desktop state, empty state, loading state, error/invalid state, keyboard/focus state, and disabled state covered when relevant.
+- Pixel-level judgment is manual for now: same height, icon size, radius, border contrast, text weight, spacing, hover/active timing, and dark/light token behavior.
+- App migration only after the generic version passes the comparison story.
 
 ## Known Compatibility Risks
 
