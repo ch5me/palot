@@ -37,7 +37,7 @@ function toDto(state: import("./token-store").ElfAuthState | null): ElfAuthState
 }
 
 export async function getAuthState(): Promise<ElfAuthStateDto> {
-	const state = await getOrCreateTokenStore().getState()
+	const state = await getOrCreateTokenStore().getValidState()
 	return toDto(state)
 }
 
@@ -76,7 +76,7 @@ export async function pollSignIn(): Promise<ElfAuthStateDto | null> {
 		pendingDeviceCode = null
 		abortController = null
 
-		const state = await getOrCreateTokenStore().getState()
+		const state = await getOrCreateTokenStore().getValidState()
 		return toDto(state)
 	} catch (err) {
 		if (err instanceof ExpiredTokenError) {

@@ -17,6 +17,7 @@ export interface ElfAuthState {
 
 export interface ElfTokenStoreShape {
 	getState(): Promise<ElfAuthState | null>
+	getValidState(): Promise<ElfAuthState | null>
 	setState(state: ElfAuthState): Promise<void>
 	clearToken(): Promise<void>
 	getAuthHeader(): Promise<string | null>
@@ -29,6 +30,10 @@ type ChangeListener = (state: ElfAuthState | null) => void
 
 function statePath(): string {
 	return path.join(app.getPath("userData"), AUTH_STATE_FILE)
+}
+
+function isExpired(state: ElfAuthState, nowSec = Math.floor(Date.now() / 1000)): boolean {
+	return state.expiresAt <= nowSec
 }
 
 export function createElfTokenStore(): ElfTokenStoreShape {
@@ -79,6 +84,14 @@ export function createElfTokenStore(): ElfTokenStoreShape {
 			return cached
 		},
 
+		async getValidState() {
+			const state = await this.getState()
+			if (!state) return null
+			if (!isExpired(state)) return state
+			await this.clearToken()
+			return null
+		},
+
 		async setState(state: ElfAuthState) {
 			cached = state
 			await persist(state)
@@ -96,7 +109,7 @@ export function createElfTokenStore(): ElfTokenStoreShape {
 		},
 
 		async getAuthHeader() {
-			const state = await this.getState()
+			const state = await this.getValidState()
 			if (!state) return null
 			return `Bearer ${state.accessToken}`
 		},
