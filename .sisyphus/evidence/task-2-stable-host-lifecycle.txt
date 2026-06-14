@@ -6,7 +6,9 @@ Verification command:
 Lifecycle proof:
 - PASS
 - `fires lifecycle callbacks in stable order across hide, show, resize, and detach`
+- `visible-to-visible move emits detach before attach for lifecycle callbacks`
 - Callback order asserted for attach, visibility false/true, resize, and detach
+- Visible target move now proves explicit detach of prior target before attach of next target
 - Hidden `suspend` mode verified without remounting the protected host
 
 Type safety proof:

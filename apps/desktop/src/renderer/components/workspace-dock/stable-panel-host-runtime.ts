@@ -116,6 +116,21 @@ function remountMessage(hostId: StablePanelHostId, count: number): string {
 	return `stable host ${hostId} remounted unexpectedly (${count} mounts observed)`
 }
 
+function sameAttachmentTarget(
+	left: StablePanelAttachmentTarget | null,
+	right: StablePanelAttachmentTarget | null,
+): boolean {
+	if (!left || !right) {
+		return left === right
+	}
+
+	return (
+		left.attachmentId === right.attachmentId &&
+		left.visible === right.visible &&
+		left.zoneId === right.zoneId
+	)
+}
+
 export class StablePanelHostRuntime<
 	Handle extends SurfaceTransportHandle = SurfaceTransportHandle,
 > {
@@ -155,21 +170,31 @@ export class StablePanelHostRuntime<
 		target: StablePanelAttachmentTarget,
 	): StablePanelHostSnapshot<Handle> {
 		const record = this.requireHost(hostId)
+		const priorTarget = cloneTarget(record.activeTarget)
 		const nextTarget = { ...target }
 		const nextVisible = nextTarget.visible
 		const shouldSuspend = !nextVisible && record.hiddenMode === "suspend"
+		const targetChanged = !sameAttachmentTarget(priorTarget, nextTarget)
 
 		try {
 			record.state = "attaching"
 			record.lastError = null
 
+			if (targetChanged && priorTarget) {
+				record.transport.detachHost(record.handle, priorTarget)
+				record.lifecycle.onVisibilityChange?.(false, cloneTarget(priorTarget))
+				record.lifecycle.onDetach?.(cloneTarget(priorTarget))
+			}
+
 			if (shouldSuspend) {
-				record.transport.detachHost(record.handle, nextTarget)
 				record.activeTarget = cloneTarget(nextTarget)
 				record.visible = false
 				record.state = "suspended"
-				record.lifecycle.onVisibilityChange?.(false, cloneTarget(nextTarget))
-				record.lifecycle.onDetach?.(cloneTarget(nextTarget))
+				if (!targetChanged) {
+					record.transport.detachHost(record.handle, nextTarget)
+					record.lifecycle.onVisibilityChange?.(false, cloneTarget(nextTarget))
+					record.lifecycle.onDetach?.(cloneTarget(nextTarget))
+				}
 				return this.snapshotFromRecord(record)
 			}
 

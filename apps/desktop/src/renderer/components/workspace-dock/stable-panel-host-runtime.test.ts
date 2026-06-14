@@ -67,7 +67,43 @@ describe("StablePanelHostRuntime", () => {
 		expect(moved.handle.attachmentIds).toEqual(["main-slot-a", "right-slot-b"])
 		expect(log).toEqual([
 			"transport:attach:main-slot-a:visible",
+			"transport:detach:main-slot-a",
 			"transport:attach:right-slot-b:visible",
+		])
+	})
+
+	test("visible-to-visible move emits detach before attach for lifecycle callbacks", () => {
+		const log: string[] = []
+		const runtime = new StablePanelHostRuntime<FakeHandle>()
+		runtime.registerHost({
+			hostId: "host:move-order",
+			transport: createFakeTransport(log),
+			instrumentation: { mode: "error" },
+			lifecycle: {
+				onAttach: (nextTarget) => log.push(`callback:attach:${nextTarget.attachmentId}`),
+				onDetach: (nextTarget) => log.push(`callback:detach:${nextTarget?.attachmentId ?? "none"}`),
+				onVisibilityChange: (visible, nextTarget) =>
+					log.push(`callback:visible:${visible ? "true" : "false"}:${nextTarget?.attachmentId ?? "none"}`),
+			},
+		})
+
+		runtime.recordMount("host:move-order")
+		runtime.attachHost("host:move-order", target("main-slot-a"))
+		const moved = runtime.attachHost("host:move-order", target("right-slot-b"))
+
+		expect(moved.mountCount).toBe(1)
+		expect(moved.remountDetected).toBe(false)
+		expect(moved.activeTarget?.attachmentId).toBe("right-slot-b")
+		expect(log).toEqual([
+			"transport:attach:main-slot-a:visible",
+			"callback:attach:main-slot-a",
+			"callback:visible:true:main-slot-a",
+			"transport:detach:main-slot-a",
+			"callback:visible:false:main-slot-a",
+			"callback:detach:main-slot-a",
+			"transport:attach:right-slot-b:visible",
+			"callback:attach:right-slot-b",
+			"callback:visible:true:right-slot-b",
 		])
 	})
 
@@ -104,6 +140,9 @@ describe("StablePanelHostRuntime", () => {
 			"callback:visible:true:main-slot-a",
 			"transport:resize:480x320",
 			"callback:resize:480x320:main-slot-a",
+			"transport:detach:main-slot-a",
+			"callback:visible:false:main-slot-a",
+			"callback:detach:main-slot-a",
 			"transport:detach:main-slot-a",
 			"callback:visible:false:main-slot-a",
 			"callback:detach:main-slot-a",
