@@ -47,4 +47,10 @@ test("parse browser lane args defaults to local default lane", () => {
 	assert.equal(args.mode, "local")
 	assert.equal(args.lane, "default")
 	assert.equal(args.ssh, null)
+	assert.equal(args.verbose, false)
+})
+
+test("parse browser lane args supports verbose flag", () => {
+	const args = parseBrowserLaneArgs(["--verbose"])
+	assert.equal(args.verbose, true)
 })

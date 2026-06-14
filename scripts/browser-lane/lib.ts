@@ -19,6 +19,7 @@ export interface BrowserLaneCliArgs {
 	profilePath: string | null
 	streamUser: string | null
 	streamPassword: string | null
+	verbose: boolean
 }
 
 export function readBrowserLaneAuthFromEnv(env: Record<string, string>): BrowserLaneAuth | null {
@@ -46,6 +47,7 @@ export function parseBrowserLaneArgs(argv: string[]): BrowserLaneCliArgs {
 		profilePath: values["profile-path"] || null,
 		streamUser: values["stream-user"] || null,
 		streamPassword: values["stream-password"] || null,
+		verbose: values.verbose === "true",
 	}
 }
 

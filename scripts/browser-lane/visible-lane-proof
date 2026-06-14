@@ -27,6 +27,8 @@ function getLaneEndpoints(laneId: string) {
 	return {
 		streamBackendUrl: `http://127.0.0.1:${env.STREAM_PORT}`,
 		cdpEndpoint: `http://127.0.0.1:${env.CDP_PORT}`,
+		cdpRelayEndpoint: env.CDP_CONTAINER_ENDPOINT || `http://127.0.0.1:${env.CDP_PORT}`,
+		cdpInternalEndpoint: env.CDP_INTERNAL_ENDPOINT || "http://127.0.0.1:9222",
 		auth: readBrowserLaneAuthFromEnv(env),
 	}
 }
@@ -55,6 +57,7 @@ try {
 			}
 			: getLaneEndpoints(laneId)
 	const authHeader = endpoints.auth ? encodeBrowserLaneAuth(endpoints.auth) : undefined
+	const cdpRelayUrl = `${endpoints.cdpEndpoint}/json/version`
 	if (args.mode === "remote" && args.ssh) {
 		const streamProbe = await runRemoteCommand(
 			args.ssh,
@@ -76,7 +79,8 @@ try {
 					laneId,
 					ssh: args.ssh,
 					streamUrl: endpoints.streamBackendUrl,
-					cdpUrl: `${endpoints.cdpEndpoint}/json/version`,
+					cdpUrl: cdpRelayUrl,
+					cdpRelayNote: "Host-published CDP is the relay listener; Chromium remains on container loopback 127.0.0.1:9222.",
 					streamOk: streamProbe.code === 0,
 					cdpOk: cdpProbe.code === 0,
 					streamStdout: streamProbe.stdout,
@@ -96,7 +100,7 @@ try {
 			signal: AbortSignal.timeout(5000),
 			headers: authHeader ? { authorization: authHeader } : undefined,
 		}),
-		fetch(`${endpoints.cdpEndpoint}/json/version`, {
+		fetch(cdpRelayUrl, {
 			signal: AbortSignal.timeout(5000),
 			headers: authHeader ? { authorization: authHeader } : undefined,
 		}),
@@ -110,7 +114,8 @@ try {
 				mode: args.mode,
 				laneId,
 				streamUrl: endpoints.streamBackendUrl,
-				cdpUrl: `${endpoints.cdpEndpoint}/json/version`,
+				cdpUrl: cdpRelayUrl,
+				cdpRelayNote: "Host-published CDP hits the relay listener; Chromium itself stays on container loopback 127.0.0.1:9222.",
 				streamStatus: streamResponse.status,
 				cdpStatus: cdpResponse.status,
 				streamContainsSignal,
