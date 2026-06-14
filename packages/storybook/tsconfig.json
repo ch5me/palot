@@ -13,7 +13,10 @@
 		"noEmit": true,
 		"types": ["node", "vite/client"],
 		"paths": {
-			"@ch5me/elf-ui/*": ["../ui/src/*"]
+			"@ch5me/elf-ui/*": ["../ui/src/*"],
+			"lucide-react": ["../../node_modules/lucide-react"],
+			"react": ["../../node_modules/@types/react"],
+			"react-dom": ["../../node_modules/@types/react-dom"]
 		}
 	},
 	"include": [".storybook/**/*.ts", ".storybook/**/*.tsx", "src/**/*.ts", "src/**/*.tsx"],
