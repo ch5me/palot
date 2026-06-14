@@ -1,0 +1,165 @@
+{
+  "generatedAt": "2026-06-14T00:41:16.321Z",
+  "results": [
+    {
+      "storyId": "ai-elements-workflow-agent--default",
+      "viewport": "desktop",
+      "width": 776,
+      "height": 932,
+      "childCount": 39,
+      "textLength": 313,
+      "screenshot": "/Users/hassoncs/src/ch5/palot/.sisyphus/evidence/storybook-coverage/batch-09/ai-elements-workflow-agent--default-desktop.png",
+      "warnings": 0
+    },
+    {
+      "storyId": "ai-elements-workflow-agent--default",
+      "viewport": "mobile",
+      "width": 776,
+      "height": 876,
+      "childCount": 39,
+      "textLength": 313,
+      "screenshot": "/Users/hassoncs/src/ch5/palot/.sisyphus/evidence/storybook-coverage/batch-09/ai-elements-workflow-agent--default-mobile.png",
+      "warnings": 0
+    },
+    {
+      "storyId": "ai-elements-workflow-chainofthought--default",
+      "viewport": "desktop",
+      "width": 736,
+      "height": 932,
+      "childCount": 54,
+      "textLength": 292,
+      "screenshot": "/Users/hassoncs/src/ch5/palot/.sisyphus/evidence/storybook-coverage/batch-09/ai-elements-workflow-chainofthought--default-desktop.png",
+      "warnings": 0
+    },
+    {
+      "storyId": "ai-elements-workflow-chainofthought--default",
+      "viewport": "mobile",
+      "width": 736,
+      "height": 876,
+      "childCount": 54,
+      "textLength": 292,
+      "screenshot": "/Users/hassoncs/src/ch5/palot/.sisyphus/evidence/storybook-coverage/batch-09/ai-elements-workflow-chainofthought--default-mobile.png",
+      "warnings": 0
+    },
+    {
+      "storyId": "ai-elements-workflow-checkpoint--default",
+      "viewport": "desktop",
+      "width": 716,
+      "height": 932,
+      "childCount": 13,
+      "textLength": 43,
+      "screenshot": "/Users/hassoncs/src/ch5/palot/.sisyphus/evidence/storybook-coverage/batch-09/ai-elements-workflow-checkpoint--default-desktop.png",
+      "warnings": 0
+    },
+    {
+      "storyId": "ai-elements-workflow-checkpoint--default",
+      "viewport": "mobile",
+      "width": 716,
+      "height": 876,
+      "childCount": 13,
+      "textLength": 43,
+      "screenshot": "/Users/hassoncs/src/ch5/palot/.sisyphus/evidence/storybook-coverage/batch-09/ai-elements-workflow-checkpoint--default-mobile.png",
+      "warnings": 0
+    },
+    {
+      "storyId": "ai-elements-workflow-commit--default",
+      "viewport": "desktop",
+      "width": 856,
+      "height": 932,
+      "childCount": 52,
+      "textLength": 181,
+      "screenshot": "/Users/hassoncs/src/ch5/palot/.sisyphus/evidence/storybook-coverage/batch-09/ai-elements-workflow-commit--default-desktop.png",
+      "warnings": 0
+    },
+    {
+      "storyId": "ai-elements-workflow-commit--default",
+      "viewport": "mobile",
+      "width": 856,
+      "height": 876,
+      "childCount": 52,
+      "textLength": 181,
+      "screenshot": "/Users/hassoncs/src/ch5/palot/.sisyphus/evidence/storybook-coverage/batch-09/ai-elements-workflow-commit--default-mobile.png",
+      "warnings": 0
+    },
+    {
+      "storyId": "ai-elements-workflow-plan--default",
+      "viewport": "desktop",
+      "width": 716,
+      "height": 932,
+      "childCount": 21,
+      "textLength": 293,
+      "screenshot": "/Users/hassoncs/src/ch5/palot/.sisyphus/evidence/storybook-coverage/batch-09/ai-elements-workflow-plan--default-desktop.png",
+      "warnings": 0
+    },
+    {
+      "storyId": "ai-elements-workflow-plan--default",
+      "viewport": "mobile",
+      "width": 716,
+      "height": 876,
+      "childCount": 21,
+      "textLength": 293,
+      "screenshot": "/Users/hassoncs/src/ch5/palot/.sisyphus/evidence/storybook-coverage/batch-09/ai-elements-workflow-plan--default-mobile.png",
+      "warnings": 0
+    },
+    {
+      "storyId": "ai-elements-workflow-queue--default",
+      "viewport": "desktop",
+      "width": 716,
+      "height": 932,
+      "childCount": 46,
+      "textLength": 139,
+      "screenshot": "/Users/hassoncs/src/ch5/palot/.sisyphus/evidence/storybook-coverage/batch-09/ai-elements-workflow-queue--default-desktop.png",
+      "warnings": 0
+    },
+    {
+      "storyId": "ai-elements-workflow-queue--default",
+      "viewport": "mobile",
+      "width": 716,
+      "height": 876,
+      "childCount": 46,
+      "textLength": 139,
+      "screenshot": "/Users/hassoncs/src/ch5/palot/.sisyphus/evidence/storybook-coverage/batch-09/ai-elements-workflow-queue--default-mobile.png",
+      "warnings": 0
+    },
+    {
+      "storyId": "ai-elements-workflow-reasoning--default",
+      "viewport": "desktop",
+      "width": 776,
+      "height": 932,
+      "childCount": 25,
+      "textLength": 283,
+      "screenshot": "/Users/hassoncs/src/ch5/palot/.sisyphus/evidence/storybook-coverage/batch-09/ai-elements-workflow-reasoning--default-desktop.png",
+      "warnings": 0
+    },
+    {
+      "storyId": "ai-elements-workflow-reasoning--default",
+      "viewport": "mobile",
+      "width": 776,
+      "height": 876,
+      "childCount": 25,
+      "textLength": 283,
+      "screenshot": "/Users/hassoncs/src/ch5/palot/.sisyphus/evidence/storybook-coverage/batch-09/ai-elements-workflow-reasoning--default-mobile.png",
+      "warnings": 0
+    },
+    {
+      "storyId": "ai-elements-workflow-task--default",
+      "viewport": "desktop",
+      "width": 716,
+      "height": 932,
+      "childCount": 18,
+      "textLength": 223,
+      "screenshot": "/Users/hassoncs/src/ch5/palot/.sisyphus/evidence/storybook-coverage/batch-09/ai-elements-workflow-task--default-desktop.png",
+      "warnings": 0
+    },
+    {
+      "storyId": "ai-elements-workflow-task--default",
+      "viewport": "mobile",
+      "width": 716,
+      "height": 876,
+      "childCount": 18,
+      "textLength": 223,
+      "screenshot": "/Users/hassoncs/src/ch5/palot/.sisyphus/evidence/storybook-coverage/batch-09/ai-elements-workflow-task--default-mobile.png",
+      "warnings": 0
+    }
+  ]
+}

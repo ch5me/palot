@@ -43,6 +43,7 @@ export type TaskTriggerProps = ComponentProps<typeof CollapsibleTrigger> & {
 
 export const TaskTrigger = ({ children, className, title, ...props }: TaskTriggerProps) => (
 	<CollapsibleTrigger
+		nativeButton={false}
 		render={
 			<div
 				className={cn(

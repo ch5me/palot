@@ -8,7 +8,6 @@ import {
 import { useControllableState } from "@ch5me/elf-ui/hooks/use-controllable-state"
 import { cn } from "@ch5me/elf-ui/lib/utils"
 import { cjk } from "@streamdown/cjk"
-import { code } from "@streamdown/code"
 import { math } from "@streamdown/math"
 import { mermaid } from "@streamdown/mermaid"
 import { BrainIcon, ChevronDownIcon } from "lucide-react"
@@ -23,6 +22,7 @@ import {
 	useRef,
 	useState,
 } from "react"
+import type { PluginConfig } from "streamdown"
 import { Streamdown } from "streamdown"
 
 import { Shimmer } from "./shimmer"
@@ -193,7 +193,7 @@ export type ReasoningContentProps = ComponentProps<typeof CollapsibleContent> & 
 	animated?: boolean
 }
 
-const streamdownPlugins = { cjk, code, math, mermaid }
+const streamdownPlugins = { cjk, math, mermaid } satisfies PluginConfig
 
 export const ReasoningText = memo(
 	({ children, animated }: { children: string; animated?: boolean }) => (
