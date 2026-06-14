@@ -17,15 +17,9 @@ import { Spinner } from "@ch5me/elf-ui/components/spinner"
 import { useControllableState } from "@ch5me/elf-ui/hooks/use-controllable-state"
 import { cn } from "@ch5me/elf-ui/lib/utils"
 import {
-	CircleSmallIcon,
-	MarsIcon,
-	MarsStrokeIcon,
-	NonBinaryIcon,
+	CircleIcon,
 	PauseIcon,
 	PlayIcon,
-	TransgenderIcon,
-	VenusAndMarsIcon,
-	VenusIcon,
 } from "lucide-react"
 import type { ComponentProps, ReactNode } from "react"
 import { createContext, useCallback, useContext, useMemo } from "react"
@@ -176,34 +170,35 @@ export const VoiceSelectorGender = ({
 	...props
 }: VoiceSelectorGenderProps) => {
 	let icon: ReactNode | null = null
+	const markerClassName = "inline-flex size-4 items-center justify-center text-[10px] font-medium"
 
 	switch (value) {
 		case "male": {
-			icon = <MarsIcon className="size-4" />
+			icon = <span className={markerClassName}>M</span>
 			break
 		}
 		case "female": {
-			icon = <VenusIcon className="size-4" />
+			icon = <span className={markerClassName}>F</span>
 			break
 		}
 		case "transgender": {
-			icon = <TransgenderIcon className="size-4" />
+			icon = <span className={markerClassName}>T</span>
 			break
 		}
 		case "androgyne": {
-			icon = <MarsStrokeIcon className="size-4" />
+			icon = <span className={markerClassName}>A</span>
 			break
 		}
 		case "non-binary": {
-			icon = <NonBinaryIcon className="size-4" />
+			icon = <span className={markerClassName}>NB</span>
 			break
 		}
 		case "intersex": {
-			icon = <VenusAndMarsIcon className="size-4" />
+			icon = <span className={markerClassName}>I</span>
 			break
 		}
 		default: {
-			icon = <CircleSmallIcon className="size-4" />
+			icon = <CircleIcon className="size-4" />
 		}
 	}
 

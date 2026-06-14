@@ -87,6 +87,7 @@ export type AudioPlayerPlayButtonProps = ComponentProps<typeof MediaPlayButton>
 
 export const AudioPlayerPlayButton = ({ className, ...props }: AudioPlayerPlayButtonProps) => (
 	<Button
+		nativeButton={false}
 		render={
 			<MediaPlayButton
 				className={cn("bg-transparent", className)}
@@ -106,6 +107,7 @@ export const AudioPlayerSeekBackwardButton = ({
 	...props
 }: AudioPlayerSeekBackwardButtonProps) => (
 	<Button
+		nativeButton={false}
 		render={
 			<MediaSeekBackwardButton
 				data-slot="audio-player-seek-backward-button"
@@ -125,6 +127,7 @@ export const AudioPlayerSeekForwardButton = ({
 	...props
 }: AudioPlayerSeekForwardButtonProps) => (
 	<Button
+		nativeButton={false}
 		render={
 			<MediaSeekForwardButton
 				data-slot="audio-player-seek-forward-button"
