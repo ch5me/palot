@@ -44,7 +44,12 @@ const meta = {
 	component: Toolbar,
 	render: () => (
 		<div className="h-[360px] w-[560px] overflow-hidden rounded-lg border bg-background">
-			<Canvas defaultEdges={[]} defaultNodes={nodes} fitViewOptions={{ padding: 0.45 }} nodeTypes={nodeTypes} />
+			<Canvas
+				defaultEdges={[]}
+				defaultNodes={nodes}
+				fitViewOptions={{ padding: 0.45 }}
+				nodeTypes={nodeTypes}
+			/>
 		</div>
 	),
 } satisfies Meta<typeof Toolbar>

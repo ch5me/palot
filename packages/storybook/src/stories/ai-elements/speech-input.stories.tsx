@@ -36,7 +36,9 @@ const meta = {
 			/>
 			<div>
 				<p className="font-medium text-sm">Dictation ready</p>
-				<p className="text-muted-foreground text-xs">Speech recognition mode with local Storybook mock.</p>
+				<p className="text-muted-foreground text-xs">
+					Speech recognition mode with local Storybook mock.
+				</p>
 			</div>
 		</div>
 	),

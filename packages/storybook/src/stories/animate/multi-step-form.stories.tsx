@@ -1,4 +1,7 @@
-import { MultiStepForm, type MultiStepFormStep } from "@ch5me/elf-ui/components/animate/multi-step-form"
+import {
+	MultiStepForm,
+	type MultiStepFormStep,
+} from "@ch5me/elf-ui/components/animate/multi-step-form"
 import { Input } from "@ch5me/elf-ui/components/input"
 import { Label } from "@ch5me/elf-ui/components/label"
 import { Textarea } from "@ch5me/elf-ui/components/textarea"

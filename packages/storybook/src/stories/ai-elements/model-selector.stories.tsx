@@ -21,7 +21,9 @@ const meta = {
 	render: () => (
 		<div className="w-[560px] p-8">
 			<ModelSelector open>
-				<ModelSelectorTrigger render={<Button variant="outline" />}>Choose model</ModelSelectorTrigger>
+				<ModelSelectorTrigger render={<Button variant="outline" />}>
+					Choose model
+				</ModelSelectorTrigger>
 				<ModelSelectorContent title="Select coding model">
 					<ModelSelectorInput placeholder="Search models..." />
 					<ModelSelectorList>

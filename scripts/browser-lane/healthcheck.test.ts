@@ -25,8 +25,14 @@ function buildHealthcheckShape(input: {
 		hostPublishedCdp: input.hostPublishedCdp,
 		relayCdp: {
 			url: input.relayCdpEndpoint,
-			ok: input.relayCdpEndpoint === input.hostPublishedCdpEndpoint ? input.hostPublishedCdp.ok : null,
-			status: input.relayCdpEndpoint === input.hostPublishedCdpEndpoint ? input.hostPublishedCdp.status : null,
+			ok:
+				input.relayCdpEndpoint === input.hostPublishedCdpEndpoint
+					? input.hostPublishedCdp.ok
+					: null,
+			status:
+				input.relayCdpEndpoint === input.hostPublishedCdpEndpoint
+					? input.hostPublishedCdp.status
+					: null,
 			note:
 				input.relayCdpEndpoint === input.hostPublishedCdpEndpoint
 					? "Host-published port terminates at the relay listener"

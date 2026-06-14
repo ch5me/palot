@@ -2,7 +2,10 @@ export type McpConnectionSource = "registry" | "curated" | "imported" | "manual"
 export type McpConnectionTransport = "remote-http" | "remote-sse" | "local-stdio"
 export type McpConnectionOwnershipMode = "local-only" | "cloud-only" | "handoff-derived"
 export type McpConnectionCanonicalStore = "local" | "gateway"
-export type McpConnectionRestorePolicy = "none" | "reproject_on_boot" | "reproject_and_reauth_if_needed"
+export type McpConnectionRestorePolicy =
+	| "none"
+	| "reproject_on_boot"
+	| "reproject_and_reauth_if_needed"
 
 export interface McpCatalogBrowseInput {
 	cursor?: { value: string; source: "registry" | "cache" } | null

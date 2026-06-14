@@ -279,7 +279,8 @@ export function listMcpConnectionRecords(): McpConnectionRecordSnapshot[] {
 		displayName:
 			typeof record.displayName === "string" && record.displayName.trim().length > 0
 				? record.displayName
-				: typeof record.metadata?.displayName === "string" && record.metadata.displayName.trim().length > 0
+				: typeof record.metadata?.displayName === "string" &&
+						record.metadata.displayName.trim().length > 0
 					? record.metadata.displayName
 					: record.name,
 	}))

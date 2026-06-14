@@ -16,11 +16,7 @@ import { Dialog, DialogContent, DialogTitle, DialogTrigger } from "@ch5me/elf-ui
 import { Spinner } from "@ch5me/elf-ui/components/spinner"
 import { useControllableState } from "@ch5me/elf-ui/hooks/use-controllable-state"
 import { cn } from "@ch5me/elf-ui/lib/utils"
-import {
-	CircleIcon,
-	PauseIcon,
-	PlayIcon,
-} from "lucide-react"
+import { CircleIcon, PauseIcon, PlayIcon } from "lucide-react"
 import type { ComponentProps, ReactNode } from "react"
 import { createContext, useCallback, useContext, useMemo } from "react"
 

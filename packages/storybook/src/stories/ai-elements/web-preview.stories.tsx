@@ -7,12 +7,7 @@ import {
 	WebPreviewUrl,
 } from "@ch5me/elf-ui/components/ai-elements/web-preview"
 import type { Meta, StoryObj } from "@storybook/react-vite"
-import {
-	ArrowLeftIcon,
-	ArrowRightIcon,
-	ExternalLinkIcon,
-	RefreshCcwIcon,
-} from "lucide-react"
+import { ArrowLeftIcon, ArrowRightIcon, ExternalLinkIcon, RefreshCcwIcon } from "lucide-react"
 
 const previewDocument = `
 <!doctype html>
@@ -50,8 +45,16 @@ const meta = {
 				<WebPreviewBody srcDoc={previewDocument} />
 				<WebPreviewConsole
 					logs={[
-						{ level: "log", message: "Preview mounted", timestamp: new Date("2026-06-14T01:40:00Z") },
-						{ level: "warn", message: "Using local artifact document", timestamp: new Date("2026-06-14T01:40:02Z") },
+						{
+							level: "log",
+							message: "Preview mounted",
+							timestamp: new Date("2026-06-14T01:40:00Z"),
+						},
+						{
+							level: "warn",
+							message: "Using local artifact document",
+							timestamp: new Date("2026-06-14T01:40:02Z"),
+						},
 					]}
 				/>
 			</WebPreview>

@@ -1,15 +1,15 @@
-import type { Meta, StoryObj } from "@storybook/react-vite"
 import {
 	AppShellChrome,
 	AppSidebarShellFrame,
-	NavSidebarShell,
 	type NavSidebarAgent,
 	type NavSidebarProject,
 	type NavSidebarSectionId,
+	NavSidebarShell,
 	type NavSidebarShellProps,
 	STATUS_COLOR,
 } from "@ch5me/elf-ui/components/nav-sidebar-shell"
 import { SidebarProvider } from "@ch5me/elf-ui/components/sidebar"
+import type { Meta, StoryObj } from "@storybook/react-vite"
 import { BlocksIcon, CopyIcon, PanelRightIcon, SparklesIcon } from "lucide-react"
 import { useMemo, useState } from "react"
 
@@ -18,7 +18,6 @@ function RuntimeNavSidebarShell(props: NavSidebarShellProps) {
 }
 
 const tabs = [
-
 	{ id: "built-in" as const, label: "Palot", icon: BlocksIcon },
 	{ id: "built-in-duplicate" as const, label: "Folio", icon: CopyIcon },
 ]
@@ -226,7 +225,11 @@ function ShellCanvas({
 			pinnedSessions={isPluginSeam ? [] : pinnedAgents}
 			recentSessions={isPluginSeam ? [] : recentAgents}
 			pmSessions={isPluginSeam ? [] : pmSessions}
-			projects={isPluginSeam ? projects.map((project) => ({ ...project, agents: [], hasMore: false })) : projects}
+			projects={
+				isPluginSeam
+					? projects.map((project) => ({ ...project, agents: [], hasMore: false }))
+					: projects
+			}
 			sectionsOpen={sectionsOpen}
 			onSectionOpenChange={(section, open) =>
 				setSectionsOpen((current) => ({
@@ -255,20 +258,27 @@ function ShellCanvas({
 			emptyState={
 				<div className="flex flex-1 items-center justify-center p-4">
 					<div className="space-y-2 text-center">
-						<p className="text-sm text-muted-foreground">{isPluginSeam ? "Plugin seam warming up" : "No projects yet"}</p>
-						<p className="text-xs text-muted-foreground/60">{isPluginSeam ? "This shared-shell proof keeps host actions disabled until a projected Folio provider is wired in." : "Add a project to get started"}</p>
+						<p className="text-sm text-muted-foreground">
+							{isPluginSeam ? "Plugin seam warming up" : "No projects yet"}
+						</p>
+						<p className="text-xs text-muted-foreground/60">
+							{isPluginSeam
+								? "This shared-shell proof keeps host actions disabled until a projected Folio provider is wired in."
+								: "Add a project to get started"}
+						</p>
 					</div>
 				</div>
 			}
 		/>
 	)
 
-
 	const selectionPanelContent = selectedAgent ? (
 		<div className="mt-5 space-y-5">
 			<div>
 				<p className="text-lg font-semibold">{selectedAgent.name}</p>
-				<p className={`mt-1 text-sm ${STATUS_COLOR[selectedAgent.status]}`}>{selectedAgent.status}</p>
+				<p className={`mt-1 text-sm ${STATUS_COLOR[selectedAgent.status]}`}>
+					{selectedAgent.status}
+				</p>
 			</div>
 			<div className="space-y-2 text-sm text-muted-foreground">
 				<p>Project: {selectedAgent.project}</p>
@@ -278,65 +288,90 @@ function ShellCanvas({
 			{panelKind === "browser" ? (
 				<div className="space-y-4">
 					<div className="rounded-2xl border border-border/60 bg-background/70 p-4">
-						<p className="text-xs font-medium uppercase tracking-[0.16em] text-muted-foreground">Viewport</p>
+						<p className="text-xs font-medium uppercase tracking-[0.16em] text-muted-foreground">
+							Viewport
+						</p>
 						<div className="mt-3 aspect-[16/10] rounded-xl border border-border/60 bg-[radial-gradient(circle_at_top,_rgba(56,189,248,0.16),_transparent_52%),linear-gradient(180deg,_rgba(15,23,42,0.96),_rgba(15,23,42,0.88))] p-3 text-white shadow-inner">
 							<div className="flex items-center gap-1.5">
 								<div className="h-2.5 w-2.5 rounded-full bg-rose-400/90" />
 								<div className="h-2.5 w-2.5 rounded-full bg-amber-300/90" />
 								<div className="h-2.5 w-2.5 rounded-full bg-emerald-400/90" />
-								<div className="ml-3 rounded-full bg-white/10 px-2.5 py-1 text-[10px] text-white/70">storybook.elf.localhost</div>
+								<div className="ml-3 rounded-full bg-white/10 px-2.5 py-1 text-[10px] text-white/70">
+									storybook.elf.localhost
+								</div>
 							</div>
 							<div className="mt-4 rounded-lg border border-white/10 bg-white/5 p-3">
 								<p className="text-xs font-medium text-white/80">Live browser lane</p>
-								<p className="mt-2 text-[11px] leading-5 text-white/60">Use this region to preview browser controls, tabs, and page-status overlays against the real shell spacing.</p>
+								<p className="mt-2 text-[11px] leading-5 text-white/60">
+									Use this region to preview browser controls, tabs, and page-status overlays
+									against the real shell spacing.
+								</p>
 							</div>
 						</div>
 					</div>
 					<div className="rounded-2xl bg-muted/50 p-4 text-sm text-muted-foreground">
-						Browser lane proof with realistic URL chrome, traffic-light window controls, and shell-aligned status overlays.
+						Browser lane proof with realistic URL chrome, traffic-light window controls, and
+						shell-aligned status overlays.
 					</div>
 				</div>
 			) : panelKind === "notes" ? (
 				<div className="space-y-4">
 					<div className="rounded-2xl border border-border/60 bg-background/70 p-4">
-						<p className="text-xs font-medium uppercase tracking-[0.16em] text-muted-foreground">Pinned notes</p>
+						<p className="text-xs font-medium uppercase tracking-[0.16em] text-muted-foreground">
+							Pinned notes
+						</p>
 						<div className="mt-3 space-y-3">
 							<div className="rounded-xl bg-card p-3 shadow-sm">
 								<p className="text-sm font-medium">Plugin seam notes</p>
-								<p className="mt-1 text-xs leading-5 text-muted-foreground">Right pane width feels stable at 420px. Keep browser/takeover panels aligned to shell chrome rather than transcript rhythm.</p>
+								<p className="mt-1 text-xs leading-5 text-muted-foreground">
+									Right pane width feels stable at 420px. Keep browser/takeover panels aligned to
+									shell chrome rather than transcript rhythm.
+								</p>
 							</div>
 							<div className="rounded-xl bg-card p-3 shadow-sm">
 								<p className="text-sm font-medium">Folio migration</p>
-								<p className="mt-1 text-xs leading-5 text-muted-foreground">Swap duplicate host sidebar with plugin-projected family once panel affordances are validated here.</p>
+								<p className="mt-1 text-xs leading-5 text-muted-foreground">
+									Swap duplicate host sidebar with plugin-projected family once panel affordances
+									are validated here.
+								</p>
 							</div>
 						</div>
 					</div>
 					<div className="rounded-2xl bg-muted/50 p-4 text-sm text-muted-foreground">
-						Notes surface proof with realistic density for PM snapshots, plugin seam reminders, and sticky sidecar content.
+						Notes surface proof with realistic density for PM snapshots, plugin seam reminders, and
+						sticky sidecar content.
 					</div>
 				</div>
 			) : panelKind === "artifacts" ? (
 				<div className="space-y-4">
 					<div className="rounded-2xl border border-border/60 bg-background/70 p-4">
-						<p className="text-xs font-medium uppercase tracking-[0.16em] text-muted-foreground">Artifacts</p>
+						<p className="text-xs font-medium uppercase tracking-[0.16em] text-muted-foreground">
+							Artifacts
+						</p>
 						<div className="mt-3 space-y-3">
 							<div className="rounded-xl border border-border/50 bg-card p-3 shadow-sm">
 								<p className="text-sm font-medium">storyboard-static build</p>
-								<p className="mt-1 text-xs text-muted-foreground">Updated 2m ago • shared shell frame extraction</p>
+								<p className="mt-1 text-xs text-muted-foreground">
+									Updated 2m ago • shared shell frame extraction
+								</p>
 							</div>
 							<div className="rounded-xl border border-border/50 bg-card p-3 shadow-sm">
 								<p className="text-sm font-medium">sidebar-proof.png</p>
-								<p className="mt-1 text-xs text-muted-foreground">Reference capture for Folio plugin seam review</p>
+								<p className="mt-1 text-xs text-muted-foreground">
+									Reference capture for Folio plugin seam review
+								</p>
 							</div>
 						</div>
 					</div>
 					<div className="rounded-2xl bg-muted/50 p-4 text-sm text-muted-foreground">
-						Artifact proof with metadata cards and selection-driven preview surfaces aligned to the shared shell.
+						Artifact proof with metadata cards and selection-driven preview surfaces aligned to the
+						shared shell.
 					</div>
 				</div>
 			) : (
 				<div className="rounded-2xl bg-muted/50 p-4 text-sm text-muted-foreground">
-					Use this together with the actual shell chrome to design notes/browser/plugins/artifacts side panels without guessing at final spacing.
+					Use this together with the actual shell chrome to design notes/browser/plugins/artifacts
+					side panels without guessing at final spacing.
 				</div>
 			)}
 		</div>
@@ -345,41 +380,72 @@ function ShellCanvas({
 	const fullShellContent = (
 		<div className="flex min-w-0 flex-1 flex-col bg-background/80 p-8">
 			<div className="space-y-3">
-				<p className="text-xs font-medium uppercase tracking-[0.18em] text-muted-foreground">Actual app shell shape</p>
+				<p className="text-xs font-medium uppercase tracking-[0.18em] text-muted-foreground">
+					Actual app shell shape
+				</p>
 				<h3 className="text-3xl font-semibold tracking-tight">Animated shell preview</h3>
 				<p className="max-w-2xl text-sm leading-6 text-muted-foreground">
-					This is the closest Storybook approximation of the real Palot desktop shell: top title bar, drag-region spacer, left split rail, and the actual animated multi-sidebar navigation embedded into a content frame.
+					This is the closest Storybook approximation of the real Palot desktop shell: top title
+					bar, drag-region spacer, left split rail, and the actual animated multi-sidebar navigation
+					embedded into a content frame.
 				</p>
 			</div>
 			<div className="mt-8 grid gap-4 md:grid-cols-3">
 				<div className="rounded-2xl border border-border/60 bg-card p-4">
-					<p className="text-xs font-medium uppercase tracking-[0.16em] text-muted-foreground">Current tab</p>
+					<p className="text-xs font-medium uppercase tracking-[0.16em] text-muted-foreground">
+						Current tab
+					</p>
 					<p className="mt-2 text-lg font-semibold">{tabLabel}</p>
 				</div>
 				<div className="rounded-2xl border border-border/60 bg-card p-4">
-					<p className="text-xs font-medium uppercase tracking-[0.16em] text-muted-foreground">Shell layer</p>
-					<p className="mt-2 text-sm leading-6 text-muted-foreground">Story now uses the same shared app-bar chrome and sidebar frame structure as the desktop shell.</p>
+					<p className="text-xs font-medium uppercase tracking-[0.16em] text-muted-foreground">
+						Shell layer
+					</p>
+					<p className="mt-2 text-sm leading-6 text-muted-foreground">
+						Story now uses the same shared app-bar chrome and sidebar frame structure as the desktop
+						shell.
+					</p>
 				</div>
 				<div className="rounded-2xl border border-border/60 bg-card p-4">
-					<p className="text-xs font-medium uppercase tracking-[0.16em] text-muted-foreground">Sidebar state</p>
-					<p className="mt-2 text-sm leading-6 text-muted-foreground">{isSidebarHidden ? "Sidebar hidden to validate content-first shell balance and chrome spacing." : "Sidebar visible for full nav rhythm and panel seam evaluation."}</p>
+					<p className="text-xs font-medium uppercase tracking-[0.16em] text-muted-foreground">
+						Sidebar state
+					</p>
+					<p className="mt-2 text-sm leading-6 text-muted-foreground">
+						{isSidebarHidden
+							? "Sidebar hidden to validate content-first shell balance and chrome spacing."
+							: "Sidebar visible for full nav rhythm and panel seam evaluation."}
+					</p>
 				</div>
 				<div className="rounded-2xl border border-border/60 bg-card p-4">
-					<p className="text-xs font-medium uppercase tracking-[0.16em] text-muted-foreground">Plugin seam</p>
-					<p className="mt-2 text-sm leading-6 text-muted-foreground">{isPluginSeam ? "This Storybook seam mirrors the desktop Folio preview by disabling host actions and treating project/session data as projected placeholders." : "This preview stays at the shared-shell layer while the host-owned Palot path remains fully interactive in the desktop runtime."}</p>
+					<p className="text-xs font-medium uppercase tracking-[0.16em] text-muted-foreground">
+						Plugin seam
+					</p>
+					<p className="mt-2 text-sm leading-6 text-muted-foreground">
+						{isPluginSeam
+							? "This Storybook seam mirrors the desktop Folio preview by disabling host actions and treating project/session data as projected placeholders."
+							: "This preview stays at the shared-shell layer while the host-owned Palot path remains fully interactive in the desktop runtime."}
+					</p>
 				</div>
 			</div>
 			<div className="mt-8 flex min-h-0 flex-1 gap-6">
 				<div className="flex min-w-0 flex-1 flex-col rounded-3xl border border-dashed border-border/60 bg-card/50 p-6">
-					<p className="text-xs font-medium uppercase tracking-[0.16em] text-muted-foreground">Workspace canvas</p>
+					<p className="text-xs font-medium uppercase tracking-[0.16em] text-muted-foreground">
+						Workspace canvas
+					</p>
 					<div className="mt-4 grid flex-1 gap-4 lg:grid-cols-[1.1fr_0.9fr]">
 						<div className="rounded-2xl bg-background/70 p-5 shadow-sm">
 							<p className="text-sm font-medium">Session transcript / canvas</p>
-							<p className="mt-3 text-sm leading-6 text-muted-foreground">This pane stands in for the active session surface while you evaluate rail motion, top chrome spacing, and shell proportions.</p>
+							<p className="mt-3 text-sm leading-6 text-muted-foreground">
+								This pane stands in for the active session surface while you evaluate rail motion,
+								top chrome spacing, and shell proportions.
+							</p>
 						</div>
 						<div className="rounded-2xl bg-background/70 p-5 shadow-sm">
 							<p className="text-sm font-medium">Secondary shell zone</p>
-							<p className="mt-3 text-sm leading-6 text-muted-foreground">Useful for future browser lanes, shell widgets, or right-side proof surfaces that should feel attached to the actual desktop chrome.</p>
+							<p className="mt-3 text-sm leading-6 text-muted-foreground">
+								Useful for future browser lanes, shell widgets, or right-side proof surfaces that
+								should feel attached to the actual desktop chrome.
+							</p>
 						</div>
 					</div>
 				</div>
@@ -408,72 +474,98 @@ function ShellCanvas({
 					sidebarVisible={!isSidebarHidden}
 				/>
 			) : (
-					<SidebarProvider defaultOpen embedded>
-						{shellSidebar}
-						<div className="flex min-w-0 flex-1 flex-col bg-background/80 p-8">
-							<div className="space-y-3">
-								<p className="text-xs font-medium uppercase tracking-[0.18em] text-muted-foreground">Actual app shell shape</p>
-								<h3 className="text-3xl font-semibold tracking-tight">{showSelectionPanel ? "Selected session proof" : "Multi-sidebar nav proof"}</h3>
-								<p className="max-w-2xl text-sm leading-6 text-muted-foreground">
-									{showSelectionPanel
-										? "This state is for side-panel work: a concrete session is selected in the left rail, so you can design adjacent detail, plugin, and bridge panes against a realistic navigation context."
-										: "This story mirrors the real Palot nav concept: discrete tabs on top that swap between host-owned sidebars, plus the same grouped structure the desktop app is using right now."}
+				<SidebarProvider defaultOpen embedded>
+					{shellSidebar}
+					<div className="flex min-w-0 flex-1 flex-col bg-background/80 p-8">
+						<div className="space-y-3">
+							<p className="text-xs font-medium uppercase tracking-[0.18em] text-muted-foreground">
+								Actual app shell shape
+							</p>
+							<h3 className="text-3xl font-semibold tracking-tight">
+								{showSelectionPanel ? "Selected session proof" : "Multi-sidebar nav proof"}
+							</h3>
+							<p className="max-w-2xl text-sm leading-6 text-muted-foreground">
+								{showSelectionPanel
+									? "This state is for side-panel work: a concrete session is selected in the left rail, so you can design adjacent detail, plugin, and bridge panes against a realistic navigation context."
+									: "This story mirrors the real Palot nav concept: discrete tabs on top that swap between host-owned sidebars, plus the same grouped structure the desktop app is using right now."}
+							</p>
+						</div>
+						<div className="mt-8 grid gap-4 md:grid-cols-3">
+							<div className="rounded-2xl border border-border/60 bg-card p-4">
+								<p className="text-xs font-medium uppercase tracking-[0.16em] text-muted-foreground">
+									Current tab
+								</p>
+								<p className="mt-2 text-lg font-semibold">{tabLabel}</p>
+							</div>
+							<div className="rounded-2xl border border-border/60 bg-card p-4">
+								<p className="text-xs font-medium uppercase tracking-[0.16em] text-muted-foreground">
+									Plugin seam
+								</p>
+								<p className="mt-2 text-sm leading-6 text-muted-foreground">
+									Top rail is where host-owned and plugin-owned sidebar families will coexist.
 								</p>
 							</div>
-							<div className="mt-8 grid gap-4 md:grid-cols-3">
-								<div className="rounded-2xl border border-border/60 bg-card p-4">
-									<p className="text-xs font-medium uppercase tracking-[0.16em] text-muted-foreground">Current tab</p>
-									<p className="mt-2 text-lg font-semibold">{tabLabel}</p>
+							<div className="rounded-2xl border border-border/60 bg-card p-4">
+								<p className="text-xs font-medium uppercase tracking-[0.16em] text-muted-foreground">
+									Selection state
+								</p>
+								<p className="mt-2 text-sm leading-6 text-muted-foreground">
+									{selectedAgent
+										? `${selectedAgent.name} is highlighted in the rail.`
+										: "No session selected."}
+								</p>
+							</div>
+						</div>
+						{showSelectionPanel ? (
+							<div className="mt-8 grid min-h-0 flex-1 gap-6 lg:grid-cols-[minmax(0,1fr)_420px]">
+								<div className="rounded-3xl border border-dashed border-border/60 bg-card/50 p-6">
+									<p className="text-xs font-medium uppercase tracking-[0.16em] text-muted-foreground">
+										Primary workspace
+									</p>
+									<p className="mt-3 text-sm leading-6 text-muted-foreground">
+										Use this larger pane for the active canvas or session transcript while the
+										selected-session right rail stays stable.
+									</p>
 								</div>
-								<div className="rounded-2xl border border-border/60 bg-card p-4">
-									<p className="text-xs font-medium uppercase tracking-[0.16em] text-muted-foreground">Plugin seam</p>
-									<p className="mt-2 text-sm leading-6 text-muted-foreground">Top rail is where host-owned and plugin-owned sidebar families will coexist.</p>
-								</div>
-								<div className="rounded-2xl border border-border/60 bg-card p-4">
-									<p className="text-xs font-medium uppercase tracking-[0.16em] text-muted-foreground">Selection state</p>
-									<p className="mt-2 text-sm leading-6 text-muted-foreground">{selectedAgent ? `${selectedAgent.name} is highlighted in the rail.` : "No session selected."}</p>
+								<div className="rounded-3xl border border-border/60 bg-card p-6 shadow-sm">
+									<div className="flex items-center gap-2 text-xs font-medium uppercase tracking-[0.16em] text-muted-foreground">
+										<PanelRightIcon className="size-4" />
+										Side panel target
+									</div>
+									{selectedAgent ? (
+										<div className="mt-5 space-y-5">
+											<div>
+												<p className="text-lg font-semibold">{selectedAgent.name}</p>
+												<p className={`mt-1 text-sm ${STATUS_COLOR[selectedAgent.status]}`}>
+													{selectedAgent.status}
+												</p>
+											</div>
+											<div className="space-y-2 text-sm text-muted-foreground">
+												<p>Project: {selectedAgent.project}</p>
+												<p>Agent: {selectedAgent.agentType}</p>
+												<p>Model: {selectedAgent.modelID}</p>
+											</div>
+											<div className="rounded-2xl bg-muted/50 p-4 text-sm text-muted-foreground">
+												Ideal for testing plugin panels, browser/notes/pulse side panels, and
+												session-bound auxiliary UI without needing the full desktop runtime.
+											</div>
+										</div>
+									) : null}
 								</div>
 							</div>
-							{showSelectionPanel ? (
-								<div className="mt-8 grid min-h-0 flex-1 gap-6 lg:grid-cols-[minmax(0,1fr)_420px]">
-									<div className="rounded-3xl border border-dashed border-border/60 bg-card/50 p-6">
-										<p className="text-xs font-medium uppercase tracking-[0.16em] text-muted-foreground">Primary workspace</p>
-										<p className="mt-3 text-sm leading-6 text-muted-foreground">Use this larger pane for the active canvas or session transcript while the selected-session right rail stays stable.</p>
-									</div>
-									<div className="rounded-3xl border border-border/60 bg-card p-6 shadow-sm">
-										<div className="flex items-center gap-2 text-xs font-medium uppercase tracking-[0.16em] text-muted-foreground">
-											<PanelRightIcon className="size-4" />
-											Side panel target
-										</div>
-										{selectedAgent ? (
-											<div className="mt-5 space-y-5">
-												<div>
-													<p className="text-lg font-semibold">{selectedAgent.name}</p>
-													<p className={`mt-1 text-sm ${STATUS_COLOR[selectedAgent.status]}`}>{selectedAgent.status}</p>
-												</div>
-												<div className="space-y-2 text-sm text-muted-foreground">
-													<p>Project: {selectedAgent.project}</p>
-													<p>Agent: {selectedAgent.agentType}</p>
-													<p>Model: {selectedAgent.modelID}</p>
-												</div>
-												<div className="rounded-2xl bg-muted/50 p-4 text-sm text-muted-foreground">
-													Ideal for testing plugin panels, browser/notes/pulse side panels, and session-bound auxiliary UI without needing the full desktop runtime.
-												</div>
-											</div>
-										) : null}
-									</div>
-								</div>
-							) : null}
-							{!showSelectionPanel ? (
-								<div className="mt-auto flex items-center gap-2 pt-10 text-sm text-muted-foreground">
-									<SparklesIcon className="size-4" />
-									<span>Built for evaluating the real app sidebar direction, not the generic UI primitive.</span>
-								</div>
-							) : null}
-						</div>
-					</SidebarProvider>
-				)}
-			</div>
+						) : null}
+						{!showSelectionPanel ? (
+							<div className="mt-auto flex items-center gap-2 pt-10 text-sm text-muted-foreground">
+								<SparklesIcon className="size-4" />
+								<span>
+									Built for evaluating the real app sidebar direction, not the generic UI primitive.
+								</span>
+							</div>
+						) : null}
+					</div>
+				</SidebarProvider>
+			)}
+		</div>
 	)
 }
 
@@ -498,7 +590,8 @@ export const IntendedPluginifiedVersion: Story = {
 	parameters: {
 		docs: {
 			description: {
-				story: "This keeps the shared shell but disables host actions and treats the Folio tab as a projected plugin seam instead of a duplicate live host sidebar.",
+				story:
+					"This keeps the shared shell but disables host actions and treats the Folio tab as a projected plugin seam instead of a duplicate live host sidebar.",
 			},
 		},
 	},
@@ -509,23 +602,57 @@ export const SelectedSessionForSidePanels: Story = {
 }
 
 export const FullAppShellPreview: Story = {
-	render: () => <ShellCanvas selectedSessionId="ses-sidepanel-target" showSelectionPanel shellMode="full-shell" />,
+	render: () => (
+		<ShellCanvas
+			selectedSessionId="ses-sidepanel-target"
+			showSelectionPanel
+			shellMode="full-shell"
+		/>
+	),
 }
 
 export const FullAppShellBrowserPanel: Story = {
-	render: () => <ShellCanvas selectedSessionId="ses-browser-lane" showSelectionPanel shellMode="full-shell" panelKind="browser" />,
+	render: () => (
+		<ShellCanvas
+			selectedSessionId="ses-browser-lane"
+			showSelectionPanel
+			shellMode="full-shell"
+			panelKind="browser"
+		/>
+	),
 }
 
 export const FullAppShellNotesPanel: Story = {
-	render: () => <ShellCanvas selectedSessionId="ses-notes-panel" showSelectionPanel shellMode="full-shell" panelKind="notes" />,
+	render: () => (
+		<ShellCanvas
+			selectedSessionId="ses-notes-panel"
+			showSelectionPanel
+			shellMode="full-shell"
+			panelKind="notes"
+		/>
+	),
 }
 
 export const FullAppShellArtifactsPanel: Story = {
-	render: () => <ShellCanvas selectedSessionId="ses-artifacts-panel" showSelectionPanel shellMode="full-shell" panelKind="artifacts" />,
+	render: () => (
+		<ShellCanvas
+			selectedSessionId="ses-artifacts-panel"
+			showSelectionPanel
+			shellMode="full-shell"
+			panelKind="artifacts"
+		/>
+	),
 }
 
 export const FullAppShellNoSidebar: Story = {
-	render: () => <ShellCanvas selectedSessionId="ses-sidepanel-target" showSelectionPanel shellMode="full-shell" sidebarState="hidden" />,
+	render: () => (
+		<ShellCanvas
+			selectedSessionId="ses-sidepanel-target"
+			showSelectionPanel
+			shellMode="full-shell"
+			sidebarState="hidden"
+		/>
+	),
 }
 
 export const FullAppShellEmptyPanel: Story = {
@@ -537,7 +664,8 @@ export const FullAppShellOffline: Story = {
 	parameters: {
 		docs: {
 			description: {
-				story: "Shared-shell proof state for an empty/offline-adjacent canvas. Use alongside the desktop Folio seam tab for runtime wiring validation.",
+				story:
+					"Shared-shell proof state for an empty/offline-adjacent canvas. Use alongside the desktop Folio seam tab for runtime wiring validation.",
 			},
 		},
 	},
@@ -548,7 +676,8 @@ export const FullAppShellFolioSeam: Story = {
 	parameters: {
 		docs: {
 			description: {
-				story: "Desktop-faithful Folio seam proof: host actions are disabled, session/project data is placeholder-only, and the right pane frames projected plugin-owned surfaces rather than live host behavior.",
+				story:
+					"Desktop-faithful Folio seam proof: host actions are disabled, session/project data is placeholder-only, and the right pane frames projected plugin-owned surfaces rather than live host behavior.",
 			},
 		},
 	},

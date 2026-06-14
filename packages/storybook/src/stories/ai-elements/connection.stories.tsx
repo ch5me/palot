@@ -36,6 +36,7 @@ const meta = {
 	render: () => (
 		<div className="w-[520px] p-8">
 			<svg className="h-[220px] w-full rounded-lg border bg-sidebar" viewBox="0 0 520 220">
+				<title>Connection line preview between two canvas handles</title>
 				<Connection
 					connectionLineType={ConnectionLineType.Bezier}
 					connectionStatus="valid"

@@ -2,7 +2,10 @@ import { describe, expect, test } from "bun:test"
 import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs"
 import { tmpdir } from "node:os"
 import path from "node:path"
-import browserLaneRoutes, { injectBrowserLanePageShim, resolveBrowserLaneProxyTarget } from "./browser-lanes"
+import browserLaneRoutes, {
+	injectBrowserLanePageShim,
+	resolveBrowserLaneProxyTarget,
+} from "./browser-lanes"
 
 function setupTempRegistry() {
 	const root = mkdtempSync(path.join(tmpdir(), "elf-server-browser-lanes-"))
@@ -100,7 +103,7 @@ describe("resolveBrowserLaneProxyTarget", () => {
 		}
 	})
 
-		test("migrates legacy direct iframe-ish lane rows", async () => {
+	test("migrates legacy direct iframe-ish lane rows", async () => {
 		const cleanup = setupTempRegistry()
 		try {
 			writeRegistry({
@@ -251,8 +254,9 @@ describe("browser lane route bootstrap", () => {
 		const originalFetch = globalThis.fetch
 		try {
 			globalThis.fetch = Object.assign(
-				async (input: RequestInfo | URL, init?: RequestInit) => {
-					const url = typeof input === "string" ? input : input instanceof URL ? input.toString() : input.url
+				async (input: RequestInfo | URL, _init?: RequestInit) => {
+					const url =
+						typeof input === "string" ? input : input instanceof URL ? input.toString() : input.url
 					if (url === "http://127.0.0.1:3901/") {
 						return new Response(null, { status: 200 })
 					}

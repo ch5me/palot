@@ -19,7 +19,9 @@ const meta = {
 		<div className="w-[760px] p-6">
 			<ExpandableGallery items={items}>
 				<h3 className="font-semibold text-2xl">Artifact gallery</h3>
-				<p className="mt-2 text-muted-foreground">Stacked preview expands into the full proof set.</p>
+				<p className="mt-2 text-muted-foreground">
+					Stacked preview expands into the full proof set.
+				</p>
 			</ExpandableGallery>
 		</div>
 	),

@@ -95,9 +95,7 @@ export async function ensureSingleServer(): Promise<OpenCodeServer> {
 	}
 
 	if (OPENCODE_MODE === "external") {
-		throw new OpenCodeExternalServerMissingError(
-			`http://${OPENCODE_HOSTNAME}:${OPENCODE_PORT}`,
-		)
+		throw new OpenCodeExternalServerMissingError(`http://${OPENCODE_HOSTNAME}:${OPENCODE_PORT}`)
 	}
 
 	// Start a new one

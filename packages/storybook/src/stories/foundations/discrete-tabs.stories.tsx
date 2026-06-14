@@ -1,7 +1,6 @@
+import { DiscreteTab, DiscreteTabs } from "@ch5me/elf-ui/components/animate/discrete-tabs"
 import type { Meta, StoryObj } from "@storybook/react-vite"
 import { BellIcon, CalendarIcon, InboxIcon } from "lucide-react"
-
-import { DiscreteTab, DiscreteTabs } from "@ch5me/elf-ui/components/animate/discrete-tabs"
 
 const meta = {
 	title: "Foundations/Navigation/DiscreteTabs",
@@ -15,9 +14,15 @@ const meta = {
 	},
 	render: (args) => (
 		<DiscreteTabs {...args}>
-			<DiscreteTab value="palot" icon={<InboxIcon />}>Palot</DiscreteTab>
-			<DiscreteTab value="folio" icon={<CalendarIcon />}>Folio</DiscreteTab>
-			<DiscreteTab value="signals" icon={<BellIcon />}>Signals</DiscreteTab>
+			<DiscreteTab value="palot" icon={<InboxIcon />}>
+				Palot
+			</DiscreteTab>
+			<DiscreteTab value="folio" icon={<CalendarIcon />}>
+				Folio
+			</DiscreteTab>
+			<DiscreteTab value="signals" icon={<BellIcon />}>
+				Signals
+			</DiscreteTab>
 		</DiscreteTabs>
 	),
 } satisfies Meta<typeof DiscreteTabs>

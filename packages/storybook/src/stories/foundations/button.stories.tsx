@@ -1,7 +1,6 @@
+import { Button } from "@ch5me/elf-ui/components/button"
 import type { Meta, StoryObj } from "@storybook/react-vite"
 import { SparklesIcon } from "lucide-react"
-
-import { Button } from "@ch5me/elf-ui/components/button"
 
 const meta = {
 	title: "Foundations/Actions/Button",

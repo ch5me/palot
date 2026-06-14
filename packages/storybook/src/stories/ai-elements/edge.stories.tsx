@@ -10,6 +10,7 @@ const meta = {
 	render: () => (
 		<div className="w-[520px] p-8">
 			<svg className="h-[220px] w-full rounded-lg border bg-sidebar" viewBox="0 0 520 220">
+				<title>Temporary edge preview connecting two canvas nodes</title>
 				<TemporaryEdge
 					id="storybook-temporary-edge"
 					selected={false}

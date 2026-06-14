@@ -131,7 +131,9 @@ function inferLegacyRuntimeOwnership(record: LegacyBrowserLaneRecord): BrowserLa
 	return "attached"
 }
 
-function inferLegacyDeploymentLocation(record: LegacyBrowserLaneRecord): BrowserLaneDeploymentLocation {
+function inferLegacyDeploymentLocation(
+	record: LegacyBrowserLaneRecord,
+): BrowserLaneDeploymentLocation {
 	const host = record.host?.trim()
 	if (!host) {
 		return record.mode === "local" ? "local" : "unknown"
@@ -218,7 +220,13 @@ function normalizeLaneInput(input: {
 	host?: string | null
 	profilePath?: string | null
 }) {
-	if (!input.id || !input.label || !input.surfaceKind || !input.runtimeOwnership || !input.deploymentLocation) {
+	if (
+		!input.id ||
+		!input.label ||
+		!input.surfaceKind ||
+		!input.runtimeOwnership ||
+		!input.deploymentLocation
+	) {
 		throw new Error(
 			"Browser lane create requires id, label, surfaceKind, runtimeOwnership, and deploymentLocation",
 		)
@@ -257,7 +265,8 @@ async function readBrowserLaneRoutes(): Promise<BrowserLaneRouteEntry[]> {
 	try {
 		const raw = await fs.readFile(getRegistryPath(), "utf-8")
 		const data = JSON.parse(raw) as BrowserLaneRegistryFile
-		const lanes = Array.isArray(data.lanes) && data.lanes.length > 0 ? data.lanes : [createDefaultRecord()]
+		const lanes =
+			Array.isArray(data.lanes) && data.lanes.length > 0 ? data.lanes : [createDefaultRecord()]
 		const migrated = lanes.map((entry) => migrateBrowserLaneRecord(entry))
 		await writeBrowserLaneRoutes(migrated)
 		return migrated.map((lane) => ({
@@ -518,7 +527,7 @@ const routes = app
 							? "running"
 							: lane.cdpEndpoint
 								? "running"
-							: "degraded",
+								: "degraded",
 					stream: {
 						url: lane.targetUrl ?? lane.streamBackendUrl,
 						checkedAt,
@@ -809,9 +818,17 @@ const routes = app
 		const directIframeOk = directIframe && streamReady && streamProbeOk
 		const localBothOk = !directIframe && streamReady && streamProbeOk && cdpReady && cdpProbeOk
 		const localStreamOnly =
-			lane.runtimeOwnership === "managed-local" && !directIframe && streamReady && streamProbeOk && !cdpProbeOk
+			lane.runtimeOwnership === "managed-local" &&
+			!directIframe &&
+			streamReady &&
+			streamProbeOk &&
+			!cdpProbeOk
 		const localCdpOnly =
-			lane.runtimeOwnership === "managed-local" && !directIframe && !streamProbeOk && cdpReady && cdpProbeOk
+			lane.runtimeOwnership === "managed-local" &&
+			!directIframe &&
+			!streamProbeOk &&
+			cdpReady &&
+			cdpProbeOk
 		const status = remoteFailure
 			? "error"
 			: remoteDegraded
@@ -820,9 +837,9 @@ const routes = app
 					? "running"
 					: localStreamOnly || localCdpOnly
 						? "degraded"
-					: lane.runtimeOwnership === "managed-local" && lane.profilePath
-						? "profile-locked"
-						: "stopped"
+						: lane.runtimeOwnership === "managed-local" && lane.profilePath
+							? "profile-locked"
+							: "stopped"
 		const message = remoteFailure
 			? directIframe
 				? "Direct iframe unreachable or not configured"
@@ -839,9 +856,9 @@ const routes = app
 							? "Stream route ready, CDP probe pending"
 							: localCdpOnly
 								? "CDP ready, stream unavailable"
-					: lane.runtimeOwnership === "managed-local" && lane.profilePath
-						? "Profile exists but runtime has not started yet"
-						: "Lane stopped"
+								: lane.runtimeOwnership === "managed-local" && lane.profilePath
+									? "Profile exists but runtime has not started yet"
+									: "Lane stopped"
 		return c.json(
 			{
 				status,

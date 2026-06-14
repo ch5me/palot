@@ -1,8 +1,8 @@
 import {
-	NavSidebarShell,
 	type NavSidebarAgent,
 	type NavSidebarProject,
 	type NavSidebarSectionId,
+	NavSidebarShell,
 	type NavSidebarTabId,
 } from "@ch5me/elf-ui/components/nav-sidebar-shell"
 import { SidebarProvider } from "@ch5me/elf-ui/components/sidebar"

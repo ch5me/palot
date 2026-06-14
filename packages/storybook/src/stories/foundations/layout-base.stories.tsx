@@ -1,7 +1,13 @@
-import type { Meta, StoryObj } from "@storybook/react-vite"
-import { AppSidebarShellFrame, NavSidebarShell, type NavSidebarAgent, type NavSidebarProject, type NavSidebarSectionId } from "@ch5me/elf-ui/components/nav-sidebar-shell"
+import {
+	AppSidebarShellFrame,
+	type NavSidebarAgent,
+	type NavSidebarProject,
+	type NavSidebarSectionId,
+	NavSidebarShell,
+} from "@ch5me/elf-ui/components/nav-sidebar-shell"
 import { SidebarProvider } from "@ch5me/elf-ui/components/sidebar"
 import { SplitPane } from "@ch5me/workspace"
+import type { Meta, StoryObj } from "@storybook/react-vite"
 import { BlocksIcon, CopyIcon } from "lucide-react"
 import { useMemo, useState } from "react"
 
@@ -81,7 +87,8 @@ function SidebarPreview({
 				setSectionsOpen((current) => ({
 					...current,
 					[section]: open,
-				}))}
+				}))
+			}
 			onNewSession={() => {}}
 			onProjectManager={() => {}}
 			onAutomations={() => {}}
@@ -119,13 +126,23 @@ function SidebarPreview({
 				rightPane={
 					<div className="flex min-h-0 flex-1 flex-col overflow-hidden border-t border-sidebar-border/10 bg-sidebar/60">
 						<div className="border-b border-sidebar-border/10 px-4 py-3">
-							<p className="text-xs font-medium uppercase tracking-[0.16em] text-sidebar-foreground/55">Folio</p>
-							<p className="mt-2 text-sm font-medium text-sidebar-foreground">Projected workspace list</p>
+							<p className="text-xs font-medium uppercase tracking-[0.16em] text-sidebar-foreground/55">
+								Folio
+							</p>
+							<p className="mt-2 text-sm font-medium text-sidebar-foreground">
+								Projected workspace list
+							</p>
 						</div>
 						<div className="space-y-2 p-3">
-							<div className="rounded-xl border border-sidebar-border/20 bg-sidebar-accent/40 px-3 py-2 text-sm text-sidebar-foreground">Workspace overview</div>
-							<div className="rounded-xl border border-sidebar-border/20 bg-sidebar-accent/20 px-3 py-2 text-sm text-sidebar-foreground/85">Pending assets</div>
-							<div className="rounded-xl border border-sidebar-border/20 bg-sidebar-accent/20 px-3 py-2 text-sm text-sidebar-foreground/85">Publishing queue</div>
+							<div className="rounded-xl border border-sidebar-border/20 bg-sidebar-accent/40 px-3 py-2 text-sm text-sidebar-foreground">
+								Workspace overview
+							</div>
+							<div className="rounded-xl border border-sidebar-border/20 bg-sidebar-accent/20 px-3 py-2 text-sm text-sidebar-foreground/85">
+								Pending assets
+							</div>
+							<div className="rounded-xl border border-sidebar-border/20 bg-sidebar-accent/20 px-3 py-2 text-sm text-sidebar-foreground/85">
+								Publishing queue
+							</div>
 						</div>
 					</div>
 				}

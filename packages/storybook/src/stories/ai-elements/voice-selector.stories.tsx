@@ -25,7 +25,9 @@ const meta = {
 	render: () => (
 		<div className="w-[560px] p-8">
 			<VoiceSelector defaultValue="marin" open>
-				<VoiceSelectorTrigger render={<Button variant="outline" />}>Choose voice</VoiceSelectorTrigger>
+				<VoiceSelectorTrigger render={<Button variant="outline" />}>
+					Choose voice
+				</VoiceSelectorTrigger>
 				<VoiceSelectorContent title="Select narration voice">
 					<VoiceSelectorInput placeholder="Search voices..." />
 					<VoiceSelectorList>
