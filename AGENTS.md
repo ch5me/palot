@@ -64,7 +64,7 @@ generic knowledge.
 - **Electron dev**: use devmux service `desktop` / `desktop-wayland`; do not run `cd apps/desktop && bun run dev:electron-local` manually unless editing that service definition
 - **Browser-only dev**: devmux service `web` runs Vite on `20883`; do not run `cd apps/desktop && bun run dev:web` manually unless editing that service definition
 - **Backend server** (browser mode only): devmux service `server` runs Bun server on `30206`; do not run `cd apps/server && bun run dev` manually unless editing that service definition
-- **Storybook**: `packages/ui` no longer owns a local Storybook. Generic UI stories live in `~/src/ch5/ch5-packages` (`pnpm run storybook` for main, `pnpm run storybook:fx` for effects).
+- **Storybook**: `packages/ui` (@ch5me/elf-ui) owns a local Storybook — devmux service `storybook` on port `10618` (`bun run svc:status`; tmux `omo-elf-storybook`). Start it like any other service via devmux (`cd ~/src/ch5/palot && npx devmux ensure storybook`); do not run `cd packages/ui && bun run storybook` manually unless editing that service definition. Stories live in `packages/ui/src/stories/{foundations,ai-elements,animate}`; the React-Vite + `@tailwindcss/vite` config is `packages/ui/.storybook`. This is the surface for testing the base-ui backport. (The companion generic-UI Storybooks still live in `~/src/ch5/ch5-packages`: `pnpm run storybook` design-system on `10616`, `pnpm run storybook:fx` effects on `10617`.)
 - **Session debug**: `bun run debug:sessions -- <session-id> [session-id...]`
 
 - **Lint check**: `bun run lint` (from root)
