@@ -19,85 +19,72 @@ const CHROMIUM_FLAGS_CONTENT = [
 	"--remote-allow-origins=*",
 ].join("\n") + "\n"
 
-const INIT_CDP_SCRIPT_CONTENT = `#!/usr/bin/with-contenv bash
-set -e
-WRAPPER=/usr/bin/wrapped-chromium
-if [ ! -f "$WRAPPER" ]; then
-  echo "[elf-cdp] $WRAPPER not found; nothing to patch" >&2
-  exit 0
-fi
-if grep -q -- "--remote-debugging-port=9222 " "$WRAPPER"; then
-  echo "[elf-cdp] CDP flags already present in $WRAPPER" >&2
-  exit 0
-fi
-cat > "$WRAPPER" <<'WRAPPER_EOF'
-#!/bin/bash
-
-BIN=/usr/bin/chromium
-
-# Cleanup
-if ! pgrep chromium > /dev/null;then
-  rm -f $HOME/.config/chromium/Singleton*
-fi
-
-# Run normally on privved containers or modified un non priv
-if grep -q 'Seccomp:.0' /proc/1/status; then
-  \${BIN} \\
-  --no-first-run \\
-  --password-store=basic \\
-  --simulate-outdated-no-au='Tue, 31 Dec 2099 23:59:59 GMT' \\
-  --start-maximized \\
-  --user-data-dir \\
-  --remote-debugging-port=9222 \\
-  --remote-allow-origins=* \\
-   "\$@" > /dev/null 2>&1
-else
-  \${BIN} \\
-  --no-first-run \\
-  --no-sandbox \\
-  --password-store=basic \\
-  --simulate-outdated-no-au='Tue, 31 Dec 2099 23:59:59 GMT' \\
-  --start-maximized \\
-  --test-type \\
-  --user-data-dir \\
-  --remote-debugging-port=9222 \\
-  --remote-allow-origins=* \\
-   "\$@" > /dev/null 2>&1
-fi
-WRAPPER_EOF
-chmod +x "$WRAPPER"
-echo "[elf-cdp] Patched $WRAPPER to enable CDP" >&2
-`
-
-const INIT_CDP_RELAY_SCRIPT_CONTENT = `#!/usr/bin/with-contenv bash
-set -e
-if ! command -v socat >/dev/null 2>&1; then
-  apt-get update >/dev/null 2>&1
-  apt-get install -y --no-install-recommends socat >/dev/null 2>&1 || {
-    echo "[elf-cdp-relay] socat install failed; managed-local CDP relay unavailable" >&2
-    exit 1
-  }
-fi
-pkill -f 'socat.*TCP-LISTEN:9222' >/dev/null 2>&1 || true
-CDP_READY=0
-for _attempt in $(seq 1 60); do
-  if curl -sf --max-time 1 http://127.0.0.1:9222/json/version >/tmp/elf-cdp-version.json 2>/tmp/elf-cdp-probe.log; then
-    CDP_READY=1
-    break
-  fi
-  if curl -g -sf --max-time 1 http://[::1]:9222/json/version >/tmp/elf-cdp-version.json 2>/tmp/elf-cdp-probe.log; then
-    CDP_READY=1
-    break
-  fi
-  sleep 1
-done
-if [ "$CDP_READY" -ne 1 ]; then
-  echo "[elf-cdp-relay] CDP never became reachable on 9222; relay not started" >&2
-  exit 1
-fi
-echo "[elf-cdp-relay] CDP answered on 9222; exposing container port 9222 directly" >&2
-`
-
+const CHROMIUM_SUPERVISOR_CONTENT = [
+	"#!/bin/bash",
+	"set -e",
+	"",
+	"CHROMIUM_BIN=/usr/bin/wrapped-chromium",
+	"CHROME_USER_DATA_DIR=/tmp/elf-cdp-manual",
+	"CDP_PORT=9222",
+	'START_URL="${START_URL:-about:blank}"',
+	'LOG_PREFIX="[elf-cdp-supervisor]"',
+	"",
+	'mkdir -p "$CHROME_USER_DATA_DIR"',
+	'chmod 700 "$CHROME_USER_DATA_DIR"',
+	"",
+	"launch_chromium() {",
+	'  echo "$LOG_PREFIX launching Chromium..."',
+	'  pkill -f "remote-debugging-port=$CDP_PORT" 2>/dev/null || true',
+	'  rm -f "$CHROME_USER_DATA_DIR/SingletonLock" "$CHROME_USER_DATA_DIR/SingletonSocket" 2>/dev/null || true',
+	"",
+	'  "$CHROMIUM_BIN" \\',
+	'    --headless=new \\',
+	'    --remote-debugging-address=0.0.0.0 \\',
+	'    --remote-debugging-port=$CDP_PORT \\',
+	'    --remote-allow-origins=* \\',
+	'    --user-data-dir="$CHROME_USER_DATA_DIR" \\',
+	'    --disable-gpu \\',
+	'    "$START_URL" >/tmp/elf-cdp-chromium.log 2>&1 &',
+	"",
+	'  CHROME_PID=$!',
+	'  echo "$LOG_PREFIX Chromium PID $CHROME_PID"',
+	"}",
+	"",
+	"stream_logs() {",
+	'  if [ -f /tmp/elf-cdp-chromium.log ]; then',
+	'    cat /tmp/elf-cdp-chromium.log >&2 || true',
+	"  fi",
+	"}",
+	"",
+	"wait_for_cdp() {",
+	"  local attempt=1",
+	"  local max_attempts=60",
+	"  while [ $attempt -le $max_attempts ]; do",
+	'    if curl -sf --max-time 2 "http://127.0.0.1:$CDP_PORT/json/version" >/dev/null 2>&1; then',
+	'      echo "$LOG_PREFIX CDP ready after ${attempt}s"',
+	"      return 0",
+	"    fi",
+	'    if ! kill -0 "$CHROME_PID" 2>/dev/null; then',
+	'      echo "$LOG_PREFIX Chromium died before CDP became ready"',
+	"      stream_logs",
+	"      return 1",
+	"    fi",
+	"    sleep 1",
+	"    attempt=$((attempt + 1))",
+	"  done",
+	'  echo "$LOG_PREFIX CDP never appeared after ${max_attempts}s"',
+	"  stream_logs",
+	"  return 1",
+	"}",
+	"",
+	"while true; do",
+	"  launch_chromium",
+	"  wait_for_cdp || true",
+	'  wait "$CHROME_PID" 2>/dev/null || true',
+	"  sleep 2",
+	"done",
+	"",
+].join("\n")
 
 export interface BrowserLaneRuntimeConfig {
 	laneId: string
@@ -110,6 +97,7 @@ export interface BrowserLaneRuntimeConfig {
 	envFile: string
 	streamBackendUrl: string
 	cdpEndpoint: string
+	cdpContainerEndpoint: string
 	auth: { user: string; password: string }
 	startUrl: string
 }
@@ -136,6 +124,7 @@ export async function createBrowserLaneRuntimeConfig(
 		envFile: path.join(runtimeDir, ".env"),
 		streamBackendUrl: `http://${DEFAULT_HOST}:${streamPort}`,
 		cdpEndpoint: `http://${DEFAULT_HOST}:${cdpPort}`,
+		cdpContainerEndpoint: "http://127.0.0.1:9222",
 		auth: DEFAULT_AUTH,
 		startUrl:
 			record.targetUrl || process.env.ELF_BROWSER_LANE_START_URL?.trim() || DEFAULT_START_URL,
@@ -148,12 +137,10 @@ export function ensureBrowserLaneRuntimeFiles(config: BrowserLaneRuntimeConfig):
 	const flagsFile = path.join(config.profilePath, CHROMIUM_FLAGS_FILE)
 	fs.mkdirSync(path.dirname(flagsFile), { recursive: true })
 	fs.writeFileSync(flagsFile, CHROMIUM_FLAGS_CONTENT, "utf-8")
-	const initDir = path.join(config.runtimeDir, "custom-cont-init.d")
-	fs.mkdirSync(initDir, { recursive: true })
-	fs.writeFileSync(path.join(initDir, "10-enable-cdp.sh"), INIT_CDP_SCRIPT_CONTENT, "utf-8")
-	fs.writeFileSync(path.join(initDir, "20-cdp-relay.sh"), INIT_CDP_RELAY_SCRIPT_CONTENT, "utf-8")
-	fs.chmodSync(path.join(initDir, "10-enable-cdp.sh"), 0o755)
-	fs.chmodSync(path.join(initDir, "20-cdp-relay.sh"), 0o755)
+	const supervisorScriptPath = path.join(config.runtimeDir, "elf-cdp-supervisor.sh")
+	const supervisorContainerPath = "/custom-cont-init.d/elf-cdp-supervisor.sh"
+	fs.writeFileSync(supervisorScriptPath, CHROMIUM_SUPERVISOR_CONTENT, "utf-8")
+	fs.chmodSync(supervisorScriptPath, 0o755)
 	fs.writeFileSync(
 		config.envFile,
 		[
@@ -164,26 +151,32 @@ export function ensureBrowserLaneRuntimeFiles(config: BrowserLaneRuntimeConfig):
 			`STREAM_AUTH_USER=${config.auth.user}`,
 			`STREAM_AUTH_PASSWORD=${config.auth.password}`,
 			`START_URL=${config.startUrl}`,
+			`CDP_CONTAINER_ENDPOINT=${config.cdpContainerEndpoint}`,
 		].join("\n") + "\n",
 		"utf-8",
 	)
-	fs.writeFileSync(config.composeFile, renderBrowserLaneCompose(config), "utf-8")
+	fs.writeFileSync(config.composeFile, renderBrowserLaneCompose(config, supervisorContainerPath), "utf-8")
 	log.info("Browser lane runtime files ready", {
 		laneId: config.laneId,
 		runtimeDir: config.runtimeDir,
 		profilePath: config.profilePath,
 		flagsFile,
-		initDir,
+		supervisorScriptPath,
 	})
 }
 
-export function renderBrowserLaneCompose(config: BrowserLaneRuntimeConfig): string {
+export function renderBrowserLaneCompose(
+	config: BrowserLaneRuntimeConfig,
+	supervisorScriptPath: string,
+): string {
 	return [
 		"services:",
 		`  browser-lane-${config.laneId}:`,
 		`    image: ${IMAGE}`,
 		"    restart: unless-stopped",
 		"    shm_size: \"1gb\"",
+		"    entrypoint:",
+		`      - "${supervisorScriptPath}"`,
 		"    environment:",
 		`      - CUSTOM_USER=${config.auth.user}`,
 		`      - PASSWORD=${config.auth.password}`,
@@ -193,17 +186,18 @@ export function renderBrowserLaneCompose(config: BrowserLaneRuntimeConfig): stri
 		"      - TITLE=Elf Browser Lane",
 		"      - NO_DECOR=1",
 		"      - SELKIES_SCALING_DPI=96",
-		"      - SELKIES_UI_SHOW_SIDEBAR=false",
+		"      - DOCKER_MODS=linuxserver/mods:universal-package-install",
+		"      - INSTALL_PACKAGES=chromium",
 		"      - SELKIES_SHOW_SIDEBAR=false",
 		"      - SELKIES_SHOW_ICON=false",
-		"      - SELKIES_ENABLE_RESIZE=false",
-		`      - CHROME_CLI=${chromeCliForConfig(config)}`,
+		"      - CUSTOM_VERSION=stable",
+		"      - START_URL=" + config.startUrl,
 		"    ports:",
-		`      - \"${config.streamPort}:3000\"`,
-		`      - \"${config.cdpPort}:9222\"`,
+		`      - "${config.streamPort}:3000"`,
+		`      - "${config.cdpPort}:9222"`,
 		"    volumes:",
 		`      - ${config.profilePath}:/config`,
-		`      - ${path.join(config.runtimeDir, "custom-cont-init.d")}:/custom-cont-init.d`,
+		`      - ${config.runtimeDir}:/custom-cont-init.d`,
 		"",
 	].join("\n")
 }

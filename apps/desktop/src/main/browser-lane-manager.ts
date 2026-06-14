@@ -64,6 +64,7 @@ interface LaneRuntimeState {
 	inFlight: Promise<BrowserLane> | null
 	profileResetAt: number | null
 	activeTabId: string | null
+	managedCdpEndpoint: string | null
 }
 
 const laneState = new Map<string, LaneRuntimeState>()
@@ -130,6 +131,7 @@ function getLaneState(id: string): LaneRuntimeState {
 			inFlight: null,
 			profileResetAt: null,
 			activeTabId: null,
+			managedCdpEndpoint: null,
 		}
 		laneState.set(id, state)
 	}
@@ -374,9 +376,11 @@ async function ensureBrowserLanePrepared(id: string): Promise<BrowserLane> {
 		host: config.host,
 		updatedAt: Date.now(),
 	}))
-	getLaneState(id).profileResetAt = null
+	const laneState = getLaneState(id)
+	laneState.profileResetAt = null
+	laneState.managedCdpEndpoint = config.cdpContainerEndpoint
 	if (!updated) throw new Error(`Browser lane ${id} disappeared during ensure`)
-	getLaneState(id).runtimeConfig = config
+	laneState.runtimeConfig = config
 	setLaneHealth(
 		id,
 		buildHealth({
@@ -566,6 +570,15 @@ function assertNavigableUrl(url: string): void {
 async function getBrowserLaneCdpEndpoint(id: string): Promise<string> {
 	const lane = await getBrowserLane(id)
 	if (!lane) throw new Error(`Browser lane ${id} not found`)
+	const state = getLaneState(id)
+	if (lane.runtimeOwnership === "managed-local") {
+		if (state.managedCdpEndpoint) {
+			return state.managedCdpEndpoint
+		}
+		if (state.runtimeConfig?.cdpContainerEndpoint) {
+			return state.runtimeConfig.cdpContainerEndpoint
+		}
+	}
 	if (!lane.cdpEndpoint) {
 		throw new Error(`Browser lane ${id} has no CDP endpoint`)
 	}
