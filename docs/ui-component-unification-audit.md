@@ -13,6 +13,50 @@ Repos compared:
 - `ch5 scan ch5-packages --json`: 366 component nodes, 566 story nodes, 0 scanner errors after the CH5 CLI nested-package scanner fix.
 - AST/text inventory over TS/TSX source filled the component/export/prop comparison below.
 
+## ✅ MIGRATION COMPLETE (2026-06-14)
+
+The plan landed. `@ch5me/elf-ui` is now a thin compatibility layer: every reusable
+primitive re-exports from `@ch5me/ch5-ui-web`, and the initial agent/chat surfaces
+re-export from the new `@ch5me/agent-ui-web`. Both repos are green at every gate
+(`bun run check-types` across ui/storybook/desktop; ch5-ui-web typecheck + tests +
+boundary + build), and all work is committed + pushed.
+
+**Final elf-ui shape (`packages/ui/src/components/`):** 52 of 58 component files are
+one-line compat shims (`export * from "@ch5me/ch5-ui-web"`). The 6 still-local are
+NOT regressions:
+- P1, not in this scope (genericize later if reused): `combobox`, `nav-sidebar-shell`,
+  `searchable-list-popover`.
+- App-bound / non-goal (Palot data/routing/cmdk): `chart`, `command`, `direction`.
+
+**ai-elements (`packages/ui/src/components/ai-elements/`):** 12 of 50 files shim to
+`@ch5me/agent-ui-web` (the agreed initial set: PromptInput, Message, Conversation,
+Reasoning, Tool, Task, CodeBlock, FileChanges, Diff, Terminal, InlineCitation,
+Sources). The remaining 38 are out of the initial agent-ui-web scope.
+
+**What was migrated into ch5-ui-web (all base-ui, CH5 semantic tokens, ch5 semantic
+motion preserved):** button, badge, avatar, card (+size), switch, radio-group,
+checkbox, slider, breadcrumb, progress (+Track/Indicator/Label/Value), input-group,
+popover, dialog, sheet, select, accordion, alert-dialog (+Overlay/Portal/Media),
+tabs, sidebar (asChild→useRender on 5 subparts, +embedded/dir), field (composition
+kit; old all-in-one row → `FieldRow`). Plus the already-aligned shims: separator,
+label, input, form. `react-hook-form` moved to a peerDependency and deduped via
+cross-repo tsconfig `paths` (alongside lucide-react/react/react-dom).
+
+**Scan-count note:** post-migration `ch5 scan palot` reports MORE component nodes
+(261), not fewer. This is expected and not a regression: barrel re-export shims
+(`export * from "@ch5me/ch5-ui-web"`) make the scanner attribute ch5-ui-web's
+re-exported symbols to Palot. The meaningful outcome — Palot no longer forks the
+reusable primitives; CH5 owns them — is achieved regardless of the raw node count.
+
+**Outstanding (human-gated / future scope):**
+- Palette app visual smoke (sidebar, command palette, chat composer, message
+  rendering, settings, onboarding, side-panel route) needs a running app + human
+  sign-off. Automated gates all pass; ports were verbatim from Palot so the CH5
+  proof stories are the parity reference.
+- Optional cleanup: prune Palot-local stories now duplicated by ch5-ui-web stories.
+- P1 additions (not migrations): genericize combobox / searchable-list-popover /
+  brandless nav-sidebar-shell into ch5-ui-web if/when reused by another CH5 product.
+
 ## Executive Read
 
 - Palot still owns a large local UI package: 134 component files, 521 exported symbols.
