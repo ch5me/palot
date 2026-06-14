@@ -21,12 +21,15 @@ re-export from the new `@ch5me/agent-ui-web`. Both repos are green at every gate
 (`bun run check-types` across ui/storybook/desktop; ch5-ui-web typecheck + tests +
 boundary + build), and all work is committed + pushed.
 
-**Final elf-ui shape (`packages/ui/src/components/`):** 52 of 58 component files are
-one-line compat shims (`export * from "@ch5me/ch5-ui-web"`). The 6 still-local are
-NOT regressions:
-- P1, not in this scope (genericize later if reused): `combobox`, `nav-sidebar-shell`,
-  `searchable-list-popover`.
-- App-bound / non-goal (Palot data/routing/cmdk): `chart`, `command`, `direction`.
+**Final elf-ui shape (`packages/ui/src/components/`):** 55 of 58 component files are
+one-line compat shims (`export * from "@ch5me/ch5-ui-web"`). The 3 still-local are
+genuinely app-bound (Palot data/routing/cmdk), not regressions: `chart`, `command`,
+`direction`.
+
+The P1 generic composites are now also genericized into ch5-ui-web and shimmed:
+`combobox` (base-ui), `searchable-list-popover`, and the brandless `nav-sidebar-shell`
+shell (incl. `AppShellChrome` + `AppSidebarShellFrame`) — each a verbatim port with
+local imports, ported proof stories, and export-presence tests.
 
 **ai-elements (`packages/ui/src/components/ai-elements/`):** 12 of 50 files shim to
 `@ch5me/agent-ui-web` (the agreed initial set: PromptInput, Message, Conversation,
@@ -54,8 +57,8 @@ reusable primitives; CH5 owns them — is achieved regardless of the raw node co
   sign-off. Automated gates all pass; ports were verbatim from Palot so the CH5
   proof stories are the parity reference.
 - Optional cleanup: prune Palot-local stories now duplicated by ch5-ui-web stories.
-- P1 additions (not migrations): genericize combobox / searchable-list-popover /
-  brandless nav-sidebar-shell into ch5-ui-web if/when reused by another CH5 product.
+- P1 composites (combobox / searchable-list-popover / nav-sidebar-shell): DONE —
+  genericized into ch5-ui-web with stories + tests, shimmed in elf-ui.
 
 ## Executive Read
 
