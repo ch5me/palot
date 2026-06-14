@@ -34,13 +34,14 @@ Close Storybook coverage for all local Palot UI components tracked in `docs/stor
 ## Current State
 
 - Tracker exists at `docs/storybook-missing-ui-elements.md`.
-- Current CH5 coverage after batch 04 from 2026-06-13T23:48:26.688Z: 134 visual components, 43 covered, 91 visual component gaps, 1 documented exception.
-- Existing covered components: `button`, `discrete-tabs`, `sidebar`, `accordion`, `alert`, `alert-dialog`, `aspect-ratio`, `avatar`, `badge`, `breadcrumb`, `button-group`, `card`, `checkbox`, `collapsible`, `dialog`, `dropdown-menu`, `empty`, `field`, `form`, `input`, `input-group`, `input-otp`, `item`, `kbd`, `label`, `native-select`, `pagination`, `popover`, `progress`, `radio-group`, `resizable`, `scroll-area`, `separator`, `skeleton`, `slider`, `spinner`, `switch`, `table`, `tabs`, `textarea`, `toggle`, `toggle-group`, `tooltip`.
-- Documented exception: `direction` is a pure `@base-ui/react/direction-provider` re-export.
+- Current CH5 coverage after batch 05 from 2026-06-14T00:02:48.225Z: 134 visual components, 54 covered, 80 visual component gaps, 11 documented exceptions, 69 actionable local story gaps.
+- Existing covered components: `button`, `discrete-tabs`, `sidebar`, `accordion`, `alert`, `alert-dialog`, `aspect-ratio`, `avatar`, `badge`, `breadcrumb`, `button-group`, `calendar`, `card`, `carousel`, `chart`, `checkbox`, `collapsible`, `command`, `context-menu`, `dialog`, `drawer`, `dropdown-menu`, `empty`, `field`, `form`, `hover-card`, `input`, `input-group`, `input-otp`, `item`, `kbd`, `label`, `native-select`, `pagination`, `popover`, `progress`, `radio-group`, `resizable`, `scroll-area`, `searchable-list-popover`, `select`, `separator`, `sheet`, `skeleton`, `slider`, `sonner`, `spinner`, `switch`, `table`, `tabs`, `textarea`, `toggle`, `toggle-group`, `tooltip`.
+- Documented exceptions: `direction` is a pure `@base-ui/react/direction-provider` re-export; `smooth-dropdown` and all nine marketing files are pure `@ch5me/ch5-ui-web` re-exports.
 - Batch 01 proof: Storybook typecheck passed, static Storybook build passed, CH5 coverage mapped all 10 new stories, and Chrome rendered desktop/mobile screenshots under `.sisyphus/evidence/storybook-coverage/batch-01/`.
 - Batch 02 proof: Storybook typecheck passed, static Storybook build passed, CH5 coverage mapped 12 form/action/navigation primitives, and Chrome rendered desktop/mobile screenshots under `.sisyphus/evidence/storybook-coverage/batch-02/`.
 - Batch 03 proof: Storybook typecheck passed, static Storybook build passed, CH5 coverage mapped 10 disclosure/layout/overlay primitives, and Chrome rendered desktop/mobile screenshots under `.sisyphus/evidence/storybook-coverage/batch-03/`.
 - Batch 04 proof: Storybook typecheck passed, static Storybook build passed, CH5 coverage mapped 8 data/form/layout primitives, and Chrome rendered desktop/mobile screenshots under `.sisyphus/evidence/storybook-coverage/batch-04/`.
+- Batch 05 proof: Storybook typecheck passed, static Storybook build passed, CH5 coverage mapped 11 advanced primitives, and Chrome rendered desktop/mobile screenshots under `.sisyphus/evidence/storybook-coverage/batch-05/`.
 - Current worktree has unrelated browser-lane changes; do not sweep them into Storybook commits.
 
 ## Plan

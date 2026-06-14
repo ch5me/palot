@@ -1,0 +1,225 @@
+{
+  "generatedAt": "2026-06-14T00:02:11.541Z",
+  "results": [
+    {
+      "storyId": "foundations-date-calendar--default",
+      "viewport": "desktop",
+      "width": 370,
+      "height": 932,
+      "childCount": 101,
+      "textLength": 122,
+      "screenshot": "/Users/hassoncs/src/ch5/palot/.sisyphus/evidence/storybook-coverage/batch-05/foundations-date-calendar--default-desktop.png",
+      "warnings": 0
+    },
+    {
+      "storyId": "foundations-date-calendar--default",
+      "viewport": "mobile",
+      "width": 370,
+      "height": 876,
+      "childCount": 101,
+      "textLength": 122,
+      "screenshot": "/Users/hassoncs/src/ch5/palot/.sisyphus/evidence/storybook-coverage/batch-05/foundations-date-calendar--default-mobile.png",
+      "warnings": 0
+    },
+    {
+      "storyId": "foundations-media-carousel--default",
+      "viewport": "desktop",
+      "width": 616,
+      "height": 932,
+      "childCount": 28,
+      "textLength": 104,
+      "screenshot": "/Users/hassoncs/src/ch5/palot/.sisyphus/evidence/storybook-coverage/batch-05/foundations-media-carousel--default-desktop.png",
+      "warnings": 0
+    },
+    {
+      "storyId": "foundations-media-carousel--default",
+      "viewport": "mobile",
+      "width": 616,
+      "height": 876,
+      "childCount": 28,
+      "textLength": 104,
+      "screenshot": "/Users/hassoncs/src/ch5/palot/.sisyphus/evidence/storybook-coverage/batch-05/foundations-media-carousel--default-mobile.png",
+      "warnings": 0
+    },
+    {
+      "storyId": "foundations-data-display-chart--default",
+      "viewport": "desktop",
+      "width": 616,
+      "height": 932,
+      "childCount": 49,
+      "textLength": 19,
+      "screenshot": "/Users/hassoncs/src/ch5/palot/.sisyphus/evidence/storybook-coverage/batch-05/foundations-data-display-chart--default-desktop.png",
+      "warnings": 0
+    },
+    {
+      "storyId": "foundations-data-display-chart--default",
+      "viewport": "mobile",
+      "width": 616,
+      "height": 876,
+      "childCount": 49,
+      "textLength": 19,
+      "screenshot": "/Users/hassoncs/src/ch5/palot/.sisyphus/evidence/storybook-coverage/batch-05/foundations-data-display-chart--default-mobile.png",
+      "warnings": 0
+    },
+    {
+      "storyId": "foundations-command-command--default",
+      "viewport": "desktop",
+      "width": 556,
+      "height": 932,
+      "childCount": 42,
+      "textLength": 74,
+      "screenshot": "/Users/hassoncs/src/ch5/palot/.sisyphus/evidence/storybook-coverage/batch-05/foundations-command-command--default-desktop.png",
+      "warnings": 0
+    },
+    {
+      "storyId": "foundations-command-command--default",
+      "viewport": "mobile",
+      "width": 556,
+      "height": 876,
+      "childCount": 42,
+      "textLength": 74,
+      "screenshot": "/Users/hassoncs/src/ch5/palot/.sisyphus/evidence/storybook-coverage/batch-05/foundations-command-command--default-mobile.png",
+      "warnings": 0
+    },
+    {
+      "storyId": "foundations-overlays-contextmenu--default",
+      "viewport": "desktop",
+      "width": 576,
+      "height": 932,
+      "childCount": 4,
+      "textLength": 30,
+      "screenshot": "/Users/hassoncs/src/ch5/palot/.sisyphus/evidence/storybook-coverage/batch-05/foundations-overlays-contextmenu--default-desktop.png",
+      "warnings": 0
+    },
+    {
+      "storyId": "foundations-overlays-contextmenu--default",
+      "viewport": "mobile",
+      "width": 576,
+      "height": 876,
+      "childCount": 4,
+      "textLength": 30,
+      "screenshot": "/Users/hassoncs/src/ch5/palot/.sisyphus/evidence/storybook-coverage/batch-05/foundations-overlays-contextmenu--default-mobile.png",
+      "warnings": 0
+    },
+    {
+      "storyId": "foundations-overlays-drawer--default",
+      "viewport": "desktop",
+      "width": 656,
+      "height": 932,
+      "childCount": 4,
+      "textLength": 17,
+      "screenshot": "/Users/hassoncs/src/ch5/palot/.sisyphus/evidence/storybook-coverage/batch-05/foundations-overlays-drawer--default-desktop.png",
+      "warnings": 0
+    },
+    {
+      "storyId": "foundations-overlays-drawer--default",
+      "viewport": "mobile",
+      "width": 656,
+      "height": 876,
+      "childCount": 4,
+      "textLength": 17,
+      "screenshot": "/Users/hassoncs/src/ch5/palot/.sisyphus/evidence/storybook-coverage/batch-05/foundations-overlays-drawer--default-mobile.png",
+      "warnings": 0
+    },
+    {
+      "storyId": "foundations-overlays-hovercard--default",
+      "viewport": "desktop",
+      "width": 516,
+      "height": 932,
+      "childCount": 4,
+      "textLength": 16,
+      "screenshot": "/Users/hassoncs/src/ch5/palot/.sisyphus/evidence/storybook-coverage/batch-05/foundations-overlays-hovercard--default-desktop.png",
+      "warnings": 0
+    },
+    {
+      "storyId": "foundations-overlays-hovercard--default",
+      "viewport": "mobile",
+      "width": 516,
+      "height": 876,
+      "childCount": 4,
+      "textLength": 16,
+      "screenshot": "/Users/hassoncs/src/ch5/palot/.sisyphus/evidence/storybook-coverage/batch-05/foundations-overlays-hovercard--default-mobile.png",
+      "warnings": 0
+    },
+    {
+      "storyId": "foundations-forms-select--default",
+      "viewport": "desktop",
+      "width": 516,
+      "height": 932,
+      "childCount": 11,
+      "textLength": 8,
+      "screenshot": "/Users/hassoncs/src/ch5/palot/.sisyphus/evidence/storybook-coverage/batch-05/foundations-forms-select--default-desktop.png",
+      "warnings": 0
+    },
+    {
+      "storyId": "foundations-forms-select--default",
+      "viewport": "mobile",
+      "width": 516,
+      "height": 876,
+      "childCount": 11,
+      "textLength": 8,
+      "screenshot": "/Users/hassoncs/src/ch5/palot/.sisyphus/evidence/storybook-coverage/batch-05/foundations-forms-select--default-mobile.png",
+      "warnings": 0
+    },
+    {
+      "storyId": "foundations-overlays-sheet--default",
+      "viewport": "desktop",
+      "width": 656,
+      "height": 932,
+      "childCount": 7,
+      "textLength": 15,
+      "screenshot": "/Users/hassoncs/src/ch5/palot/.sisyphus/evidence/storybook-coverage/batch-05/foundations-overlays-sheet--default-desktop.png",
+      "warnings": 0
+    },
+    {
+      "storyId": "foundations-overlays-sheet--default",
+      "viewport": "mobile",
+      "width": 656,
+      "height": 876,
+      "childCount": 7,
+      "textLength": 15,
+      "screenshot": "/Users/hassoncs/src/ch5/palot/.sisyphus/evidence/storybook-coverage/batch-05/foundations-overlays-sheet--default-mobile.png",
+      "warnings": 0
+    },
+    {
+      "storyId": "foundations-overlays-searchablelistpopover--default",
+      "viewport": "desktop",
+      "width": 516,
+      "height": 932,
+      "childCount": 9,
+      "textLength": 16,
+      "screenshot": "/Users/hassoncs/src/ch5/palot/.sisyphus/evidence/storybook-coverage/batch-05/foundations-overlays-searchablelistpopover--default-desktop.png",
+      "warnings": 0
+    },
+    {
+      "storyId": "foundations-overlays-searchablelistpopover--default",
+      "viewport": "mobile",
+      "width": 516,
+      "height": 876,
+      "childCount": 9,
+      "textLength": 16,
+      "screenshot": "/Users/hassoncs/src/ch5/palot/.sisyphus/evidence/storybook-coverage/batch-05/foundations-overlays-searchablelistpopover--default-mobile.png",
+      "warnings": 0
+    },
+    {
+      "storyId": "foundations-feedback-sonner--default",
+      "viewport": "desktop",
+      "width": 516,
+      "height": 932,
+      "childCount": 4,
+      "textLength": 22,
+      "screenshot": "/Users/hassoncs/src/ch5/palot/.sisyphus/evidence/storybook-coverage/batch-05/foundations-feedback-sonner--default-desktop.png",
+      "warnings": 0
+    },
+    {
+      "storyId": "foundations-feedback-sonner--default",
+      "viewport": "mobile",
+      "width": 516,
+      "height": 876,
+      "childCount": 13,
+      "textLength": 96,
+      "screenshot": "/Users/hassoncs/src/ch5/palot/.sisyphus/evidence/storybook-coverage/batch-05/foundations-feedback-sonner--default-mobile.png",
+      "warnings": 0
+    }
+  ]
+}
