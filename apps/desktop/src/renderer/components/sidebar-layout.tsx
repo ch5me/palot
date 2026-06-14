@@ -148,55 +148,49 @@ export function SidebarLayout() {
 	return (
 		<>
 			<NarrowWindowCollapser />
-			<div
-				style={{
-					background: "var(--ws-bg, hsl(var(--background)))",
-					color: "var(--ws-text-primary, hsl(var(--foreground)))",
-					display: "grid",
-					gridTemplateRows: `${APP_BAR_HEIGHT}px 1fr`,
-					height: "100vh",
-					overflow: "hidden",
-					width: "100%",
-				}}
-			>
-			<div style={{ minWidth: 0, overflow: "hidden" }}>
-				<AppSidebarShellFrame
-					appBar={
-						<div className="relative">
-							<UpdateBanner />
-							<AppBar />
-						</div>
-					}
-					sidebar={sidebarContent}
-					sidebarFooter={slotFooter !== false ? slotFooter : undefined}
-					sidebarHeader={<div className="flex shrink-0 items-center gap-1" style={{ height: APP_BAR_HEIGHT, ...dragRegionStyle }} />}
-					sidebarStyle={{ width: 320, minWidth: 200, maxWidth: 480 }}
-					content={
-						<SplitPane
-							side="left"
-							open={leftPanelOpen}
-							onOpenChange={setLeftPanelOpen}
-							defaultPanelWidth={320}
-							minPanelWidth={200}
-							maxPanelWidth={480}
-							panel={<div className="hidden" />}
+			<AppSidebarShellFrame
+				appBar={
+					<div className="relative">
+						<UpdateBanner />
+						<AppBar />
+					</div>
+				}
+				sidebar={sidebarContent}
+				sidebarFooter={slotFooter !== false ? slotFooter : undefined}
+				sidebarHeader={
+					<div
+						className="flex shrink-0 items-center gap-1"
+						style={{ height: APP_BAR_HEIGHT, ...dragRegionStyle }}
+					/>
+				}
+				sidebarStyle={{ width: 320, minWidth: 200, maxWidth: 480 }}
+				content={
+					<SplitPane
+						side="left"
+						open={leftPanelOpen}
+						onOpenChange={setLeftPanelOpen}
+						defaultPanelWidth={320}
+						minPanelWidth={200}
+						maxPanelWidth={480}
+						panel={<div className="hidden" />}
+					>
+						<main
+							className="relative flex h-full min-h-0 min-w-0 flex-1 flex-col overflow-hidden"
+							style={{ background: "hsl(var(--background))" }}
 						>
-							<main
-								className="relative flex h-full min-h-0 min-w-0 flex-1 flex-col overflow-hidden"
-								style={{ background: "hsl(var(--background))" }}
+							<div
+								data-slot="content-area"
+								className="relative min-h-0 min-w-0 flex-1 overflow-hidden"
 							>
-								<div data-slot="content-area" className="relative min-h-0 min-w-0 flex-1 overflow-hidden">
-									<Outlet />
-								</div>
-							</main>
-						</SplitPane>
-					}
-					height="100%"
-					className="h-full"
-					contentClassName="bg-transparent"
-				/>
-			</div>
-			</div>
+								<Outlet />
+							</div>
+						</main>
+					</SplitPane>
+				}
+				height="100vh"
+				className="h-screen w-full"
+				contentClassName="bg-transparent"
+			/>
 			<AddProjectDialog
 				open={addProjectOpen}
 				onOpenChange={setAddProjectOpen}
