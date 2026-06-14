@@ -1,0 +1,8 @@
+First-run sequence proof
+
+- Sequence includes env select -> Firefly auth -> env auth write -> runtime root resolve -> bundled runtime boot -> health check -> renderer bind
+- Runtime host resolution derives from persisted env config plus env-scoped port
+- Sign-in, refresh, sign-out, and env-switch semantics are defined
+- Concrete owners named for onboarding overlay, root layout, token store, callback handler, startup overlay, and IPC seams
+
+Result: complete

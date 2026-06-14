@@ -1,0 +1,6 @@
+Sidecar updater scope audit
+
+- No separate runtime updater in v1
+- Recovery stays inside Palette app update and packaged repair flow
+
+Result: no sidecar updater scope creep

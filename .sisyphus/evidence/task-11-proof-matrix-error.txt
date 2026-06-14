@@ -1,0 +1,7 @@
+Release-scope enforcement proof
+
+- macOS arm64/x64 required by default
+- Linux must fail closed until proof exists
+- Windows stays disabled in v1
+
+Result: complete

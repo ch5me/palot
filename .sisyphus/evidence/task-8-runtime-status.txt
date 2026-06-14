@@ -1,0 +1,7 @@
+Runtime status and repair proof
+
+- Status fields defined for env, artifact version, runtime state, runtime root, health time, and failure data
+- Repair actions defined without fallback to host runtime or remote/manual mode
+- Explicit fail-loud recovery boundaries documented
+
+Result: complete

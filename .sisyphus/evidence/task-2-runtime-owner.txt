@@ -1,0 +1,19 @@
+Runtime owner contract audit
+
+- Desktop seam authority: `apps/desktop/src/main/opencode-manager.ts`
+- Browser-mode contract authority: `apps/server/src/services/server-manager.ts`
+- Operator policy: `AGENTS.md`
+
+Verified contract now names:
+
+- `external` vs `managed` lifecycle modes
+- `OPENCODE_MODE` and `OPENCODE_BIN` as the only ownership switches
+- packaged prohibition on host PATH fallback and shared `:4096`
+- explicit desktop insertion points for resolver, detection, readiness, and shutdown behavior
+
+Current implementation gap captured:
+
+- browser-mode authority already uses `/global/health` and 120s readiness
+- desktop manager still needs parity work; plan records this as required implementation, not accomplished state
+
+Result: contract and current mismatch both documented

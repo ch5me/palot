@@ -1,0 +1,7 @@
+Advanced mode boundary proof
+
+- Remote/manual mode preserved as explicit advanced path only
+- Automatic fallback prohibition documented
+- Return-to-local-runtime path documented
+
+Result: complete

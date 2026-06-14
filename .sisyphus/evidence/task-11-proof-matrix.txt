@@ -1,0 +1,7 @@
+Proof matrix completeness
+
+- Fresh install, sign-in, runtime boot, relaunch, env switch, update, recovery, rollback, macOS signing/quarantine, Linux gating, and Windows exclusion all listed
+- Packaged proof requirement called out as distinct from source-mode proof
+- Platform-specific packaged proof outputs are intentionally future implementation/release artifacts, not part of this planning-pass evidence set
+
+Result: complete

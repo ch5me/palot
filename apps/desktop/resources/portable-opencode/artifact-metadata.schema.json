@@ -1,0 +1,130 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://palot.ch5/docs/portable-opencode/artifact-metadata.schema.json",
+  "title": "Palette Portable OpenCode Artifact Metadata",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "artifactVersion",
+    "appVersionConstraint",
+    "channel",
+    "targetProfile",
+    "platform",
+    "arch",
+    "checksum",
+    "provenanceUrl",
+    "sourceArtifact",
+    "upstream",
+    "bundleRelativePath",
+    "thirdPartyNoticesPath",
+    "publishedAt",
+    "windowsPolicy"
+  ],
+  "properties": {
+    "artifactVersion": {
+      "type": "string",
+      "minLength": 1
+    },
+    "appVersionConstraint": {
+      "type": "string",
+      "pattern": "^(=|>=|~|\^).+"
+    },
+    "channel": {
+      "type": "string",
+      "enum": ["golden", "candidate"]
+    },
+    "targetProfile": {
+      "type": "string",
+      "enum": ["mac-mini"]
+    },
+    "platform": {
+      "type": "string",
+      "enum": ["darwin"]
+    },
+    "arch": {
+      "type": "string",
+      "enum": ["arm64", "x64"]
+    },
+    "checksum": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["algorithm", "value"],
+      "properties": {
+        "algorithm": {
+          "type": "string",
+          "enum": ["sha256"]
+        },
+        "value": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        }
+      }
+    },
+    "provenanceUrl": {
+      "type": "string",
+      "format": "uri"
+    },
+    "sourceArtifact": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["surface", "name", "version", "releaseId"],
+      "properties": {
+        "surface": {
+          "type": "string",
+          "minLength": 1
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1
+        },
+        "version": {
+          "type": "string",
+          "minLength": 1
+        },
+        "releaseId": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "upstream": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["repository", "channel", "manifestPath", "lockPath"],
+      "properties": {
+        "repository": {
+          "type": "string",
+          "minLength": 1
+        },
+        "channel": {
+          "type": "string",
+          "enum": ["golden", "candidate"]
+        },
+        "manifestPath": {
+          "type": "string",
+          "pattern": "^(portable-opencode\.manifest|release-manifest://.+)$"
+        },
+        "lockPath": {
+          "type": "string",
+          "pattern": "^(portable-opencode\.lock|release-lock://.+)$"
+        }
+      }
+    },
+    "bundleRelativePath": {
+      "type": "string",
+      "const": "portable-opencode/bundle"
+    },
+    "thirdPartyNoticesPath": {
+      "type": "string",
+      "const": "portable-opencode/THIRD-PARTY-NOTICES.txt"
+    },
+    "publishedAt": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "windowsPolicy": {
+      "type": "string",
+      "const": "excluded-until-windows-artifact-and-proof-exist"
+    }
+  }
+}

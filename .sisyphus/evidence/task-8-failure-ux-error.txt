@@ -1,0 +1,7 @@
+Immutable-seed repair audit
+
+- Repair actions target only env-scoped mutable runtime roots and auth state
+- Packaged `process.resourcesPath/portable-opencode/**` remains immutable
+- Hard-block release issues stay operator-visible; no automatic host/runtime fallback
+
+Result: immutable-seed rule preserved

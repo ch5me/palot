@@ -1,0 +1,7 @@
+Onboarding rewrite proof
+
+- Packaged onboarding states defined for artifact present/invalid, env selection, auth, runtime start, ready, and failure
+- Dev/source-only host install flow explicitly separated
+- Required renderer/main/compatibility/onboarding atom seams named
+
+Result: complete

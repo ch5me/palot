@@ -1,14 +1,7 @@
 # F1 - Plan compliance audit
 
-## Completed against plan
+Historical unrelated evidence.
 
-- callback hydration path audited and documented as absent
-- managed-vs-attached injection policy made explicit
-- shared Zod seam added and integrated
-- click/type/scroll implemented over CDP runtime path
-- docs aligned with runtime truth
-- attached/pre-existing path verified against policy
-
-## Incomplete by blocker
-
-- managed end-to-end live proof remains blocked by devmux/server startup failure in this worktree
+- This file belongs to an older pluginification effort, not `palette-bundled-portable-opencode`.
+- It must not be used as blocker or pass/fail evidence for the current bundled-runtime plan.
+- Current F1 authority lives in the active plan, `docs/palette-bundled-portable-opencode.md`, and the `task-*` evidence files for this session.

@@ -1,0 +1,7 @@
+Advanced-mode fallback audit
+
+- Remote/manual mode cannot auto-activate from packaged runtime failure
+- Return-to-local action required
+- Packaged first-run must hide discovered/manual path behind explicit advanced affordance
+
+Result: no accidental fallback path

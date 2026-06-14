@@ -1,0 +1,10 @@
+Packaging fail-closed audit
+
+- Missing metadata fails packaging
+- Unsupported channel/profile fails packaging
+- Checksum mismatch fails packaging
+- Missing provenance or notices fails packaging
+- Missing macOS executable bit fails packaging
+- Builder config still needs dedicated `portable-opencode` `extraResources` entry during implementation
+
+Result: fail-closed rules explicit, current repo seam identified

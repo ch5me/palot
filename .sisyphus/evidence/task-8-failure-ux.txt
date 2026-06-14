@@ -1,0 +1,7 @@
+Failure UX coverage audit
+
+- Covered failures: missing artifact, invalid metadata, checksum mismatch, startup timeout, auth rejected/expired, corrupted root, port conflict, env mismatch, incompatible updated artifact
+- Covered owners: startup overlay, onboarding packaged states, post-onboarding runtime status surfaces
+- Covered actions: retry, revalidate, clear cache, re-sign-in, reseed root, switch env, diagnostics export, explicit advanced mode
+
+Result: named failure taxonomy complete

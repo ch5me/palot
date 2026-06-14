@@ -1,0 +1,29 @@
+{
+  "artifactVersion": "0.1.0",
+  "appVersionConstraint": ">=0.0.0-dev",
+  "channel": "golden",
+  "targetProfile": "mac-mini",
+  "platform": "darwin",
+  "arch": "arm64",
+  "checksum": {
+    "algorithm": "sha256",
+    "value": "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
+  },
+  "provenanceUrl": "https://github.com/ch5me/portable-opencode/releases/download/golden-v0.1.0/portable-opencode-provenance.json",
+  "sourceArtifact": {
+    "surface": "native-darwin-arm64",
+    "name": "portable-opencode-mac-mini",
+    "version": "0.1.0",
+    "releaseId": "golden-v0.1.0"
+  },
+  "upstream": {
+    "repository": "ch5me/portable-opencode",
+    "channel": "golden",
+    "manifestPath": "portable-opencode.manifest",
+    "lockPath": "portable-opencode.lock"
+  },
+  "bundleRelativePath": "portable-opencode/bundle",
+  "thirdPartyNoticesPath": "portable-opencode/THIRD-PARTY-NOTICES.txt",
+  "publishedAt": "2026-06-14T00:00:00Z",
+  "windowsPolicy": "excluded-until-windows-artifact-and-proof-exist"
+}

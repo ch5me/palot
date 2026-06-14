@@ -1,0 +1,43 @@
+• Packages in scope: @ch5me/ch5-design-web, @ch5me/ch5-ui-web, @ch5me/dag-sparkline, @ch5me/effects, @ch5me/elf-configconv, @ch5me/elf-configconv-cli, @ch5me/elf-desktop, @ch5me/elf-server, @ch5me/elf-storybook, @ch5me/elf-ui, @ch5me/firefly-design, @ch5me/html-react-inspector, @ch5me/mcp-runtime-shared, @ch5me/motion, @ch5me/react-dev-surface, @ch5me/skia-canvas-init, @ch5me/storybook-rn-init, @ch5me/vitest-react-native-mocks, @ch5me/workspace
+• Running check-types in 19 packages
+• Remote caching disabled
+@ch5me/mcp-runtime-shared:check-types: cache hit, replaying logs 5e5095bb3a0e2040
+@ch5me/mcp-runtime-shared:build:types: cache hit, replaying logs 7a5fe286ca1d7fd2
+@ch5me/elf-configconv:check-types: cache hit, replaying logs f8bf7954ce33daa4
+@ch5me/elf-configconv:check-types: $ bunx tsgo --noEmit
+@ch5me/mcp-runtime-shared:build:types: $ tsc
+@ch5me/mcp-runtime-shared:check-types: $ bunx tsgo --noEmit
+@ch5me/elf-configconv-cli:check-types: cache hit, replaying logs 9c1a3fc059b33f4f
+@ch5me/elf-configconv-cli:check-types: $ bunx tsgo --noEmit
+@ch5me/elf-server:check-types: cache hit, replaying logs b11a766d9fb562f1
+@ch5me/elf-server:check-types: $ bunx tsgo --noEmit
+@ch5me/elf-ui:check-types: cache miss, executing 588e71e0ca3666db
+@ch5me/elf-ui:check-types: $ bunx tsgo --noEmit
+@ch5me/elf-server:build:types: cache hit, replaying logs 95c92d34712d539a
+@ch5me/elf-server:build:types: $ tsc
+@ch5me/elf-storybook:check-types: cache miss, executing d5c23d0152b6ee2b
+@ch5me/elf-desktop:check-types: cache miss, executing 96b1acfad6cd6fa6
+@ch5me/elf-desktop:check-types: $ bunx tsgo --noEmit
+@ch5me/elf-storybook:check-types: $ tsc --noEmit -p tsconfig.json
+@ch5me/elf-ui:check-types: src/components/ai-elements/message.tsx(281,4): error TS2322: Type '{ cjk: CjkPlugin; code: CodeHighlighterPlugin; math: MathPlugin; mermaid: DiagramPlugin; }' is not assignable to type 'PluginConfig'.
+@ch5me/elf-ui:check-types:   The types of 'code.highlight' are incompatible between these types.
+@ch5me/elf-ui:check-types:     Type '(options: HighlightOptions, callback?: ((result: TokensResult) => void) | undefined) => TokensResult | null' is not assignable to type '(options: HighlightOptions, callback?: ((result: HighlightResult) => void) | undefined) => HighlightResult | null'.
+@ch5me/elf-ui:check-types:       Types of parameters 'options' and 'options' are incompatible.
+@ch5me/elf-ui:check-types:         Type 'import("/Users/hassoncs/src/ch5/palot/node_modules/streamdown/dist/index").HighlightOptions' is not assignable to type 'import("/Users/hassoncs/src/ch5/palot/node_modules/@streamdown/code/dist/index").HighlightOptions'.
+@ch5me/elf-ui:check-types:           Types of property 'language' are incompatible.
+@ch5me/elf-ui:check-types:             Type 'import("/Users/hassoncs/src/ch5/palot/node_modules/shiki/dist/langs-bundle-full-WSWgUeqW").t' is not assignable to type 'import("/Users/hassoncs/src/ch5/palot/packages/ui/node_modules/shiki/dist/langs").BundledLanguage'.
+@ch5me/elf-ui:check-types:               Type '"bird"' is not assignable to type 'BundledLanguage'.
+@ch5me/elf-ui:check-types: src/components/ai-elements/reasoning.tsx(200,15): error TS2322: Type '{ cjk: CjkPlugin; code: CodeHighlighterPlugin; math: MathPlugin; mermaid: DiagramPlugin; }' is not assignable to type 'PluginConfig'.
+@ch5me/elf-ui:check-types:   The types of 'code.highlight' are incompatible between these types.
+@ch5me/elf-ui:check-types:     Type '(options: HighlightOptions, callback?: ((result: TokensResult) => void) | undefined) => TokensResult | null' is not assignable to type '(options: HighlightOptions, callback?: ((result: HighlightResult) => void) | undefined) => HighlightResult | null'.
+@ch5me/elf-ui:check-types:       Types of parameters 'options' and 'options' are incompatible.
+@ch5me/elf-ui:check-types:         Type 'import("/Users/hassoncs/src/ch5/palot/node_modules/streamdown/dist/index").HighlightOptions' is not assignable to type 'import("/Users/hassoncs/src/ch5/palot/node_modules/@streamdown/code/dist/index").HighlightOptions'.
+@ch5me/elf-ui:check-types:           Types of property 'language' are incompatible.
+@ch5me/elf-ui:check-types:             Type 'import("/Users/hassoncs/src/ch5/palot/node_modules/shiki/dist/langs-bundle-full-WSWgUeqW").t' is not assignable to type 'import("/Users/hassoncs/src/ch5/palot/packages/ui/node_modules/shiki/dist/langs").BundledLanguage'.
+@ch5me/elf-ui:check-types:               Type '"bird"' is not assignable to type 'BundledLanguage'.
+
+ Tasks:    6 successful, 9 total
+Cached:    6 cached, 9 total
+  Time:    17.356s 
+Failed:    @ch5me/elf-ui#check-types
+

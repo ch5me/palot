@@ -1,4 +1,12 @@
-# F1 — Plan Compliance Audit <!-- oc:id=sec_aa -->
+# F1 — Plan Compliance Audit
+
+Historical unrelated evidence.
+
+- This file belongs to an older pluginification plan with `T*` task numbering.
+- It is not pass/fail authority for `palette-bundled-portable-opencode`.
+- Keep for historical trace only.
+
+---
 
 ## Must Have checklist <!-- oc:id=sec_ab -->
 

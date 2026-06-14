@@ -218,7 +218,7 @@ cd apps/desktop && bun run dev
 For frontend development without Electron:
 
 ```bash
-bun run dev          # starts backend on 30206, web on 20883, OpenCode on 14096 via devmux
+bun run dev          # starts backend on 30206, web on 20883, shared OpenCode on 4096 via devmux external mode
 bun run svc:status   # verify both services are healthy
 ```
 

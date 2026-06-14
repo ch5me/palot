@@ -1,0 +1,7 @@
+Packaged fallback audit
+
+- Packaged mode forbids host PATH spawn
+- Packaged mode forbids shared `:4096` attachment
+- Desktop/browser-mode mismatch is documented as implementation gap to close, not hidden fallback
+
+Result: fail-closed behavior explicit

@@ -1,0 +1,9 @@
+Environment matrix audit
+
+- Env ids: `staging`, `production`
+- Separate config/data root layout defined per environment
+- Auth, provider creds, MCP OAuth caches, plugin state, shell/env projection cache, account/provider caches, analytics attribution, runtime data, logs, cache, lockfile, and port records classified env-scoped
+- Immutable bundled artifact classified shared-only
+- Shared app-level settings limited to non-sensitive UI preferences and non-execution settings
+
+Result: complete

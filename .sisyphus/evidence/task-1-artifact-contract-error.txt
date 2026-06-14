@@ -1,0 +1,7 @@
+Unsupported-platform and fallback proof
+
+- Windows policy: explicitly excluded in `docs/palette-bundled-portable-opencode.md`
+- Packaged runtime fallback policy: packaged mode forbids host `opencode` fallback, shared `:4096` attachment, and install-script execution
+- Linux policy: fail closed until proof lane exists
+
+Result: fail-closed language present, no packaged host fallback language retained

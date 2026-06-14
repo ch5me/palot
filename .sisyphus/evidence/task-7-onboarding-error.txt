@@ -1,0 +1,7 @@
+Packaged onboarding contradiction audit
+
+- Packaged flow removes host install/update CTA
+- Advanced remote/manual path must move behind explicit affordance
+- New owner seams named for onboarding overlay, root layout, startup overlay, auth handler, token store, and IPC diagnostics
+
+Result: packaged/dev contradiction points documented for implementation

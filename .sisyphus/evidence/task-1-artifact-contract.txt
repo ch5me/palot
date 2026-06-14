@@ -1,0 +1,24 @@
+Contract completeness audit
+
+- Doc: `docs/palette-bundled-portable-opencode.md`
+- Schema: `apps/desktop/resources/portable-opencode/artifact-metadata.schema.json`
+- Example: `apps/desktop/resources/portable-opencode/artifact-metadata.example.json`
+
+Verified fields present:
+
+- channel policy: `golden` default, `candidate` preview-only, `dev-snapshot` excluded
+- target profiles: `mac-mini` approved, `dell-lxc` gated, `container` and `partner-laptop` excluded
+- platform scope: macOS arm64/x64 supported, Linux gated, Windows excluded v1
+- required packaged resource layout under `process.resourcesPath/portable-opencode/`
+- checksum algorithm/value requirement
+- provenance URL requirement
+- source artifact identity requirement
+- bundled notices path requirement
+- published-artifact-only release rule
+
+Current implementation note:
+
+- `apps/desktop/electron-builder.yml` does not yet carry the dedicated `portable-opencode` resource entry. Planning doc names that seam explicitly for implementation.
+- Schema is intentionally macOS-only for v1 so Linux cannot validate as release-ready before proof lane exists.
+
+Result: planning contract complete, implementation seam explicitly recorded

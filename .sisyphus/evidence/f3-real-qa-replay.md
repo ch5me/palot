@@ -1,10 +1,7 @@
 # F3 - Real QA replay
 
-## Replay status
+Historical unrelated evidence.
 
-- Attached/pre-existing server policy proof replayed from code path + docs and remains consistent.
-- Managed runtime replay is still blocked by worktree devmux startup failure.
-
-## Blocker
-
-See `task-7-managed-e2e.md` for exact managed replay failure details.
+- This file belongs to an older runtime replay effort, not `palette-bundled-portable-opencode`.
+- It must not be treated as current-plan QA blocker evidence.
+- Current bundled-runtime planning session uses task-scoped evidence files and review-agent results instead.

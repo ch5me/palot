@@ -1,0 +1,14 @@
+Runtime contract audit
+
+- Current browser-mode authority already uses `OPENCODE_MODE`, `OPENCODE_BIN`, `/global/health`, and 120s readiness.
+- Current desktop manager still uses desktop-owned spawn logic, `~/.opencode/bin` PATH injection, `/session` readiness, and shorter timeout.
+- Planning doc now names exact seam to port desktop onto browser-mode contract and forbids packaged PATH/shared-host fallback.
+
+Current gaps captured for implementer:
+
+- desktop readiness endpoint parity
+- desktop timeout parity
+- desktop packaged resolver insertion
+- desktop portable process matching
+
+Result: contract gap documented, migration path explicit

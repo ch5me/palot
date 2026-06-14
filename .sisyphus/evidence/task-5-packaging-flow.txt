@@ -1,0 +1,8 @@
+Packaging flow audit
+
+- Repo metadata path defined
+- CI fetch, checksum validation, provenance validation, staging path, notices staging, and required `extraResources` change all defined
+- Current repo gap is separately recorded in `task-5-packaging-flow-error.txt`; this artifact means flow is specified, not already implemented
+- Fail-closed packaging rules documented
+
+Result: planning flow complete, implementation seam explicitly tracked

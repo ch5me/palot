@@ -1,0 +1,11 @@
+Update policy completeness audit
+
+- Palette app update is sole runtime transport
+- Bundled artifact version and runtime-root schema version recorded per environment
+- Migrate vs reseed decision explicit
+- Pre-migration backup/restore point required
+- Failed-launch cutoff required before auto-retry stops
+- Auth preservation policy explicit
+- Rollback/downgrade and bad-update operator recovery explicit
+
+Result: upgrade behavior no longer implicit

@@ -1,0 +1,9 @@
+Sensitive-state sharing audit
+
+- Auth tokens: env-scoped
+- Provider/model credentials: env-scoped
+- MCP OAuth caches: env-scoped
+- Plugin/runtime execution state: env-scoped
+- Shared UI preferences only: non-sensitive app-level settings
+
+Result: no sensitive runtime/auth surface marked shared

@@ -1,0 +1,7 @@
+Runtime refactor negative audit
+
+- Legacy host-path assumptions must be removed from packaged flow.
+- Packaged runtime must not keep `opencode`-only process matching.
+- Desktop/browser-mode readiness mismatch is a tracked implementation seam to close, not hidden behavior.
+
+Result: negative audit artifact present and required divergence documented

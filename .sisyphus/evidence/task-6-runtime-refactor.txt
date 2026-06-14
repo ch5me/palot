@@ -1,0 +1,9 @@
+Runtime refactor audit
+
+- Dedicated resolver module defined
+- `opencode-manager.ts` responsibilities and insertion points defined
+- Portable-aware process detection and env-scoped lockfile/port policy defined
+- Desktop alignment to existing browser-mode `OPENCODE_MODE` / `OPENCODE_BIN` contract defined
+- Current desktop/browser-mode readiness mismatch explicitly captured as implementation seam
+
+Result: refactor scope complete, migration gap visible
