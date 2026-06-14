@@ -1,8 +1,25 @@
-Task 4 shell toggle proof
-Protected host: session-chat
-Right toggle cycles: simulated via stable host reattach with same attachment id
-Bottom toggle cycles: simulated via stable host reattach with same attachment id
-Expected remount count: 1
-Observed remount count: 1
-Observed remountDetected: false
-Proof source: bun test apps/desktop/src/renderer/components/workspace-dock/agent-dock-adapters.test.ts
+Task 4 shell toggle evidence - 2026-06-14
+
+Scope:
+- Session detail workspace now renders through SplitDockWorkspaceShell.
+- Shell composes three zones: main, right, bottom.
+- Each zone owns one independent DockviewReact instance inside nested SplitPane geometry.
+
+Evidence:
+- Removed prior session dock key that included sidePanelOpen/review expanded state.
+- Right zone visibility now flows through SplitPane open={sidePanelOpen}.
+- Bottom zone visibility now flows through SplitPane open={bottomDockOpen}.
+- Stable hosts attach through reverse portal outlets and use hiddenMode="keep-attached".
+- Side-panel toggle updates visibility metadata and SplitPane geometry; it does not recreate host runtime or Dockview shell through React key churn.
+
+Verification:
+- LSP diagnostics clean for agent-detail.tsx, agent-dock-adapters.tsx, agent-dock-adapters.test.ts, split-dock-workspace-shell.tsx, split-dock-protection.ts, split-dock-protection.test.ts.
+- Targeted Bun tests pass for stable host runtime, agent dock adapter, and protected split dock policy: 9 pass, 0 fail.
+- Desktop typecheck passes with bun run --cwd apps/desktop check-types.
+
+Manual scenario:
+1. Open session detail.
+2. Toggle right surface with Cmd+Shift+D or close button.
+3. Expected: main chat remains in main zone, right SplitPane collapses/expands, chat host mount count stays single by stable-host runtime design.
+4. Toggle bottom zone through SplitPane collapse threshold.
+5. Expected: session widgets dock collapses/expands without changing main chat host.

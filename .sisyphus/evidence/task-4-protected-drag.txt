@@ -1,8 +1,25 @@
-Task 4 protected drag proof
-Protected panel: session-chat
-Source zone: main
-Source group panel count: 1
-Expected result: drag blocked
-Observed result: blocked
-Proof source: bun test apps/desktop/src/renderer/components/workspace-dock/agent-dock-adapters.test.ts
-Supplemental proof: bun test apps/desktop/src/renderer/components/workspace-dock/split-dock-protection.test.ts -> 2 pass, 0 fail
+Task 4 protected drag evidence - 2026-06-14
+
+Scope:
+- Protected-panel policy added at split dock adapter/shell layer.
+- The protected panel is session-chat in the main zone.
+
+Evidence:
+- split-dock-protection.ts blocks drag when panel is protected, requiredZone is main, and that panel is the only protected instance in its Dockview group/zone.
+- SplitDockWorkspaceShell calls the policy from Dockview onWillDragPanel before setting cross-zone drag payload data.
+- If the policy rejects drag, nativeEvent.preventDefault() runs and no cross-zone payload is published.
+- Regular panels such as session-surface and session-widgets keep normal Dockview drag behavior.
+
+Verification:
+- agent-dock-adapters.test.ts covers visibility reattach cycles keeping protected chat mount count at 1.
+- split-dock-protection.test.ts covers blocking the only protected main chat panel.
+- split-dock-protection.test.ts covers allowing regular dock panels to move.
+- Targeted Bun test run passes: 9 pass, 0 fail across stable-host runtime, agent dock adapter, and split-dock protection tests.
+- Desktop typecheck passes with bun run --cwd apps/desktop check-types.
+
+Manual scenario:
+1. Open session detail with one Chat panel in main zone.
+2. Try to drag the Chat tab out of main.
+3. Expected: drag start is prevented; no invalid/orphaned protected chat state is created.
+4. Try to drag Surface or Session panels.
+5. Expected: non-protected panels remain movable under Dockview rules.
