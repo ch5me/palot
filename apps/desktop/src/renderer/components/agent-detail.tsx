@@ -337,13 +337,7 @@ export function AgentDetail({
 	)
 	const docPanelOpen = activeDocTab !== null
 
-	const docPortalNodesRef = useRef<Partial<Record<SidePanelTabDef["id"], HtmlPortalNode>>>({})
-	for (const tab of docTabs) {
-		if (!docPortalNodesRef.current[tab.id]) {
-			docPortalNodesRef.current[tab.id] = createHtmlPortalNode()
-		}
-	}
-	const docPanelNode = activeDocTab ? docPortalNodesRef.current[activeDocTab.id] ?? null : null
+	const docPortalNode = useMemo(() => createHtmlPortalNode(), [])
 
 	useEffect(() => {
 		setAvailableSidePanelTabs(availableSurfaceTabs.map((tab) => tab.id))
@@ -472,15 +466,7 @@ export function AgentDetail({
 
 	return (
 		<>
-			{docTabs.map((tab) => {
-				const portalNode = docPortalNodesRef.current[tab.id]
-				if (!portalNode) return null
-				return (
-					<InPortal key={tab.id} node={portalNode}>
-						{tab.render()}
-					</InPortal>
-				)
-			})}
+			{activeDocTab ? <InPortal node={docPortalNode}>{activeDocTab.render()}</InPortal> : null}
 			<SplitPane
 				key={reviewSettings.expanded ? "side-panel-expanded" : "side-panel-default"}
 				side="right"
@@ -504,8 +490,8 @@ export function AgentDetail({
 					maxPanelWidth={MAX_DOC_PANEL_WIDTH}
 					handleAriaLabel="Resize document pane"
 					panel={
-						activeDocTab && docPanelNode ? (
-							<DocumentPaneShell agent={agent} tab={activeDocTab} portalNode={docPanelNode} />
+						activeDocTab ? (
+							<DocumentPaneShell agent={agent} tab={activeDocTab} portalNode={docPortalNode} />
 						) : (
 							<div className="flex h-full items-center justify-center bg-background px-6 text-center text-sm text-muted-foreground">
 								Open Studio or PDF Review to use document lane.
