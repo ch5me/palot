@@ -3,6 +3,8 @@ import type {
 	McpCatalogSearchInput,
 	McpConnectionRegisterInput,
 } from "@ch5me/mcp-runtime-shared"
+import { Hono } from "hono"
+import { getMcpAuthSessionStatus, startMcpAuthSession } from "../services/mcp-auth-sessions"
 import {
 	browseCatalog,
 	listMcpConnectionRecords,
@@ -11,8 +13,6 @@ import {
 	searchCatalog,
 	testMcpConnection,
 } from "../services/mcp-connections"
-import { Hono } from "hono"
-import { getMcpAuthSessionStatus, startMcpAuthSession } from "../services/mcp-auth-sessions"
 
 const app = new Hono()
 	.post("/catalog/browse", async (c) => {
