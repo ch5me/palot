@@ -27,6 +27,11 @@ function getLaneEndpoints(laneId: string) {
 	return {
 		streamBackendUrl: `http://127.0.0.1:${env.STREAM_PORT}`,
 		cdpEndpoint: `http://127.0.0.1:${env.CDP_PORT}`,
+		cdpContainerEndpoint: env.CDP_CONTAINER_ENDPOINT || `http://127.0.0.1:${env.CDP_PORT}`,
+		cdpInternalEndpoint:
+			(env.CDP_CONTAINER_ENDPOINT || `http://127.0.0.1:${env.CDP_PORT}`) === `http://127.0.0.1:${env.CDP_PORT}`
+				? "http://127.0.0.1:9222"
+				: (env.CDP_CONTAINER_ENDPOINT || `http://127.0.0.1:${env.CDP_PORT}`).replace(/:\d+$/, ':9222'),
 		auth: readBrowserLaneAuthFromEnv(env),
 	}
 }
@@ -89,19 +94,49 @@ if (args.mode === "remote") {
 }
 
 try {
-	const { cdpEndpoint, auth } = getLaneEndpoints(laneId)
+	const { cdpEndpoint, cdpContainerEndpoint, cdpInternalEndpoint, auth } = getLaneEndpoints(laneId)
 	const authHeader = auth ? encodeBrowserLaneAuth(auth) : undefined
-	const response = await fetch(`${cdpEndpoint}/json/version`, {
-		signal: AbortSignal.timeout(5000),
-		headers: authHeader ? { authorization: authHeader } : undefined,
-	})
-	const body = await response.text()
+	const [hostResponse, containerResponse, internalResponse] = await Promise.all([
+		fetch(`${cdpEndpoint}/json/version`, {
+			signal: AbortSignal.timeout(5000),
+			headers: authHeader ? { authorization: authHeader } : undefined,
+		}),
+		fetch(`${cdpContainerEndpoint}/json/version`, {
+			signal: AbortSignal.timeout(5000),
+			headers: authHeader ? { authorization: authHeader } : undefined,
+		}),
+		fetch(`${cdpInternalEndpoint}/json/version`, {
+			signal: AbortSignal.timeout(5000),
+			headers: authHeader ? { authorization: authHeader } : undefined,
+		}),
+	])
+	const [hostBody, containerBody, internalBody] = await Promise.all([
+		hostResponse.text(),
+		containerResponse.text(),
+		internalResponse.text(),
+	])
 	writeFileSync(
 		output,
-		JSON.stringify({ mode: "local", laneId, url: `${cdpEndpoint}/json/version`, status: response.status, body }, null, 2),
+		JSON.stringify(
+			{
+				mode: "local",
+				laneId,
+				hostUrl: `${cdpEndpoint}/json/version`,
+				hostStatus: hostResponse.status,
+				hostBody,
+				containerUrl: `${cdpContainerEndpoint}/json/version`,
+				containerStatus: containerResponse.status,
+				containerBody,
+				internalUrl: `${cdpInternalEndpoint}/json/version`,
+				internalStatus: internalResponse.status,
+				internalBody,
+			},
+			null,
+			2,
+		),
 		"utf-8",
 	)
-	process.exit(response.ok ? 0 : 1)
+	process.exit(hostResponse.ok && containerResponse.ok && internalResponse.ok ? 0 : 1)
 } catch (error) {
 	writeFileSync(
 		output,

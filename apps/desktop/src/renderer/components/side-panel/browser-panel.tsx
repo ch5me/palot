@@ -722,7 +722,7 @@ export function BrowserPanel({ agent: _agent, className }: BrowserPanelProps) {
 										onChange={(event) =>
 											setCreateForm((form) => ({ ...form, cdpEndpoint: event.target.value }))
 										}
-										placeholder="http://host:9222"
+										placeholder="http://host:9223"
 										className="h-8"
 									/>
 								</label>

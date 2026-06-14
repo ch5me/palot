@@ -204,6 +204,7 @@ export function ensureBrowserLaneRuntimeFiles(config: BrowserLaneRuntimeConfig):
 			`STREAM_AUTH_PASSWORD=${config.auth.password}`,
 			`START_URL=${config.startUrl}`,
 			`CDP_CONTAINER_ENDPOINT=${config.cdpContainerEndpoint}`,
+			`CDP_INTERNAL_ENDPOINT=http://127.0.0.1:9222`,
 		].join("\n") + "\n",
 		"utf-8",
 	)

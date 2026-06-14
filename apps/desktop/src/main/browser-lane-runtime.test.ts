@@ -124,7 +124,7 @@ test("renders persistent profile volume in compose", () => {
 	)
 	assert.match(compose, /\/tmp\/browser-profile-default:\/config/)
 	assert.match(compose, /"3901:3000"/)
-	assert.match(compose, /"9229:9222"/)
+	assert.match(compose, /"9229:9223"/)
 	assert.match(compose, /\/custom-cont-init\.d\/elf-cdp-supervisor\.sh/)
 	assert.match(compose, /\/tmp\/browser-runtime-default:\/custom-cont-init\.d/)
 	assert.match(compose, /NO_DECOR=1/)

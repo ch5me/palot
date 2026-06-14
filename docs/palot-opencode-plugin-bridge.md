@@ -404,14 +404,14 @@ magic-browser session start <workflow-id> \
 ```
 
 Contract facts (source: `magic-browser/src/adapters/remote-cdp.ts`, `src/session/providers/direct-remote-cdp.ts`):
-- `--remote-cdp-url` must be the browser-level CDP WEBSOCKET URL, not the HTTP endpoint. Palot must fetch the lane's `http://127.0.0.1:<cdp-port>/json/version` and pass `webSocketDebuggerUrl`.
+- `--remote-cdp-url` must be the browser-level CDP WEBSOCKET URL, not the HTTP endpoint. Palot must fetch the lane's host-published relay endpoint `http://127.0.0.1:<cdp-port>/json/version` and pass `webSocketDebuggerUrl`; inside the container Chromium still owns loopback `127.0.0.1:9222` and the relay publishes `9223` outward.
 - env fallbacks: `REMOTE_CDP_WEBSOCKET_URL`, `MAGIC_BROWSER_REMOTE_SESSION_ID`, `REMOTE_CDP_LIVE_URL`.
 - magic-browser generates its own UUID session id (returned in JSON); the binding store should persist THAT as `magicBrowserSessionId` instead of the fabricated `mb_*` hash.
 - `session stop` is detach-only (`stopStrategy: "detach-only"`): it never kills the lane container.
 - provider descriptor: `providerKind: "remote-managed"`, `transportKind: "remote-cdp"`, `profile.ownership: "external-attached"`, `profile.lockRequired: false`.
 - lifecycle/tab commands: `session tabs <id>`, `session open <id> <url>`, `session open-live <id>`, `session status <id>`, `session list`.
 - session records persist under magic-browser's state root (`.state/sessions/<uuid>.json`); they hold the CDP URL immutably — a lane restart (new port) makes the magic-browser session stale and requires re-attach.
-- magic-browser assumes an UNAUTHENTICATED CDP websocket. Lane CDP is exposed via socat relay without auth, so this matches today.
+- magic-browser assumes an UNAUTHENTICATED CDP websocket. Lane CDP is exposed via the managed relay without auth, so this matches today.
 
 Gap list for wiring it up:
 1. `ensureMagicBrowserSessionForBinding` should shell out (or import the library entry) to `session start --adapter remote-cdp ...` and persist the returned UUID.

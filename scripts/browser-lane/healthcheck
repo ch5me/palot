@@ -30,6 +30,18 @@ async function check(url: string, pathSuffix = "", authHeader?: string) {
 	}
 }
 
+function parseEnv(envFile: string) {
+	return Object.fromEntries(
+		readFileSync(envFile, "utf-8")
+			.split("\n")
+			.filter(Boolean)
+			.map((line) => {
+				const [key, ...rest] = line.split("=")
+				return [key, rest.join("=")]
+			}),
+	)
+}
+
 const args = parseBrowserLaneArgs(process.argv.slice(2))
 const laneId = args.lane
 
@@ -90,17 +102,16 @@ if (!existsSync(envFile)) {
 	console.error(`Missing runtime env for lane ${laneId}`)
 	process.exit(1)
 }
-const env = Object.fromEntries(readFileSync(envFile, "utf-8").split("\n").filter(Boolean).map((line) => {
-	const [key, ...rest] = line.split("=")
-	return [key, rest.join("=")]
-}))
+const env = parseEnv(envFile)
 const streamBackendUrl = `http://127.0.0.1:${env.STREAM_PORT}`
-const cdpEndpoint = `http://127.0.0.1:${env.CDP_PORT}`
+const hostCdpEndpoint = `http://127.0.0.1:${env.CDP_PORT}`
+const relayContainerEndpoint = env.CDP_CONTAINER_ENDPOINT || `http://127.0.0.1:${env.CDP_PORT}`
+const internalCdpEndpoint = env.CDP_INTERNAL_ENDPOINT || "http://127.0.0.1:9222"
 const localAuth = readBrowserLaneAuthFromEnv(env)
 const authHeader = localAuth ? encodeBrowserLaneAuth(localAuth) : undefined
-const [stream, cdp] = await Promise.all([
+const [stream, hostCdp] = await Promise.all([
 	check(streamBackendUrl, "", authHeader),
-	check(cdpEndpoint, "/json/version", authHeader),
+	check(hostCdpEndpoint, "/json/version", authHeader),
 ])
 console.log(JSON.stringify({
 	action: "healthcheck",
@@ -108,8 +119,18 @@ console.log(JSON.stringify({
 	laneId,
 	streamBackendUrl,
 	streamPath: `/browser/${laneId}/`,
-	cdpEndpoint,
+	cdpEndpoint: hostCdpEndpoint,
+	cdp: hostCdp,
+	cdpRelay: {
+		url: relayContainerEndpoint,
+		ok: relayContainerEndpoint === hostCdpEndpoint ? hostCdp.ok : null,
+		status: relayContainerEndpoint === hostCdpEndpoint ? hostCdp.status : null,
+		note: relayContainerEndpoint === hostCdpEndpoint ? "Host-published port terminates at the relay listener" : "Relay endpoint is container-only from this host context",
+	},
+	cdpInternal: {
+		url: internalCdpEndpoint,
+		note: "Chromium binds this loopback endpoint inside the container namespace only; verify with docker exec or cdp-smoke.",
+	},
 	stream,
-	cdp,
 }, null, 2))
-process.exit(stream.ok || cdp.ok ? 0 : 1)
+process.exit(stream.ok || hostCdp.ok ? 0 : 1)
