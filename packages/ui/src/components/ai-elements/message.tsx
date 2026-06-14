@@ -10,13 +10,13 @@ import {
 } from "@ch5me/elf-ui/components/tooltip"
 import { cn } from "@ch5me/elf-ui/lib/utils"
 import { cjk } from "@streamdown/cjk"
-import { code } from "@streamdown/code"
 import { math } from "@streamdown/math"
 import { mermaid } from "@streamdown/mermaid"
 import type { UIMessage } from "ai"
 import { ChevronLeftIcon, ChevronRightIcon } from "lucide-react"
 import type { ComponentProps, HTMLAttributes, ReactElement } from "react"
 import { createContext, memo, useCallback, useContext, useEffect, useMemo, useState } from "react"
+import type { PluginConfig } from "streamdown"
 import { Streamdown } from "streamdown"
 
 export type MessageProps = HTMLAttributes<HTMLDivElement> & {
@@ -272,7 +272,7 @@ export const MessageBranchPage = ({ className, ...props }: MessageBranchPageProp
 
 export type MessageResponseProps = ComponentProps<typeof Streamdown>
 
-const streamdownPlugins = { cjk, code, math, mermaid }
+const streamdownPlugins = { cjk, math, mermaid } satisfies PluginConfig
 
 export const MessageResponse = memo(
 	({ className, ...props }: MessageResponseProps) => (
