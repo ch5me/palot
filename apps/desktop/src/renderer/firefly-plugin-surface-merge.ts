@@ -12,7 +12,7 @@
  * (`firefly-plugin-surfaces.tsx`) builds renderable tabs on top.
  */
 
-import type { SidePanelTabId } from "./atoms/ui"
+import type { SidePanelTabId } from "./atoms/workspace"
 import type { ProjectedSidePanel } from "../shared/firefly-plugin/renderer-projection"
 
 /**

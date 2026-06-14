@@ -1,0 +1,11 @@
+Modified files:
+- apps/desktop/src/shared/workspace-contract.ts
+- apps/desktop/src/renderer/atoms/workspace.ts
+- apps/desktop/src/renderer/atoms/ui.ts
+- apps/desktop/src/renderer/lib/types.ts
+
+Contract proof:
+- Canonical identities split into descriptorId, logicalInstanceId, stableHostId, workspaceInstanceId, and attachmentId.
+- Descriptor exposes hostPolicy, multiplicityPolicy, and focusAuthority ownership semantics.
+- Legacy side-panel state now derives a WorkspaceInstance with StableHostInstance and DockSlotAttachment records.
+- FireflySurfaceTarget widened to allow future workspace-panel routing without breaking current side-panel targets.

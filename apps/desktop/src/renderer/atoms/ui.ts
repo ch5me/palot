@@ -1,11 +1,20 @@
 import { atom } from "jotai"
 import { atomFamily, atomWithStorage } from "jotai/utils"
+import { fireflySurfacePreferencesAtom, type NavSidebarTabId } from "./preferences"
+import type { FileDiff, FireflySurfaceTarget } from "../lib/types"
 import {
-	fireflySurfacePreferencesAtom,
-	type LastSidePanelTabId,
-	type NavSidebarTabId,
-} from "./preferences"
-import type { FileDiff } from "../lib/types"
+	closeWorkspacePanelAtom,
+	focusWorkspacePanelAtom,
+	legacyDescriptorIdFromSidePanelTabId,
+	LEGACY_SIDE_PANEL_WORKSPACE_INSTANCE_ID,
+	openWorkspacePanelAtom,
+	sidePanelActiveTabCompatAtom,
+	sidePanelFocusTokenCompatAtom,
+	sidePanelOpenCompatAtom,
+	type SidePanelTabId,
+	setAvailableSidePanelTabsCompatAtom,
+	setSidePanelActiveTabCompatAtom,
+} from "./workspace"
 
 export const commandPaletteOpenAtom = atom(false)
 
@@ -26,8 +35,6 @@ export const sidebarSectionOpenAtom = atomWithStorage<Record<SidebarSectionId, b
 
 export const viewedSessionIdAtom = atom<string | null>(null)
 
-export type SidePanelTabId = LastSidePanelTabId
-
 export const NAV_SIDEBAR_TABS = ["built-in", "built-in-duplicate"] as const satisfies readonly NavSidebarTabId[]
 
 export interface SidePanelRoute {
@@ -39,16 +46,11 @@ export interface PaneRoutingState {
 	sidePanel: SidePanelRoute | null
 }
 
-export const sidePanelOpenAtom = atomWithStorage<boolean>("elf:side-panel-open", false)
+export const sidePanelOpenAtom = sidePanelOpenCompatAtom
 
-export const sidePanelActiveTabAtom = atom<SidePanelTabId>((get) => get(fireflySurfacePreferencesAtom).lastSidePanelTab)
+export const sidePanelActiveTabAtom = sidePanelActiveTabCompatAtom
 
-export const setSidePanelActiveTabAtom = atom(null, (get, set, tab: SidePanelTabId) => {
-	set(fireflySurfacePreferencesAtom, {
-		...get(fireflySurfacePreferencesAtom),
-		lastSidePanelTab: tab,
-	})
-})
+export const setSidePanelActiveTabAtom = setSidePanelActiveTabCompatAtom
 
 export const navSidebarActiveTabAtom = atom<NavSidebarTabId>(
 	(get) => get(fireflySurfacePreferencesAtom).lastNavSidebarTab,
@@ -74,41 +76,59 @@ export const setAvailableNavSidebarTabsAtom = atom(null, (get, set, tabs: NavSid
 	set(setNavSidebarActiveTabAtom, tabs[0])
 })
 
-export const sidePanelFocusTokenAtom = atom(0)
+export const sidePanelFocusTokenAtom = sidePanelFocusTokenCompatAtom
 
 export const paneRoutingStateAtom = atom<PaneRoutingState>((get) => ({
 	sidePanel: get(sidePanelOpenAtom)
 		? {
 			tab: get(sidePanelActiveTabAtom),
-			focusToken: get(sidePanelFocusTokenAtom)
+			focusToken: get(sidePanelFocusTokenAtom),
 		}
 		: null,
 }))
 
-export const openSidePanelTabAtom = atom(null, (get, set, tab: SidePanelTabId) => {
-	set(sidePanelOpenAtom, true)
-	set(setSidePanelActiveTabAtom, tab)
-	set(sidePanelFocusTokenAtom, get(sidePanelFocusTokenAtom) + 1)
+export const openSidePanelTabAtom = atom(null, (_get, set, tab: SidePanelTabId) => {
+	set(openWorkspacePanelAtom, {
+		type: "open-panel-descriptor",
+		workspaceInstanceId: LEGACY_SIDE_PANEL_WORKSPACE_INSTANCE_ID,
+		descriptorId: legacyDescriptorIdFromSidePanelTabId(tab),
+		requestFocus: true,
+		requestedBy: "compatibility-adapter",
+	})
 })
 
-export const closeSidePanelAtom = atom(null, (_get, set) => {
-	set(sidePanelOpenAtom, false)
-})
-
-export const setAvailableSidePanelTabsAtom = atom(null, (get, set, tabs: SidePanelTabId[]) => {
-	if (tabs.length === 0) {
-		set(sidePanelOpenAtom, false)
+export const openFireflySurfaceTargetAtom = atom(null, (_get, set, target: FireflySurfaceTarget) => {
+	if (target.kind === "side-panel") {
+		set(openSidePanelTabAtom, target.tab)
 		return
 	}
 
-	const activeTab = get(sidePanelActiveTabAtom)
-	if (tabs.includes(activeTab)) {
+	set(openWorkspacePanelAtom, {
+		type: "open-panel-descriptor",
+		workspaceInstanceId: LEGACY_SIDE_PANEL_WORKSPACE_INSTANCE_ID,
+		descriptorId: target.descriptorId,
+		zoneId: target.zoneId,
+		requestFocus: true,
+		requestedBy: target.focusAuthorityOwner,
+	})
+})
+
+export const focusFireflySurfaceTargetAtom = atom(null, (_get, set, target: FireflySurfaceTarget) => {
+	if (target.kind === "side-panel") {
+		set(openSidePanelTabAtom, target.tab)
 		return
 	}
 
-	set(setSidePanelActiveTabAtom, tabs[0])
-	set(sidePanelFocusTokenAtom, get(sidePanelFocusTokenAtom) + 1)
+	set(focusWorkspacePanelAtom, {
+		workspaceInstanceId: LEGACY_SIDE_PANEL_WORKSPACE_INSTANCE_ID,
+		logicalInstanceId: `panel:${target.descriptorId}`,
+		requestedBy: target.focusAuthorityOwner,
+	})
 })
+
+export const closeSidePanelAtom = closeWorkspacePanelAtom
+
+export const setAvailableSidePanelTabsAtom = setAvailableSidePanelTabsCompatAtom
 
 export const reviewPanelOpenAtom = sidePanelOpenAtom
 

@@ -3,7 +3,8 @@ import type {
 	PermissionRequest as SdkPermissionRequest,
 	QuestionRequest as SdkQuestionRequest,
 } from "@opencode-ai/sdk/v2/client"
-import type { SidePanelTabId } from "../atoms/ui"
+import type { FireflySurfaceId } from "../../shared/firefly-surface-ids"
+import type { DockZoneId, FocusAuthorityOwner, WorkspacePanelDescriptorId } from "../../shared/workspace-contract"
 
 // Re-export all SDK types from v2
 export type {
@@ -184,7 +185,12 @@ export interface GenUiArtifactDescriptor {
 
 export type FireflySurfaceTarget = {
 	kind: "side-panel"
-	tab: SidePanelTabId
+	tab: FireflySurfaceId
+} | {
+	kind: "workspace-panel"
+	descriptorId: WorkspacePanelDescriptorId
+	zoneId: DockZoneId
+	focusAuthorityOwner: FocusAuthorityOwner
 }
 
 export type AgentVisibilityReason =

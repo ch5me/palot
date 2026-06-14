@@ -1,0 +1,10 @@
+Compatibility audit:
+- apps/desktop/src/renderer/atoms/ui.ts keeps openSidePanelTabAtom, sidePanelActiveTabAtom, sidePanelOpenAtom, and paneRoutingStateAtom as shims over workspace atoms.
+- apps/desktop/src/renderer/components/agent-detail.tsx still reads sidePanelOpenAtom and sidePanelActiveTabAtom unchanged.
+- apps/desktop/src/renderer/components/side-panel/session-side-panel.tsx still reads the same atoms; only SidePanelTabId import moved to workspace seam.
+- apps/desktop/src/renderer/components/command-palette.tsx now routes through openFireflySurfaceTargetAtom so both legacy side-panel and future workspace-panel targets compile.
+- apps/desktop/src/renderer/firefly-plugin-surface-merge.ts now sources SidePanelTabId from the workspace seam to preserve existing callers during cutover.
+- shared palot side-panel snapshot schema remains unchanged and readable.
+
+Verification:
+- bun run check-types

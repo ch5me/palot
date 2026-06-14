@@ -92,7 +92,7 @@ import { isMockModeAtom, toggleMockModeAtom } from "../atoms/mock-mode"
 import { opaqueWindowsAtom } from "../atoms/preferences"
 import { isReactScanAtom, toggleReactScanAtom } from "../atoms/react-scan"
 import { isDevSurfaceAtom, toggleDevSurfaceAtom } from "../atoms/dev-surface"
-import { navSidebarActiveTabAtom, openSidePanelTabAtom, sidePanelOpenAtom } from "../atoms/ui"
+import { navSidebarActiveTabAtom, openFireflySurfaceTargetAtom, sidePanelOpenAtom } from "../atoms/ui"
 import { useSessionRevert } from "../hooks/use-commands"
 import {
 	useAvailableThemes,
@@ -175,7 +175,7 @@ export function CommandPalette({ open, onOpenChange, agents, onForkSession }: Co
 	const togglePdfReviewSurface = useSetAtom(togglePdfReviewSurfaceAtom)
 	const toggleTerminalSurface = useSetAtom(toggleTerminalSurfaceAtom)
 	const navSidebarActiveTab = useAtomValue(navSidebarActiveTabAtom)
-	const openSidePanelTab = useSetAtom(openSidePanelTabAtom)
+	const openFireflySurfaceTarget = useSetAtom(openFireflySurfaceTargetAtom)
 	const [sidePanelOpen, setSidePanelOpen] = useAtom(sidePanelOpenAtom)
 	const [reloading, setReloading] = useState(false)
 
@@ -686,7 +686,7 @@ export function CommandPalette({ open, onOpenChange, agents, onForkSession }: Co
 								<CommandItem
 									key={surface.id}
 									onSelect={() => {
-										openSidePanelTab(surface.target.tab)
+										openFireflySurfaceTarget(surface.target)
 										onOpenChange(false)
 									}}
 									disabled={!surface.availability.available}

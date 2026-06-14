@@ -7,8 +7,8 @@ import {
 	sidePanelActiveTabAtom,
 	sidePanelOpenAtom,
 	setSidePanelActiveTabAtom,
-	type SidePanelTabId,
 } from "../../atoms/ui"
+import type { SidePanelTabId } from "../../atoms/workspace"
 import type { Agent } from "../../lib/types"
 import type { SidePanelTabDef } from "./side-panel-tabs"
 
