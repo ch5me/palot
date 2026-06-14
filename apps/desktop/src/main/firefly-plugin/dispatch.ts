@@ -344,19 +344,19 @@ export interface SidePanelStateSnapshot {
 }
 
 export interface NotesHostDeps {
-	openSidePanel: (tab: "notes") => Promise<void>
+	openNotesPanel: () => Promise<void>
 	getSidePanelState: () => SidePanelStateSnapshot
 	setPluginEnabled: (pluginId: string, enabled: boolean) => { enabled: boolean }
 }
 
-async function defaultOpenSidePanel(tab: "notes"): Promise<void> {
-	const { broadcastOpenSidePanel } = await import("../palot-browser-ipc")
-	await broadcastOpenSidePanel({
-		logicalPanelId: tab,
+async function defaultOpenNotesPanel(): Promise<void> {
+	const { openLogicalPanelRoute } = await import("../palot-browser-ipc")
+	await openLogicalPanelRoute({
+		logicalPanelId: "notes",
 		preferredZoneId: "side-panel",
 		action: "reveal-preferred-zone",
 		focusAuthorityOwner: "compatibility-adapter",
-		legacySidePanelTabId: tab,
+		legacySidePanelTabId: "notes",
 		allowCreate: true,
 		requestedBy: "notes-host-handler",
 	})
@@ -385,7 +385,7 @@ function defaultGetSidePanelState(): SidePanelStateSnapshot {
 const NOTES_PLUGIN_ID = "firefly.built-in.surface.notes"
 
 export function registerNotesHostHandlers(deps?: Partial<NotesHostDeps>): void {
-	const openSidePanel = deps?.openSidePanel ?? defaultOpenSidePanel
+	const openNotesPanel = deps?.openNotesPanel ?? defaultOpenNotesPanel
 	const getSidePanelState = deps?.getSidePanelState ?? defaultGetSidePanelState
 	const setEnabled =
 		deps?.setPluginEnabled ??
@@ -396,7 +396,7 @@ export function registerNotesHostHandlers(deps?: Partial<NotesHostDeps>): void {
 		})
 
 	registerHostTool(NOTES_PLUGIN_ID, "plugin.firefly.built-in.surface.notes.open", async () => {
-		await openSidePanel("notes")
+		await openNotesPanel()
 		return ok({ opened: true, tab: "notes", source: "v2-plugin-tool-dispatch" })
 	})
 
@@ -411,7 +411,7 @@ export function registerNotesHostHandlers(deps?: Partial<NotesHostDeps>): void {
 	})
 
 	registerHostCommand(NOTES_PLUGIN_ID, "open-notes", async () => {
-		await openSidePanel("notes")
+		await openNotesPanel()
 		return ok({ opened: true, tab: "notes" })
 	})
 

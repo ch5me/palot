@@ -126,15 +126,15 @@ import {
 	stopBrowserLane,
 } from "./browser-lane-manager"
 import {
-	broadcastOpenSidePanel,
 	getBrowserStateSnapshot,
 	getSessionBinding,
 	getUiStateSnapshot,
+	openLegacySidePanelTab,
+	openLogicalPanelRoute,
 	publishBrowserAction,
 	registerPalotBrowserWindows,
 	releaseSessionBindingBySessionId,
 	setSessionBinding,
-	setUiStateSnapshot,
 } from "./palot-browser-ipc"
 import { openLoomSession as resolveLoomSession } from "./palot-resolver"
 import { sessionOpenCommand, stateCommand } from "./palot-runtime/commands"
@@ -455,48 +455,22 @@ export function registerIpcHandlers(): void {
 		"palot:open-logical-panel",
 		withLogging("palot:open-logical-panel", async (_, route: import("../preload/api").PalotLogicalPanelRoute) => {
 			const parsedRoute = palotOpenLogicalPanelArgsSchema.parse(route)
-			const snapshot = setUiStateSnapshot({
-				sidePanel: parsedRoute.legacySidePanelTabId
-					? {
-						open: true,
-						activeTab: parsedRoute.legacySidePanelTabId,
-					  }
-					: undefined,
-				logicalPanelRoute: {
-					logicalPanelId: parsedRoute.logicalPanelId,
-					preferredZoneId: parsedRoute.preferredZoneId,
-					action: parsedRoute.action,
-					focusAuthorityOwner: parsedRoute.focusAuthorityOwner ?? "workspace",
-					legacySidePanelTabId: parsedRoute.legacySidePanelTabId,
-					allowCreate: parsedRoute.allowCreate ?? parsedRoute.action === "create-if-allowed",
-					requestedBy: parsedRoute.requestedBy ?? "ipc-open-logical-panel",
-				},
+			return openLogicalPanelRoute({
+				logicalPanelId: parsedRoute.logicalPanelId,
+				preferredZoneId: parsedRoute.preferredZoneId,
+				action: parsedRoute.action,
+				focusAuthorityOwner: parsedRoute.focusAuthorityOwner ?? "workspace",
+				legacySidePanelTabId: parsedRoute.legacySidePanelTabId,
+				allowCreate: parsedRoute.allowCreate ?? parsedRoute.action === "create-if-allowed",
+				requestedBy: parsedRoute.requestedBy ?? "ipc-open-logical-panel",
 			})
-			broadcastOpenSidePanel(snapshot.logicalPanelRoute!)
-			return snapshot
 		}),
 	)
 	ipcMain.handle(
 		"palot:open-side-panel",
 		withLogging("palot:open-side-panel", async (_, tab: import("../preload/api").SidePanelTabId) => {
 			const parsedTab = palotOpenSidePanelInputSchema.parse(tab)
-			const snapshot = setUiStateSnapshot({
-				sidePanel: {
-					open: true,
-					activeTab: parsedTab,
-				},
-				logicalPanelRoute: {
-					logicalPanelId: parsedTab,
-					preferredZoneId: "side-panel",
-					action: "reveal-preferred-zone",
-					focusAuthorityOwner: "compatibility-adapter",
-					legacySidePanelTabId: parsedTab,
-					allowCreate: true,
-					requestedBy: "ipc-open-side-panel-legacy",
-				},
-			})
-			broadcastOpenSidePanel(snapshot.logicalPanelRoute!)
-			return snapshot
+			return openLegacySidePanelTab(parsedTab)
 		}),
 	)
 	ipcMain.handle(
