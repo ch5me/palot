@@ -1,15 +1,15 @@
 # Missing Storybook Coverage
 
-Generated from `ch5 coverage elf --json` on 2026-06-14T01:02:23.270Z.
+Generated from `ch5 coverage elf --json` on 2026-06-14T01:09:46.010Z.
 
 ## Current Coverage
 
 - Visual UI components: 134
-- Covered by Storybook/route coverage: 90
-- Missing Storybook representation: 44
-- Actionable missing local stories after documented exceptions: 33
-- Story files: 91
-- Story screenshot proof missing in CH5 formal coverage: 180 viewport targets
+- Covered by Storybook/route coverage: 92
+- Missing Storybook representation: 42
+- Actionable missing local stories after documented exceptions: 31
+- Story files: 93
+- Story screenshot proof missing in CH5 formal coverage: 184 viewport targets
 - Documented exceptions: 11
 - Batch 01 local render proof: `.sisyphus/evidence/storybook-coverage/batch-01/render-proof.json`
 - Batch 02 local render proof: `.sisyphus/evidence/storybook-coverage/batch-02/render-proof.json`
@@ -32,6 +32,8 @@ Generated from `ch5 coverage elf --json` on 2026-06-14T01:02:23.270Z.
 - Batch 10 CH5 coverage proof: `.sisyphus/evidence/storybook-coverage/batch-10/ch5-coverage.json`
 - Batch 11 local render proof: `.sisyphus/evidence/storybook-coverage/batch-11/render-proof.json`
 - Batch 11 CH5 coverage proof: `.sisyphus/evidence/storybook-coverage/batch-11/ch5-coverage.json`
+- Batch 12 local render proof: `.sisyphus/evidence/storybook-coverage/batch-12/render-proof.json`
+- Batch 12 CH5 coverage proof: `.sisyphus/evidence/storybook-coverage/batch-12/ch5-coverage.json`
 - Reusable render proof helper: `bun run verify:storybook-render -- --out <proof-dir> <story-id> [...]`
 - CH5 gap source scope: local `packages/ui/src/components/**` files only.
 - Imported components from other packages/libraries are out of scope here. Trust their upstream stories/tests.
@@ -113,9 +115,11 @@ Covered components today:
 - [x] agent (packages/storybook/src/stories/ai-elements/agent.stories.tsx)
 - [x] artifact (packages/storybook/src/stories/ai-elements/artifact.stories.tsx)
 - [x] attachments (packages/storybook/src/stories/ai-elements/attachments.stories.tsx)
+- [x] canvas (packages/storybook/src/stories/ai-elements/canvas.stories.tsx)
 - [x] chain-of-thought (packages/storybook/src/stories/ai-elements/chain-of-thought.stories.tsx)
 - [x] checkpoint (packages/storybook/src/stories/ai-elements/checkpoint.stories.tsx)
 - [x] commit (packages/storybook/src/stories/ai-elements/commit.stories.tsx)
+- [x] context (packages/storybook/src/stories/ai-elements/context.stories.tsx)
 - [x] conversation (packages/storybook/src/stories/ai-elements/conversation.stories.tsx)
 - [x] diff (packages/storybook/src/stories/ai-elements/diff.stories.tsx)
 - [x] file-changes (packages/storybook/src/stories/ai-elements/file-changes.stories.tsx)
@@ -213,14 +217,14 @@ Add one or more useful Storybook stories for each unchecked local component. Che
 - [x] artifact - `packages/ui/src/components/ai-elements/artifact.tsx`
 - [x] attachments - `packages/ui/src/components/ai-elements/attachments.tsx`
 - [ ] audio-player - `packages/ui/src/components/ai-elements/audio-player.tsx`
-- [ ] canvas - `packages/ui/src/components/ai-elements/canvas.tsx`
+- [x] canvas - `packages/ui/src/components/ai-elements/canvas.tsx`
 - [x] chain-of-thought - `packages/ui/src/components/ai-elements/chain-of-thought.tsx`
 - [x] checkpoint - `packages/ui/src/components/ai-elements/checkpoint.tsx`
 - [x] code-block - `packages/ui/src/components/ai-elements/code-block.tsx`
 - [x] commit - `packages/ui/src/components/ai-elements/commit.tsx`
 - [x] confirmation - `packages/ui/src/components/ai-elements/confirmation.tsx`
 - [ ] connection - `packages/ui/src/components/ai-elements/connection.tsx`
-- [ ] context - `packages/ui/src/components/ai-elements/context.tsx`
+- [x] context - `packages/ui/src/components/ai-elements/context.tsx`
 - [ ] controls - `packages/ui/src/components/ai-elements/controls.tsx`
 - [x] conversation - `packages/ui/src/components/ai-elements/conversation.tsx`
 - [x] diff - `packages/ui/src/components/ai-elements/diff.tsx`
