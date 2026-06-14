@@ -146,6 +146,36 @@ export async function broadcastOpenSidePanel(route: PalotLogicalPanelRoute): Pro
 	}
 }
 
+export async function openLogicalPanelRoute(
+	route: PalotLogicalPanelRoute,
+): Promise<PalotUiStateSnapshot> {
+	const parsedRoute = palotOpenLogicalPanelInputSchema.parse(route)
+	const snapshot = setUiStateSnapshot({
+		sidePanel: parsedRoute.legacySidePanelTabId
+			? {
+				open: true,
+				activeTab: parsedRoute.legacySidePanelTabId,
+			  }
+			: undefined,
+		logicalPanelRoute: parsedRoute,
+	})
+	await broadcastOpenSidePanel(parsedRoute)
+	return snapshot
+}
+
+export async function openLegacySidePanelTab(tab: SidePanelTabId): Promise<PalotUiStateSnapshot> {
+	const parsedTab = palotOpenSidePanelInputSchema.parse(tab)
+	return openLogicalPanelRoute({
+		logicalPanelId: parsedTab,
+		preferredZoneId: "side-panel",
+		action: "reveal-preferred-zone",
+		focusAuthorityOwner: "compatibility-adapter",
+		legacySidePanelTabId: parsedTab,
+		allowCreate: true,
+		requestedBy: "palot-open-side-panel-legacy",
+	})
+}
+
 export function setBrowserLaneSnapshot(input: {
 	laneId: string
 	currentUrl?: string | null
@@ -419,30 +449,12 @@ async function dispatchBridgeBrowserTool(payload: unknown): Promise<unknown> {
 
 async function openBridgeLogicalPanel(payload: unknown): Promise<PalotUiStateSnapshot> {
 	const route = palotOpenLogicalPanelInputSchema.parse(payload)
-	const snapshot = setUiStateSnapshot({
-		sidePanel: route.legacySidePanelTabId
-			? {
-				open: true,
-				activeTab: route.legacySidePanelTabId,
-			  }
-			: undefined,
-		logicalPanelRoute: route,
-	})
-	await broadcastOpenSidePanel(route)
-	return snapshot
+	return openLogicalPanelRoute(route)
 }
 
 async function openBridgeSidePanel(payload: unknown): Promise<PalotUiStateSnapshot> {
 	const tab = palotOpenSidePanelInputSchema.parse((payload as { tab?: unknown })?.tab)
-	return openBridgeLogicalPanel({
-		logicalPanelId: tab,
-		preferredZoneId: "side-panel",
-		action: "reveal-preferred-zone",
-		focusAuthorityOwner: "compatibility-adapter",
-		legacySidePanelTabId: tab,
-		allowCreate: true,
-		requestedBy: "palot-open-side-panel-legacy",
-	})
+	return openLegacySidePanelTab(tab)
 }
 
 export function getSessionBinding(sessionId: string): SessionBinding | null {
