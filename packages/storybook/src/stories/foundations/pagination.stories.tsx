@@ -12,7 +12,6 @@ import type { Meta, StoryObj } from "@storybook/react-vite"
 const meta = {
 	title: "Foundations/Navigation/Pagination",
 	component: Pagination,
-	tags: ["autodocs"],
 	render: () => (
 		<Pagination>
 			<PaginationContent>

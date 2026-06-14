@@ -21,7 +21,6 @@ const trace = `TypeError: Cannot read properties of undefined (reading 'storyId'
 const meta = {
 	title: "AI Elements/Diagnostics/StackTrace",
 	component: StackTrace,
-	tags: ["autodocs"],
 	render: () => (
 		<div className="w-[760px] p-8">
 			<StackTrace defaultOpen trace={trace}>

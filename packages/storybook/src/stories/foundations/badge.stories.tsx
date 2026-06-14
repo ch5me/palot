@@ -5,7 +5,6 @@ import { CheckIcon, GitBranchIcon } from "lucide-react"
 const meta = {
 	title: "Foundations/Data Display/Badge",
 	component: Badge,
-	tags: ["autodocs"],
 	args: {
 		children: "Managed",
 		variant: "default",

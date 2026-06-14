@@ -4,7 +4,6 @@ import type { Meta, StoryObj } from "@storybook/react-vite"
 const meta = {
 	title: "Foundations/Layout/AspectRatio",
 	component: AspectRatio,
-	tags: ["autodocs"],
 	args: {
 		ratio: 16 / 9,
 	},

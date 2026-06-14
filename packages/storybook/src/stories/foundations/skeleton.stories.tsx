@@ -4,7 +4,6 @@ import type { Meta, StoryObj } from "@storybook/react-vite"
 const meta = {
 	title: "Foundations/Feedback/Skeleton",
 	component: Skeleton,
-	tags: ["autodocs"],
 	render: () => (
 		<div className="w-[360px] space-y-4 rounded-lg border bg-card p-4">
 			<div className="flex items-center gap-3">

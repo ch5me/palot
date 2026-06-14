@@ -4,7 +4,6 @@ import type { Meta, StoryObj } from "@storybook/react-vite"
 const meta = {
 	title: "Foundations/Layout/Separator",
 	component: Separator,
-	tags: ["autodocs"],
 	args: {
 		orientation: "horizontal",
 	},

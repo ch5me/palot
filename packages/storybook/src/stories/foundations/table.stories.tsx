@@ -14,7 +14,6 @@ import type { Meta, StoryObj } from "@storybook/react-vite"
 const meta = {
 	title: "Foundations/Data Display/Table",
 	component: Table,
-	tags: ["autodocs"],
 	render: () => (
 		<div className="w-[620px] rounded-lg border bg-card p-4 text-card-foreground">
 			<Table>

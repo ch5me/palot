@@ -11,7 +11,6 @@ import { InfoIcon } from "lucide-react"
 const meta = {
 	title: "Foundations/Overlays/Tooltip",
 	component: Tooltip,
-	tags: ["autodocs"],
 	render: () => (
 		<TooltipProvider>
 			<div className="grid min-h-[180px] w-[360px] place-items-center">

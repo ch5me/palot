@@ -4,7 +4,6 @@ import type { Meta, StoryObj } from "@storybook/react-vite"
 const meta = {
 	title: "Foundations/Date/Calendar",
 	component: Calendar,
-	tags: ["autodocs"],
 	args: {
 		mode: "single",
 		selected: new Date(2026, 5, 13),

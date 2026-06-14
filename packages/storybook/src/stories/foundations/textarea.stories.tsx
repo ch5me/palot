@@ -5,7 +5,6 @@ import type { Meta, StoryObj } from "@storybook/react-vite"
 const meta = {
 	title: "Foundations/Forms/Textarea",
 	component: Textarea,
-	tags: ["autodocs"],
 	args: {
 		placeholder: "Describe what the agent should inspect",
 	},

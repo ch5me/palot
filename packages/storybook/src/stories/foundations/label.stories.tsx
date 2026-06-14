@@ -6,7 +6,6 @@ import type { Meta, StoryObj } from "@storybook/react-vite"
 const meta = {
 	title: "Foundations/Forms/Label",
 	component: Label,
-	tags: ["autodocs"],
 	render: () => (
 		<div className="grid w-[360px] gap-5">
 			<div className="grid gap-2">

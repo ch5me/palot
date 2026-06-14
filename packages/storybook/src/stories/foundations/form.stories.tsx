@@ -52,7 +52,6 @@ function CoverageFormPreview() {
 const meta = {
 	title: "Foundations/Forms/Form",
 	component: CoverageFormPreview,
-	tags: ["autodocs"],
 } satisfies Meta<typeof CoverageFormPreview>
 
 export default meta

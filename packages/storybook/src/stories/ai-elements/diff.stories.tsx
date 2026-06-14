@@ -39,7 +39,6 @@ const patch = `--- a/docs/storybook-missing-ui-elements.md
 const meta = {
 	title: "AI Elements/Code/Diff",
 	component: Diff,
-	tags: ["autodocs"],
 	render: () => (
 		<div className="flex w-[760px] flex-col gap-6 p-8">
 			<Diff mode="files" newFile={newFile} oldFile={oldFile}>

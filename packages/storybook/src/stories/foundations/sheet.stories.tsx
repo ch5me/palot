@@ -13,7 +13,6 @@ import type { Meta, StoryObj } from "@storybook/react-vite"
 const meta = {
 	title: "Foundations/Overlays/Sheet",
 	component: Sheet,
-	tags: ["autodocs"],
 	render: () => (
 		<div className="min-h-[420px] w-[560px]">
 			<Sheet defaultOpen modal={false}>

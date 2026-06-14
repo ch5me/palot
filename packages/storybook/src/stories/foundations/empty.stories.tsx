@@ -13,7 +13,6 @@ import { InboxIcon } from "lucide-react"
 const meta = {
 	title: "Foundations/Feedback/Empty",
 	component: Empty,
-	tags: ["autodocs"],
 	render: () => (
 		<Empty className="min-h-[280px] max-w-xl border">
 			<EmptyHeader>

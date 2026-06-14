@@ -13,7 +13,6 @@ import type { Meta, StoryObj } from "@storybook/react-vite"
 const meta = {
 	title: "AI Elements/Tooling/Sandbox",
 	component: Sandbox,
-	tags: ["autodocs"],
 	render: () => (
 		<div className="w-[720px] p-8">
 			<Sandbox defaultOpen>

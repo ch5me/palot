@@ -27,7 +27,6 @@ function SonnerPreview() {
 const meta = {
 	title: "Foundations/Feedback/Sonner",
 	component: SonnerPreview,
-	tags: ["autodocs"],
 } satisfies Meta<typeof SonnerPreview>
 
 export default meta

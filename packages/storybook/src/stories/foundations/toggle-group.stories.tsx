@@ -5,7 +5,6 @@ import { Columns3Icon, PanelLeftIcon, PanelRightIcon } from "lucide-react"
 const meta = {
 	title: "Foundations/Actions/ToggleGroup",
 	component: ToggleGroup,
-	tags: ["autodocs"],
 	args: {
 		defaultValue: ["chat"],
 		variant: "outline",

@@ -30,7 +30,6 @@ function InputOTPPreview() {
 const meta = {
 	title: "Foundations/Forms/InputOTP",
 	component: InputOTPPreview,
-	tags: ["autodocs"],
 } satisfies Meta<typeof InputOTPPreview>
 
 export default meta

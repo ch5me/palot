@@ -27,7 +27,6 @@ const scope = "packages/ui/src/components"
 const meta = {
 	title: "AI Elements/Chat/Message",
 	component: Message,
-	tags: ["autodocs"],
 	render: () => (
 		<div className="flex w-[720px] flex-col gap-6 p-8">
 			<Message from="user">

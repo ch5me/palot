@@ -17,7 +17,6 @@ import { TriangleAlertIcon } from "lucide-react"
 const meta = {
 	title: "Foundations/Overlays/AlertDialog",
 	component: AlertDialog,
-	tags: ["autodocs"],
 	render: () => (
 		<div className="min-h-[360px] w-[520px]">
 			<AlertDialog defaultOpen>

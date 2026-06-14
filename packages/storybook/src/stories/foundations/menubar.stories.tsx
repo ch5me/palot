@@ -15,7 +15,6 @@ import type { Meta, StoryObj } from "@storybook/react-vite"
 const meta = {
 	title: "Foundations/Navigation/Menubar",
 	component: Menubar,
-	tags: ["autodocs"],
 	render: () => (
 		<div className="min-h-[280px] w-[520px] p-10">
 			<Menubar>

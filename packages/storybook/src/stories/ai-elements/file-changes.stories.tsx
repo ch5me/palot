@@ -35,7 +35,6 @@ const newFile: FileContents = {
 const meta = {
 	title: "AI Elements/Code/FileChanges",
 	component: FileChanges,
-	tags: ["autodocs"],
 	render: () => (
 		<div className="w-[760px] p-8">
 			<FileChanges defaultOpen newFile={newFile} oldFile={oldFile} status="pending">

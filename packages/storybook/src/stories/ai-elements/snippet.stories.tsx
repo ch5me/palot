@@ -13,7 +13,6 @@ const command =
 const meta = {
 	title: "AI Elements/Code/Snippet",
 	component: Snippet,
-	tags: ["autodocs"],
 	render: () => (
 		<div className="w-[720px] p-8">
 			<Snippet code={command}>

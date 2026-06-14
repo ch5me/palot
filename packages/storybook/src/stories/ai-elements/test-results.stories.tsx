@@ -30,7 +30,6 @@ const summary = {
 const meta = {
 	title: "AI Elements/Diagnostics/TestResults",
 	component: TestResults,
-	tags: ["autodocs"],
 	render: () => (
 		<div className="w-[760px] p-8">
 			<TestResults summary={summary}>

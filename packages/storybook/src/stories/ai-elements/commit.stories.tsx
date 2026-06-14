@@ -29,7 +29,6 @@ const commitDate = new Date("2026-06-14T00:33:22Z")
 const meta = {
 	title: "AI Elements/Workflow/Commit",
 	component: Commit,
-	tags: ["autodocs"],
 	render: () => (
 		<div className="w-[760px] p-8">
 			<Commit defaultOpen>

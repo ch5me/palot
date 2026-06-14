@@ -4,7 +4,6 @@ import type { Meta, StoryObj } from "@storybook/react-vite"
 const meta = {
 	title: "AI Elements/Feedback/Shimmer",
 	component: Shimmer,
-	tags: ["autodocs"],
 	render: () => (
 		<div className="w-[520px] p-8">
 			<Shimmer as="div" className="font-medium text-2xl" duration={1.8} spread={1.4}>

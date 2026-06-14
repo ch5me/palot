@@ -5,7 +5,6 @@ import { CommandIcon } from "lucide-react"
 const meta = {
 	title: "Foundations/Typography/Kbd",
 	component: Kbd,
-	tags: ["autodocs"],
 	args: {
 		children: "K",
 	},

@@ -14,7 +14,6 @@ import type { Meta, StoryObj } from "@storybook/react-vite"
 const meta = {
 	title: "Foundations/Overlays/Popover",
 	component: Popover,
-	tags: ["autodocs"],
 	render: () => (
 		<div className="min-h-[300px] w-[460px] p-12">
 			<Popover defaultOpen>

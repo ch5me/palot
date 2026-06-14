@@ -6,7 +6,6 @@ import { DiscreteTab, DiscreteTabs } from "@ch5me/elf-ui/components/animate/disc
 const meta = {
 	title: "Foundations/Navigation/DiscreteTabs",
 	component: DiscreteTabs,
-	tags: ["autodocs"],
 	args: {
 		defaultValue: "palot",
 		size: "default",

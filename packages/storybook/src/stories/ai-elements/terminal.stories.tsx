@@ -13,7 +13,6 @@ const output = `$ bun run verify:storybook-render -- --out .sisyphus/evidence/st
 const meta = {
 	title: "AI Elements/Diagnostics/Terminal",
 	component: Terminal,
-	tags: ["autodocs"],
 	render: () => (
 		<div className="w-[720px] p-8">
 			<Terminal isStreaming output={output} />

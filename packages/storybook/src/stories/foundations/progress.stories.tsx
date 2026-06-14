@@ -4,7 +4,6 @@ import type { Meta, StoryObj } from "@storybook/react-vite"
 const meta = {
 	title: "Foundations/Feedback/Progress",
 	component: Progress,
-	tags: ["autodocs"],
 	args: {
 		value: 64,
 	},

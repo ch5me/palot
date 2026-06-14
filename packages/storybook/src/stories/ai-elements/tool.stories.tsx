@@ -23,7 +23,6 @@ const output = {
 const meta = {
 	title: "AI Elements/Tooling/Tool",
 	component: Tool,
-	tags: ["autodocs"],
 	render: () => (
 		<div className="w-[720px] p-8">
 			<Tool defaultOpen>

@@ -14,7 +14,6 @@ const segments = [
 const meta = {
 	title: "AI Elements/Voice/Transcription",
 	component: Transcription,
-	tags: ["autodocs"],
 	render: () => (
 		<div className="w-[620px] p-8">
 			<div className="rounded-lg border bg-background p-4">

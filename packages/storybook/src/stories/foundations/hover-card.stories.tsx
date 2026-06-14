@@ -5,7 +5,6 @@ import type { Meta, StoryObj } from "@storybook/react-vite"
 const meta = {
 	title: "Foundations/Overlays/HoverCard",
 	component: HoverCard,
-	tags: ["autodocs"],
 	render: () => (
 		<div className="min-h-[220px] w-[420px] p-10">
 			<HoverCard defaultOpen>

@@ -9,7 +9,6 @@ import type { Meta, StoryObj } from "@storybook/react-vite"
 const meta = {
 	title: "Foundations/Disclosure/Accordion",
 	component: Accordion,
-	tags: ["autodocs"],
 	args: {
 		defaultValue: ["runtime"],
 	},

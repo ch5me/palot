@@ -18,7 +18,6 @@ import type { Meta, StoryObj } from "@storybook/react-vite"
 const meta = {
 	title: "Foundations/Forms/Field",
 	component: Field,
-	tags: ["autodocs"],
 	render: () => (
 		<FieldSet className="w-[420px] rounded-lg border bg-card p-5 text-card-foreground">
 			<FieldLegend>Browser lane setup</FieldLegend>

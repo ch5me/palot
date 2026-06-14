@@ -32,7 +32,6 @@ const usage = {
 const meta = {
 	title: "AI Elements/Status/Context",
 	component: Context,
-	tags: ["autodocs"],
 	render: () => (
 		<div className="w-[420px] p-8">
 			<Context

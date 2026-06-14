@@ -8,7 +8,6 @@ import type { Meta, StoryObj } from "@storybook/react-vite"
 const meta = {
 	title: "Foundations/Forms/NativeSelect",
 	component: NativeSelect,
-	tags: ["autodocs"],
 	args: {
 		defaultValue: "gpt-5",
 		size: "default",

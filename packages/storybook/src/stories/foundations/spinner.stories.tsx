@@ -4,7 +4,6 @@ import type { Meta, StoryObj } from "@storybook/react-vite"
 const meta = {
 	title: "Foundations/Feedback/Spinner",
 	component: Spinner,
-	tags: ["autodocs"],
 	args: {
 		className: "size-5",
 	},

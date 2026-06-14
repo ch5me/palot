@@ -15,7 +15,6 @@ import type { Meta, StoryObj } from "@storybook/react-vite"
 const meta = {
 	title: "Foundations/Overlays/Dialog",
 	component: Dialog,
-	tags: ["autodocs"],
 	render: () => (
 		<div className="min-h-[360px] w-[520px]">
 			<Dialog defaultOpen modal={false}>

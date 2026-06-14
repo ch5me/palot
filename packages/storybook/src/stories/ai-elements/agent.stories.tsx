@@ -17,7 +17,6 @@ const outputSchema = `interface StorybookServiceOrder {
 const meta = {
 	title: "AI Elements/Workflow/Agent",
 	component: Agent,
-	tags: ["autodocs"],
 	render: () => (
 		<div className="w-[680px] p-8">
 			<Agent>

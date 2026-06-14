@@ -13,7 +13,6 @@ const imageArgs = {
 const meta = {
 	title: "AI Elements/Media/Image",
 	component: GeneratedImage,
-	tags: ["autodocs"],
 	render: () => (
 		<div className="w-[520px] p-8">
 			<GeneratedImage

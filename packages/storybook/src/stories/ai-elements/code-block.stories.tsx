@@ -22,7 +22,6 @@ const code = `export const verifyStory = async (storyId: string) => {
 const meta = {
 	title: "AI Elements/Code/CodeBlock",
 	component: CodeBlock,
-	tags: ["autodocs"],
 	render: () => (
 		<div className="w-[680px] p-8">
 			<CodeBlock code={code} language="typescript" showLineNumbers>

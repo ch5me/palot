@@ -4,7 +4,6 @@ import type { Meta, StoryObj } from "@storybook/react-vite"
 const meta = {
 	title: "AI Elements/Input/Suggestion",
 	component: Suggestions,
-	tags: ["autodocs"],
 	render: () => (
 		<div className="w-[560px] p-8">
 			<Suggestions>

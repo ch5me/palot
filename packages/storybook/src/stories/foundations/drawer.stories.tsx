@@ -14,7 +14,6 @@ import type { Meta, StoryObj } from "@storybook/react-vite"
 const meta = {
 	title: "Foundations/Overlays/Drawer",
 	component: Drawer,
-	tags: ["autodocs"],
 	render: () => (
 		<div className="min-h-[420px] w-[560px]">
 			<Drawer defaultOpen direction="right" modal={false}>

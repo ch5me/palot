@@ -11,7 +11,6 @@ import type { Meta, StoryObj } from "@storybook/react-vite"
 const meta = {
 	title: "Foundations/Navigation/NavigationMenu",
 	component: NavigationMenu,
-	tags: ["autodocs"],
 	render: () => (
 		<div className="min-h-[320px] w-[620px] p-10">
 			<NavigationMenu defaultValue="sessions">

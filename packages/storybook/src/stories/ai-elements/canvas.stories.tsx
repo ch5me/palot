@@ -109,7 +109,6 @@ function StoryNode({ data, id }: { data: { label: string; state: string }; id: s
 const meta = {
 	title: "AI Elements/Canvas/Canvas",
 	component: Canvas,
-	tags: ["autodocs"],
 	render: () => (
 		<div className="h-[520px] w-[840px] overflow-hidden rounded-lg border bg-background">
 			<Canvas

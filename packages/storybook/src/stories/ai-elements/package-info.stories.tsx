@@ -14,7 +14,6 @@ import type { Meta, StoryObj } from "@storybook/react-vite"
 const meta = {
 	title: "AI Elements/Data/PackageInfo",
 	component: PackageInfo,
-	tags: ["autodocs"],
 	render: () => (
 		<div className="w-[520px] p-8">
 			<PackageInfo

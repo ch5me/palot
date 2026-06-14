@@ -1,0 +1,2453 @@
+{
+  "projectId": "elf",
+  "generatedAt": "2026-06-14T01:22:59.798Z",
+  "summary": {
+    "apiEndpoints": 0,
+    "apiEndpointsWithAutomatedTests": 0,
+    "apiEndpointGaps": 0,
+    "apiEndpointsWithObservability": 0,
+    "apiObservabilityGaps": 0,
+    "productRoutes": 0,
+    "productRoutesWithAutomatedTests": 0,
+    "routeScreenshotTargets": 0,
+    "routeScreenshotsCaptured": 0,
+    "routeScreenshotGaps": 0,
+    "routeScreenshotReviewFailures": 0,
+    "visualComponents": 134,
+    "visualComponentsCoveredByStoriesOrRoutes": 98,
+    "visualComponentGaps": 36,
+    "storyFiles": 99,
+    "storyScreenshotTargets": 196,
+    "storyScreenshotsCaptured": 0,
+    "storyScreenshotGaps": 196,
+    "storyScreenshotReviewFailures": 0,
+    "workflows": 0,
+    "workflowErrorStates": 0,
+    "workflowErrorStatesWithAutomatedTests": 0,
+    "workflowErrorStateGaps": 0,
+    "workflowScreenshotProofs": 0,
+    "workflowScreenshotProofFailures": 0,
+    "weakCoverageEdges": 0,
+    "danglingEdges": 0
+  },
+  "api": {
+    "covered": [],
+    "gaps": [],
+    "observabilityGaps": []
+  },
+  "visual": {
+    "viewports": [
+      {
+        "name": "mobile",
+        "width": 390,
+        "height": 844
+      },
+      {
+        "name": "desktop",
+        "width": 1440,
+        "height": 900
+      }
+    ],
+    "routeScreenshots": [],
+    "storyScreenshots": [
+      {
+        "component": "accordion",
+        "storyFiles": [
+          "packages/storybook/src/stories/foundations/accordion.stories.tsx"
+        ],
+        "coveredComponents": [
+          "accordion"
+        ],
+        "viewports": [
+          "mobile",
+          "desktop"
+        ],
+        "capturedViewports": [],
+        "missingViewports": [
+          "mobile",
+          "desktop"
+        ],
+        "screenshotFiles": [],
+        "reviews": []
+      },
+      {
+        "component": "agent",
+        "storyFiles": [
+          "packages/storybook/src/stories/ai-elements/agent.stories.tsx"
+        ],
+        "coveredComponents": [
+          "agent",
+          "code-block"
+        ],
+        "viewports": [
+          "mobile",
+          "desktop"
+        ],
+        "capturedViewports": [],
+        "missingViewports": [
+          "mobile",
+          "desktop"
+        ],
+        "screenshotFiles": [],
+        "reviews": []
+      },
+      {
+        "component": "alert",
+        "storyFiles": [
+          "packages/storybook/src/stories/foundations/alert.stories.tsx"
+        ],
+        "coveredComponents": [
+          "alert"
+        ],
+        "viewports": [
+          "mobile",
+          "desktop"
+        ],
+        "capturedViewports": [],
+        "missingViewports": [
+          "mobile",
+          "desktop"
+        ],
+        "screenshotFiles": [],
+        "reviews": []
+      },
+      {
+        "component": "alert-dialog",
+        "storyFiles": [
+          "packages/storybook/src/stories/foundations/alert-dialog.stories.tsx"
+        ],
+        "coveredComponents": [
+          "alert-dialog"
+        ],
+        "viewports": [
+          "mobile",
+          "desktop"
+        ],
+        "capturedViewports": [],
+        "missingViewports": [
+          "mobile",
+          "desktop"
+        ],
+        "screenshotFiles": [],
+        "reviews": []
+      },
+      {
+        "component": "artifact",
+        "storyFiles": [
+          "packages/storybook/src/stories/ai-elements/artifact.stories.tsx"
+        ],
+        "coveredComponents": [
+          "artifact"
+        ],
+        "viewports": [
+          "mobile",
+          "desktop"
+        ],
+        "capturedViewports": [],
+        "missingViewports": [
+          "mobile",
+          "desktop"
+        ],
+        "screenshotFiles": [],
+        "reviews": []
+      },
+      {
+        "component": "aspect-ratio",
+        "storyFiles": [
+          "packages/storybook/src/stories/foundations/aspect-ratio.stories.tsx"
+        ],
+        "coveredComponents": [
+          "aspect-ratio"
+        ],
+        "viewports": [
+          "mobile",
+          "desktop"
+        ],
+        "capturedViewports": [],
+        "missingViewports": [
+          "mobile",
+          "desktop"
+        ],
+        "screenshotFiles": [],
+        "reviews": []
+      },
+      {
+        "component": "attachments",
+        "storyFiles": [
+          "packages/storybook/src/stories/ai-elements/attachments.stories.tsx"
+        ],
+        "coveredComponents": [
+          "attachments"
+        ],
+        "viewports": [
+          "mobile",
+          "desktop"
+        ],
+        "capturedViewports": [],
+        "missingViewports": [
+          "mobile",
+          "desktop"
+        ],
+        "screenshotFiles": [],
+        "reviews": []
+      },
+      {
+        "component": "avatar",
+        "storyFiles": [
+          "packages/storybook/src/stories/foundations/avatar.stories.tsx"
+        ],
+        "coveredComponents": [
+          "avatar"
+        ],
+        "viewports": [
+          "mobile",
+          "desktop"
+        ],
+        "capturedViewports": [],
+        "missingViewports": [
+          "mobile",
+          "desktop"
+        ],
+        "screenshotFiles": [],
+        "reviews": []
+      },
+      {
+        "component": "badge",
+        "storyFiles": [
+          "packages/storybook/src/stories/foundations/badge.stories.tsx"
+        ],
+        "coveredComponents": [
+          "badge"
+        ],
+        "viewports": [
+          "mobile",
+          "desktop"
+        ],
+        "capturedViewports": [],
+        "missingViewports": [
+          "mobile",
+          "desktop"
+        ],
+        "screenshotFiles": [],
+        "reviews": []
+      },
+      {
+        "component": "breadcrumb",
+        "storyFiles": [
+          "packages/storybook/src/stories/foundations/breadcrumb.stories.tsx"
+        ],
+        "coveredComponents": [
+          "breadcrumb"
+        ],
+        "viewports": [
+          "mobile",
+          "desktop"
+        ],
+        "capturedViewports": [],
+        "missingViewports": [
+          "mobile",
+          "desktop"
+        ],
+        "screenshotFiles": [],
+        "reviews": []
+      },
+      {
+        "component": "button",
+        "storyFiles": [
+          "packages/storybook/src/stories/foundations/button.stories.tsx"
+        ],
+        "coveredComponents": [
+          "button"
+        ],
+        "viewports": [
+          "mobile",
+          "desktop"
+        ],
+        "capturedViewports": [],
+        "missingViewports": [
+          "mobile",
+          "desktop"
+        ],
+        "screenshotFiles": [],
+        "reviews": []
+      },
+      {
+        "component": "button-group",
+        "storyFiles": [
+          "packages/storybook/src/stories/foundations/button-group.stories.tsx"
+        ],
+        "coveredComponents": [
+          "button-group"
+        ],
+        "viewports": [
+          "mobile",
+          "desktop"
+        ],
+        "capturedViewports": [],
+        "missingViewports": [
+          "mobile",
+          "desktop"
+        ],
+        "screenshotFiles": [],
+        "reviews": []
+      },
+      {
+        "component": "calendar",
+        "storyFiles": [
+          "packages/storybook/src/stories/foundations/calendar.stories.tsx"
+        ],
+        "coveredComponents": [
+          "calendar"
+        ],
+        "viewports": [
+          "mobile",
+          "desktop"
+        ],
+        "capturedViewports": [],
+        "missingViewports": [
+          "mobile",
+          "desktop"
+        ],
+        "screenshotFiles": [],
+        "reviews": []
+      },
+      {
+        "component": "canvas",
+        "storyFiles": [
+          "packages/storybook/src/stories/ai-elements/canvas.stories.tsx"
+        ],
+        "coveredComponents": [
+          "canvas"
+        ],
+        "viewports": [
+          "mobile",
+          "desktop"
+        ],
+        "capturedViewports": [],
+        "missingViewports": [
+          "mobile",
+          "desktop"
+        ],
+        "screenshotFiles": [],
+        "reviews": []
+      },
+      {
+        "component": "card",
+        "storyFiles": [
+          "packages/storybook/src/stories/foundations/card.stories.tsx"
+        ],
+        "coveredComponents": [
+          "card"
+        ],
+        "viewports": [
+          "mobile",
+          "desktop"
+        ],
+        "capturedViewports": [],
+        "missingViewports": [
+          "mobile",
+          "desktop"
+        ],
+        "screenshotFiles": [],
+        "reviews": []
+      },
+      {
+        "component": "carousel",
+        "storyFiles": [
+          "packages/storybook/src/stories/foundations/carousel.stories.tsx"
+        ],
+        "coveredComponents": [
+          "carousel"
+        ],
+        "viewports": [
+          "mobile",
+          "desktop"
+        ],
+        "capturedViewports": [],
+        "missingViewports": [
+          "mobile",
+          "desktop"
+        ],
+        "screenshotFiles": [],
+        "reviews": []
+      },
+      {
+        "component": "chain-of-thought",
+        "storyFiles": [
+          "packages/storybook/src/stories/ai-elements/chain-of-thought.stories.tsx"
+        ],
+        "coveredComponents": [
+          "chain-of-thought"
+        ],
+        "viewports": [
+          "mobile",
+          "desktop"
+        ],
+        "capturedViewports": [],
+        "missingViewports": [
+          "mobile",
+          "desktop"
+        ],
+        "screenshotFiles": [],
+        "reviews": []
+      },
+      {
+        "component": "chart",
+        "storyFiles": [
+          "packages/storybook/src/stories/foundations/chart.stories.tsx"
+        ],
+        "coveredComponents": [
+          "chart"
+        ],
+        "viewports": [
+          "mobile",
+          "desktop"
+        ],
+        "capturedViewports": [],
+        "missingViewports": [
+          "mobile",
+          "desktop"
+        ],
+        "screenshotFiles": [],
+        "reviews": []
+      },
+      {
+        "component": "checkbox",
+        "storyFiles": [
+          "packages/storybook/src/stories/foundations/checkbox.stories.tsx"
+        ],
+        "coveredComponents": [
+          "checkbox"
+        ],
+        "viewports": [
+          "mobile",
+          "desktop"
+        ],
+        "capturedViewports": [],
+        "missingViewports": [
+          "mobile",
+          "desktop"
+        ],
+        "screenshotFiles": [],
+        "reviews": []
+      },
+      {
+        "component": "checkpoint",
+        "storyFiles": [
+          "packages/storybook/src/stories/ai-elements/checkpoint.stories.tsx"
+        ],
+        "coveredComponents": [
+          "checkpoint"
+        ],
+        "viewports": [
+          "mobile",
+          "desktop"
+        ],
+        "capturedViewports": [],
+        "missingViewports": [
+          "mobile",
+          "desktop"
+        ],
+        "screenshotFiles": [],
+        "reviews": []
+      },
+      {
+        "component": "code-block",
+        "storyFiles": [
+          "packages/storybook/src/stories/ai-elements/code-block.stories.tsx"
+        ],
+        "coveredComponents": [
+          "code-block"
+        ],
+        "viewports": [
+          "mobile",
+          "desktop"
+        ],
+        "capturedViewports": [],
+        "missingViewports": [
+          "mobile",
+          "desktop"
+        ],
+        "screenshotFiles": [],
+        "reviews": []
+      },
+      {
+        "component": "collapsible",
+        "storyFiles": [
+          "packages/storybook/src/stories/foundations/collapsible.stories.tsx"
+        ],
+        "coveredComponents": [
+          "collapsible"
+        ],
+        "viewports": [
+          "mobile",
+          "desktop"
+        ],
+        "capturedViewports": [],
+        "missingViewports": [
+          "mobile",
+          "desktop"
+        ],
+        "screenshotFiles": [],
+        "reviews": []
+      },
+      {
+        "component": "combobox",
+        "storyFiles": [
+          "packages/storybook/src/stories/foundations/combobox.stories.tsx"
+        ],
+        "coveredComponents": [
+          "combobox"
+        ],
+        "viewports": [
+          "mobile",
+          "desktop"
+        ],
+        "capturedViewports": [],
+        "missingViewports": [
+          "mobile",
+          "desktop"
+        ],
+        "screenshotFiles": [],
+        "reviews": []
+      },
+      {
+        "component": "command",
+        "storyFiles": [
+          "packages/storybook/src/stories/foundations/command.stories.tsx"
+        ],
+        "coveredComponents": [
+          "command"
+        ],
+        "viewports": [
+          "mobile",
+          "desktop"
+        ],
+        "capturedViewports": [],
+        "missingViewports": [
+          "mobile",
+          "desktop"
+        ],
+        "screenshotFiles": [],
+        "reviews": []
+      },
+      {
+        "component": "commit",
+        "storyFiles": [
+          "packages/storybook/src/stories/ai-elements/commit.stories.tsx"
+        ],
+        "coveredComponents": [
+          "commit"
+        ],
+        "viewports": [
+          "mobile",
+          "desktop"
+        ],
+        "capturedViewports": [],
+        "missingViewports": [
+          "mobile",
+          "desktop"
+        ],
+        "screenshotFiles": [],
+        "reviews": []
+      },
+      {
+        "component": "confirmation",
+        "storyFiles": [
+          "packages/storybook/src/stories/ai-elements/confirmation.stories.tsx"
+        ],
+        "coveredComponents": [
+          "confirmation"
+        ],
+        "viewports": [
+          "mobile",
+          "desktop"
+        ],
+        "capturedViewports": [],
+        "missingViewports": [
+          "mobile",
+          "desktop"
+        ],
+        "screenshotFiles": [],
+        "reviews": []
+      },
+      {
+        "component": "connection",
+        "storyFiles": [
+          "packages/storybook/src/stories/ai-elements/connection.stories.tsx"
+        ],
+        "coveredComponents": [
+          "connection"
+        ],
+        "viewports": [
+          "mobile",
+          "desktop"
+        ],
+        "capturedViewports": [],
+        "missingViewports": [
+          "mobile",
+          "desktop"
+        ],
+        "screenshotFiles": [],
+        "reviews": []
+      },
+      {
+        "component": "context",
+        "storyFiles": [
+          "packages/storybook/src/stories/ai-elements/context.stories.tsx"
+        ],
+        "coveredComponents": [
+          "context"
+        ],
+        "viewports": [
+          "mobile",
+          "desktop"
+        ],
+        "capturedViewports": [],
+        "missingViewports": [
+          "mobile",
+          "desktop"
+        ],
+        "screenshotFiles": [],
+        "reviews": []
+      },
+      {
+        "component": "context-menu",
+        "storyFiles": [
+          "packages/storybook/src/stories/foundations/context-menu.stories.tsx"
+        ],
+        "coveredComponents": [
+          "context-menu"
+        ],
+        "viewports": [
+          "mobile",
+          "desktop"
+        ],
+        "capturedViewports": [],
+        "missingViewports": [
+          "mobile",
+          "desktop"
+        ],
+        "screenshotFiles": [],
+        "reviews": []
+      },
+      {
+        "component": "controls",
+        "storyFiles": [
+          "packages/storybook/src/stories/ai-elements/controls.stories.tsx"
+        ],
+        "coveredComponents": [
+          "controls"
+        ],
+        "viewports": [
+          "mobile",
+          "desktop"
+        ],
+        "capturedViewports": [],
+        "missingViewports": [
+          "mobile",
+          "desktop"
+        ],
+        "screenshotFiles": [],
+        "reviews": []
+      },
+      {
+        "component": "conversation",
+        "storyFiles": [
+          "packages/storybook/src/stories/ai-elements/conversation.stories.tsx"
+        ],
+        "coveredComponents": [
+          "conversation"
+        ],
+        "viewports": [
+          "mobile",
+          "desktop"
+        ],
+        "capturedViewports": [],
+        "missingViewports": [
+          "mobile",
+          "desktop"
+        ],
+        "screenshotFiles": [],
+        "reviews": []
+      },
+      {
+        "component": "dialog",
+        "storyFiles": [
+          "packages/storybook/src/stories/foundations/dialog.stories.tsx"
+        ],
+        "coveredComponents": [
+          "dialog"
+        ],
+        "viewports": [
+          "mobile",
+          "desktop"
+        ],
+        "capturedViewports": [],
+        "missingViewports": [
+          "mobile",
+          "desktop"
+        ],
+        "screenshotFiles": [],
+        "reviews": []
+      },
+      {
+        "component": "diff",
+        "storyFiles": [
+          "packages/storybook/src/stories/ai-elements/diff.stories.tsx"
+        ],
+        "coveredComponents": [
+          "diff"
+        ],
+        "viewports": [
+          "mobile",
+          "desktop"
+        ],
+        "capturedViewports": [],
+        "missingViewports": [
+          "mobile",
+          "desktop"
+        ],
+        "screenshotFiles": [],
+        "reviews": []
+      },
+      {
+        "component": "discrete-tabs",
+        "storyFiles": [
+          "packages/storybook/src/stories/foundations/discrete-tabs.stories.tsx"
+        ],
+        "coveredComponents": [
+          "discrete-tabs"
+        ],
+        "viewports": [
+          "mobile",
+          "desktop"
+        ],
+        "capturedViewports": [],
+        "missingViewports": [
+          "mobile",
+          "desktop"
+        ],
+        "screenshotFiles": [],
+        "reviews": []
+      },
+      {
+        "component": "drawer",
+        "storyFiles": [
+          "packages/storybook/src/stories/foundations/drawer.stories.tsx"
+        ],
+        "coveredComponents": [
+          "drawer"
+        ],
+        "viewports": [
+          "mobile",
+          "desktop"
+        ],
+        "capturedViewports": [],
+        "missingViewports": [
+          "mobile",
+          "desktop"
+        ],
+        "screenshotFiles": [],
+        "reviews": []
+      },
+      {
+        "component": "dropdown-menu",
+        "storyFiles": [
+          "packages/storybook/src/stories/foundations/dropdown-menu.stories.tsx"
+        ],
+        "coveredComponents": [
+          "dropdown-menu"
+        ],
+        "viewports": [
+          "mobile",
+          "desktop"
+        ],
+        "capturedViewports": [],
+        "missingViewports": [
+          "mobile",
+          "desktop"
+        ],
+        "screenshotFiles": [],
+        "reviews": []
+      },
+      {
+        "component": "edge",
+        "storyFiles": [
+          "packages/storybook/src/stories/ai-elements/edge.stories.tsx"
+        ],
+        "coveredComponents": [
+          "edge"
+        ],
+        "viewports": [
+          "mobile",
+          "desktop"
+        ],
+        "capturedViewports": [],
+        "missingViewports": [
+          "mobile",
+          "desktop"
+        ],
+        "screenshotFiles": [],
+        "reviews": []
+      },
+      {
+        "component": "empty",
+        "storyFiles": [
+          "packages/storybook/src/stories/foundations/empty.stories.tsx"
+        ],
+        "coveredComponents": [
+          "empty"
+        ],
+        "viewports": [
+          "mobile",
+          "desktop"
+        ],
+        "capturedViewports": [],
+        "missingViewports": [
+          "mobile",
+          "desktop"
+        ],
+        "screenshotFiles": [],
+        "reviews": []
+      },
+      {
+        "component": "environment-variables",
+        "storyFiles": [
+          "packages/storybook/src/stories/ai-elements/environment-variables.stories.tsx"
+        ],
+        "coveredComponents": [
+          "environment-variables"
+        ],
+        "viewports": [
+          "mobile",
+          "desktop"
+        ],
+        "capturedViewports": [],
+        "missingViewports": [
+          "mobile",
+          "desktop"
+        ],
+        "screenshotFiles": [],
+        "reviews": []
+      },
+      {
+        "component": "field",
+        "storyFiles": [
+          "packages/storybook/src/stories/foundations/field.stories.tsx"
+        ],
+        "coveredComponents": [
+          "field"
+        ],
+        "viewports": [
+          "mobile",
+          "desktop"
+        ],
+        "capturedViewports": [],
+        "missingViewports": [
+          "mobile",
+          "desktop"
+        ],
+        "screenshotFiles": [],
+        "reviews": []
+      },
+      {
+        "component": "file-changes",
+        "storyFiles": [
+          "packages/storybook/src/stories/ai-elements/file-changes.stories.tsx"
+        ],
+        "coveredComponents": [
+          "diff",
+          "file-changes"
+        ],
+        "viewports": [
+          "mobile",
+          "desktop"
+        ],
+        "capturedViewports": [],
+        "missingViewports": [
+          "mobile",
+          "desktop"
+        ],
+        "screenshotFiles": [],
+        "reviews": []
+      },
+      {
+        "component": "file-tree",
+        "storyFiles": [
+          "packages/storybook/src/stories/ai-elements/file-tree.stories.tsx"
+        ],
+        "coveredComponents": [
+          "file-tree"
+        ],
+        "viewports": [
+          "mobile",
+          "desktop"
+        ],
+        "capturedViewports": [],
+        "missingViewports": [
+          "mobile",
+          "desktop"
+        ],
+        "screenshotFiles": [],
+        "reviews": []
+      },
+      {
+        "component": "form",
+        "storyFiles": [
+          "packages/storybook/src/stories/foundations/form.stories.tsx"
+        ],
+        "coveredComponents": [
+          "form"
+        ],
+        "viewports": [
+          "mobile",
+          "desktop"
+        ],
+        "capturedViewports": [],
+        "missingViewports": [
+          "mobile",
+          "desktop"
+        ],
+        "screenshotFiles": [],
+        "reviews": []
+      },
+      {
+        "component": "hover-card",
+        "storyFiles": [
+          "packages/storybook/src/stories/foundations/hover-card.stories.tsx"
+        ],
+        "coveredComponents": [
+          "hover-card"
+        ],
+        "viewports": [
+          "mobile",
+          "desktop"
+        ],
+        "capturedViewports": [],
+        "missingViewports": [
+          "mobile",
+          "desktop"
+        ],
+        "screenshotFiles": [],
+        "reviews": []
+      },
+      {
+        "component": "image",
+        "storyFiles": [
+          "packages/storybook/src/stories/ai-elements/image.stories.tsx"
+        ],
+        "coveredComponents": [
+          "image"
+        ],
+        "viewports": [
+          "mobile",
+          "desktop"
+        ],
+        "capturedViewports": [],
+        "missingViewports": [
+          "mobile",
+          "desktop"
+        ],
+        "screenshotFiles": [],
+        "reviews": []
+      },
+      {
+        "component": "inline-citation",
+        "storyFiles": [
+          "packages/storybook/src/stories/ai-elements/inline-citation.stories.tsx"
+        ],
+        "coveredComponents": [
+          "inline-citation"
+        ],
+        "viewports": [
+          "mobile",
+          "desktop"
+        ],
+        "capturedViewports": [],
+        "missingViewports": [
+          "mobile",
+          "desktop"
+        ],
+        "screenshotFiles": [],
+        "reviews": []
+      },
+      {
+        "component": "input",
+        "storyFiles": [
+          "packages/storybook/src/stories/foundations/input.stories.tsx"
+        ],
+        "coveredComponents": [
+          "input"
+        ],
+        "viewports": [
+          "mobile",
+          "desktop"
+        ],
+        "capturedViewports": [],
+        "missingViewports": [
+          "mobile",
+          "desktop"
+        ],
+        "screenshotFiles": [],
+        "reviews": []
+      },
+      {
+        "component": "input-group",
+        "storyFiles": [
+          "packages/storybook/src/stories/foundations/input-group.stories.tsx"
+        ],
+        "coveredComponents": [
+          "input-group"
+        ],
+        "viewports": [
+          "mobile",
+          "desktop"
+        ],
+        "capturedViewports": [],
+        "missingViewports": [
+          "mobile",
+          "desktop"
+        ],
+        "screenshotFiles": [],
+        "reviews": []
+      },
+      {
+        "component": "input-otp",
+        "storyFiles": [
+          "packages/storybook/src/stories/foundations/input-otp.stories.tsx"
+        ],
+        "coveredComponents": [
+          "input-otp"
+        ],
+        "viewports": [
+          "mobile",
+          "desktop"
+        ],
+        "capturedViewports": [],
+        "missingViewports": [
+          "mobile",
+          "desktop"
+        ],
+        "screenshotFiles": [],
+        "reviews": []
+      },
+      {
+        "component": "item",
+        "storyFiles": [
+          "packages/storybook/src/stories/foundations/item.stories.tsx"
+        ],
+        "coveredComponents": [
+          "item"
+        ],
+        "viewports": [
+          "mobile",
+          "desktop"
+        ],
+        "capturedViewports": [],
+        "missingViewports": [
+          "mobile",
+          "desktop"
+        ],
+        "screenshotFiles": [],
+        "reviews": []
+      },
+      {
+        "component": "kbd",
+        "storyFiles": [
+          "packages/storybook/src/stories/foundations/kbd.stories.tsx"
+        ],
+        "coveredComponents": [
+          "kbd"
+        ],
+        "viewports": [
+          "mobile",
+          "desktop"
+        ],
+        "capturedViewports": [],
+        "missingViewports": [
+          "mobile",
+          "desktop"
+        ],
+        "screenshotFiles": [],
+        "reviews": []
+      },
+      {
+        "component": "label",
+        "storyFiles": [
+          "packages/storybook/src/stories/foundations/label.stories.tsx"
+        ],
+        "coveredComponents": [
+          "label"
+        ],
+        "viewports": [
+          "mobile",
+          "desktop"
+        ],
+        "capturedViewports": [],
+        "missingViewports": [
+          "mobile",
+          "desktop"
+        ],
+        "screenshotFiles": [],
+        "reviews": []
+      },
+      {
+        "component": "menubar",
+        "storyFiles": [
+          "packages/storybook/src/stories/foundations/menubar.stories.tsx"
+        ],
+        "coveredComponents": [
+          "menubar"
+        ],
+        "viewports": [
+          "mobile",
+          "desktop"
+        ],
+        "capturedViewports": [],
+        "missingViewports": [
+          "mobile",
+          "desktop"
+        ],
+        "screenshotFiles": [],
+        "reviews": []
+      },
+      {
+        "component": "message",
+        "storyFiles": [
+          "packages/storybook/src/stories/ai-elements/message.stories.tsx"
+        ],
+        "coveredComponents": [
+          "message"
+        ],
+        "viewports": [
+          "mobile",
+          "desktop"
+        ],
+        "capturedViewports": [],
+        "missingViewports": [
+          "mobile",
+          "desktop"
+        ],
+        "screenshotFiles": [],
+        "reviews": []
+      },
+      {
+        "component": "native-select",
+        "storyFiles": [
+          "packages/storybook/src/stories/foundations/native-select.stories.tsx"
+        ],
+        "coveredComponents": [
+          "native-select"
+        ],
+        "viewports": [
+          "mobile",
+          "desktop"
+        ],
+        "capturedViewports": [],
+        "missingViewports": [
+          "mobile",
+          "desktop"
+        ],
+        "screenshotFiles": [],
+        "reviews": []
+      },
+      {
+        "component": "navigation-menu",
+        "storyFiles": [
+          "packages/storybook/src/stories/foundations/navigation-menu.stories.tsx"
+        ],
+        "coveredComponents": [
+          "navigation-menu"
+        ],
+        "viewports": [
+          "mobile",
+          "desktop"
+        ],
+        "capturedViewports": [],
+        "missingViewports": [
+          "mobile",
+          "desktop"
+        ],
+        "screenshotFiles": [],
+        "reviews": []
+      },
+      {
+        "component": "node",
+        "storyFiles": [
+          "packages/storybook/src/stories/ai-elements/node.stories.tsx"
+        ],
+        "coveredComponents": [
+          "node"
+        ],
+        "viewports": [
+          "mobile",
+          "desktop"
+        ],
+        "capturedViewports": [],
+        "missingViewports": [
+          "mobile",
+          "desktop"
+        ],
+        "screenshotFiles": [],
+        "reviews": []
+      },
+      {
+        "component": "open-in-chat",
+        "storyFiles": [
+          "packages/storybook/src/stories/ai-elements/open-in-chat.stories.tsx"
+        ],
+        "coveredComponents": [
+          "open-in-chat"
+        ],
+        "viewports": [
+          "mobile",
+          "desktop"
+        ],
+        "capturedViewports": [],
+        "missingViewports": [
+          "mobile",
+          "desktop"
+        ],
+        "screenshotFiles": [],
+        "reviews": []
+      },
+      {
+        "component": "package-info",
+        "storyFiles": [
+          "packages/storybook/src/stories/ai-elements/package-info.stories.tsx"
+        ],
+        "coveredComponents": [
+          "package-info"
+        ],
+        "viewports": [
+          "mobile",
+          "desktop"
+        ],
+        "capturedViewports": [],
+        "missingViewports": [
+          "mobile",
+          "desktop"
+        ],
+        "screenshotFiles": [],
+        "reviews": []
+      },
+      {
+        "component": "pagination",
+        "storyFiles": [
+          "packages/storybook/src/stories/foundations/pagination.stories.tsx"
+        ],
+        "coveredComponents": [
+          "pagination"
+        ],
+        "viewports": [
+          "mobile",
+          "desktop"
+        ],
+        "capturedViewports": [],
+        "missingViewports": [
+          "mobile",
+          "desktop"
+        ],
+        "screenshotFiles": [],
+        "reviews": []
+      },
+      {
+        "component": "panel",
+        "storyFiles": [
+          "packages/storybook/src/stories/ai-elements/panel.stories.tsx"
+        ],
+        "coveredComponents": [
+          "panel"
+        ],
+        "viewports": [
+          "mobile",
+          "desktop"
+        ],
+        "capturedViewports": [],
+        "missingViewports": [
+          "mobile",
+          "desktop"
+        ],
+        "screenshotFiles": [],
+        "reviews": []
+      },
+      {
+        "component": "plan",
+        "storyFiles": [
+          "packages/storybook/src/stories/ai-elements/plan.stories.tsx"
+        ],
+        "coveredComponents": [
+          "plan",
+          "shimmer"
+        ],
+        "viewports": [
+          "mobile",
+          "desktop"
+        ],
+        "capturedViewports": [],
+        "missingViewports": [
+          "mobile",
+          "desktop"
+        ],
+        "screenshotFiles": [],
+        "reviews": []
+      },
+      {
+        "component": "popover",
+        "storyFiles": [
+          "packages/storybook/src/stories/foundations/popover.stories.tsx"
+        ],
+        "coveredComponents": [
+          "popover"
+        ],
+        "viewports": [
+          "mobile",
+          "desktop"
+        ],
+        "capturedViewports": [],
+        "missingViewports": [
+          "mobile",
+          "desktop"
+        ],
+        "screenshotFiles": [],
+        "reviews": []
+      },
+      {
+        "component": "progress",
+        "storyFiles": [
+          "packages/storybook/src/stories/foundations/progress.stories.tsx"
+        ],
+        "coveredComponents": [
+          "progress"
+        ],
+        "viewports": [
+          "mobile",
+          "desktop"
+        ],
+        "capturedViewports": [],
+        "missingViewports": [
+          "mobile",
+          "desktop"
+        ],
+        "screenshotFiles": [],
+        "reviews": []
+      },
+      {
+        "component": "queue",
+        "storyFiles": [
+          "packages/storybook/src/stories/ai-elements/queue.stories.tsx"
+        ],
+        "coveredComponents": [
+          "queue"
+        ],
+        "viewports": [
+          "mobile",
+          "desktop"
+        ],
+        "capturedViewports": [],
+        "missingViewports": [
+          "mobile",
+          "desktop"
+        ],
+        "screenshotFiles": [],
+        "reviews": []
+      },
+      {
+        "component": "radio-group",
+        "storyFiles": [
+          "packages/storybook/src/stories/foundations/radio-group.stories.tsx"
+        ],
+        "coveredComponents": [
+          "radio-group"
+        ],
+        "viewports": [
+          "mobile",
+          "desktop"
+        ],
+        "capturedViewports": [],
+        "missingViewports": [
+          "mobile",
+          "desktop"
+        ],
+        "screenshotFiles": [],
+        "reviews": []
+      },
+      {
+        "component": "reasoning",
+        "storyFiles": [
+          "packages/storybook/src/stories/ai-elements/reasoning.stories.tsx"
+        ],
+        "coveredComponents": [
+          "reasoning",
+          "shimmer"
+        ],
+        "viewports": [
+          "mobile",
+          "desktop"
+        ],
+        "capturedViewports": [],
+        "missingViewports": [
+          "mobile",
+          "desktop"
+        ],
+        "screenshotFiles": [],
+        "reviews": []
+      },
+      {
+        "component": "resizable",
+        "storyFiles": [
+          "packages/storybook/src/stories/foundations/resizable.stories.tsx"
+        ],
+        "coveredComponents": [
+          "resizable"
+        ],
+        "viewports": [
+          "mobile",
+          "desktop"
+        ],
+        "capturedViewports": [],
+        "missingViewports": [
+          "mobile",
+          "desktop"
+        ],
+        "screenshotFiles": [],
+        "reviews": []
+      },
+      {
+        "component": "sandbox",
+        "storyFiles": [
+          "packages/storybook/src/stories/ai-elements/sandbox.stories.tsx"
+        ],
+        "coveredComponents": [
+          "code-block",
+          "sandbox",
+          "tool"
+        ],
+        "viewports": [
+          "mobile",
+          "desktop"
+        ],
+        "capturedViewports": [],
+        "missingViewports": [
+          "mobile",
+          "desktop"
+        ],
+        "screenshotFiles": [],
+        "reviews": []
+      },
+      {
+        "component": "schema-display",
+        "storyFiles": [
+          "packages/storybook/src/stories/ai-elements/schema-display.stories.tsx"
+        ],
+        "coveredComponents": [
+          "schema-display"
+        ],
+        "viewports": [
+          "mobile",
+          "desktop"
+        ],
+        "capturedViewports": [],
+        "missingViewports": [
+          "mobile",
+          "desktop"
+        ],
+        "screenshotFiles": [],
+        "reviews": []
+      },
+      {
+        "component": "scroll-area",
+        "storyFiles": [
+          "packages/storybook/src/stories/foundations/scroll-area.stories.tsx"
+        ],
+        "coveredComponents": [
+          "scroll-area"
+        ],
+        "viewports": [
+          "mobile",
+          "desktop"
+        ],
+        "capturedViewports": [],
+        "missingViewports": [
+          "mobile",
+          "desktop"
+        ],
+        "screenshotFiles": [],
+        "reviews": []
+      },
+      {
+        "component": "searchable-list-popover",
+        "storyFiles": [
+          "packages/storybook/src/stories/foundations/searchable-list-popover.stories.tsx"
+        ],
+        "coveredComponents": [
+          "scroll-area",
+          "searchable-list-popover"
+        ],
+        "viewports": [
+          "mobile",
+          "desktop"
+        ],
+        "capturedViewports": [],
+        "missingViewports": [
+          "mobile",
+          "desktop"
+        ],
+        "screenshotFiles": [],
+        "reviews": []
+      },
+      {
+        "component": "select",
+        "storyFiles": [
+          "packages/storybook/src/stories/foundations/select.stories.tsx"
+        ],
+        "coveredComponents": [
+          "select"
+        ],
+        "viewports": [
+          "mobile",
+          "desktop"
+        ],
+        "capturedViewports": [],
+        "missingViewports": [
+          "mobile",
+          "desktop"
+        ],
+        "screenshotFiles": [],
+        "reviews": []
+      },
+      {
+        "component": "separator",
+        "storyFiles": [
+          "packages/storybook/src/stories/foundations/separator.stories.tsx"
+        ],
+        "coveredComponents": [
+          "separator"
+        ],
+        "viewports": [
+          "mobile",
+          "desktop"
+        ],
+        "capturedViewports": [],
+        "missingViewports": [
+          "mobile",
+          "desktop"
+        ],
+        "screenshotFiles": [],
+        "reviews": []
+      },
+      {
+        "component": "sheet",
+        "storyFiles": [
+          "packages/storybook/src/stories/foundations/sheet.stories.tsx"
+        ],
+        "coveredComponents": [
+          "sheet"
+        ],
+        "viewports": [
+          "mobile",
+          "desktop"
+        ],
+        "capturedViewports": [],
+        "missingViewports": [
+          "mobile",
+          "desktop"
+        ],
+        "screenshotFiles": [],
+        "reviews": []
+      },
+      {
+        "component": "shimmer",
+        "storyFiles": [
+          "packages/storybook/src/stories/ai-elements/shimmer.stories.tsx"
+        ],
+        "coveredComponents": [
+          "shimmer"
+        ],
+        "viewports": [
+          "mobile",
+          "desktop"
+        ],
+        "capturedViewports": [],
+        "missingViewports": [
+          "mobile",
+          "desktop"
+        ],
+        "screenshotFiles": [],
+        "reviews": []
+      },
+      {
+        "component": "sidebar",
+        "storyFiles": [
+          "packages/storybook/src/stories/foundations/sidebar.stories.tsx"
+        ],
+        "coveredComponents": [
+          "sidebar"
+        ],
+        "viewports": [
+          "mobile",
+          "desktop"
+        ],
+        "capturedViewports": [],
+        "missingViewports": [
+          "mobile",
+          "desktop"
+        ],
+        "screenshotFiles": [],
+        "reviews": []
+      },
+      {
+        "component": "skeleton",
+        "storyFiles": [
+          "packages/storybook/src/stories/foundations/skeleton.stories.tsx"
+        ],
+        "coveredComponents": [
+          "skeleton"
+        ],
+        "viewports": [
+          "mobile",
+          "desktop"
+        ],
+        "capturedViewports": [],
+        "missingViewports": [
+          "mobile",
+          "desktop"
+        ],
+        "screenshotFiles": [],
+        "reviews": []
+      },
+      {
+        "component": "slider",
+        "storyFiles": [
+          "packages/storybook/src/stories/foundations/slider.stories.tsx"
+        ],
+        "coveredComponents": [
+          "slider"
+        ],
+        "viewports": [
+          "mobile",
+          "desktop"
+        ],
+        "capturedViewports": [],
+        "missingViewports": [
+          "mobile",
+          "desktop"
+        ],
+        "screenshotFiles": [],
+        "reviews": []
+      },
+      {
+        "component": "snippet",
+        "storyFiles": [
+          "packages/storybook/src/stories/ai-elements/snippet.stories.tsx"
+        ],
+        "coveredComponents": [
+          "snippet"
+        ],
+        "viewports": [
+          "mobile",
+          "desktop"
+        ],
+        "capturedViewports": [],
+        "missingViewports": [
+          "mobile",
+          "desktop"
+        ],
+        "screenshotFiles": [],
+        "reviews": []
+      },
+      {
+        "component": "sonner",
+        "storyFiles": [
+          "packages/storybook/src/stories/foundations/sonner.stories.tsx"
+        ],
+        "coveredComponents": [
+          "sonner"
+        ],
+        "viewports": [
+          "mobile",
+          "desktop"
+        ],
+        "capturedViewports": [],
+        "missingViewports": [
+          "mobile",
+          "desktop"
+        ],
+        "screenshotFiles": [],
+        "reviews": []
+      },
+      {
+        "component": "sources",
+        "storyFiles": [
+          "packages/storybook/src/stories/ai-elements/sources.stories.tsx"
+        ],
+        "coveredComponents": [
+          "sources"
+        ],
+        "viewports": [
+          "mobile",
+          "desktop"
+        ],
+        "capturedViewports": [],
+        "missingViewports": [
+          "mobile",
+          "desktop"
+        ],
+        "screenshotFiles": [],
+        "reviews": []
+      },
+      {
+        "component": "spinner",
+        "storyFiles": [
+          "packages/storybook/src/stories/foundations/spinner.stories.tsx"
+        ],
+        "coveredComponents": [
+          "spinner"
+        ],
+        "viewports": [
+          "mobile",
+          "desktop"
+        ],
+        "capturedViewports": [],
+        "missingViewports": [
+          "mobile",
+          "desktop"
+        ],
+        "screenshotFiles": [],
+        "reviews": []
+      },
+      {
+        "component": "stack-trace",
+        "storyFiles": [
+          "packages/storybook/src/stories/ai-elements/stack-trace.stories.tsx"
+        ],
+        "coveredComponents": [
+          "stack-trace"
+        ],
+        "viewports": [
+          "mobile",
+          "desktop"
+        ],
+        "capturedViewports": [],
+        "missingViewports": [
+          "mobile",
+          "desktop"
+        ],
+        "screenshotFiles": [],
+        "reviews": []
+      },
+      {
+        "component": "suggestion",
+        "storyFiles": [
+          "packages/storybook/src/stories/ai-elements/suggestion.stories.tsx"
+        ],
+        "coveredComponents": [
+          "suggestion"
+        ],
+        "viewports": [
+          "mobile",
+          "desktop"
+        ],
+        "capturedViewports": [],
+        "missingViewports": [
+          "mobile",
+          "desktop"
+        ],
+        "screenshotFiles": [],
+        "reviews": []
+      },
+      {
+        "component": "switch",
+        "storyFiles": [
+          "packages/storybook/src/stories/foundations/switch.stories.tsx"
+        ],
+        "coveredComponents": [
+          "switch"
+        ],
+        "viewports": [
+          "mobile",
+          "desktop"
+        ],
+        "capturedViewports": [],
+        "missingViewports": [
+          "mobile",
+          "desktop"
+        ],
+        "screenshotFiles": [],
+        "reviews": []
+      },
+      {
+        "component": "table",
+        "storyFiles": [
+          "packages/storybook/src/stories/foundations/table.stories.tsx"
+        ],
+        "coveredComponents": [
+          "table"
+        ],
+        "viewports": [
+          "mobile",
+          "desktop"
+        ],
+        "capturedViewports": [],
+        "missingViewports": [
+          "mobile",
+          "desktop"
+        ],
+        "screenshotFiles": [],
+        "reviews": []
+      },
+      {
+        "component": "tabs",
+        "storyFiles": [
+          "packages/storybook/src/stories/foundations/tabs.stories.tsx"
+        ],
+        "coveredComponents": [
+          "tabs"
+        ],
+        "viewports": [
+          "mobile",
+          "desktop"
+        ],
+        "capturedViewports": [],
+        "missingViewports": [
+          "mobile",
+          "desktop"
+        ],
+        "screenshotFiles": [],
+        "reviews": []
+      },
+      {
+        "component": "task",
+        "storyFiles": [
+          "packages/storybook/src/stories/ai-elements/task.stories.tsx"
+        ],
+        "coveredComponents": [
+          "task"
+        ],
+        "viewports": [
+          "mobile",
+          "desktop"
+        ],
+        "capturedViewports": [],
+        "missingViewports": [
+          "mobile",
+          "desktop"
+        ],
+        "screenshotFiles": [],
+        "reviews": []
+      },
+      {
+        "component": "terminal",
+        "storyFiles": [
+          "packages/storybook/src/stories/ai-elements/terminal.stories.tsx"
+        ],
+        "coveredComponents": [
+          "shimmer",
+          "terminal"
+        ],
+        "viewports": [
+          "mobile",
+          "desktop"
+        ],
+        "capturedViewports": [],
+        "missingViewports": [
+          "mobile",
+          "desktop"
+        ],
+        "screenshotFiles": [],
+        "reviews": []
+      },
+      {
+        "component": "test-results",
+        "storyFiles": [
+          "packages/storybook/src/stories/ai-elements/test-results.stories.tsx"
+        ],
+        "coveredComponents": [
+          "test-results"
+        ],
+        "viewports": [
+          "mobile",
+          "desktop"
+        ],
+        "capturedViewports": [],
+        "missingViewports": [
+          "mobile",
+          "desktop"
+        ],
+        "screenshotFiles": [],
+        "reviews": []
+      },
+      {
+        "component": "textarea",
+        "storyFiles": [
+          "packages/storybook/src/stories/foundations/textarea.stories.tsx"
+        ],
+        "coveredComponents": [
+          "textarea"
+        ],
+        "viewports": [
+          "mobile",
+          "desktop"
+        ],
+        "capturedViewports": [],
+        "missingViewports": [
+          "mobile",
+          "desktop"
+        ],
+        "screenshotFiles": [],
+        "reviews": []
+      },
+      {
+        "component": "toggle",
+        "storyFiles": [
+          "packages/storybook/src/stories/foundations/toggle.stories.tsx"
+        ],
+        "coveredComponents": [
+          "toggle"
+        ],
+        "viewports": [
+          "mobile",
+          "desktop"
+        ],
+        "capturedViewports": [],
+        "missingViewports": [
+          "mobile",
+          "desktop"
+        ],
+        "screenshotFiles": [],
+        "reviews": []
+      },
+      {
+        "component": "toggle-group",
+        "storyFiles": [
+          "packages/storybook/src/stories/foundations/toggle-group.stories.tsx"
+        ],
+        "coveredComponents": [
+          "toggle-group"
+        ],
+        "viewports": [
+          "mobile",
+          "desktop"
+        ],
+        "capturedViewports": [],
+        "missingViewports": [
+          "mobile",
+          "desktop"
+        ],
+        "screenshotFiles": [],
+        "reviews": []
+      },
+      {
+        "component": "tool",
+        "storyFiles": [
+          "packages/storybook/src/stories/ai-elements/tool.stories.tsx"
+        ],
+        "coveredComponents": [
+          "code-block",
+          "tool"
+        ],
+        "viewports": [
+          "mobile",
+          "desktop"
+        ],
+        "capturedViewports": [],
+        "missingViewports": [
+          "mobile",
+          "desktop"
+        ],
+        "screenshotFiles": [],
+        "reviews": []
+      },
+      {
+        "component": "toolbar",
+        "storyFiles": [
+          "packages/storybook/src/stories/ai-elements/toolbar.stories.tsx"
+        ],
+        "coveredComponents": [
+          "toolbar"
+        ],
+        "viewports": [
+          "mobile",
+          "desktop"
+        ],
+        "capturedViewports": [],
+        "missingViewports": [
+          "mobile",
+          "desktop"
+        ],
+        "screenshotFiles": [],
+        "reviews": []
+      },
+      {
+        "component": "tooltip",
+        "storyFiles": [
+          "packages/storybook/src/stories/foundations/tooltip.stories.tsx"
+        ],
+        "coveredComponents": [
+          "tooltip"
+        ],
+        "viewports": [
+          "mobile",
+          "desktop"
+        ],
+        "capturedViewports": [],
+        "missingViewports": [
+          "mobile",
+          "desktop"
+        ],
+        "screenshotFiles": [],
+        "reviews": []
+      },
+      {
+        "component": "transcription",
+        "storyFiles": [
+          "packages/storybook/src/stories/ai-elements/transcription.stories.tsx"
+        ],
+        "coveredComponents": [
+          "transcription"
+        ],
+        "viewports": [
+          "mobile",
+          "desktop"
+        ],
+        "capturedViewports": [],
+        "missingViewports": [
+          "mobile",
+          "desktop"
+        ],
+        "screenshotFiles": [],
+        "reviews": []
+      }
+    ],
+    "componentGaps": [
+      {
+        "component": "3d-book",
+        "sourceFile": "src/components/marketing/3d-book.tsx",
+        "reason": "no direct story, containing story, or same-source route screenshot"
+      },
+      {
+        "component": "animated-collection",
+        "sourceFile": "src/components/animate/animated-collection.tsx",
+        "reason": "no direct story, containing story, or same-source route screenshot"
+      },
+      {
+        "component": "audio-player",
+        "sourceFile": "src/components/ai-elements/audio-player.tsx",
+        "reason": "no direct story, containing story, or same-source route screenshot"
+      },
+      {
+        "component": "bento-card",
+        "sourceFile": "src/components/marketing/bento-card.tsx",
+        "reason": "no direct story, containing story, or same-source route screenshot"
+      },
+      {
+        "component": "bottom-menu",
+        "sourceFile": "src/components/animate/bottom-menu.tsx",
+        "reason": "no direct story, containing story, or same-source route screenshot"
+      },
+      {
+        "component": "bucket",
+        "sourceFile": "src/components/marketing/bucket.tsx",
+        "reason": "no direct story, containing story, or same-source route screenshot"
+      },
+      {
+        "component": "day-picker",
+        "sourceFile": "src/components/animate/day-picker.tsx",
+        "reason": "no direct story, containing story, or same-source route screenshot"
+      },
+      {
+        "component": "delete-button",
+        "sourceFile": "src/components/animate/delete-button.tsx",
+        "reason": "no direct story, containing story, or same-source route screenshot"
+      },
+      {
+        "component": "direction",
+        "sourceFile": "src/components/direction.tsx",
+        "reason": "no direct story, containing story, or same-source route screenshot"
+      },
+      {
+        "component": "discover-button",
+        "sourceFile": "src/components/marketing/discover-button.tsx",
+        "reason": "no direct story, containing story, or same-source route screenshot"
+      },
+      {
+        "component": "dynamic-toolbar",
+        "sourceFile": "src/components/animate/dynamic-toolbar.tsx",
+        "reason": "no direct story, containing story, or same-source route screenshot"
+      },
+      {
+        "component": "empty-testimonial",
+        "sourceFile": "src/components/marketing/empty-testimonial.tsx",
+        "reason": "no direct story, containing story, or same-source route screenshot"
+      },
+      {
+        "component": "expandable-gallery",
+        "sourceFile": "src/components/animate/expandable-gallery.tsx",
+        "reason": "no direct story, containing story, or same-source route screenshot"
+      },
+      {
+        "component": "feature-carousel",
+        "sourceFile": "src/components/marketing/feature-carousel.tsx",
+        "reason": "no direct story, containing story, or same-source route screenshot"
+      },
+      {
+        "component": "fluid-expanding-grid",
+        "sourceFile": "src/components/animate/fluid-expanding-grid.tsx",
+        "reason": "no direct story, containing story, or same-source route screenshot"
+      },
+      {
+        "component": "folder-interaction",
+        "sourceFile": "src/components/marketing/folder-interaction.tsx",
+        "reason": "no direct story, containing story, or same-source route screenshot"
+      },
+      {
+        "component": "inline-edit",
+        "sourceFile": "src/components/animate/inline-edit.tsx",
+        "reason": "no direct story, containing story, or same-source route screenshot"
+      },
+      {
+        "component": "jsx-preview",
+        "sourceFile": "src/components/ai-elements/jsx-preview.tsx",
+        "reason": "no direct story, containing story, or same-source route screenshot"
+      },
+      {
+        "component": "list-item",
+        "sourceFile": "src/components/animate/list-item.tsx",
+        "reason": "no direct story, containing story, or same-source route screenshot"
+      },
+      {
+        "component": "magnified-bento",
+        "sourceFile": "src/components/marketing/magnified-bento.tsx",
+        "reason": "no direct story, containing story, or same-source route screenshot"
+      },
+      {
+        "component": "mic-selector",
+        "sourceFile": "src/components/ai-elements/mic-selector.tsx",
+        "reason": "no direct story, containing story, or same-source route screenshot"
+      },
+      {
+        "component": "model-selector",
+        "sourceFile": "src/components/ai-elements/model-selector.tsx",
+        "reason": "no direct story, containing story, or same-source route screenshot"
+      },
+      {
+        "component": "morphing-input",
+        "sourceFile": "src/components/animate/morphing-input.tsx",
+        "reason": "no direct story, containing story, or same-source route screenshot"
+      },
+      {
+        "component": "multi-step-form",
+        "sourceFile": "src/components/animate/multi-step-form.tsx",
+        "reason": "no direct story, containing story, or same-source route screenshot"
+      },
+      {
+        "component": "nav-sidebar-shell",
+        "sourceFile": "src/components/nav-sidebar-shell.tsx",
+        "reason": "no direct story, containing story, or same-source route screenshot"
+      },
+      {
+        "component": "persona",
+        "sourceFile": "src/components/ai-elements/persona.tsx",
+        "reason": "no direct story, containing story, or same-source route screenshot"
+      },
+      {
+        "component": "pricing-card",
+        "sourceFile": "src/components/animate/pricing-card.tsx",
+        "reason": "no direct story, containing story, or same-source route screenshot"
+      },
+      {
+        "component": "prompt-input",
+        "sourceFile": "src/components/ai-elements/prompt-input.tsx",
+        "reason": "no direct story, containing story, or same-source route screenshot"
+      },
+      {
+        "component": "shake-testimonial-card",
+        "sourceFile": "src/components/marketing/shake-testimonial-card.tsx",
+        "reason": "no direct story, containing story, or same-source route screenshot"
+      },
+      {
+        "component": "smooth-dropdown",
+        "sourceFile": "src/components/animate/smooth-dropdown.tsx",
+        "reason": "no direct story, containing story, or same-source route screenshot"
+      },
+      {
+        "component": "speech-input",
+        "sourceFile": "src/components/ai-elements/speech-input.tsx",
+        "reason": "no direct story, containing story, or same-source route screenshot"
+      },
+      {
+        "component": "stacked-list",
+        "sourceFile": "src/components/animate/stacked-list.tsx",
+        "reason": "no direct story, containing story, or same-source route screenshot"
+      },
+      {
+        "component": "status-button",
+        "sourceFile": "src/components/animate/status-button.tsx",
+        "reason": "no direct story, containing story, or same-source route screenshot"
+      },
+      {
+        "component": "vertical-tabs",
+        "sourceFile": "src/components/animate/vertical-tabs.tsx",
+        "reason": "no direct story, containing story, or same-source route screenshot"
+      },
+      {
+        "component": "voice-selector",
+        "sourceFile": "src/components/ai-elements/voice-selector.tsx",
+        "reason": "no direct story, containing story, or same-source route screenshot"
+      },
+      {
+        "component": "web-preview",
+        "sourceFile": "src/components/ai-elements/web-preview.tsx",
+        "reason": "no direct story, containing story, or same-source route screenshot"
+      }
+    ],
+    "implementationShells": []
+  },
+  "workflows": [],
+  "errorStates": {
+    "covered": [],
+    "gaps": []
+  },
+  "workflowProof": [],
+  "coverageQuality": {
+    "weakCoverage": [],
+    "danglingEdges": []
+  },
+  "actions": [
+    {
+      "priority": "P0",
+      "kind": "proof-gate",
+      "target": "workflow-proof",
+      "reason": "proof evidence file is missing: artifacts/workflow-proof/latest/status.json"
+    },
+    {
+      "priority": "P0",
+      "kind": "proof-gate",
+      "target": "fallback-coverage",
+      "reason": "proof evidence file is missing: artifacts/coverage/latest/status.json"
+    },
+    {
+      "priority": "P1",
+      "kind": "storybook-story",
+      "target": "3d-book",
+      "reason": "no direct story, containing story, or same-source route screenshot"
+    },
+    {
+      "priority": "P1",
+      "kind": "storybook-story",
+      "target": "animated-collection",
+      "reason": "no direct story, containing story, or same-source route screenshot"
+    },
+    {
+      "priority": "P1",
+      "kind": "storybook-story",
+      "target": "audio-player",
+      "reason": "no direct story, containing story, or same-source route screenshot"
+    },
+    {
+      "priority": "P1",
+      "kind": "storybook-story",
+      "target": "bento-card",
+      "reason": "no direct story, containing story, or same-source route screenshot"
+    },
+    {
+      "priority": "P1",
+      "kind": "storybook-story",
+      "target": "bottom-menu",
+      "reason": "no direct story, containing story, or same-source route screenshot"
+    },
+    {
+      "priority": "P1",
+      "kind": "storybook-story",
+      "target": "bucket",
+      "reason": "no direct story, containing story, or same-source route screenshot"
+    },
+    {
+      "priority": "P1",
+      "kind": "storybook-story",
+      "target": "day-picker",
+      "reason": "no direct story, containing story, or same-source route screenshot"
+    },
+    {
+      "priority": "P1",
+      "kind": "storybook-story",
+      "target": "delete-button",
+      "reason": "no direct story, containing story, or same-source route screenshot"
+    },
+    {
+      "priority": "P1",
+      "kind": "storybook-story",
+      "target": "direction",
+      "reason": "no direct story, containing story, or same-source route screenshot"
+    },
+    {
+      "priority": "P1",
+      "kind": "storybook-story",
+      "target": "discover-button",
+      "reason": "no direct story, containing story, or same-source route screenshot"
+    },
+    {
+      "priority": "P1",
+      "kind": "storybook-story",
+      "target": "dynamic-toolbar",
+      "reason": "no direct story, containing story, or same-source route screenshot"
+    },
+    {
+      "priority": "P1",
+      "kind": "storybook-story",
+      "target": "empty-testimonial",
+      "reason": "no direct story, containing story, or same-source route screenshot"
+    },
+    {
+      "priority": "P1",
+      "kind": "storybook-story",
+      "target": "expandable-gallery",
+      "reason": "no direct story, containing story, or same-source route screenshot"
+    },
+    {
+      "priority": "P1",
+      "kind": "storybook-story",
+      "target": "feature-carousel",
+      "reason": "no direct story, containing story, or same-source route screenshot"
+    },
+    {
+      "priority": "P1",
+      "kind": "storybook-story",
+      "target": "fluid-expanding-grid",
+      "reason": "no direct story, containing story, or same-source route screenshot"
+    },
+    {
+      "priority": "P1",
+      "kind": "storybook-story",
+      "target": "folder-interaction",
+      "reason": "no direct story, containing story, or same-source route screenshot"
+    },
+    {
+      "priority": "P1",
+      "kind": "storybook-story",
+      "target": "inline-edit",
+      "reason": "no direct story, containing story, or same-source route screenshot"
+    },
+    {
+      "priority": "P1",
+      "kind": "storybook-story",
+      "target": "jsx-preview",
+      "reason": "no direct story, containing story, or same-source route screenshot"
+    },
+    {
+      "priority": "P1",
+      "kind": "storybook-story",
+      "target": "list-item",
+      "reason": "no direct story, containing story, or same-source route screenshot"
+    },
+    {
+      "priority": "P1",
+      "kind": "storybook-story",
+      "target": "magnified-bento",
+      "reason": "no direct story, containing story, or same-source route screenshot"
+    },
+    {
+      "priority": "P1",
+      "kind": "storybook-story",
+      "target": "mic-selector",
+      "reason": "no direct story, containing story, or same-source route screenshot"
+    },
+    {
+      "priority": "P1",
+      "kind": "storybook-story",
+      "target": "model-selector",
+      "reason": "no direct story, containing story, or same-source route screenshot"
+    },
+    {
+      "priority": "P1",
+      "kind": "storybook-story",
+      "target": "morphing-input",
+      "reason": "no direct story, containing story, or same-source route screenshot"
+    },
+    {
+      "priority": "P1",
+      "kind": "storybook-story",
+      "target": "multi-step-form",
+      "reason": "no direct story, containing story, or same-source route screenshot"
+    },
+    {
+      "priority": "P1",
+      "kind": "storybook-story",
+      "target": "nav-sidebar-shell",
+      "reason": "no direct story, containing story, or same-source route screenshot"
+    },
+    {
+      "priority": "P1",
+      "kind": "storybook-story",
+      "target": "persona",
+      "reason": "no direct story, containing story, or same-source route screenshot"
+    },
+    {
+      "priority": "P1",
+      "kind": "storybook-story",
+      "target": "pricing-card",
+      "reason": "no direct story, containing story, or same-source route screenshot"
+    },
+    {
+      "priority": "P1",
+      "kind": "storybook-story",
+      "target": "prompt-input",
+      "reason": "no direct story, containing story, or same-source route screenshot"
+    },
+    {
+      "priority": "P1",
+      "kind": "storybook-story",
+      "target": "shake-testimonial-card",
+      "reason": "no direct story, containing story, or same-source route screenshot"
+    },
+    {
+      "priority": "P1",
+      "kind": "storybook-story",
+      "target": "smooth-dropdown",
+      "reason": "no direct story, containing story, or same-source route screenshot"
+    },
+    {
+      "priority": "P1",
+      "kind": "storybook-story",
+      "target": "speech-input",
+      "reason": "no direct story, containing story, or same-source route screenshot"
+    },
+    {
+      "priority": "P1",
+      "kind": "storybook-story",
+      "target": "stacked-list",
+      "reason": "no direct story, containing story, or same-source route screenshot"
+    },
+    {
+      "priority": "P1",
+      "kind": "storybook-story",
+      "target": "status-button",
+      "reason": "no direct story, containing story, or same-source route screenshot"
+    },
+    {
+      "priority": "P1",
+      "kind": "storybook-story",
+      "target": "vertical-tabs",
+      "reason": "no direct story, containing story, or same-source route screenshot"
+    },
+    {
+      "priority": "P1",
+      "kind": "storybook-story",
+      "target": "voice-selector",
+      "reason": "no direct story, containing story, or same-source route screenshot"
+    },
+    {
+      "priority": "P1",
+      "kind": "storybook-story",
+      "target": "web-preview",
+      "reason": "no direct story, containing story, or same-source route screenshot"
+    },
+    {
+      "priority": "P1",
+      "kind": "story-screenshot",
+      "target": "storybook",
+      "reason": "98 story screenshot targets missing mobile or desktop evidence"
+    }
+  ]
+}

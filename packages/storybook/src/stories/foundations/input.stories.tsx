@@ -5,7 +5,6 @@ import type { Meta, StoryObj } from "@storybook/react-vite"
 const meta = {
 	title: "Foundations/Forms/Input",
 	component: Input,
-	tags: ["autodocs"],
 	args: {
 		placeholder: "Search sessions",
 		type: "text",

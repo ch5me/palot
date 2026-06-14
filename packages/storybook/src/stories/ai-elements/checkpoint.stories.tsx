@@ -8,7 +8,6 @@ import type { Meta, StoryObj } from "@storybook/react-vite"
 const meta = {
 	title: "AI Elements/Workflow/Checkpoint",
 	component: Checkpoint,
-	tags: ["autodocs"],
 	render: () => (
 		<div className="w-[620px] p-8">
 			<Checkpoint>

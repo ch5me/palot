@@ -10,7 +10,6 @@ import type { Meta, StoryObj } from "@storybook/react-vite"
 const meta = {
 	title: "AI Elements/Workflow/Confirmation",
 	component: Confirmation,
-	tags: ["autodocs"],
 	render: () => (
 		<div className="w-[520px] p-8">
 			<Confirmation approval={{ id: "tool-call-1" }} state="approval-requested">

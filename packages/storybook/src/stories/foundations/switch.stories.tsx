@@ -5,7 +5,6 @@ import type { Meta, StoryObj } from "@storybook/react-vite"
 const meta = {
 	title: "Foundations/Forms/Switch",
 	component: Switch,
-	tags: ["autodocs"],
 	args: {
 		defaultChecked: true,
 		size: "default",

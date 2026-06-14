@@ -11,7 +11,6 @@ import { CheckIcon, CopyIcon, PlayIcon } from "lucide-react"
 const meta = {
 	title: "Foundations/Actions/ButtonGroup",
 	component: ButtonGroup,
-	tags: ["autodocs"],
 	render: () => (
 		<div className="flex flex-col gap-6">
 			<ButtonGroup>

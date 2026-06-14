@@ -16,7 +16,6 @@ import { MoreHorizontalIcon } from "lucide-react"
 const meta = {
 	title: "Foundations/Overlays/DropdownMenu",
 	component: DropdownMenu,
-	tags: ["autodocs"],
 	render: () => (
 		<div className="min-h-[280px] w-[420px] p-12">
 			<DropdownMenu defaultOpen modal={false}>

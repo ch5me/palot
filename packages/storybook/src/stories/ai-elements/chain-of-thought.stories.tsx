@@ -12,7 +12,6 @@ import { CheckCircle2Icon, SearchIcon, SparklesIcon } from "lucide-react"
 const meta = {
 	title: "AI Elements/Workflow/ChainOfThought",
 	component: ChainOfThought,
-	tags: ["autodocs"],
 	render: () => (
 		<div className="w-[640px] p-8">
 			<ChainOfThought defaultOpen>

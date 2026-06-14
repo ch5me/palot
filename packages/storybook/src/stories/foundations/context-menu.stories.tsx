@@ -14,7 +14,6 @@ import type { Meta, StoryObj } from "@storybook/react-vite"
 const meta = {
 	title: "Foundations/Overlays/ContextMenu",
 	component: ContextMenu,
-	tags: ["autodocs"],
 	render: () => (
 		<div className="min-h-[300px] w-[480px] p-10">
 			<ContextMenu defaultOpen>

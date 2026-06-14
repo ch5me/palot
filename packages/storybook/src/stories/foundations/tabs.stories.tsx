@@ -5,7 +5,6 @@ import { BotIcon, FolderIcon, GlobeIcon } from "lucide-react"
 const meta = {
 	title: "Foundations/Navigation/Tabs",
 	component: Tabs,
-	tags: ["autodocs"],
 	args: {
 		defaultValue: "chat",
 	},

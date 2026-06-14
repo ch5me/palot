@@ -16,7 +16,6 @@ const slides = [
 const meta = {
 	title: "Foundations/Media/Carousel",
 	component: Carousel,
-	tags: ["autodocs"],
 	render: () => (
 		<Carousel className="w-[520px]">
 			<CarouselContent>

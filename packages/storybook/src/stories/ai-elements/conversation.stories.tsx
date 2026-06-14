@@ -32,7 +32,6 @@ const messages: ConversationMessage[] = [
 const meta = {
 	title: "AI Elements/Chat/Conversation",
 	component: Conversation,
-	tags: ["autodocs"],
 	render: () => (
 		<div className="grid w-[760px] grid-cols-[1fr_260px] gap-6 p-8">
 			<div className="relative h-[520px] overflow-hidden rounded-lg border bg-background">

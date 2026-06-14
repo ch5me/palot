@@ -40,7 +40,6 @@ function ChartPreview() {
 const meta = {
 	title: "Foundations/Data Display/Chart",
 	component: ChartPreview,
-	tags: ["autodocs"],
 } satisfies Meta<typeof ChartPreview>
 
 export default meta

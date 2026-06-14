@@ -14,7 +14,6 @@ import type { Meta, StoryObj } from "@storybook/react-vite"
 const meta = {
 	title: "AI Elements/Workflow/Plan",
 	component: Plan,
-	tags: ["autodocs"],
 	render: () => (
 		<div className="w-[620px] p-8">
 			<Plan defaultOpen>

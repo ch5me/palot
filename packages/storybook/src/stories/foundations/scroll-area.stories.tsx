@@ -17,7 +17,6 @@ const entries = [
 const meta = {
 	title: "Foundations/Layout/ScrollArea",
 	component: ScrollArea,
-	tags: ["autodocs"],
 	render: () => (
 		<ScrollArea className="h-64 w-[320px] rounded-lg border bg-card text-card-foreground">
 			<div className="p-4">

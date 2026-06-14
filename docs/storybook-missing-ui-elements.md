@@ -1,15 +1,15 @@
 # Missing Storybook Coverage
 
-Generated from `ch5 coverage elf --json` on 2026-06-14T01:09:46.010Z.
+Generated from `ch5 coverage elf --json` on 2026-06-14T01:22:59.798Z.
 
 ## Current Coverage
 
 - Visual UI components: 134
-- Covered by Storybook/route coverage: 92
-- Missing Storybook representation: 42
-- Actionable missing local stories after documented exceptions: 31
-- Story files: 93
-- Story screenshot proof missing in CH5 formal coverage: 184 viewport targets
+- Covered by Storybook/route coverage: 98
+- Missing Storybook representation: 36
+- Actionable missing local stories after documented exceptions: 25
+- Story files: 99
+- Story screenshot proof missing in CH5 formal coverage: 196 viewport targets
 - Documented exceptions: 11
 - Batch 01 local render proof: `.sisyphus/evidence/storybook-coverage/batch-01/render-proof.json`
 - Batch 02 local render proof: `.sisyphus/evidence/storybook-coverage/batch-02/render-proof.json`
@@ -34,10 +34,13 @@ Generated from `ch5 coverage elf --json` on 2026-06-14T01:09:46.010Z.
 - Batch 11 CH5 coverage proof: `.sisyphus/evidence/storybook-coverage/batch-11/ch5-coverage.json`
 - Batch 12 local render proof: `.sisyphus/evidence/storybook-coverage/batch-12/render-proof.json`
 - Batch 12 CH5 coverage proof: `.sisyphus/evidence/storybook-coverage/batch-12/ch5-coverage.json`
+- Batch 13 local render proof: `.sisyphus/evidence/storybook-coverage/batch-13/render-proof.json`
+- Batch 13 CH5 coverage proof: `.sisyphus/evidence/storybook-coverage/batch-13/ch5-coverage.json`
 - Reusable render proof helper: `bun run verify:storybook-render -- --out <proof-dir> <story-id> [...]`
 - CH5 gap source scope: local `packages/ui/src/components/**` files only.
 - Imported components from other packages/libraries are out of scope here. Trust their upstream stories/tests.
 - Thin local wrappers around imported components need Palot stories only when they add local behavior, styling, composition, or app-specific states. Pure pass-through wrappers can become documented exceptions.
+- Autodocs are disabled across Storybook stories by omitting `tags: ["autodocs"]`; keep default story behavior unless explicitly needed.
 
 Covered components today:
 
@@ -99,6 +102,8 @@ Covered components today:
 - [x] toggle-group (packages/storybook/src/stories/foundations/toggle-group.stories.tsx)
 - [x] tooltip (packages/storybook/src/stories/foundations/tooltip.stories.tsx)
 - [x] confirmation (packages/storybook/src/stories/ai-elements/confirmation.stories.tsx)
+- [x] connection (packages/storybook/src/stories/ai-elements/connection.stories.tsx)
+- [x] controls (packages/storybook/src/stories/ai-elements/controls.stories.tsx)
 - [x] image (packages/storybook/src/stories/ai-elements/image.stories.tsx)
 - [x] package-info (packages/storybook/src/stories/ai-elements/package-info.stories.tsx)
 - [x] schema-display (packages/storybook/src/stories/ai-elements/schema-display.stories.tsx)
@@ -122,15 +127,19 @@ Covered components today:
 - [x] context (packages/storybook/src/stories/ai-elements/context.stories.tsx)
 - [x] conversation (packages/storybook/src/stories/ai-elements/conversation.stories.tsx)
 - [x] diff (packages/storybook/src/stories/ai-elements/diff.stories.tsx)
+- [x] edge (packages/storybook/src/stories/ai-elements/edge.stories.tsx)
 - [x] file-changes (packages/storybook/src/stories/ai-elements/file-changes.stories.tsx)
 - [x] inline-citation (packages/storybook/src/stories/ai-elements/inline-citation.stories.tsx)
 - [x] message (packages/storybook/src/stories/ai-elements/message.stories.tsx)
+- [x] node (packages/storybook/src/stories/ai-elements/node.stories.tsx)
 - [x] open-in-chat (packages/storybook/src/stories/ai-elements/open-in-chat.stories.tsx)
 - [x] plan (packages/storybook/src/stories/ai-elements/plan.stories.tsx)
+- [x] panel (packages/storybook/src/stories/ai-elements/panel.stories.tsx)
 - [x] queue (packages/storybook/src/stories/ai-elements/queue.stories.tsx)
 - [x] reasoning (packages/storybook/src/stories/ai-elements/reasoning.stories.tsx)
 - [x] sandbox (packages/storybook/src/stories/ai-elements/sandbox.stories.tsx)
 - [x] task (packages/storybook/src/stories/ai-elements/task.stories.tsx)
+- [x] toolbar (packages/storybook/src/stories/ai-elements/toolbar.stories.tsx)
 - [x] tool (packages/storybook/src/stories/ai-elements/tool.stories.tsx)
 - [x] transcription (packages/storybook/src/stories/ai-elements/transcription.stories.tsx)
 
@@ -223,12 +232,12 @@ Add one or more useful Storybook stories for each unchecked local component. Che
 - [x] code-block - `packages/ui/src/components/ai-elements/code-block.tsx`
 - [x] commit - `packages/ui/src/components/ai-elements/commit.tsx`
 - [x] confirmation - `packages/ui/src/components/ai-elements/confirmation.tsx`
-- [ ] connection - `packages/ui/src/components/ai-elements/connection.tsx`
+- [x] connection - `packages/ui/src/components/ai-elements/connection.tsx`
 - [x] context - `packages/ui/src/components/ai-elements/context.tsx`
-- [ ] controls - `packages/ui/src/components/ai-elements/controls.tsx`
+- [x] controls - `packages/ui/src/components/ai-elements/controls.tsx`
 - [x] conversation - `packages/ui/src/components/ai-elements/conversation.tsx`
 - [x] diff - `packages/ui/src/components/ai-elements/diff.tsx`
-- [ ] edge - `packages/ui/src/components/ai-elements/edge.tsx`
+- [x] edge - `packages/ui/src/components/ai-elements/edge.tsx`
 - [x] environment-variables - `packages/ui/src/components/ai-elements/environment-variables.tsx`
 - [x] file-changes - `packages/ui/src/components/ai-elements/file-changes.tsx`
 - [x] file-tree - `packages/ui/src/components/ai-elements/file-tree.tsx`
@@ -238,10 +247,10 @@ Add one or more useful Storybook stories for each unchecked local component. Che
 - [x] message - `packages/ui/src/components/ai-elements/message.tsx`
 - [ ] mic-selector - `packages/ui/src/components/ai-elements/mic-selector.tsx`
 - [ ] model-selector - `packages/ui/src/components/ai-elements/model-selector.tsx`
-- [ ] node - `packages/ui/src/components/ai-elements/node.tsx`
+- [x] node - `packages/ui/src/components/ai-elements/node.tsx`
 - [x] open-in-chat - `packages/ui/src/components/ai-elements/open-in-chat.tsx`
 - [x] package-info - `packages/ui/src/components/ai-elements/package-info.tsx`
-- [ ] panel - `packages/ui/src/components/ai-elements/panel.tsx`
+- [x] panel - `packages/ui/src/components/ai-elements/panel.tsx`
 - [ ] persona - `packages/ui/src/components/ai-elements/persona.tsx`
 - [x] plan - `packages/ui/src/components/ai-elements/plan.tsx`
 - [ ] prompt-input - `packages/ui/src/components/ai-elements/prompt-input.tsx`
@@ -259,7 +268,7 @@ Add one or more useful Storybook stories for each unchecked local component. Che
 - [x] terminal - `packages/ui/src/components/ai-elements/terminal.tsx`
 - [x] test-results - `packages/ui/src/components/ai-elements/test-results.tsx`
 - [x] tool - `packages/ui/src/components/ai-elements/tool.tsx`
-- [ ] toolbar - `packages/ui/src/components/ai-elements/toolbar.tsx`
+- [x] toolbar - `packages/ui/src/components/ai-elements/toolbar.tsx`
 - [x] transcription - `packages/ui/src/components/ai-elements/transcription.tsx`
 - [ ] voice-selector - `packages/ui/src/components/ai-elements/voice-selector.tsx`
 - [ ] web-preview - `packages/ui/src/components/ai-elements/web-preview.tsx`

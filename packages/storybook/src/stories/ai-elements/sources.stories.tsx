@@ -11,7 +11,6 @@ const openByDefault = { defaultOpen: true }
 const meta = {
 	title: "AI Elements/Citations/Sources",
 	component: Sources,
-	tags: ["autodocs"],
 	render: () => (
 		<div className="w-[520px] p-8">
 			<Sources {...openByDefault}>

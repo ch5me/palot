@@ -6,7 +6,6 @@ import { Button } from "@ch5me/elf-ui/components/button"
 const meta = {
 	title: "Foundations/Actions/Button",
 	component: Button,
-	tags: ["autodocs"],
 	args: {
 		children: "Run capture",
 		variant: "default",

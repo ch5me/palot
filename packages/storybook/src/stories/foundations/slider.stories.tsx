@@ -5,7 +5,6 @@ import type { Meta, StoryObj } from "@storybook/react-vite"
 const meta = {
 	title: "Foundations/Forms/Slider",
 	component: Slider,
-	tags: ["autodocs"],
 	args: {
 		defaultValue: [42],
 		min: 0,

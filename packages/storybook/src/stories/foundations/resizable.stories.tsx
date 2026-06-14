@@ -8,7 +8,6 @@ import type { Meta, StoryObj } from "@storybook/react-vite"
 const meta = {
 	title: "Foundations/Layout/Resizable",
 	component: ResizablePanelGroup,
-	tags: ["autodocs"],
 	render: () => (
 		<div className="h-72 w-[560px] overflow-hidden rounded-lg border bg-card text-card-foreground">
 			<ResizablePanelGroup orientation="horizontal">

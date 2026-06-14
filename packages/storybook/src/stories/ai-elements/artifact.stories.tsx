@@ -14,7 +14,6 @@ import { CopyIcon, DownloadIcon, ExternalLinkIcon } from "lucide-react"
 const meta = {
 	title: "AI Elements/Artifact/Artifact",
 	component: Artifact,
-	tags: ["autodocs"],
 	render: () => (
 		<div className="w-[720px] p-8">
 			<Artifact className="h-[420px]">

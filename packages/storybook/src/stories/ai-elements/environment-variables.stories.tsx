@@ -16,7 +16,6 @@ import type { Meta, StoryObj } from "@storybook/react-vite"
 const meta = {
 	title: "AI Elements/Data/EnvironmentVariables",
 	component: EnvironmentVariables,
-	tags: ["autodocs"],
 	render: () => (
 		<div className="w-[620px] p-8">
 			<EnvironmentVariables defaultShowValues>

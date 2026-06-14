@@ -5,7 +5,6 @@ import { AlertTriangleIcon, CheckCircle2Icon } from "lucide-react"
 const meta = {
 	title: "Foundations/Feedback/Alert",
 	component: Alert,
-	tags: ["autodocs"],
 	args: {
 		variant: "default",
 	},

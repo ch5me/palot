@@ -15,7 +15,6 @@ import type { Meta, StoryObj } from "@storybook/react-vite"
 const meta = {
 	title: "Foundations/Layout/Card",
 	component: Card,
-	tags: ["autodocs"],
 	args: {
 		size: "default",
 	},

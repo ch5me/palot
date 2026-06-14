@@ -13,7 +13,6 @@ import type { Meta, StoryObj } from "@storybook/react-vite"
 const meta = {
 	title: "Foundations/Forms/Select",
 	component: Select,
-	tags: ["autodocs"],
 	render: () => (
 		<div className="min-h-[300px] w-[420px] p-10">
 			<Select defaultValue="batch-04" defaultOpen modal={false}>

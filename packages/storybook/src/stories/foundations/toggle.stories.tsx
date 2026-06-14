@@ -5,7 +5,6 @@ import { BoldIcon, ItalicIcon } from "lucide-react"
 const meta = {
 	title: "Foundations/Actions/Toggle",
 	component: Toggle,
-	tags: ["autodocs"],
 	args: {
 		defaultPressed: true,
 		variant: "outline",

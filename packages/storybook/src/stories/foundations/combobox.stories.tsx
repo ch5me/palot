@@ -13,7 +13,6 @@ import type { Meta, StoryObj } from "@storybook/react-vite"
 const meta = {
 	title: "Foundations/Forms/Combobox",
 	component: Combobox,
-	tags: ["autodocs"],
 	render: () => (
 		<div className="min-h-[320px] w-[460px] p-10">
 			<Combobox defaultOpen defaultValue="opencode">

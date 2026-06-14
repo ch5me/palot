@@ -16,7 +16,6 @@ import { BotIcon, CheckCircle2Icon, GlobeIcon } from "lucide-react"
 const meta = {
 	title: "Foundations/Data Display/Item",
 	component: Item,
-	tags: ["autodocs"],
 	render: () => (
 		<ItemGroup className="w-[520px]">
 			<Item variant="outline">

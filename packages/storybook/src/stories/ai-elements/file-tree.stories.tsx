@@ -10,7 +10,6 @@ const expanded = new Set(["packages", "packages/storybook", "packages/storybook/
 const meta = {
 	title: "AI Elements/Data/FileTree",
 	component: FileTree,
-	tags: ["autodocs"],
 	render: () => (
 		<div className="w-[520px] p-8">
 			<FileTree defaultExpanded={expanded} selectedPath="packages/storybook/src/preview.ts">

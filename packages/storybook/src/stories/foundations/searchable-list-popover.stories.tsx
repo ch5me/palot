@@ -14,7 +14,6 @@ import { SearchIcon } from "lucide-react"
 const meta = {
 	title: "Foundations/Overlays/SearchableListPopover",
 	component: SearchableListPopover,
-	tags: ["autodocs"],
 	render: () => (
 		<div className="min-h-[320px] w-[420px] p-10">
 			<SearchableListPopover open>

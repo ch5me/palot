@@ -40,7 +40,6 @@ const sourceAttachment: AttachmentData = {
 const meta = {
 	title: "AI Elements/Input/Attachments",
 	component: Attachments,
-	tags: ["autodocs"],
 	render: () => (
 		<div className="flex w-[760px] flex-col gap-8 p-8">
 			<Attachments variant="grid">

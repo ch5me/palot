@@ -10,7 +10,6 @@ import { ChevronsUpDownIcon } from "lucide-react"
 const meta = {
 	title: "Foundations/Disclosure/Collapsible",
 	component: Collapsible,
-	tags: ["autodocs"],
 	args: {
 		defaultOpen: true,
 	},

@@ -17,7 +17,6 @@ const query =
 const meta = {
 	title: "AI Elements/Actions/OpenInChat",
 	component: OpenIn,
-	tags: ["autodocs"],
 	render: () => (
 		<div className="w-[420px] p-8">
 			<OpenIn defaultOpen query={query}>

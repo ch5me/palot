@@ -14,7 +14,6 @@ const avatarImage =
 const meta = {
 	title: "Foundations/Data Display/Avatar",
 	component: Avatar,
-	tags: ["autodocs"],
 	args: {
 		size: "default",
 	},

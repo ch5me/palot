@@ -13,7 +13,6 @@ import { LinkIcon, SearchIcon, SendIcon } from "lucide-react"
 const meta = {
 	title: "Foundations/Forms/InputGroup",
 	component: InputGroup,
-	tags: ["autodocs"],
 	render: () => (
 		<div className="flex w-[460px] flex-col gap-4">
 			<InputGroup>

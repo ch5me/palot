@@ -15,7 +15,6 @@ Imported pass-through components stay out of scope because their owning package 
 const meta = {
 	title: "AI Elements/Workflow/Reasoning",
 	component: Reasoning,
-	tags: ["autodocs"],
 	render: () => (
 		<div className="w-[680px] p-8">
 			<Reasoning defaultOpen duration={7}>

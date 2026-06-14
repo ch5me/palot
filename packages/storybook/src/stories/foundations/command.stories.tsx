@@ -14,7 +14,6 @@ import { FileTextIcon, SearchIcon, SettingsIcon } from "lucide-react"
 const meta = {
 	title: "Foundations/Command/Command",
 	component: Command,
-	tags: ["autodocs"],
 	render: () => (
 		<Command className="w-[460px] rounded-xl border shadow-sm">
 			<CommandInput placeholder="Search commands..." />

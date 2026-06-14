@@ -24,7 +24,6 @@ const sources = [
 const meta = {
 	title: "AI Elements/Citations/InlineCitation",
 	component: InlineCitation,
-	tags: ["autodocs"],
 	render: () => (
 		<div className="w-[720px] p-8 text-sm leading-7">
 			<InlineCitation>
