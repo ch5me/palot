@@ -1,15 +1,15 @@
 # Missing Storybook Coverage
 
-Generated from `ch5 coverage elf --json` on 2026-06-14T00:09:45.960Z.
+Generated from `ch5 coverage elf --json` on 2026-06-14T00:24:31.863Z.
 
 ## Current Coverage
 
 - Visual UI components: 134
-- Covered by Storybook/route coverage: 57
-- Missing Storybook representation: 77
-- Actionable missing local stories after documented exceptions: 66
-- Story files: 58
-- Story screenshot proof missing in CH5 formal coverage: 114 viewport targets
+- Covered by Storybook/route coverage: 63
+- Missing Storybook representation: 71
+- Actionable missing local stories after documented exceptions: 60
+- Story files: 64
+- Story screenshot proof missing in CH5 formal coverage: 126 viewport targets
 - Documented exceptions: 11
 - Batch 01 local render proof: `.sisyphus/evidence/storybook-coverage/batch-01/render-proof.json`
 - Batch 02 local render proof: `.sisyphus/evidence/storybook-coverage/batch-02/render-proof.json`
@@ -22,6 +22,8 @@ Generated from `ch5 coverage elf --json` on 2026-06-14T00:09:45.960Z.
 - Batch 05 CH5 coverage proof: `.sisyphus/evidence/storybook-coverage/batch-05/ch5-coverage.json`
 - Batch 06 local render proof: `.sisyphus/evidence/storybook-coverage/batch-06/render-proof.json`
 - Batch 06 CH5 coverage proof: `.sisyphus/evidence/storybook-coverage/batch-06/ch5-coverage.json`
+- Batch 07 local render proof: `.sisyphus/evidence/storybook-coverage/batch-07/render-proof.json`
+- Batch 07 CH5 coverage proof: `.sisyphus/evidence/storybook-coverage/batch-07/ch5-coverage.json`
 - Reusable render proof helper: `bun run verify:storybook-render -- --out <proof-dir> <story-id> [...]`
 - CH5 gap source scope: local `packages/ui/src/components/**` files only.
 - Imported components from other packages/libraries are out of scope here. Trust their upstream stories/tests.
@@ -86,6 +88,12 @@ Covered components today:
 - [x] toggle (packages/storybook/src/stories/foundations/toggle.stories.tsx)
 - [x] toggle-group (packages/storybook/src/stories/foundations/toggle-group.stories.tsx)
 - [x] tooltip (packages/storybook/src/stories/foundations/tooltip.stories.tsx)
+- [x] confirmation (packages/storybook/src/stories/ai-elements/confirmation.stories.tsx)
+- [x] image (packages/storybook/src/stories/ai-elements/image.stories.tsx)
+- [x] package-info (packages/storybook/src/stories/ai-elements/package-info.stories.tsx)
+- [x] schema-display (packages/storybook/src/stories/ai-elements/schema-display.stories.tsx)
+- [x] sources (packages/storybook/src/stories/ai-elements/sources.stories.tsx)
+- [x] suggestion (packages/storybook/src/stories/ai-elements/suggestion.stories.tsx)
 
 Documented exceptions today:
 
@@ -175,7 +183,7 @@ Add one or more useful Storybook stories for each unchecked local component. Che
 - [ ] checkpoint - `packages/ui/src/components/ai-elements/checkpoint.tsx`
 - [ ] code-block - `packages/ui/src/components/ai-elements/code-block.tsx`
 - [ ] commit - `packages/ui/src/components/ai-elements/commit.tsx`
-- [ ] confirmation - `packages/ui/src/components/ai-elements/confirmation.tsx`
+- [x] confirmation - `packages/ui/src/components/ai-elements/confirmation.tsx`
 - [ ] connection - `packages/ui/src/components/ai-elements/connection.tsx`
 - [ ] context - `packages/ui/src/components/ai-elements/context.tsx`
 - [ ] controls - `packages/ui/src/components/ai-elements/controls.tsx`
@@ -185,7 +193,7 @@ Add one or more useful Storybook stories for each unchecked local component. Che
 - [ ] environment-variables - `packages/ui/src/components/ai-elements/environment-variables.tsx`
 - [ ] file-changes - `packages/ui/src/components/ai-elements/file-changes.tsx`
 - [ ] file-tree - `packages/ui/src/components/ai-elements/file-tree.tsx`
-- [ ] image - `packages/ui/src/components/ai-elements/image.tsx`
+- [x] image - `packages/ui/src/components/ai-elements/image.tsx`
 - [ ] inline-citation - `packages/ui/src/components/ai-elements/inline-citation.tsx`
 - [ ] jsx-preview - `packages/ui/src/components/ai-elements/jsx-preview.tsx`
 - [ ] message - `packages/ui/src/components/ai-elements/message.tsx`
@@ -193,7 +201,7 @@ Add one or more useful Storybook stories for each unchecked local component. Che
 - [ ] model-selector - `packages/ui/src/components/ai-elements/model-selector.tsx`
 - [ ] node - `packages/ui/src/components/ai-elements/node.tsx`
 - [ ] open-in-chat - `packages/ui/src/components/ai-elements/open-in-chat.tsx`
-- [ ] package-info - `packages/ui/src/components/ai-elements/package-info.tsx`
+- [x] package-info - `packages/ui/src/components/ai-elements/package-info.tsx`
 - [ ] panel - `packages/ui/src/components/ai-elements/panel.tsx`
 - [ ] persona - `packages/ui/src/components/ai-elements/persona.tsx`
 - [ ] plan - `packages/ui/src/components/ai-elements/plan.tsx`
@@ -201,13 +209,13 @@ Add one or more useful Storybook stories for each unchecked local component. Che
 - [ ] queue - `packages/ui/src/components/ai-elements/queue.tsx`
 - [ ] reasoning - `packages/ui/src/components/ai-elements/reasoning.tsx`
 - [ ] sandbox - `packages/ui/src/components/ai-elements/sandbox.tsx`
-- [ ] schema-display - `packages/ui/src/components/ai-elements/schema-display.tsx`
+- [x] schema-display - `packages/ui/src/components/ai-elements/schema-display.tsx`
 - [ ] shimmer - `packages/ui/src/components/ai-elements/shimmer.tsx`
 - [ ] snippet - `packages/ui/src/components/ai-elements/snippet.tsx`
-- [ ] sources - `packages/ui/src/components/ai-elements/sources.tsx`
+- [x] sources - `packages/ui/src/components/ai-elements/sources.tsx`
 - [ ] speech-input - `packages/ui/src/components/ai-elements/speech-input.tsx`
 - [ ] stack-trace - `packages/ui/src/components/ai-elements/stack-trace.tsx`
-- [ ] suggestion - `packages/ui/src/components/ai-elements/suggestion.tsx`
+- [x] suggestion - `packages/ui/src/components/ai-elements/suggestion.tsx`
 - [ ] task - `packages/ui/src/components/ai-elements/task.tsx`
 - [ ] terminal - `packages/ui/src/components/ai-elements/terminal.tsx`
 - [ ] test-results - `packages/ui/src/components/ai-elements/test-results.tsx`
