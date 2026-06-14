@@ -15,7 +15,7 @@ test("browser lane compose keeps persistent profile volume and split ports", () 
 			envFile: "/tmp/browser-runtime-default/.env",
 			streamBackendUrl: "http://127.0.0.1:3901",
 			cdpEndpoint: "http://127.0.0.1:9229",
-			cdpContainerEndpoint: "http://127.0.0.1:9222",
+			cdpContainerEndpoint: process.platform === "darwin" ? "http://127.0.0.1:9229" : "http://host.docker.internal:9229",
 			auth: { user: "abc", password: "abc" },
 			startUrl: "https://example.com",
 		},

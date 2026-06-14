@@ -35,7 +35,12 @@ test("builds distinct stream and cdp endpoints", async () => {
 	assert.match(config.streamBackendUrl, /:/)
 	assert.match(config.cdpEndpoint, /:/)
 	assert.notEqual(config.streamBackendUrl, config.cdpEndpoint)
-	assert.equal(config.cdpContainerEndpoint, "http://127.0.0.1:9222")
+	assert.equal(
+		config.cdpContainerEndpoint,
+		process.platform === "darwin"
+			? `http://127.0.0.1:${config.cdpPort}`
+			: `http://host.docker.internal:${config.cdpPort}`,
+	)
 	assert.equal(config.startUrl, "https://example.com")
 })
 
@@ -81,7 +86,10 @@ test("chrome cli keeps CDP flags and target url", () => {
 		envFile: "/tmp/browser-runtime-default/.env",
 		streamBackendUrl: "http://127.0.0.1:3901",
 		cdpEndpoint: "http://127.0.0.1:9229",
-		cdpContainerEndpoint: "http://127.0.0.1:9222",
+		cdpContainerEndpoint:
+			process.platform === "darwin"
+				? "http://127.0.0.1:9229"
+				: "http://host.docker.internal:9229",
 		auth: { user: "abc", password: "abc" },
 		startUrl: "https://example.com",
 	})
@@ -105,7 +113,10 @@ test("renders persistent profile volume in compose", () => {
 			envFile: "/tmp/browser-runtime-default/.env",
 			streamBackendUrl: "http://127.0.0.1:3901",
 			cdpEndpoint: "http://127.0.0.1:9229",
-			cdpContainerEndpoint: "http://127.0.0.1:9222",
+			cdpContainerEndpoint:
+				process.platform === "darwin"
+					? "http://127.0.0.1:9229"
+					: "http://host.docker.internal:9229",
 			auth: { user: "abc", password: "abc" },
 			startUrl: "https://example.com",
 		},
