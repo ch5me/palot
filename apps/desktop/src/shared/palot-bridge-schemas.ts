@@ -199,8 +199,25 @@ export const palotSidePanelSnapshotSchema = z.object({
 	availableTabs: z.array(sidePanelTabSchema),
 })
 
+export const palotLogicalPanelActionSchema = z.enum([
+	"focus-existing",
+	"reveal-preferred-zone",
+	"create-if-allowed",
+])
+
+export const palotLogicalPanelRouteSchema = z.object({
+	logicalPanelId: z.string().min(1),
+	preferredZoneId: z.enum(["side-panel", "main-pane"]),
+	action: palotLogicalPanelActionSchema,
+	focusAuthorityOwner: z.enum(["workspace", "stable-host", "compatibility-adapter"]),
+	legacySidePanelTabId: sidePanelTabSchema.optional(),
+	allowCreate: z.boolean(),
+	requestedBy: z.string().min(1),
+})
+
 export const palotUiStateSnapshotSchema = z.object({
 	sidePanel: palotSidePanelSnapshotSchema,
+	logicalPanelRoute: palotLogicalPanelRouteSchema.nullable(),
 })
 
 export const browserStateSnapshotSchema = z.object({
@@ -259,6 +276,7 @@ export const publishBrowserActionInputSchema = z.object({
 })
 
 export const palotOpenSidePanelInputSchema = sidePanelTabSchema
+export const palotOpenLogicalPanelInputSchema = palotLogicalPanelRouteSchema
 
 // Raw shapes (z.ZodRawShape = Record<string, ZodType>) are the contract the
 // OpenCode plugin runtime expects for a tool's `args`. OpenCode does
@@ -358,6 +376,15 @@ export const loomStateArgsShape = {
 export const palotOpenSidePanelArgsShape = {
 	tab: sidePanelTabSchema,
 } satisfies z.ZodRawShape
+export const palotOpenLogicalPanelArgsShape = {
+	logicalPanelId: z.string().min(1),
+	preferredZoneId: z.enum(["side-panel", "main-pane"]),
+	action: palotLogicalPanelActionSchema,
+	focusAuthorityOwner: z.enum(["workspace", "stable-host", "compatibility-adapter"]).optional(),
+	legacySidePanelTabId: sidePanelTabSchema.optional(),
+	allowCreate: z.boolean().optional(),
+	requestedBy: z.string().min(1).optional(),
+} satisfies z.ZodRawShape
 export const palotUiStateArgsShape = {} satisfies z.ZodRawShape
 
 export const palotBrowserStatusArgsSchema = z.object(palotBrowserStatusArgsShape).passthrough()
@@ -376,6 +403,7 @@ export const loomPatchArgsSchema = z.object(loomPatchArgsShape)
 export const loomPollArgsSchema = z.object(loomPollArgsShape).passthrough()
 export const loomStateArgsSchema = z.object(loomStateArgsShape)
 export const palotOpenSidePanelArgsSchema = z.object(palotOpenSidePanelArgsShape)
+export const palotOpenLogicalPanelArgsSchema = z.object(palotOpenLogicalPanelArgsShape)
 export const palotUiStateArgsSchema = z.object(palotUiStateArgsShape).passthrough()
 
 export const palotComponentsListResultSchema = z.object({
@@ -450,6 +478,7 @@ export const palotToolArgsSchemas = {
 	palot_patch: loomPatchArgsSchema,
 	palot_poll: loomPollArgsSchema,
 	palot_state: loomStateArgsSchema,
+	open_logical_panel: palotOpenLogicalPanelArgsSchema,
 	open_side_panel: palotOpenSidePanelArgsSchema,
 	ui_state: palotUiStateArgsSchema,
 } as const
@@ -470,6 +499,7 @@ export const palotToolArgsShapes = {
 	palot_patch: loomPatchArgsShape,
 	palot_poll: loomPollArgsShape,
 	palot_state: loomStateArgsShape,
+	open_logical_panel: palotOpenLogicalPanelArgsShape,
 	open_side_panel: palotOpenSidePanelArgsShape,
 	ui_state: palotUiStateArgsShape,
 } as const

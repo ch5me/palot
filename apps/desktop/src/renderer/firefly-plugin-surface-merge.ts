@@ -124,7 +124,14 @@ export function catalogPanelToTabDescriptor(
 		commandIds: panel.commandIds,
 		persistenceKey: panel.persistenceKey ?? `side-panel.${panel.contributionId}`,
 		telemetryNamespace: panel.telemetryNamespace ?? `firefly.surface.${panel.contributionId}`,
-		target: { kind: "side-panel", tab: panel.contributionId },
+		target: {
+			kind: "logical-panel",
+			logicalPanelId: panel.contributionId,
+			preferredZoneId: panel.hostSlot,
+			action: "reveal-preferred-zone",
+			focusAuthorityOwner: "workspace",
+			legacySidePanelTabId: panel.contributionId,
+		},
 		hostPolicy: {
 			logicalKind: "firefly-surface",
 			defaultZoneId: panel.hostSlot,

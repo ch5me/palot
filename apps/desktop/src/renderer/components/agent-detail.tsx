@@ -69,6 +69,7 @@ import {
 	fetchPalotUiStateSnapshot,
 	isElectron,
 	openInTarget,
+	openPalotLogicalPanel,
 	subscribeToPalotOpenSidePanel,
 } from "../services/backend"
 import { useSetAppBarContent } from "./app-bar-context"
@@ -295,11 +296,13 @@ export function AgentDetail({
 	}, [availableSidePanelTabs, setAvailableSidePanelTabs])
 
 	useEffect(() => {
-		const unsubscribe = subscribeToPalotOpenSidePanel(({ tab }) => {
+		const unsubscribe = subscribeToPalotOpenSidePanel((route) => {
+			const tab = route.legacySidePanelTabId
+			if (!tab) return
 			if (!availableSidePanelTabs.some((candidate) => candidate.id === tab)) return
 			setSidePanelOpen(true)
 			setAvailableSidePanelTabs(availableSidePanelTabs.map((candidate) => candidate.id))
-			void window.elf?.palot.openSidePanel(tab).catch(() => undefined)
+			void openPalotLogicalPanel(route).catch(() => undefined)
 		})
 		return unsubscribe
 	}, [availableSidePanelTabs, setAvailableSidePanelTabs, setSidePanelOpen])

@@ -282,8 +282,21 @@ export interface PalotSidePanelSnapshot {
 	availableTabs: SidePanelTabId[]
 }
 
+export type PalotLogicalPanelAction = "focus-existing" | "reveal-preferred-zone" | "create-if-allowed"
+
+export interface PalotLogicalPanelRoute {
+	logicalPanelId: string
+	preferredZoneId: "side-panel" | "main-pane"
+	action: PalotLogicalPanelAction
+	focusAuthorityOwner: "workspace" | "stable-host" | "compatibility-adapter"
+	legacySidePanelTabId?: SidePanelTabId
+	allowCreate: boolean
+	requestedBy: string
+}
+
 export interface PalotUiStateSnapshot {
 	sidePanel: PalotSidePanelSnapshot
+	logicalPanelRoute: PalotLogicalPanelRoute | null
 }
 
 export interface LoomOpenSessionResult {
@@ -1172,6 +1185,7 @@ export interface ElfAPI {
 		setBinding: (binding: SessionBinding) => Promise<SessionBinding>
 		releaseBinding: (sessionId: string) => Promise<SessionBinding | null>
 		getUiStateSnapshot: () => Promise<PalotUiStateSnapshot>
+		openLogicalPanel: (route: PalotLogicalPanelRoute) => Promise<PalotUiStateSnapshot>
 		openSidePanel: (tab: SidePanelTabId) => Promise<PalotUiStateSnapshot>
 		openLoomSession: (sessionId: string) => Promise<LoomOpenSessionResult>
 		getArtifact: (sessionId: string, artifactId: string) => Promise<GenUiArtifactRecord | null>
@@ -1197,7 +1211,7 @@ export interface ElfAPI {
 			sessionId: string,
 			delta: { nodeId: string; field: string; value: unknown },
 		) => Promise<void>
-		onOpenSidePanel: (callback: (payload: { tab: SidePanelTabId }) => void) => () => void
+		onOpenSidePanel: (callback: (payload: PalotLogicalPanelRoute) => void) => () => void
 		onBrowserActions: (callback: (event: BrowserActionEvent) => void) => () => void
 	}
 	onActiveOpenCodeSessionsChanged: (

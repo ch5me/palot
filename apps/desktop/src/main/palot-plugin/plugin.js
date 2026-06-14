@@ -21,6 +21,8 @@ import {
 	palotComponentsDescribeResultSchema,
 	palotComponentsListArgsShape,
 	palotComponentsListResultSchema,
+	palotOpenLogicalPanelArgsSchema,
+	palotOpenLogicalPanelArgsShape,
 	palotOpenSidePanelArgsSchema,
 	palotOpenSidePanelArgsShape,
 	palotResolverResultSchema,
@@ -90,6 +92,7 @@ const PRODUCT_CONTROL_TOOLS = [
 	"palot_patch",
 	"palot_poll",
 	"palot_state",
+	"open_logical_panel",
 	"open_side_panel",
 	"ui_state",
 ]
@@ -261,7 +264,43 @@ export const buildBrowserToolHandler = ({ toolName, resolveBinding, dispatch, br
 	}
 }
 
-export const buildOpenSidePanelHandler = ({ bridgeRequest, openSidePanel }) => {
+export const buildOpenLogicalPanelHandler = ({ bridgeRequest, openLogicalPanel }) => {
+	return async (args = {}) => {
+		const parsedArgs = palotOpenLogicalPanelArgsSchema.parse(args)
+		const route = {
+			logicalPanelId: parsedArgs.logicalPanelId,
+			preferredZoneId: parsedArgs.preferredZoneId,
+			action: parsedArgs.action,
+			focusAuthorityOwner: parsedArgs.focusAuthorityOwner ?? "workspace",
+			legacySidePanelTabId: parsedArgs.legacySidePanelTabId,
+			allowCreate: parsedArgs.allowCreate ?? parsedArgs.action === "create-if-allowed",
+			requestedBy: parsedArgs.requestedBy ?? "palot-bridge-open-logical-panel",
+		}
+		if (typeof openLogicalPanel === "function") {
+			const snapshot = await openLogicalPanel(route)
+			return JSON.stringify({
+				status: "completed",
+				toolName: "open_logical_panel",
+				logicalPanelRoute: snapshot?.logicalPanelRoute ?? route,
+				sidePanel: snapshot?.sidePanel ?? null,
+			})
+		}
+		if (bridgeRequest) {
+			const snapshot = await bridgeRequest({ bridgeAction: "open-logical-panel", ...route })
+			return JSON.stringify({
+				status: "completed",
+				toolName: "open_logical_panel",
+				logicalPanelRoute: snapshot?.logicalPanelRoute ?? route,
+				sidePanel: snapshot?.sidePanel ?? null,
+			})
+		}
+		return JSON.stringify(
+			createUiStateError("open_logical_panel", "Palot logical panel bridge is unavailable"),
+		)
+	}
+}
+
+export const buildOpenSidePanelHandler = ({ bridgeRequest, openSidePanel, openLogicalPanel }) => {
 	return async (args = {}) => {
 		const parsedArgs = palotOpenSidePanelArgsSchema.parse(args)
 		const tab = parsedArgs.tab
@@ -273,12 +312,33 @@ export const buildOpenSidePanelHandler = ({ bridgeRequest, openSidePanel }) => {
 				),
 			)
 		}
+		const route = {
+			logicalPanelId: tab,
+			preferredZoneId: "side-panel",
+			action: "reveal-preferred-zone",
+			focusAuthorityOwner: "compatibility-adapter",
+			legacySidePanelTabId: tab,
+			allowCreate: true,
+			requestedBy: "palot-bridge-open-side-panel-legacy",
+		}
+		if (typeof openLogicalPanel === "function") {
+			const snapshot = await openLogicalPanel(route)
+			return JSON.stringify({
+				status: "completed",
+				toolName: "open_side_panel",
+				logicalPanelRoute: snapshot?.logicalPanelRoute ?? route,
+				sidePanel: snapshot?.sidePanel ?? null,
+				migration: "legacy-open-side-panel-adapter",
+			})
+		}
 		if (typeof openSidePanel === "function") {
 			const snapshot = await openSidePanel(tab)
 			return JSON.stringify({
 				status: "completed",
 				toolName: "open_side_panel",
+				logicalPanelRoute: snapshot?.logicalPanelRoute ?? route,
 				sidePanel: snapshot?.sidePanel ?? null,
+				migration: "legacy-open-side-panel-adapter",
 			})
 		}
 		if (bridgeRequest) {
@@ -286,7 +346,9 @@ export const buildOpenSidePanelHandler = ({ bridgeRequest, openSidePanel }) => {
 			return JSON.stringify({
 				status: "completed",
 				toolName: "open_side_panel",
+				logicalPanelRoute: snapshot?.logicalPanelRoute ?? route,
 				sidePanel: snapshot?.sidePanel ?? null,
+				migration: "legacy-open-side-panel-adapter",
 			})
 		}
 		return JSON.stringify(
@@ -304,7 +366,7 @@ export const buildUiStateHandler = ({ bridgeRequest, getUiState }) => {
 		if (bridgeRequest) {
 			return JSON.stringify(await bridgeRequest({ action: "get-ui-state" }))
 		}
-		return JSON.stringify({ sidePanel: null })
+		return JSON.stringify({ sidePanel: null, logicalPanelRoute: null })
 	}
 }
 
@@ -561,7 +623,7 @@ export const buildLoomStateHandler = () => {
 }
 
 export const createPalotPlugin = (
-	{ resolve, dispatch, getUiState, openSidePanel, listConnections } = {},
+	{ resolve, dispatch, getUiState, openSidePanel, openLogicalPanel, listConnections } = {},
 	{ bridgeRequest = createBridgeClient() } = {},
 ) => {
 	const resolveBinding = createResolver({ resolve, bridgeRequest, listConnections })
@@ -786,10 +848,15 @@ export const createPalotPlugin = (
 				args: loomStateArgsShape,
 				execute: buildLoomStateHandler(),
 			},
+			open_logical_panel: {
+				description: "Route a logical panel using explicit placement semantics",
+				args: palotOpenLogicalPanelArgsShape,
+				execute: buildOpenLogicalPanelHandler({ bridgeRequest, openLogicalPanel }),
+			},
 			open_side_panel: {
-				description: "Open a Palot side panel tab in the desktop UI",
+				description: "Open a Palot side panel tab in the desktop UI (legacy compatibility adapter)",
 				args: palotOpenSidePanelArgsShape,
-				execute: buildOpenSidePanelHandler({ bridgeRequest, getUiState, openSidePanel }),
+				execute: buildOpenSidePanelHandler({ bridgeRequest, getUiState, openSidePanel, openLogicalPanel }),
 			},
 			ui_state: {
 				description: "Get the current Palot UI side panel state",

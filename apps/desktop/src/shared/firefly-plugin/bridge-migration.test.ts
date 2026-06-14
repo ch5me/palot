@@ -31,7 +31,7 @@ describe("BRIDGE_LANDING_POINTS vocabulary", () => {
 })
 
 describe("BRIDGE_MIGRATION_MATRIX coverage", () => {
-	test("covers every current palot-bridge tool (13 entries)", () => {
+	test("covers every current palot-bridge tool (14 entries including logical-panel route)", () => {
 		const rowIds = BRIDGE_MIGRATION_MATRIX.map((r) => r.currentId)
 		const expectedTools = [
 			"browser_status",
@@ -41,6 +41,7 @@ describe("BRIDGE_MIGRATION_MATRIX coverage", () => {
 			"browser_click",
 			"browser_type",
 			"browser_scroll",
+			"open_logical_panel",
 			"open_side_panel",
 			"ui_state",
 			"search_tools",

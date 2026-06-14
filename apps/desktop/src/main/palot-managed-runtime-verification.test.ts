@@ -97,8 +97,23 @@ test("real plugin over real bridge server proves managed runtime contract end-to
 
 		const opened = JSON.parse(await tools.open_side_panel.execute({ tab: "browser" }))
 		assert.equal(opened.sidePanel.activeTab, "browser")
+		assert.equal(opened.logicalPanelRoute.logicalPanelId, "browser")
+		assert.equal(opened.migration, "legacy-open-side-panel-adapter")
+		const logicalOpened = JSON.parse(
+			await tools.open_logical_panel.execute({
+				logicalPanelId: "browser",
+				preferredZoneId: "side-panel",
+				action: "focus-existing",
+				focusAuthorityOwner: "workspace",
+				legacySidePanelTabId: "browser",
+				allowCreate: false,
+				requestedBy: "managed-runtime-test",
+			}),
+		)
+		assert.equal(logicalOpened.logicalPanelRoute.action, "focus-existing")
 		const uiState = JSON.parse(await tools.ui_state.execute({}))
 		assert.equal(uiState.sidePanel.activeTab, "browser")
+		assert.equal(uiState.logicalPanelRoute.logicalPanelId, "browser")
 
 		const events = ipcMod.getBrowserActionEvents("ses_managed")
 		assert.ok(events.some((event) => event.kind === "toolRequest" && event.toolName === "browser_status"))
@@ -120,6 +135,7 @@ test("catalog tools project dynamically into the real plugin and dispatch throug
 		ipcMod.registerPalotBrowserWindows(() => [])
 		ipcMod.setUiStateSnapshot({
 			sidePanel: { open: false, activeTab: null, availableTabs: ["notes", "review"] },
+			logicalPanelRoute: null,
 		})
 
 		const bridge = await ipcMod.ensurePalotBridgeServer()

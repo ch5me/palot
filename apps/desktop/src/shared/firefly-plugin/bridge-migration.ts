@@ -140,6 +140,17 @@ export const BRIDGE_MIGRATION_MATRIX: readonly BridgeMigrationRow[] = [
 		notes: "Scroll is action-dispatch; V2 wraps the arg schema in z.object(passthrough).",
 	},
 	{
+		currentId: "open_logical_panel",
+		category: "side-panel-control",
+		currentSurface: "palot-bridge.js :: tool.open_logical_panel",
+		landingPoint: "plugin.tool.<pluginId>.<shortName>",
+		targetPluginId: "firefly.built-in.palot-bridge",
+		disposition: "move",
+		removeIn: "v2.0",
+		notes:
+			"Versioned routing path for non-atomic bridge callers. New callers should prefer logical panel placement semantics; legacy open_side_panel remains readable as an adapter.",
+	},
+	{
 		currentId: "open_side_panel",
 		category: "side-panel-control",
 		currentSurface: "palot-bridge.js :: tool.open_side_panel",

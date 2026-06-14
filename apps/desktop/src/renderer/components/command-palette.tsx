@@ -92,7 +92,11 @@ import { isMockModeAtom, toggleMockModeAtom } from "../atoms/mock-mode"
 import { opaqueWindowsAtom } from "../atoms/preferences"
 import { isReactScanAtom, toggleReactScanAtom } from "../atoms/react-scan"
 import { isDevSurfaceAtom, toggleDevSurfaceAtom } from "../atoms/dev-surface"
-import { navSidebarActiveTabAtom, openFireflySurfaceTargetAtom, sidePanelOpenAtom } from "../atoms/ui"
+import {
+	navSidebarActiveTabAtom,
+	routeLogicalPanelAtom,
+	sidePanelOpenAtom,
+} from "../atoms/ui"
 import { useSessionRevert } from "../hooks/use-commands"
 import {
 	useAvailableThemes,
@@ -175,7 +179,7 @@ export function CommandPalette({ open, onOpenChange, agents, onForkSession }: Co
 	const togglePdfReviewSurface = useSetAtom(togglePdfReviewSurfaceAtom)
 	const toggleTerminalSurface = useSetAtom(toggleTerminalSurfaceAtom)
 	const navSidebarActiveTab = useAtomValue(navSidebarActiveTabAtom)
-	const openFireflySurfaceTarget = useSetAtom(openFireflySurfaceTargetAtom)
+	const routeLogicalPanel = useSetAtom(routeLogicalPanelAtom)
 	const [sidePanelOpen, setSidePanelOpen] = useAtom(sidePanelOpenAtom)
 	const [reloading, setReloading] = useState(false)
 
@@ -683,12 +687,31 @@ export function CommandPalette({ open, onOpenChange, agents, onForkSession }: Co
 						<CommandSeparator />
 						<CommandGroup heading="Surfaces">
 							{availableSurfaceTabs.map((surface) => (
-								<CommandItem
-									key={surface.id}
-									onSelect={() => {
-										openFireflySurfaceTarget(surface.target)
-										onOpenChange(false)
-									}}
+							<CommandItem
+								key={surface.id}
+								onSelect={() => {
+									if (surface.target.kind === "logical-panel") {
+										routeLogicalPanel({
+											logicalPanelId: surface.target.logicalPanelId,
+											preferredZoneId: surface.target.preferredZoneId,
+											action: "reveal-preferred-zone",
+											focusAuthorityOwner: "workspace",
+											legacySidePanelTabId: surface.target.legacySidePanelTabId,
+											allowCreate: true,
+											requestedBy: "command-palette",
+										})
+									} else {
+										routeLogicalPanel({
+											logicalPanelId: surface.target.descriptorId,
+											preferredZoneId: surface.target.zoneId,
+											action: "reveal-preferred-zone",
+											focusAuthorityOwner: surface.target.focusAuthorityOwner,
+											allowCreate: true,
+											requestedBy: "command-palette",
+										})
+									}
+									onOpenChange(false)
+								}}
 									disabled={!surface.availability.available}
 								>
 									{surface.icon}

@@ -183,9 +183,18 @@ export interface GenUiArtifactDescriptor {
 	props: Record<string, unknown>
 }
 
+export type FireflyLogicalPanelAction =
+	| "focus-existing"
+	| "reveal-preferred-zone"
+	| "create-if-allowed"
+
 export type FireflySurfaceTarget = {
-	kind: "side-panel"
-	tab: FireflySurfaceId
+	kind: "logical-panel"
+	logicalPanelId: WorkspacePanelDescriptorId
+	preferredZoneId: DockZoneId
+	action: FireflyLogicalPanelAction
+	focusAuthorityOwner: FocusAuthorityOwner
+	legacySidePanelTabId?: FireflySurfaceId
 } | {
 	kind: "workspace-panel"
 	descriptorId: WorkspacePanelDescriptorId

@@ -48,6 +48,15 @@ test("browser state snapshot returns binding and recent actions", async () => {
 		})
 		ipcMod.setUiStateSnapshot({
 			sidePanel: { open: true, activeTab: "browser", availableTabs: ["browser", "review"] },
+			logicalPanelRoute: {
+				logicalPanelId: "browser",
+				preferredZoneId: "side-panel",
+				action: "reveal-preferred-zone",
+				focusAuthorityOwner: "workspace",
+				legacySidePanelTabId: "browser",
+				allowCreate: true,
+				requestedBy: "test",
+			},
 		})
 		const snapshot = ipcMod.getBrowserStateSnapshot("ses_snapshot")
 		assert.equal(snapshot.binding?.browserLaneId, "default")
@@ -55,6 +64,7 @@ test("browser state snapshot returns binding and recent actions", async () => {
 		assert.equal(snapshot.lastActions[0]?.kind, "move")
 		const uiState = ipcMod.getUiStateSnapshot()
 		assert.equal(uiState.sidePanel.activeTab, "browser")
+		assert.equal(uiState.logicalPanelRoute?.logicalPanelId, "browser")
 	} finally {
 		cleanup()
 	}

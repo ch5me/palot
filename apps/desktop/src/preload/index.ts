@@ -82,6 +82,8 @@ contextBridge.exposeInMainWorld("elf", {
 			ipcRenderer.invoke("palot:binding-set", binding),
 		releaseBinding: (sessionId: string) => ipcRenderer.invoke("palot:binding-release", sessionId),
 		getUiStateSnapshot: () => ipcRenderer.invoke("palot:ui-state-snapshot"),
+		openLogicalPanel: (route: import("./api").PalotLogicalPanelRoute) =>
+			ipcRenderer.invoke("palot:open-logical-panel", route),
 		openSidePanel: (tab: import("./api").SidePanelTabId) =>
 			ipcRenderer.invoke("palot:open-side-panel", tab),
 		openLoomSession: (sessionId: string) => ipcRenderer.invoke("palot:loom-session-open", sessionId),
@@ -110,8 +112,8 @@ contextBridge.exposeInMainWorld("elf", {
 			sessionId: string,
 			delta: { nodeId: string; field: string; value: unknown },
 		) => ipcRenderer.invoke("palot:loom-state", sessionId, delta),
-		onOpenSidePanel: (callback: (payload: { tab: import("./api").SidePanelTabId }) => void) => {
-			const listener = (_event: unknown, payload: { tab: import("./api").SidePanelTabId }) => callback(payload)
+		onOpenSidePanel: (callback: (payload: import("./api").PalotLogicalPanelRoute) => void) => {
+			const listener = (_event: unknown, payload: import("./api").PalotLogicalPanelRoute) => callback(payload)
 			ipcRenderer.on("palot:open-side-panel", listener)
 			return () => {
 				ipcRenderer.removeListener("palot:open-side-panel", listener)

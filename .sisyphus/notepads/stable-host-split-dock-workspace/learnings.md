@@ -304,3 +304,9 @@ Current `sidePanelOpenAtom` / `sidePanelActiveTabAtom` must decompose into per-z
 - `useAgentSplitDockAdapters` now owns zone placement state via `split-dock-placement-state.ts`; Dockview zones reconcile from that state, while stable hosts reattach to new attachment ids when moved and keep `mountCount === 1`.
 - Protected hosts stay remount-safe because the bridge mutates placement state only; only remount-ok panels are direct-rendered. Future clone support has a reserved policy branch but current reducers intentionally accept `move` only.
 - Proof artifacts for task 5 live at `.sisyphus/evidence/task-5-protected-transfer.txt` and `.sisyphus/evidence/task-5-transfer-guard.txt`.
+
+## 12. TASK 6 IMPLEMENTATION — LOGICAL PANEL ROUTING (2026-06-14)
+- Firefly surface targets now speak logical-panel semantics (`focus-existing`, `reveal-preferred-zone`, `create-if-allowed`) instead of a canonical `kind: "side-panel"` tab target, while legacy callers still map through `openSidePanel` with `legacySidePanelTabId` preserved for compatibility.
+- Renderer routing moved into `routeLogicalPanelAtom`; command palette and Palot bridge now route by logical panel id + preferred zone, and the singleton side-panel tab API is treated as an adapter rather than the canonical write path.
+- Bridge migration is explicit: new schema/tool `open_logical_panel` carries versioned logical routing input, while `open_side_panel` remains readable as a legacy adapter with migration metadata in responses and bridge-migration docs/tests updated to mention the non-atomic upgrade path.
+- Proof artifacts for task 6 live at `.sisyphus/evidence/task-6-command-routing.txt` and `.sisyphus/evidence/task-6-legacy-adapter.txt`.

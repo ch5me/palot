@@ -125,6 +125,14 @@ describe("workspace descriptor normalization", () => {
 			multiplicityPolicy: "singleton",
 		})
 		expect(descriptor.runtime.kind).toBe("react-host-component")
+		expect(descriptor.target).toEqual({
+			kind: "logical-panel",
+			logicalPanelId: "review",
+			preferredZoneId: "side-panel",
+			action: "reveal-preferred-zone",
+			focusAuthorityOwner: "workspace",
+			legacySidePanelTabId: "review",
+		})
 	})
 
 	test("catalog surface resolves normalized host metadata", () => {

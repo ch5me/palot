@@ -1,0 +1,24 @@
+Task 6 proof — command routing
+Date: 2026-06-14
+
+Goal
+- Prove command/surface routing now targets logical panel placement semantics instead of a singleton side-panel open call.
+
+Implementation proof
+- `apps/desktop/src/renderer/components/command-palette.tsx` routes surface actions through `routeLogicalPanelAtom`.
+- `apps/desktop/src/renderer/atoms/ui.ts` defines logical actions: `focus-existing`, `reveal-preferred-zone`, `create-if-allowed`.
+- `apps/desktop/src/shared/palot-bridge-schemas.ts` defines `palotLogicalPanelRouteSchema` and `open_logical_panel` args.
+- `apps/desktop/src/main/palot-plugin/plugin.js` exposes `open_logical_panel` and returns `logicalPanelRoute` in tool results.
+
+Verification commands
+1. `bun test apps/desktop/src/main/palot-browser-ipc.test.ts apps/desktop/src/main/palot-managed-runtime-verification.test.ts apps/desktop/src/shared/firefly-plugin/palot-bridge-manifest.test.ts apps/desktop/src/shared/firefly-plugin/bridge-migration.test.ts apps/desktop/src/renderer/firefly-plugin-surface-merge.test.ts apps/desktop/src/renderer/__tests__/workspace-panel-descriptors.test.tsx`
+2. `bun run check-types`
+
+Results
+- Targeted tests: PASS (`41 pass`, `0 fail`)
+- Typecheck: PASS (`9 successful`, `0 failed` Turbo tasks)
+
+Specific assertions covered
+- `apps/desktop/src/main/palot-managed-runtime-verification.test.ts` verifies `tools.open_logical_panel.execute(...)` returns `logicalPanelRoute.action === "focus-existing"`.
+- `apps/desktop/src/main/palot-managed-runtime-verification.test.ts` verifies `ui_state` includes `logicalPanelRoute.logicalPanelId === "browser"`.
+- `apps/desktop/src/renderer/__tests__/workspace-panel-descriptors.test.tsx` verifies resolved surface target is a `kind: "logical-panel"` target with preferred zone metadata.

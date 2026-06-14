@@ -336,6 +336,11 @@ export interface SidePanelStateSnapshot {
 	readonly open: boolean
 	readonly activeTab: string | null
 	readonly availableTabs: readonly string[]
+	readonly logicalPanelRoute?: {
+		logicalPanelId: string
+		action: string
+		preferredZoneId: string
+	} | null
 }
 
 export interface NotesHostDeps {
@@ -346,7 +351,15 @@ export interface NotesHostDeps {
 
 async function defaultOpenSidePanel(tab: "notes"): Promise<void> {
 	const { broadcastOpenSidePanel } = await import("../palot-browser-ipc")
-	await broadcastOpenSidePanel(tab)
+	await broadcastOpenSidePanel({
+		logicalPanelId: tab,
+		preferredZoneId: "side-panel",
+		action: "reveal-preferred-zone",
+		focusAuthorityOwner: "compatibility-adapter",
+		legacySidePanelTabId: tab,
+		allowCreate: true,
+		requestedBy: "notes-host-handler",
+	})
 }
 
 function defaultGetSidePanelState(): SidePanelStateSnapshot {
@@ -359,6 +372,13 @@ function defaultGetSidePanelState(): SidePanelStateSnapshot {
 		open: snapshot.sidePanel.open,
 		activeTab: snapshot.sidePanel.activeTab,
 		availableTabs: snapshot.sidePanel.availableTabs,
+		logicalPanelRoute: snapshot.logicalPanelRoute
+			? {
+				logicalPanelId: snapshot.logicalPanelRoute.logicalPanelId,
+				action: snapshot.logicalPanelRoute.action,
+				preferredZoneId: snapshot.logicalPanelRoute.preferredZoneId,
+			  }
+			: null,
 	}
 }
 

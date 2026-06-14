@@ -1,0 +1,24 @@
+Task 6 proof — legacy openSidePanel adapter
+Date: 2026-06-14
+
+Goal
+- Prove old singleton callers still work via compatibility mapping while canonical semantics move to logical panel routing.
+
+Compatibility proof
+- `apps/desktop/src/renderer/atoms/ui.ts:102` keeps `openSidePanelTabAtom` and maps it into `routeLogicalPanelAtom` with `legacySidePanelTabId`.
+- `apps/desktop/src/main/palot-browser-ipc.ts` keeps `openBridgeSidePanel(...)` and maps `{ tab }` into a logical route with `focusAuthorityOwner: "compatibility-adapter"`.
+- `apps/desktop/src/main/palot-plugin/plugin.js` keeps `open_side_panel` and marks responses with `migration: "legacy-open-side-panel-adapter"`.
+- `apps/desktop/src/shared/firefly-plugin/bridge-migration.ts` explicitly documents `open_logical_panel` as the versioned path and `open_side_panel` as legacy-compatible migration surface.
+
+Verification commands
+1. `bun test apps/desktop/src/main/palot-browser-ipc.test.ts apps/desktop/src/main/palot-managed-runtime-verification.test.ts apps/desktop/src/shared/firefly-plugin/palot-bridge-manifest.test.ts apps/desktop/src/shared/firefly-plugin/bridge-migration.test.ts apps/desktop/src/renderer/firefly-plugin-surface-merge.test.ts apps/desktop/src/renderer/__tests__/workspace-panel-descriptors.test.tsx`
+2. `bun run check-types`
+
+Results
+- Targeted tests: PASS (`41 pass`, `0 fail`)
+- Typecheck: PASS (`9 successful`, `0 failed` Turbo tasks)
+
+Specific adapter assertions covered
+- `apps/desktop/src/main/palot-managed-runtime-verification.test.ts` verifies `open_side_panel.execute({ tab: "browser" })` returns `migration === "legacy-open-side-panel-adapter"`.
+- Same test verifies legacy tool output includes `logicalPanelRoute.logicalPanelId === "browser"` and `sidePanel.activeTab === "browser"`.
+- `apps/desktop/src/main/palot-browser-ipc.test.ts` verifies persisted UI state now carries both `sidePanel.activeTab` and `logicalPanelRoute.logicalPanelId` for compatibility readers during migration.

@@ -56,6 +56,7 @@ import { deleteContact, loadCrmStore, saveContact } from "./crm"
 import { customerThread, listCustomers, sendMessage as sendInboxMessage } from "./inbox"
 import type { CreateBrowserLaneInput, CreateRemoteBrowserLaneInput, InboxChannel } from "../preload/api"
 import {
+	palotOpenLogicalPanelArgsSchema,
 	palotOpenSidePanelInputSchema,
 	publishBrowserActionInputSchema,
 	sessionBindingSchema,
@@ -451,6 +452,31 @@ export function registerIpcHandlers(): void {
 		withLogging("palot:ui-state-snapshot", async () => getUiStateSnapshot()),
 	)
 	ipcMain.handle(
+		"palot:open-logical-panel",
+		withLogging("palot:open-logical-panel", async (_, route: import("../preload/api").PalotLogicalPanelRoute) => {
+			const parsedRoute = palotOpenLogicalPanelArgsSchema.parse(route)
+			const snapshot = setUiStateSnapshot({
+				sidePanel: parsedRoute.legacySidePanelTabId
+					? {
+						open: true,
+						activeTab: parsedRoute.legacySidePanelTabId,
+					  }
+					: undefined,
+				logicalPanelRoute: {
+					logicalPanelId: parsedRoute.logicalPanelId,
+					preferredZoneId: parsedRoute.preferredZoneId,
+					action: parsedRoute.action,
+					focusAuthorityOwner: parsedRoute.focusAuthorityOwner ?? "workspace",
+					legacySidePanelTabId: parsedRoute.legacySidePanelTabId,
+					allowCreate: parsedRoute.allowCreate ?? parsedRoute.action === "create-if-allowed",
+					requestedBy: parsedRoute.requestedBy ?? "ipc-open-logical-panel",
+				},
+			})
+			broadcastOpenSidePanel(snapshot.logicalPanelRoute!)
+			return snapshot
+		}),
+	)
+	ipcMain.handle(
 		"palot:open-side-panel",
 		withLogging("palot:open-side-panel", async (_, tab: import("../preload/api").SidePanelTabId) => {
 			const parsedTab = palotOpenSidePanelInputSchema.parse(tab)
@@ -459,8 +485,17 @@ export function registerIpcHandlers(): void {
 					open: true,
 					activeTab: parsedTab,
 				},
+				logicalPanelRoute: {
+					logicalPanelId: parsedTab,
+					preferredZoneId: "side-panel",
+					action: "reveal-preferred-zone",
+					focusAuthorityOwner: "compatibility-adapter",
+					legacySidePanelTabId: parsedTab,
+					allowCreate: true,
+					requestedBy: "ipc-open-side-panel-legacy",
+				},
 			})
-			broadcastOpenSidePanel(parsedTab)
+			broadcastOpenSidePanel(snapshot.logicalPanelRoute!)
 			return snapshot
 		}),
 	)

@@ -5,6 +5,7 @@ import type {
 	BrowserActionEvent,
 	BrowserLaneHealth,
 	BrowserStateSnapshot,
+	PalotLogicalPanelRoute,
 	PalotUiStateSnapshot,
 	SessionBinding,
 	SidePanelTabId,
@@ -12,6 +13,7 @@ import type {
 import {
 	browserStateSnapshotSchema,
 	dispatchBrowserToolInputSchema,
+	palotOpenLogicalPanelInputSchema,
 	palotOpenSidePanelInputSchema,
 	palotUiStateSnapshotSchema,
 	publishBrowserActionInputSchema,
@@ -102,6 +104,7 @@ let uiStateSnapshot: PalotUiStateSnapshot = {
 		activeTab: null,
 		availableTabs: [],
 	},
+	logicalPanelRoute: null,
 }
 const laneSnapshots = new Map<
 	string,
@@ -135,11 +138,11 @@ export function registerPalotBrowserWindows(provider: BrowserWindowProvider): vo
 	browserWindowProvider = provider
 }
 
-export async function broadcastOpenSidePanel(tab: SidePanelTabId): Promise<void> {
-	const parsedTab = palotOpenSidePanelInputSchema.parse(tab)
+export async function broadcastOpenSidePanel(route: PalotLogicalPanelRoute): Promise<void> {
+	const parsedRoute = palotOpenLogicalPanelInputSchema.parse(route)
 	const windows = await getPalotBrowserWindows()
 	for (const win of windows) {
-		win.webContents.send("palot:open-side-panel", parsedTab)
+		win.webContents.send("palot:open-side-panel", parsedRoute)
 	}
 }
 
@@ -281,9 +284,14 @@ function sendJson(res: ServerResponse, statusCode: number, payload: unknown): vo
 }
 
 async function handleBridgePayload(payload: unknown): Promise<unknown> {
-	const action = typeof payload === "object" && payload ? (payload as { action?: unknown }).action : null
+	const action =
+		typeof payload === "object" && payload
+			? ((payload as { action?: unknown; bridgeAction?: unknown }).bridgeAction ??
+				(payload as { action?: unknown }).action)
+			: null
 	if (action === "resolve-binding") return resolveBridgeBinding(payload)
 	if (action === "dispatch-browser-tool") return await dispatchBridgeBrowserTool(payload)
+	if (action === "open-logical-panel") return await openBridgeLogicalPanel(payload)
 	if (action === "open-side-panel") return await openBridgeSidePanel(payload)
 	if (action === "get-ui-state") return getUiStateSnapshot()
 	if (action === "list-plugin-tools") return await listBridgePluginTools()
@@ -409,16 +417,32 @@ async function dispatchBridgeBrowserTool(payload: unknown): Promise<unknown> {
 	return { ...result, toolName: input.toolName }
 }
 
+async function openBridgeLogicalPanel(payload: unknown): Promise<PalotUiStateSnapshot> {
+	const route = palotOpenLogicalPanelInputSchema.parse(payload)
+	const snapshot = setUiStateSnapshot({
+		sidePanel: route.legacySidePanelTabId
+			? {
+				open: true,
+				activeTab: route.legacySidePanelTabId,
+			  }
+			: undefined,
+		logicalPanelRoute: route,
+	})
+	await broadcastOpenSidePanel(route)
+	return snapshot
+}
+
 async function openBridgeSidePanel(payload: unknown): Promise<PalotUiStateSnapshot> {
 	const tab = palotOpenSidePanelInputSchema.parse((payload as { tab?: unknown })?.tab)
-	const snapshot = setUiStateSnapshot({
-		sidePanel: {
-			open: true,
-			activeTab: tab,
-		},
+	return openBridgeLogicalPanel({
+		logicalPanelId: tab,
+		preferredZoneId: "side-panel",
+		action: "reveal-preferred-zone",
+		focusAuthorityOwner: "compatibility-adapter",
+		legacySidePanelTabId: tab,
+		allowCreate: true,
+		requestedBy: "palot-open-side-panel-legacy",
 	})
-	await broadcastOpenSidePanel(tab)
-	return snapshot
 }
 
 export function getSessionBinding(sessionId: string): SessionBinding | null {
@@ -433,6 +457,7 @@ export function getUiStateSnapshot(): PalotUiStateSnapshot {
 			activeTab: uiStateSnapshot.sidePanel.activeTab,
 			availableTabs: [...uiStateSnapshot.sidePanel.availableTabs],
 		},
+		logicalPanelRoute: uiStateSnapshot.logicalPanelRoute,
 	})
 }
 
@@ -442,6 +467,7 @@ export function setUiStateSnapshot(input: {
 		activeTab?: SidePanelTabId | null
 		availableTabs?: SidePanelTabId[]
 	}
+	logicalPanelRoute?: PalotLogicalPanelRoute | null
 }): PalotUiStateSnapshot {
 	uiStateSnapshot = {
 		sidePanel: {
@@ -450,6 +476,7 @@ export function setUiStateSnapshot(input: {
 			availableTabs:
 				input.sidePanel?.availableTabs ? [...input.sidePanel.availableTabs] : [...uiStateSnapshot.sidePanel.availableTabs],
 		},
+		logicalPanelRoute: input.logicalPanelRoute ?? uiStateSnapshot.logicalPanelRoute,
 	}
 	return getUiStateSnapshot()
 }

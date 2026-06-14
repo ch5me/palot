@@ -40,6 +40,11 @@ const FIREFLY_SURFACE_IDS = [
 ] as const
 
 export const palotSidePanelTabSchema = z.enum(FIREFLY_SURFACE_IDS)
+export const palotLogicalPanelActionSchema = z.enum([
+	"focus-existing",
+	"reveal-preferred-zone",
+	"create-if-allowed",
+])
 
 const browserActionArgsShape = {
 	selector: z.string().optional(),
@@ -339,9 +344,29 @@ export const palotBridgeManifest: PluginManifest = {
 				timeoutMs: 10_000,
 			},
 			{
+				id: "plugin.firefly.built-in.palot-bridge.open_logical_panel",
+				title: "Open logical panel",
+				description:
+					"Route a logical panel by action semantics: focus existing, reveal preferred zone, or create when allowed.",
+				scope: "session",
+				requires: ["host:bridge.ui-state-write", "host:tool.register"],
+				args: {
+					logicalPanelId: z.string().min(1),
+					preferredZoneId: z.enum(["side-panel", "main-pane"]),
+					action: palotLogicalPanelActionSchema,
+					focusAuthorityOwner: z.enum(["workspace", "stable-host", "compatibility-adapter"]).optional(),
+					legacySidePanelTabId: palotSidePanelTabSchema.optional(),
+					allowCreate: z.boolean().optional(),
+					requestedBy: z.string().min(1).optional(),
+				},
+				timeoutMs: 5_000,
+				uiHints: { refreshProjection: true },
+			},
+			{
 				id: "plugin.firefly.built-in.palot-bridge.open_side_panel",
 				title: "Open side panel tab",
-				description: "Open a Palot side panel tab in the desktop UI.",
+				description:
+					"Legacy compatibility adapter. Maps singleton side-panel tab requests onto logical panel placement routing.",
 				scope: "session",
 				requires: ["host:bridge.ui-state-write", "host:tool.register"],
 				args: { tab: palotSidePanelTabSchema },

@@ -113,7 +113,10 @@ function sidePanelDescriptor(
 		multiplicityPolicy?: FireflySurfaceHostDescriptor["hostPolicy"]["multiplicityPolicy"]
 	},
 ): FireflySurfaceDef {
-	const defaultZoneId = config.target.kind === "workspace-panel" ? config.target.zoneId : "side-panel"
+	const defaultZoneId =
+		config.target.kind === "workspace-panel"
+			? config.target.zoneId
+			: config.target.preferredZoneId
 	return {
 		id: config.id,
 		manifestId: config.manifestId,
@@ -192,7 +195,14 @@ export const FIREFLY_SURFACE_REGISTRY: FireflySurfaceDef[] = [
 		commandIds: ["surface.review.open"],
 		persistenceKey: "side-panel.review",
 		telemetryNamespace: "firefly.surface.review",
-		target: { kind: "side-panel", tab: "review" },
+		target: {
+			kind: "logical-panel",
+			logicalPanelId: "review",
+			preferredZoneId: "side-panel",
+			action: "reveal-preferred-zone",
+			focusAuthorityOwner: "workspace",
+			legacySidePanelTabId: "review",
+		},
 		runtime: componentEntrypoint(ReviewPanel as ComponentType<ReviewPanelRuntimeProps>, (ctx) => ({
 			sessionId: ctx.agent.sessionId,
 			directory: ctx.agent.directory,
@@ -215,7 +225,14 @@ export const FIREFLY_SURFACE_REGISTRY: FireflySurfaceDef[] = [
 		commandIds: ["surface.browser.open", "surface.browser.toggle"],
 		persistenceKey: "side-panel.browser",
 		telemetryNamespace: "firefly.surface.browser",
-		target: { kind: "side-panel", tab: "browser" },
+		target: {
+			kind: "logical-panel",
+			logicalPanelId: "browser",
+			preferredZoneId: "side-panel",
+			action: "reveal-preferred-zone",
+			focusAuthorityOwner: "workspace",
+			legacySidePanelTabId: "browser",
+		},
 		runtime: componentEntrypoint(BrowserPanel as ComponentType<StaticPanelProps>, (ctx) => ({ agent: ctx.agent })),
 	}),
 	// `notes` is served from the plugin catalog (firefly.built-in.surface.notes,
@@ -237,7 +254,14 @@ export const FIREFLY_SURFACE_REGISTRY: FireflySurfaceDef[] = [
 		commandIds: ["surface.pulse.open", "surface.pulse.toggle"],
 		persistenceKey: "side-panel.pulse",
 		telemetryNamespace: "firefly.surface.pulse",
-		target: { kind: "side-panel", tab: "pulse" },
+		target: {
+			kind: "logical-panel",
+			logicalPanelId: "pulse",
+			preferredZoneId: "side-panel",
+			action: "reveal-preferred-zone",
+			focusAuthorityOwner: "workspace",
+			legacySidePanelTabId: "pulse",
+		},
 		runtime: componentEntrypoint(PulsePanel as ComponentType<StaticPanelProps>, (ctx) => ({ agent: ctx.agent })),
 	}),
 	sidePanelDescriptor({
@@ -257,7 +281,14 @@ export const FIREFLY_SURFACE_REGISTRY: FireflySurfaceDef[] = [
 		commandIds: ["surface.artifacts.open", "surface.artifacts.toggle"],
 		persistenceKey: "side-panel.artifacts",
 		telemetryNamespace: "firefly.surface.artifacts",
-		target: { kind: "side-panel", tab: "artifacts" },
+		target: {
+			kind: "logical-panel",
+			logicalPanelId: "artifacts",
+			preferredZoneId: "side-panel",
+			action: "reveal-preferred-zone",
+			focusAuthorityOwner: "workspace",
+			legacySidePanelTabId: "artifacts",
+		},
 		runtime: componentEntrypoint(ArtifactsPanel as ComponentType<StaticPanelProps>, (ctx) => ({ agent: ctx.agent })),
 	}),
 	sidePanelDescriptor({
@@ -277,7 +308,14 @@ export const FIREFLY_SURFACE_REGISTRY: FireflySurfaceDef[] = [
 		commandIds: ["surface.memory.open", "surface.memory.toggle"],
 		persistenceKey: "side-panel.memory",
 		telemetryNamespace: "firefly.surface.memory",
-		target: { kind: "side-panel", tab: "memory" },
+		target: {
+			kind: "logical-panel",
+			logicalPanelId: "memory",
+			preferredZoneId: "side-panel",
+			action: "reveal-preferred-zone",
+			focusAuthorityOwner: "workspace",
+			legacySidePanelTabId: "memory",
+		},
 		runtime: componentEntrypoint(PluginPanelBoundary as ComponentType<MemoryBoundaryRuntimeProps>, (ctx) => ({
 			pluginId: "firefly.built-in.surface.memory",
 			contributionId: "memory",
@@ -306,7 +344,14 @@ export const FIREFLY_SURFACE_REGISTRY: FireflySurfaceDef[] = [
 		commandIds: ["surface.files.open", "surface.files.toggle"],
 		persistenceKey: "side-panel.files",
 		telemetryNamespace: "firefly.surface.files",
-		target: { kind: "side-panel", tab: "files" },
+		target: {
+			kind: "logical-panel",
+			logicalPanelId: "files",
+			preferredZoneId: "side-panel",
+			action: "reveal-preferred-zone",
+			focusAuthorityOwner: "workspace",
+			legacySidePanelTabId: "files",
+		},
 		runtime: componentEntrypoint(FilesPanel as ComponentType<StaticPanelProps>, (ctx) => ({ agent: ctx.agent })),
 	}),
 	sidePanelDescriptor({
@@ -326,7 +371,14 @@ export const FIREFLY_SURFACE_REGISTRY: FireflySurfaceDef[] = [
 		commandIds: ["surface.terminal.open", "surface.terminal.toggle"],
 		persistenceKey: "side-panel.terminal",
 		telemetryNamespace: "firefly.surface.terminal",
-		target: { kind: "side-panel", tab: "terminal" },
+		target: {
+			kind: "logical-panel",
+			logicalPanelId: "terminal",
+			preferredZoneId: "side-panel",
+			action: "reveal-preferred-zone",
+			focusAuthorityOwner: "workspace",
+			legacySidePanelTabId: "terminal",
+		},
 		runtime: componentEntrypoint(TerminalPanel as ComponentType<StaticPanelProps>, (ctx) => ({ agent: ctx.agent })),
 	}),
 	sidePanelDescriptor({
@@ -346,7 +398,14 @@ export const FIREFLY_SURFACE_REGISTRY: FireflySurfaceDef[] = [
 		commandIds: ["surface.editor.open", "surface.editor.toggle"],
 		persistenceKey: "side-panel.editor",
 		telemetryNamespace: "firefly.surface.editor",
-		target: { kind: "side-panel", tab: "editor" },
+		target: {
+			kind: "logical-panel",
+			logicalPanelId: "editor",
+			preferredZoneId: "side-panel",
+			action: "reveal-preferred-zone",
+			focusAuthorityOwner: "workspace",
+			legacySidePanelTabId: "editor",
+		},
 		runtime: componentEntrypoint(EditorPanel as ComponentType<StaticPanelProps>, (ctx) => ({ agent: ctx.agent })),
 	}),
 	sidePanelDescriptor({
@@ -366,7 +425,14 @@ export const FIREFLY_SURFACE_REGISTRY: FireflySurfaceDef[] = [
 		commandIds: ["surface.plugins.open", "surface.plugins.toggle"],
 		persistenceKey: "side-panel.plugins",
 		telemetryNamespace: "firefly.surface.plugins",
-		target: { kind: "side-panel", tab: "plugins" },
+		target: {
+			kind: "logical-panel",
+			logicalPanelId: "plugins",
+			preferredZoneId: "side-panel",
+			action: "reveal-preferred-zone",
+			focusAuthorityOwner: "workspace",
+			legacySidePanelTabId: "plugins",
+		},
 		runtime: componentEntrypoint(V2PluginsPanel as ComponentType<StaticPanelProps>, (ctx) => ({ agent: ctx.agent })),
 	}),
 	sidePanelDescriptor({
@@ -386,7 +452,14 @@ export const FIREFLY_SURFACE_REGISTRY: FireflySurfaceDef[] = [
 		commandIds: ["surface.bridges.open", "surface.bridges.toggle"],
 		persistenceKey: "side-panel.bridges",
 		telemetryNamespace: "firefly.surface.bridges",
-		target: { kind: "side-panel", tab: "bridges" },
+		target: {
+			kind: "logical-panel",
+			logicalPanelId: "bridges",
+			preferredZoneId: "side-panel",
+			action: "reveal-preferred-zone",
+			focusAuthorityOwner: "workspace",
+			legacySidePanelTabId: "bridges",
+		},
 		runtime: componentEntrypoint(BridgesPanel as ComponentType<StaticPanelProps>, (ctx) => ({ agent: ctx.agent })),
 	}),
 	sidePanelDescriptor({
@@ -406,7 +479,14 @@ export const FIREFLY_SURFACE_REGISTRY: FireflySurfaceDef[] = [
 		commandIds: ["surface.crm.open", "surface.crm.toggle"],
 		persistenceKey: "side-panel.crm",
 		telemetryNamespace: "firefly.surface.crm",
-		target: { kind: "side-panel", tab: "crm" },
+		target: {
+			kind: "logical-panel",
+			logicalPanelId: "crm",
+			preferredZoneId: "side-panel",
+			action: "reveal-preferred-zone",
+			focusAuthorityOwner: "workspace",
+			legacySidePanelTabId: "crm",
+		},
 		runtime: componentEntrypoint(CrmPanel as ComponentType<StaticPanelProps>, (ctx) => ({ agent: ctx.agent })),
 	}),
 	sidePanelDescriptor({
@@ -426,7 +506,14 @@ export const FIREFLY_SURFACE_REGISTRY: FireflySurfaceDef[] = [
 		commandIds: ["surface.studio.open", "surface.studio.toggle"],
 		persistenceKey: "side-panel.studio",
 		telemetryNamespace: "firefly.surface.studio",
-		target: { kind: "side-panel", tab: "studio" },
+		target: {
+			kind: "logical-panel",
+			logicalPanelId: "studio",
+			preferredZoneId: "side-panel",
+			action: "reveal-preferred-zone",
+			focusAuthorityOwner: "workspace",
+			legacySidePanelTabId: "studio",
+		},
 		runtime: componentEntrypoint(StudioPanel as ComponentType<StaticPanelProps>, (ctx) => ({ agent: ctx.agent })),
 	}),
 	sidePanelDescriptor({
@@ -446,7 +533,14 @@ export const FIREFLY_SURFACE_REGISTRY: FireflySurfaceDef[] = [
 		commandIds: ["surface.voice.open", "surface.voice.toggle"],
 		persistenceKey: "side-panel.voice",
 		telemetryNamespace: "firefly.surface.voice",
-		target: { kind: "side-panel", tab: "voice" },
+		target: {
+			kind: "logical-panel",
+			logicalPanelId: "voice",
+			preferredZoneId: "side-panel",
+			action: "reveal-preferred-zone",
+			focusAuthorityOwner: "workspace",
+			legacySidePanelTabId: "voice",
+		},
 		runtime: componentEntrypoint(VoicePanel as ComponentType<StaticPanelProps>, (ctx) => ({ agent: ctx.agent })),
 	}),
 	sidePanelDescriptor({
@@ -466,7 +560,14 @@ export const FIREFLY_SURFACE_REGISTRY: FireflySurfaceDef[] = [
 		commandIds: ["surface.oracle.open", "surface.oracle.toggle"],
 		persistenceKey: "side-panel.oracle",
 		telemetryNamespace: "firefly.surface.oracle",
-		target: { kind: "side-panel", tab: "oracle" },
+		target: {
+			kind: "logical-panel",
+			logicalPanelId: "oracle",
+			preferredZoneId: "side-panel",
+			action: "reveal-preferred-zone",
+			focusAuthorityOwner: "workspace",
+			legacySidePanelTabId: "oracle",
+		},
 		runtime: componentEntrypoint(OraclePanel as ComponentType<StaticPanelProps>, (ctx) => ({ agent: ctx.agent })),
 	}),
 	sidePanelDescriptor({
@@ -486,7 +587,14 @@ export const FIREFLY_SURFACE_REGISTRY: FireflySurfaceDef[] = [
 		commandIds: ["surface.claude.open", "surface.claude.toggle"],
 		persistenceKey: "side-panel.claude",
 		telemetryNamespace: "firefly.surface.claude",
-		target: { kind: "side-panel", tab: "claude" },
+		target: {
+			kind: "logical-panel",
+			logicalPanelId: "claude",
+			preferredZoneId: "side-panel",
+			action: "reveal-preferred-zone",
+			focusAuthorityOwner: "workspace",
+			legacySidePanelTabId: "claude",
+		},
 		runtime: componentEntrypoint(ClaudePanel as ComponentType<StaticPanelProps>, (ctx) => ({ agent: ctx.agent })),
 	}),
 	sidePanelDescriptor({
@@ -506,7 +614,14 @@ export const FIREFLY_SURFACE_REGISTRY: FireflySurfaceDef[] = [
 		commandIds: ["surface.ch5pm.open", "surface.ch5pm.toggle"],
 		persistenceKey: "side-panel.ch5pm",
 		telemetryNamespace: "firefly.surface.ch5pm",
-		target: { kind: "side-panel", tab: "ch5pm" },
+		target: {
+			kind: "logical-panel",
+			logicalPanelId: "ch5pm",
+			preferredZoneId: "side-panel",
+			action: "reveal-preferred-zone",
+			focusAuthorityOwner: "workspace",
+			legacySidePanelTabId: "ch5pm",
+		},
 		runtime: componentEntrypoint(Ch5PmDashboardPanel as FireflySurfaceComponent, () => ({})),
 	}),
 	sidePanelDescriptor({
@@ -526,7 +641,14 @@ export const FIREFLY_SURFACE_REGISTRY: FireflySurfaceDef[] = [
 		commandIds: ["surface.pdfReview.open", "surface.pdfReview.toggle"],
 		persistenceKey: "side-panel.pdf-review",
 		telemetryNamespace: "firefly.surface.pdf-review",
-		target: { kind: "side-panel", tab: "pdf-review" },
+		target: {
+			kind: "logical-panel",
+			logicalPanelId: "pdf-review",
+			preferredZoneId: "side-panel",
+			action: "reveal-preferred-zone",
+			focusAuthorityOwner: "workspace",
+			legacySidePanelTabId: "pdf-review",
+		},
 		runtime: componentEntrypoint(PdfReviewPanel as ComponentType<StaticPanelProps>, (ctx) => ({ agent: ctx.agent })),
 	}),
 ]

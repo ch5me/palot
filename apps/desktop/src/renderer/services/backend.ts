@@ -271,6 +271,15 @@ export async function fetchPalotUiStateSnapshot(): Promise<import("../../preload
 	return null
 }
 
+export async function openPalotLogicalPanel(
+	route: import("../../preload/api").PalotLogicalPanelRoute,
+): Promise<import("../../preload/api").PalotUiStateSnapshot | null> {
+	if (isElectron) {
+		return window.elf.palot.openLogicalPanel(route)
+	}
+	return null
+}
+
 export async function openPalotSidePanel(tab: import("../../preload/api").SidePanelTabId): Promise<import("../../preload/api").PalotUiStateSnapshot | null> {
 	if (isElectron) {
 		return window.elf.palot.openSidePanel(tab)
@@ -342,7 +351,7 @@ export async function patchArtifactRecord(
 }
 
 export function subscribeToPalotOpenSidePanel(
-	callback: (payload: { tab: import("../../preload/api").SidePanelTabId }) => void,
+	callback: (payload: import("../../preload/api").PalotLogicalPanelRoute) => void,
 ): () => void {
 	if (isElectron) {
 		return window.elf.palot.onOpenSidePanel(callback)

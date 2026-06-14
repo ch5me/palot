@@ -45,6 +45,14 @@ describe("catalogPanelToTabDescriptor", () => {
 		expect(descriptor?.availability.available).toBe(true)
 		expect(descriptor?.hostPolicy.defaultZoneId).toBe("side-panel")
 		expect(descriptor?.runtime.renderMode).toBe("host-reconciler")
+		expect(descriptor?.target).toEqual({
+			kind: "logical-panel",
+			logicalPanelId: "notes",
+			preferredZoneId: "side-panel",
+			action: "reveal-preferred-zone",
+			focusAuthorityOwner: "workspace",
+			legacySidePanelTabId: "notes",
+		})
 	})
 
 	test("skips main-pane panels", () => {
@@ -88,7 +96,14 @@ describe("catalogPanelToTabDescriptor", () => {
 		const normalized = resolveCatalogSurfaceDescriptor(descriptor, () => ({}) as never)
 		expect(normalized.hostPolicy.hostPolicy).toBe("remount-ok")
 		expect(normalized.runtime.renderMode).toBe("declarative-props")
-		expect(normalized.target).toEqual({ kind: "side-panel", tab: "notes" })
+		expect(normalized.target).toEqual({
+			kind: "logical-panel",
+			logicalPanelId: "notes",
+			preferredZoneId: "side-panel",
+			action: "reveal-preferred-zone",
+			focusAuthorityOwner: "workspace",
+			legacySidePanelTabId: "notes",
+		})
 	})
 })
 
