@@ -1,21 +1,3 @@
-"use client"
-
-import { Separator as SeparatorPrimitive } from "@base-ui/react/separator"
-
-import { cn } from "@ch5me/elf-ui/lib/utils"
-
-function Separator({ className, orientation = "horizontal", ...props }: SeparatorPrimitive.Props) {
-	return (
-		<SeparatorPrimitive
-			data-slot="separator"
-			orientation={orientation}
-			className={cn(
-				"bg-border shrink-0 data-horizontal:h-px data-horizontal:w-full data-vertical:w-px data-vertical:self-stretch",
-				className,
-			)}
-			{...props}
-		/>
-	)
-}
-
-export { Separator }
+// Compat shim — generic primitive now lives in @ch5me/ch5-ui-web.
+// Re-export keeps existing @ch5me/elf-ui/components/separator imports working.
+export * from "@ch5me/ch5-ui-web"

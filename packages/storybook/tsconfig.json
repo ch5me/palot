@@ -16,7 +16,8 @@
 			"@ch5me/elf-ui/*": ["../ui/src/*"],
 			"lucide-react": ["../../node_modules/lucide-react"],
 			"react": ["../../node_modules/@types/react"],
-			"react-dom": ["../../node_modules/@types/react-dom"]
+			"react-dom": ["../../node_modules/@types/react-dom"],
+			"react-hook-form": ["../../node_modules/react-hook-form"]
 		}
 	},
 	"include": [".storybook/**/*.ts", ".storybook/**/*.tsx", "src/**/*.ts", "src/**/*.tsx"],
