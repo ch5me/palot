@@ -1,0 +1,165 @@
+{
+  "generatedAt": "2026-06-14T00:33:00.090Z",
+  "results": [
+    {
+      "storyId": "ai-elements-code-codeblock--default",
+      "viewport": "desktop",
+      "width": 776,
+      "height": 932,
+      "childCount": 31,
+      "textLength": 253,
+      "screenshot": "/Users/hassoncs/src/ch5/palot/.sisyphus/evidence/storybook-coverage/batch-08/ai-elements-code-codeblock--default-desktop.png",
+      "warnings": 0
+    },
+    {
+      "storyId": "ai-elements-code-codeblock--default",
+      "viewport": "mobile",
+      "width": 776,
+      "height": 876,
+      "childCount": 31,
+      "textLength": 253,
+      "screenshot": "/Users/hassoncs/src/ch5/palot/.sisyphus/evidence/storybook-coverage/batch-08/ai-elements-code-codeblock--default-mobile.png",
+      "warnings": 0
+    },
+    {
+      "storyId": "ai-elements-data-environmentvariables--default",
+      "viewport": "desktop",
+      "width": 716,
+      "height": 932,
+      "childCount": 33,
+      "textLength": 112,
+      "screenshot": "/Users/hassoncs/src/ch5/palot/.sisyphus/evidence/storybook-coverage/batch-08/ai-elements-data-environmentvariables--default-desktop.png",
+      "warnings": 0
+    },
+    {
+      "storyId": "ai-elements-data-environmentvariables--default",
+      "viewport": "mobile",
+      "width": 716,
+      "height": 876,
+      "childCount": 33,
+      "textLength": 112,
+      "screenshot": "/Users/hassoncs/src/ch5/palot/.sisyphus/evidence/storybook-coverage/batch-08/ai-elements-data-environmentvariables--default-mobile.png",
+      "warnings": 0
+    },
+    {
+      "storyId": "ai-elements-data-filetree--default",
+      "viewport": "desktop",
+      "width": 616,
+      "height": 932,
+      "childCount": 68,
+      "textLength": 60,
+      "screenshot": "/Users/hassoncs/src/ch5/palot/.sisyphus/evidence/storybook-coverage/batch-08/ai-elements-data-filetree--default-desktop.png",
+      "warnings": 0
+    },
+    {
+      "storyId": "ai-elements-data-filetree--default",
+      "viewport": "mobile",
+      "width": 616,
+      "height": 876,
+      "childCount": 68,
+      "textLength": 60,
+      "screenshot": "/Users/hassoncs/src/ch5/palot/.sisyphus/evidence/storybook-coverage/batch-08/ai-elements-data-filetree--default-mobile.png",
+      "warnings": 0
+    },
+    {
+      "storyId": "ai-elements-feedback-shimmer--default",
+      "viewport": "desktop",
+      "width": 616,
+      "height": 932,
+      "childCount": 4,
+      "textLength": 38,
+      "screenshot": "/Users/hassoncs/src/ch5/palot/.sisyphus/evidence/storybook-coverage/batch-08/ai-elements-feedback-shimmer--default-desktop.png",
+      "warnings": 0
+    },
+    {
+      "storyId": "ai-elements-feedback-shimmer--default",
+      "viewport": "mobile",
+      "width": 616,
+      "height": 876,
+      "childCount": 4,
+      "textLength": 38,
+      "screenshot": "/Users/hassoncs/src/ch5/palot/.sisyphus/evidence/storybook-coverage/batch-08/ai-elements-feedback-shimmer--default-mobile.png",
+      "warnings": 0
+    },
+    {
+      "storyId": "ai-elements-code-snippet--default",
+      "viewport": "desktop",
+      "width": 816,
+      "height": 932,
+      "childCount": 12,
+      "textLength": 1,
+      "screenshot": "/Users/hassoncs/src/ch5/palot/.sisyphus/evidence/storybook-coverage/batch-08/ai-elements-code-snippet--default-desktop.png",
+      "warnings": 0
+    },
+    {
+      "storyId": "ai-elements-code-snippet--default",
+      "viewport": "mobile",
+      "width": 816,
+      "height": 876,
+      "childCount": 12,
+      "textLength": 1,
+      "screenshot": "/Users/hassoncs/src/ch5/palot/.sisyphus/evidence/storybook-coverage/batch-08/ai-elements-code-snippet--default-mobile.png",
+      "warnings": 0
+    },
+    {
+      "storyId": "ai-elements-diagnostics-stacktrace--default",
+      "viewport": "desktop",
+      "width": 856,
+      "height": 932,
+      "childCount": 42,
+      "textLength": 326,
+      "screenshot": "/Users/hassoncs/src/ch5/palot/.sisyphus/evidence/storybook-coverage/batch-08/ai-elements-diagnostics-stacktrace--default-desktop.png",
+      "warnings": 0
+    },
+    {
+      "storyId": "ai-elements-diagnostics-stacktrace--default",
+      "viewport": "mobile",
+      "width": 856,
+      "height": 876,
+      "childCount": 42,
+      "textLength": 326,
+      "screenshot": "/Users/hassoncs/src/ch5/palot/.sisyphus/evidence/storybook-coverage/batch-08/ai-elements-diagnostics-stacktrace--default-mobile.png",
+      "warnings": 0
+    },
+    {
+      "storyId": "ai-elements-diagnostics-terminal--default",
+      "viewport": "desktop",
+      "width": 816,
+      "height": 932,
+      "childCount": 22,
+      "textLength": 335,
+      "screenshot": "/Users/hassoncs/src/ch5/palot/.sisyphus/evidence/storybook-coverage/batch-08/ai-elements-diagnostics-terminal--default-desktop.png",
+      "warnings": 0
+    },
+    {
+      "storyId": "ai-elements-diagnostics-terminal--default",
+      "viewport": "mobile",
+      "width": 816,
+      "height": 876,
+      "childCount": 22,
+      "textLength": 335,
+      "screenshot": "/Users/hassoncs/src/ch5/palot/.sisyphus/evidence/storybook-coverage/batch-08/ai-elements-diagnostics-terminal--default-mobile.png",
+      "warnings": 0
+    },
+    {
+      "storyId": "ai-elements-diagnostics-testresults--default",
+      "viewport": "desktop",
+      "width": 856,
+      "height": 932,
+      "childCount": 68,
+      "textLength": 274,
+      "screenshot": "/Users/hassoncs/src/ch5/palot/.sisyphus/evidence/storybook-coverage/batch-08/ai-elements-diagnostics-testresults--default-desktop.png",
+      "warnings": 0
+    },
+    {
+      "storyId": "ai-elements-diagnostics-testresults--default",
+      "viewport": "mobile",
+      "width": 856,
+      "height": 876,
+      "childCount": 68,
+      "textLength": 274,
+      "screenshot": "/Users/hassoncs/src/ch5/palot/.sisyphus/evidence/storybook-coverage/batch-08/ai-elements-diagnostics-testresults--default-mobile.png",
+      "warnings": 0
+    }
+  ]
+}

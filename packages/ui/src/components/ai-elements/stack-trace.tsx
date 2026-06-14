@@ -211,6 +211,7 @@ export const StackTraceHeader = memo(({ className, children, ...props }: StackTr
 	return (
 		<Collapsible onOpenChange={setIsOpen} open={isOpen}>
 			<CollapsibleTrigger
+				nativeButton={false}
 				render={
 					<div
 						className={cn(
