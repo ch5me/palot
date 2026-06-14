@@ -1,13 +1,3 @@
-import { cn } from "@ch5me/elf-ui/lib/utils"
-
-function Skeleton({ className, ...props }: React.ComponentProps<"div">) {
-	return (
-		<div
-			data-slot="skeleton"
-			className={cn("bg-muted rounded-md animate-pulse", className)}
-			{...props}
-		/>
-	)
-}
-
-export { Skeleton }
+// Compat shim — generic primitive now lives in @ch5me/ch5-ui-web.
+// Re-export keeps existing @ch5me/elf-ui/components/skeleton imports working.
+export * from "@ch5me/ch5-ui-web"

@@ -1,22 +1,3 @@
-import { cn } from "@ch5me/elf-ui/lib/utils"
-
-function AspectRatio({
-	ratio,
-	className,
-	...props
-}: React.ComponentProps<"div"> & { ratio: number }) {
-	return (
-		<div
-			data-slot="aspect-ratio"
-			style={
-				{
-					"--ratio": ratio,
-				} as React.CSSProperties
-			}
-			className={cn("relative aspect-(--ratio)", className)}
-			{...props}
-		/>
-	)
-}
-
-export { AspectRatio }
+// Compat shim — generic primitive now lives in @ch5me/ch5-ui-web.
+// Re-export keeps existing @ch5me/elf-ui/components/aspect-ratio imports working.
+export * from "@ch5me/ch5-ui-web"

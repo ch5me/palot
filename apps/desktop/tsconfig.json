@@ -17,6 +17,9 @@
 		"paths": {
 			"@/*": ["./src/renderer/*"],
 			"@ch5me/elf-ui/*": ["../../packages/ui/src/*"],
+			"lucide-react": ["../../node_modules/lucide-react"],
+			"react": ["../../node_modules/@types/react"],
+			"react-dom": ["../../node_modules/@types/react-dom"],
 			"@ch5me/elf-configconv": ["../../packages/configconv/src/index.ts"],
 			"@ch5me/elf-configconv/*": ["../../packages/configconv/src/*"],
 			"@ch5me/elf-server/client": ["../server/src/client.ts"],

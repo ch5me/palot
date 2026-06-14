@@ -1,15 +1,3 @@
-import { cn } from "@ch5me/elf-ui/lib/utils"
-import { Loader2Icon } from "lucide-react"
-
-function Spinner({ className, ...props }: React.ComponentProps<"svg">) {
-	return (
-		<Loader2Icon
-			role="status"
-			aria-label="Loading"
-			className={cn("size-4 animate-spin", className)}
-			{...props}
-		/>
-	)
-}
-
-export { Spinner }
+// Compat shim — generic primitive now lives in @ch5me/ch5-ui-web.
+// Re-export keeps existing @ch5me/elf-ui/components/spinner imports working.
+export * from "@ch5me/ch5-ui-web"
