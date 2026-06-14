@@ -87,6 +87,7 @@ export const FileChangesHeader = ({ className, children, ...props }: FileChanges
 			/>
 		}
 		{...props}
+		nativeButton={false}
 	>
 		{children}
 	</CollapsibleTrigger>
