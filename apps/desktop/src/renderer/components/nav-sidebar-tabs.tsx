@@ -1,5 +1,4 @@
-import { AnimatePresence } from "motion/react"
-import { useNavigate } from "@tanstack/react-router"
+import { useNavigate, useParams } from "@tanstack/react-router"
 import { useAtom, useAtomValue, useSetAtom } from "jotai"
 import {
 	BlocksIcon,
@@ -56,7 +55,6 @@ interface NavSidebarTabDefinition {
 	label: string
 	icon: typeof BlocksIcon
 	mode: "host" | "plugin-seam"
-	render: (props: AppSidebarContentProps) => React.ReactNode
 }
 
 const NAV_SIDEBAR_TAB_DEFINITIONS: NavSidebarTabDefinition[] = [
@@ -65,14 +63,12 @@ const NAV_SIDEBAR_TAB_DEFINITIONS: NavSidebarTabDefinition[] = [
 		label: "Palot",
 		icon: BlocksIcon,
 		mode: "host",
-		render: (props) => <BuiltInSidebarBody mode="host" {...props} />,
 	},
 	{
 		id: "built-in-duplicate",
 		label: "Folio",
 		icon: CopyIcon,
 		mode: "plugin-seam",
-		render: (props) => <BuiltInSidebarBody mode="plugin-seam" {...props} />,
 	},
 ]
 
@@ -118,27 +114,13 @@ export function NavSidebarTabs(props: AppSidebarContentProps) {
 
 	return (
 		<div className="flex min-h-0 flex-1 flex-col overflow-hidden">
-			<NavSidebarShell
+			<BuiltInSidebarBody
+				key={currentTab.id}
+				mode={currentTab.mode}
 				tabs={shellTabs}
 				activeTab={currentTab.id}
-				onTabChange={(value) => setActiveTab(value)}
-				serverConnected={props.serverConnected}
-				hasContent={props.agents.length > 0 || props.projects.length > 0}
-				sectionsOpen={{
-					active: true,
-					pinned: true,
-					recent: true,
-					pm: true,
-					projects: true,
-				}}
-				onSectionOpenChange={() => {}}
-				rightPane={
-					<AnimatePresence initial={false} mode="wait">
-						<div key={currentTab.id} className="flex h-full min-h-0 flex-col overflow-hidden">
-							{currentTab.render(props)}
-						</div>
-					</AnimatePresence>
-				}
+				onTabChange={setActiveTab}
+				{...props}
 			/>
 		</div>
 	)
@@ -155,8 +137,17 @@ const BuiltInSidebarBody = memo(function BuiltInSidebarBody({
 	onForkSession,
 	serverConnected,
 	mode = "host",
-}: AppSidebarContentProps & { mode?: "host" | "plugin-seam" }) {
+	tabs,
+	activeTab,
+	onTabChange,
+}: AppSidebarContentProps & {
+	mode?: "host" | "plugin-seam"
+	tabs: NavSidebarShellTab[]
+	activeTab: NavSidebarTabDefinition["id"]
+	onTabChange: (value: NavSidebarTabDefinition["id"]) => void
+}) {
 	const navigate = useNavigate()
+	const { sessionId } = useParams({ strict: false }) as { sessionId?: string }
 	const automationsEnabled = useAtomValue(automationsEnabledAtom)
 	const [sidebarSectionsOpen, setSidebarSectionsOpen] = useAtom(sidebarSectionOpenAtom)
 	const pinnedSessions = useAtomValue(pinnedSessionsAtom)
@@ -209,11 +200,6 @@ const BuiltInSidebarBody = memo(function BuiltInSidebarBody({
 	)
 
 	const hasContent = agents.length > 0 || projects.length > 0
-	const sidebarTitle = mode === "plugin-seam" ? "Folio plugin seam" : "Palot host sidebar"
-	const sidebarDescription =
-		mode === "plugin-seam"
-			? "This tab is reserved for the upcoming plugin-projected Folio family while still using the shared shell contract for spacing, sections, and side-panel behavior."
-			: "This is the current host-owned Palot sidebar, rendered through the shared shell contract."
 
 	const setSectionOpen = (section: SidebarSectionId | NavSidebarSectionId, open: boolean) => {
 		setSidebarSectionsOpen((current) => ({
@@ -248,8 +234,6 @@ const BuiltInSidebarBody = memo(function BuiltInSidebarBody({
 				projectSearchPlaceholder: "Filter Folio workspaces...",
 				emptyTitle: "Plugin seam warming up",
 				emptyBody: "This host-owned preview marks the projected Folio sidebar slot until the first plugin-projected family is wired in.",
-				primaryBody: "This pane marks the future plugin-projected Folio navigation surface. Host actions stay intentionally disabled here until the first plugin family is wired in.",
-				panelBody: "Reserved for Folio-specific panels, bridge controls, and plugin-owned detail views.",
 			}
 			: {
 				projectManagerLabel: "Project Manager",
@@ -257,15 +241,13 @@ const BuiltInSidebarBody = memo(function BuiltInSidebarBody({
 				projectSearchPlaceholder: "Filter projects...",
 				emptyTitle: "No projects yet",
 				emptyBody: "Add a project to get started",
-				primaryBody: "Use this pane to evaluate today’s host-owned sidebar inside the same shell layout future plugin families will inherit.",
-				panelBody: "Reserved for current host-owned notes, browser, and artifacts side panels.",
 			}
 
 	return (
 		<NavSidebarShell
-			tabs={NAV_SIDEBAR_TAB_DEFINITIONS.map((tab) => ({ id: tab.id, label: tab.label, icon: tab.icon }))}
-			activeTab={mode === "plugin-seam" ? "built-in-duplicate" : "built-in"}
-			onTabChange={() => {}}
+			tabs={tabs}
+			activeTab={activeTab}
+			onTabChange={onTabChange}
 
 			serverConnected={serverConnected}
 			hasContent={hasContent}
@@ -340,26 +322,8 @@ const BuiltInSidebarBody = memo(function BuiltInSidebarBody({
 			}}
 			onSettings={mode === "plugin-seam" ? undefined : () => navigate({ to: "/settings" })}
 			projectSearchPlaceholder={seamCopy.projectSearchPlaceholder}
+			selectedSessionId={sessionId ?? null}
 			serverSummary={{ label: activeServer.name, connected: serverConnected }}
-				rightPane={
-					<div className="flex h-full min-h-0 flex-col border-l border-border/50 bg-background/70">
-						<div className="border-b border-border/50 px-4 py-3">
-							<p className="text-xs font-medium uppercase tracking-[0.16em] text-muted-foreground">{mode === "plugin-seam" ? "Plugin seam preview" : "Host sidebar preview"}</p>
-							<p className="mt-2 text-sm font-medium">{sidebarTitle}</p>
-							<p className="mt-1 text-xs leading-5 text-muted-foreground">{sidebarDescription}</p>
-						</div>
-						<div className="grid min-h-0 flex-1 gap-3 p-4 lg:grid-cols-[minmax(0,1fr)_280px]">
-							<div className="rounded-2xl border border-dashed border-border/60 bg-card/40 p-4">
-								<p className="text-xs font-medium uppercase tracking-[0.16em] text-muted-foreground">Primary surface</p>
-								<p className="mt-3 text-sm leading-6 text-muted-foreground">{seamCopy.primaryBody}</p>
-							</div>
-							<div className="rounded-2xl border border-border/60 bg-card p-4 shadow-sm">
-								<p className="text-xs font-medium uppercase tracking-[0.16em] text-muted-foreground">Side panel target</p>
-								<p className="mt-3 text-sm leading-6 text-muted-foreground">{seamCopy.panelBody}</p>
-							</div>
-						</div>
-					</div>
-				}
 
 			renderProjectSession={(agent) => {
 				const original = agents.find((entry) => entry.id === agent.id)

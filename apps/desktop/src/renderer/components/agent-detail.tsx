@@ -8,7 +8,7 @@ import {
 } from "@ch5me/elf-ui/components/dropdown-menu"
 import { Input } from "@ch5me/elf-ui/components/input"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@ch5me/elf-ui/components/tooltip"
-import { SplitPane } from "@ch5me/workspace"
+import { DockviewReact, type DockviewReadyEvent, type IDockviewPanelProps } from "dockview"
 import { useNavigate, useParams } from "@tanstack/react-router"
 import { useAtom, useAtomValue, useSetAtom } from "jotai"
 import {
@@ -21,7 +21,7 @@ import {
 	PencilIcon,
 	TerminalIcon,
 } from "lucide-react"
-import { useCallback, useEffect, useMemo, useRef, useState } from "react"
+import { type FunctionComponent, type ReactNode, useCallback, useEffect, useMemo, useRef, useState } from "react"
 import type { OpenInTarget } from "../../preload/api"
 import {
 	browserPanelEnabledAtom,
@@ -77,12 +77,13 @@ import { SessionSidePanel } from "./side-panel/session-side-panel"
 import type { SidePanelTabDef } from "./side-panel/side-panel-tabs"
 import { SessionMetricsBar } from "./session-metrics-bar"
 import { WorktreeActions } from "./worktree-actions"
+import { SESSION_WIDGET_REGISTRY } from "../session-widget-registry"
 
 const DEFAULT_SIDE_PANEL_WIDTH = 392
 const EXPANDED_SIDE_PANEL_WIDTH = 760
-const MIN_SIDE_PANEL_WIDTH = 280
-const MAX_SIDE_PANEL_WIDTH = 760
-const MAX_EXPANDED_SIDE_PANEL_WIDTH = 1120
+const SESSION_CHAT_PANEL = "session-chat"
+const SESSION_WIDGETS_PANEL = "session-widgets"
+const SESSION_SURFACE_PANEL = "session-surface"
 
 interface AgentDetailProps {
 	agent: Agent
@@ -409,27 +410,107 @@ export function AgentDetail({
 	)
 
 	return (
-		<SplitPane
-			key={reviewSettings.expanded ? "side-panel-expanded" : "side-panel-default"}
-			side="right"
-			open={sidePanelOpen}
-			onOpenChange={setSidePanelOpen}
-			defaultPanelWidth={
-				reviewSettings.expanded ? EXPANDED_SIDE_PANEL_WIDTH : DEFAULT_SIDE_PANEL_WIDTH
+		<SessionDockviewShell
+			key={`${agent.sessionId}:${sidePanelOpen ? "surface-open" : "surface-closed"}:${reviewSettings.expanded ? "expanded" : "default"}`}
+			agent={agent}
+			chatContent={chatContent}
+			sidePanelContent={<SessionSidePanel agent={agent} tabs={sidePanelTabs} />}
+			sidePanelOpen={sidePanelOpen}
+			sidePanelWidth={reviewSettings.expanded ? EXPANDED_SIDE_PANEL_WIDTH : DEFAULT_SIDE_PANEL_WIDTH}
+		/>
+	)
+}
+
+function SessionDockviewShell({
+	agent,
+	chatContent,
+	sidePanelContent,
+	sidePanelOpen,
+	sidePanelWidth,
+}: {
+	agent: Agent
+	chatContent: ReactNode
+	sidePanelContent: ReactNode
+	sidePanelOpen: boolean
+	sidePanelWidth: number
+}) {
+	const components = useMemo<Record<string, FunctionComponent<IDockviewPanelProps>>>(
+		() => ({
+			[SESSION_CHAT_PANEL]: function SessionChatPanel() {
+				return <DockPanel>{chatContent}</DockPanel>
+			},
+			[SESSION_WIDGETS_PANEL]: function SessionWidgetsPanel() {
+				return (
+					<DockPanel>
+						<SessionDockWidgets agent={agent} />
+					</DockPanel>
+				)
+			},
+			[SESSION_SURFACE_PANEL]: function SessionSurfacePanel() {
+				return <DockPanel>{sidePanelContent}</DockPanel>
+			},
+		}),
+		[agent, chatContent, sidePanelContent],
+	)
+
+	const handleReady = useCallback(
+		(event: DockviewReadyEvent) => {
+			if (event.api.panels.length > 0) {
+				return
 			}
-			minPanelWidth={MIN_SIDE_PANEL_WIDTH}
-			maxPanelWidth={
-				reviewSettings.expanded ? MAX_EXPANDED_SIDE_PANEL_WIDTH : MAX_SIDE_PANEL_WIDTH
+
+			event.api.addPanel({
+				id: SESSION_CHAT_PANEL,
+				title: "Chat",
+				component: SESSION_CHAT_PANEL,
+			})
+			event.api.addPanel({
+				id: SESSION_WIDGETS_PANEL,
+				title: "Session",
+				component: SESSION_WIDGETS_PANEL,
+				position: { direction: "below", referencePanel: SESSION_CHAT_PANEL },
+				initialHeight: 196,
+			})
+			if (sidePanelOpen) {
+				event.api.addPanel({
+					id: SESSION_SURFACE_PANEL,
+					title: "Surface",
+					component: SESSION_SURFACE_PANEL,
+					position: { direction: "right", referencePanel: SESSION_CHAT_PANEL },
+					initialWidth: sidePanelWidth,
+				})
 			}
-			handleAriaLabel="Resize side panel"
-			panel={
-				<div className="min-h-0 min-w-0 h-full overflow-hidden">
-					<SessionSidePanel agent={agent} tabs={sidePanelTabs} />
+		},
+		[sidePanelOpen, sidePanelWidth],
+	)
+
+	return (
+		<div data-slot="session-dockview" className="dockview-theme-light dark:dockview-theme-dark h-full w-full">
+			<DockviewReact className="h-full w-full" components={components} onReady={handleReady} />
+		</div>
+	)
+}
+
+function DockPanel({ children }: { children: ReactNode }) {
+	return <div className="h-full min-h-0 min-w-0 overflow-hidden bg-background">{children}</div>
+}
+
+function SessionDockWidgets({ agent }: { agent: Agent }) {
+	return (
+		<div className="grid h-full min-h-0 grid-cols-1 gap-3 overflow-auto p-3 lg:grid-cols-2">
+			{Object.values(SESSION_WIDGET_REGISTRY).map((widget) => (
+				<div
+					key={widget.id}
+					className="min-h-0 overflow-hidden rounded-lg border border-border/40 bg-background/70"
+				>
+					<div className="flex h-8 items-center gap-2 border-b border-border/40 px-3">
+						<widget.icon className="size-3.5 text-muted-foreground" />
+						<p className="truncate text-xs font-medium text-foreground/80">{widget.title}</p>
+					</div>
+					<div className="h-[calc(100%-2rem)] min-h-0 overflow-auto p-2">{widget.render({ agent })}</div>
 				</div>
-			}
-		>
-			<div className="min-h-0 min-w-0 h-full overflow-hidden flex flex-col">{chatContent}</div>
-		</SplitPane>
+			))}
+		</div>
 	)
 }
 

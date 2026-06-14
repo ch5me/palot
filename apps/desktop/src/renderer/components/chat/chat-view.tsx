@@ -99,7 +99,6 @@ import {
 	reconcileMentions,
 } from "./prompt-mentions"
 import { PromptToolbar, StatusBar } from "./prompt-toolbar"
-import { SessionWidgetWorkspace } from "../session-widgets/session-widget-shell"
 import { SkillPickerDialog } from "./skill-picker-dialog"
 import { SlashCommandPopover, type SlashCommandPopoverHandle } from "./slash-command-popover"
 import { VoiceButton } from "./voice-button"
@@ -620,75 +619,73 @@ export function ChatView({
 		: "mx-auto w-full min-w-0 max-w-4xl"
 
 	return (
-		<SessionWidgetWorkspace agent={agent} sidePanelOpen={sidePanelOpen ?? false}>
-			<div className="flex h-full min-w-0 flex-col overflow-hidden">
-				{/* Chat messages -- constrained width for readability */}
-				<div className="relative min-h-0 min-w-0 flex-1">
-					<Conversation key={agent.sessionId} className="h-full">
-						<ScrollOnLoad loading={loading} sessionId={agent.sessionId} />
-						<ScrollBridge scrollRef={scrollRef} />
-						<ConversationContent className="gap-10 px-0 py-2 sm:px-4 sm:py-6">
-							<div className={cn(contentWidthClass, "space-y-10")}>
-								{/* Load earlier messages button */}
-								{hasEarlierMessages && (
-									<div className="flex justify-center pb-4">
-										<button
-											type="button"
-											onClick={onLoadEarlier}
-											disabled={loadingEarlier}
-											className="flex items-center gap-1.5 rounded-full border border-border bg-background px-3 py-1.5 text-xs text-muted-foreground transition-colors hover:bg-muted hover:text-foreground disabled:opacity-50"
-										>
-											{loadingEarlier ? (
-												<Loader2Icon className="size-3 animate-spin" />
-											) : (
-												<ChevronUpIcon className="size-3" />
-											)}
-											{loadingEarlier ? "Loading..." : "Load earlier messages"}
-										</button>
-									</div>
-								)}
+		<div className="flex h-full min-w-0 flex-col overflow-hidden">
+			{/* Chat messages -- constrained width for readability */}
+			<div className="relative min-h-0 min-w-0 flex-1">
+				<Conversation key={agent.sessionId} className="h-full">
+					<ScrollOnLoad loading={loading} sessionId={agent.sessionId} />
+					<ScrollBridge scrollRef={scrollRef} />
+					<ConversationContent className="gap-10 px-0 py-2 sm:px-4 sm:py-6">
+						<div className={cn(contentWidthClass, "space-y-10")}>
+							{/* Load earlier messages button */}
+							{hasEarlierMessages && (
+								<div className="flex justify-center pb-4">
+									<button
+										type="button"
+										onClick={onLoadEarlier}
+										disabled={loadingEarlier}
+										className="flex items-center gap-1.5 rounded-full border border-border bg-background px-3 py-1.5 text-xs text-muted-foreground transition-colors hover:bg-muted hover:text-foreground disabled:opacity-50"
+									>
+										{loadingEarlier ? (
+											<Loader2Icon className="size-3 animate-spin" />
+										) : (
+											<ChevronUpIcon className="size-3" />
+										)}
+										{loadingEarlier ? "Loading..." : "Load earlier messages"}
+									</button>
+								</div>
+							)}
 
-								{loading ? (
-									<div className="flex items-center justify-center py-8">
-										<Loader2Icon className="size-5 animate-spin text-muted-foreground" />
-										<span className="ml-2 text-sm text-muted-foreground">Loading chat...</span>
-									</div>
-								) : turns.length > 0 ? (
-									turns.map((turn, index) => (
-										<ChatTurnComponent
-											key={turn.id}
-											turn={turn}
-											isLast={index === turns.length - 1}
-											isWorking={isWorking}
-											onRevertToMessage={onRevertToMessage}
-											onSendNow={isWorking ? handleSendNow : undefined}
-											onForkFromTurn={
-												onForkFromTurn
-													? () => {
-														const nextTurn = turns[index + 1]
-														return onForkFromTurn(nextTurn?.userMessage.info.id)
-													}
-													: undefined
-											}
-											onDeletePart={onDeletePart}
-										/>
-									))
-								) : setupPhase ? (
-									<WorktreeSetupProgress phase={setupPhase} />
-								) : (
-									<div className="flex items-center justify-center py-8">
-										<p className="text-sm text-muted-foreground">No messages yet</p>
-									</div>
-								)}
+							{loading ? (
+								<div className="flex items-center justify-center py-8">
+									<Loader2Icon className="size-5 animate-spin text-muted-foreground" />
+									<span className="ml-2 text-sm text-muted-foreground">Loading chat...</span>
+								</div>
+							) : turns.length > 0 ? (
+								turns.map((turn, index) => (
+									<ChatTurnComponent
+										key={turn.id}
+										turn={turn}
+										isLast={index === turns.length - 1}
+										isWorking={isWorking}
+										onRevertToMessage={onRevertToMessage}
+										onSendNow={isWorking ? handleSendNow : undefined}
+										onForkFromTurn={
+											onForkFromTurn
+												? () => {
+													const nextTurn = turns[index + 1]
+													return onForkFromTurn(nextTurn?.userMessage.info.id)
+												}
+												: undefined
+										}
+										onDeletePart={onDeletePart}
+									/>
+								))
+							) : setupPhase ? (
+								<WorktreeSetupProgress phase={setupPhase} />
+							) : (
+								<div className="flex items-center justify-center py-8">
+									<p className="text-sm text-muted-foreground">No messages yet</p>
+								</div>
+							)}
 
-								{/* Session-level error from session.error events */}
-								{showSessionError && sessionErrorText && (
-									<div className="rounded-md border border-red-500/30 bg-red-500/5 px-3 py-2 text-xs text-red-400">
-										{sessionErrorText}
-									</div>
-								)}
-							</div>
-
+							{/* Session-level error from session.error events */}
+							{showSessionError && sessionErrorText && (
+								<div className="rounded-md border border-red-500/30 bg-red-500/5 px-3 py-2 text-xs text-red-400">
+									{sessionErrorText}
+								</div>
+							)}
+						</div>
 					</ConversationContent>
 					<ScrollToResponseStart isWorking={isWorking} scrollRef={scrollRef} />
 					<ConversationScrollButton />
@@ -712,34 +709,33 @@ export function ChatView({
 			   cannot accept prompts yet. Extracted into its own component so toolbar,
 			   popover, mention, and model-selection state changes don't re-render the
 			   conversation turn list above. */}
-				{!setupPhase && (
-					<ChatInputSection
-						agent={agent}
-						turns={turns}
-						isConnected={isConnected}
-						isWorking={isWorking}
-						onSendMessage={onSendMessage}
-						onStop={onStop}
-						providers={providers}
-						config={config}
-						vcs={vcs}
-						openCodeAgents={openCodeAgents}
-						onApprove={handleApprovePermission}
-						onDeny={handleDenyPermission}
-						onReplyQuestion={onReplyQuestion}
-						onRejectQuestion={onRejectQuestion}
-						canRedo={canRedo}
-						onUndo={onUndo}
-						onRedo={onRedo}
-						isReverted={isReverted}
-						scrollRef={scrollRef}
+			{!setupPhase && (
+				<ChatInputSection
+					agent={agent}
+					turns={turns}
+					isConnected={isConnected}
+					isWorking={isWorking}
+					onSendMessage={onSendMessage}
+					onStop={onStop}
+					providers={providers}
+					config={config}
+					vcs={vcs}
+					openCodeAgents={openCodeAgents}
+					onApprove={handleApprovePermission}
+					onDeny={handleDenyPermission}
+					onReplyQuestion={onReplyQuestion}
+					onRejectQuestion={onRejectQuestion}
+					canRedo={canRedo}
+					onUndo={onUndo}
+					onRedo={onRedo}
+					isReverted={isReverted}
+					scrollRef={scrollRef}
 					sidePanelOpen={sidePanelOpen}
 					loomFeatureActive={useAtomValue(loomEnabledAtom)}
 					onForkFromTurn={onForkFromTurn}
 				/>
-				)}
-			</div>
-		</SessionWidgetWorkspace>
+			)}
+		</div>
 	)
 }
 

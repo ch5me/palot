@@ -1,5 +1,4 @@
 import { AppSidebarShellFrame } from "@ch5me/elf-ui/components/nav-sidebar-shell"
-import { SplitPane } from "@ch5me/workspace"
 import { Outlet, useNavigate } from "@tanstack/react-router"
 import { useAtom, useAtomValue } from "jotai"
 import { useCallback, useEffect, useRef, useState } from "react"
@@ -165,28 +164,19 @@ export function SidebarLayout() {
 				}
 				sidebarStyle={{ width: 320, minWidth: 200, maxWidth: 480 }}
 				content={
-					<SplitPane
-						side="left"
-						open={leftPanelOpen}
-						onOpenChange={setLeftPanelOpen}
-						defaultPanelWidth={320}
-						minPanelWidth={200}
-						maxPanelWidth={480}
-						panel={<div className="hidden" />}
+					<main
+						className="relative flex h-full min-h-0 min-w-0 flex-1 flex-col overflow-hidden"
+						style={{ background: "hsl(var(--background))" }}
 					>
-						<main
-							className="relative flex h-full min-h-0 min-w-0 flex-1 flex-col overflow-hidden"
-							style={{ background: "hsl(var(--background))" }}
+						<div
+							data-slot="content-area"
+							className="relative min-h-0 min-w-0 flex-1 overflow-hidden"
 						>
-							<div
-								data-slot="content-area"
-								className="relative min-h-0 min-w-0 flex-1 overflow-hidden"
-							>
-								<Outlet />
-							</div>
-						</main>
-					</SplitPane>
+							<Outlet />
+						</div>
+					</main>
 				}
+				sidebarVisible={leftPanelOpen}
 				height="100vh"
 				className="h-screen w-full"
 				contentClassName="bg-transparent"
