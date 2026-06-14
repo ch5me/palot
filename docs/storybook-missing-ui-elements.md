@@ -1,15 +1,15 @@
 # Missing Storybook Coverage
 
-Generated from `ch5 coverage elf --json` on 2026-06-14T01:45:33.874Z.
+Generated from `ch5 coverage elf --json` on 2026-06-14T01:51:47.215Z.
 
 ## Current Coverage
 
 - Visual UI components: 134
-- Covered by Storybook/route coverage: 112
-- Missing Storybook representation: 22
-- Actionable missing local stories after documented exceptions: 11
-- Story files: 113
-- Story screenshot proof missing in CH5 formal coverage: 224 viewport targets
+- Covered by Storybook/route coverage: 117
+- Missing Storybook representation: 17
+- Actionable missing local stories after documented exceptions: 6
+- Story files: 118
+- Story screenshot proof missing in CH5 formal coverage: 234 viewport targets
 - Documented exceptions: 11
 - Batch 01 local render proof: `.sisyphus/evidence/storybook-coverage/batch-01/render-proof.json`
 - Batch 02 local render proof: `.sisyphus/evidence/storybook-coverage/batch-02/render-proof.json`
@@ -42,6 +42,8 @@ Generated from `ch5 coverage elf --json` on 2026-06-14T01:45:33.874Z.
 - Batch 15 CH5 coverage proof: `.sisyphus/evidence/storybook-coverage/batch-15/ch5-coverage.json`
 - Batch 16 local render proof: `.sisyphus/evidence/storybook-coverage/batch-16/render-proof.json`
 - Batch 16 CH5 coverage proof: `.sisyphus/evidence/storybook-coverage/batch-16/ch5-coverage.json`
+- Batch 17 local render proof: `.sisyphus/evidence/storybook-coverage/batch-17/render-proof.json`
+- Batch 17 CH5 coverage proof: `.sisyphus/evidence/storybook-coverage/batch-17/ch5-coverage.json`
 - Reusable render proof helper: `bun run verify:storybook-render -- --out <proof-dir> <story-id> [...]`
 - CH5 gap source scope: local `packages/ui/src/components/**` files only.
 - Imported components from other packages/libraries are out of scope here. Trust their upstream stories/tests.
@@ -157,9 +159,14 @@ Covered components today:
 - [x] transcription (packages/storybook/src/stories/ai-elements/transcription.stories.tsx)
 - [x] voice-selector (packages/storybook/src/stories/ai-elements/voice-selector.stories.tsx)
 - [x] web-preview (packages/storybook/src/stories/ai-elements/web-preview.stories.tsx)
+- [x] bottom-menu (packages/storybook/src/stories/animate/bottom-menu.stories.tsx)
 - [x] day-picker (packages/storybook/src/stories/animate/day-picker.stories.tsx)
 - [x] delete-button (packages/storybook/src/stories/animate/delete-button.stories.tsx)
+- [x] dynamic-toolbar (packages/storybook/src/stories/animate/dynamic-toolbar.stories.tsx)
+- [x] expandable-gallery (packages/storybook/src/stories/animate/expandable-gallery.stories.tsx)
+- [x] fluid-expanding-grid (packages/storybook/src/stories/animate/fluid-expanding-grid.stories.tsx)
 - [x] inline-edit (packages/storybook/src/stories/animate/inline-edit.stories.tsx)
+- [x] list-item (packages/storybook/src/stories/animate/list-item.stories.tsx)
 - [x] morphing-input (packages/storybook/src/stories/animate/morphing-input.stories.tsx)
 - [x] status-button (packages/storybook/src/stories/animate/status-button.stories.tsx)
 
@@ -296,14 +303,14 @@ Add one or more useful Storybook stories for each unchecked local component. Che
 ### Animated Components (16)
 
 - [ ] animated-collection - `packages/ui/src/components/animate/animated-collection.tsx`
-- [ ] bottom-menu - `packages/ui/src/components/animate/bottom-menu.tsx`
+- [x] bottom-menu - `packages/ui/src/components/animate/bottom-menu.tsx`
 - [x] day-picker - `packages/ui/src/components/animate/day-picker.tsx`
 - [x] delete-button - `packages/ui/src/components/animate/delete-button.tsx`
-- [ ] dynamic-toolbar - `packages/ui/src/components/animate/dynamic-toolbar.tsx`
-- [ ] expandable-gallery - `packages/ui/src/components/animate/expandable-gallery.tsx`
-- [ ] fluid-expanding-grid - `packages/ui/src/components/animate/fluid-expanding-grid.tsx`
+- [x] dynamic-toolbar - `packages/ui/src/components/animate/dynamic-toolbar.tsx`
+- [x] expandable-gallery - `packages/ui/src/components/animate/expandable-gallery.tsx`
+- [x] fluid-expanding-grid - `packages/ui/src/components/animate/fluid-expanding-grid.tsx`
 - [x] inline-edit - `packages/ui/src/components/animate/inline-edit.tsx`
-- [ ] list-item - `packages/ui/src/components/animate/list-item.tsx`
+- [x] list-item - `packages/ui/src/components/animate/list-item.tsx`
 - [x] morphing-input - `packages/ui/src/components/animate/morphing-input.tsx`
 - [ ] multi-step-form - `packages/ui/src/components/animate/multi-step-form.tsx`
 - [ ] pricing-card - `packages/ui/src/components/animate/pricing-card.tsx`
