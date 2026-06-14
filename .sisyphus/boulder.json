@@ -1,36 +1,15 @@
 {
-  "active_plan": "/Users/hassoncs/src/ch5/palot/.sisyphus/plans/palette-bundled-portable-opencode.md",
-  "started_at": "2026-06-14T01:05:09.630Z",
+  "active_plan": "/Users/hassoncs/src/ch5/palot/.sisyphus/plans/stable-host-split-dock-workspace.md",
+  "started_at": "2026-06-14T05:25:03.219Z",
   "session_ids": [
-    "ses_13c56c09fffe3lFjAGvzRSY9Uw",
-    "ses_13c50a2d9ffeDmnOdFc7gcYKbM",
-    "ses_13c50a393ffezISIigauZiic70",
-    "ses_13c50a447ffe5dsRSVrNSgBpuC",
-    "ses_13c50a4c9ffe58zDaEVAVWnulT",
-    "ses_13c479c1fffe2BjUpr5LzWi2rR",
-    "ses_13c479d41ffeyp1eAwGKn13rQN",
-    "ses_13c451225ffeNXK54xGPtv0DM1",
-    "ses_13c479df5ffeNeRYk828ZDF3Rs",
-    "ses_13c479c92ffeotFlKflPRmZ1rp",
-    "ses_13c45130effeeoq7VxAaHhBzbF",
-    "ses_13c4513ceffeH7QQgLjVPJ1yAY",
-    "ses_13c4516dfffeqxno4a0nKrvrog",
-    "ses_13c3b3965ffeZZPtQXMuK6sIPm",
-    "ses_13c3b39fcffe3d8NsfqsMi8qHK",
-    "ses_13c3b3c0affeB15xQYa5zGFjJ4",
-    "ses_13c3b3af3ffe0CZTmWuFPCkcYy",
-    "ses_13c209ab9ffeiFzAYOXtrYwkol"
+    "ses_13b68d2d2ffePfF0ZXK7rRMLUX",
+    "ses_13b6715c0ffedudBNnmWnfnk00",
+    "ses_13b62cd73ffeLhtjdeVze36hyt",
+    "ses_13b305d56ffe7KNdu86Up7UzzD",
+    "ses_13b1122bbffepqIqjs6LjUu39p",
+    "ses_13b0b96bdffe12h1jpuU3vKu9e"
   ],
-  "plan_name": "palette-bundled-portable-opencode",
+  "plan_name": "stable-host-split-dock-workspace",
   "agent": "atlas",
-  "task_sessions": {
-    "final-wave:f1": {
-      "task_key": "final-wave:f1",
-      "task_label": "F1",
-      "task_title": "Plan Compliance Audit — oracle",
-      "session_id": "ses_13c56c09fffe3lFjAGvzRSY9Uw",
-      "updated_at": "2026-06-14T02:08:42.924Z",
-      "no_progress_resume_count": 0
-    }
-  }
+  "task_sessions": {}
 }
