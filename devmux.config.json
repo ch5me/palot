@@ -1,7 +1,21 @@
 {
 	"version": 1,
 	"project": "elf",
+	"defaults": {
+		"startupTimeoutSeconds": 480
+	},
 	"services": {
+		"storybook": {
+			"cwd": "packages/ui",
+			"command": "bun run storybook",
+			"health": { "type": "port", "port": 10618 },
+			"dependsOn": [],
+			"env": {
+				"STORYBOOK_PORT": "10618"
+			},
+			"dashboard": true,
+			"description": "elf-ui Storybook (base-ui component library backported from the design system)"
+		},
 		"server": {
 			"cwd": "apps/server",
 			"command": "bun run dev",
