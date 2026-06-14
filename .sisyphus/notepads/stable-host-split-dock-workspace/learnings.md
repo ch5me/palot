@@ -181,3 +181,120 @@ readable. New workspace model can extend the snapshot but not break the old shap
 - Firefly surface rows now keep canonical metadata in `descriptor` objects inside `apps/desktop/src/renderer/firefly-surface-registry.tsx`; raw render closures are derived later from `runtime` entrypoints instead of being the primary registry contract.
 - Catalog surfaces now normalize through the same descriptor path in `apps/desktop/src/renderer/firefly-plugin-surface-merge.ts` and `apps/desktop/src/renderer/firefly-plugin-surfaces.tsx`; existing `renderMode` now drives host-policy/runtime metadata rather than a separate parallel model.
 - Session widgets now expose descriptor-backed host policy and runtime entrypoints in `apps/desktop/src/renderer/session-widget-registry.tsx`, and both widget shells resolve/render from normalized descriptors instead of direct `render()` registry fields.
+
+## 9. TASK 4 EXPLORATION — THREE-ZONE SPLIT DOCK SHELL (2026-06-13)
+
+### Prototype zone structure (ch5-packages)
+| File | Lines | Role |
+|---|---|---|
+| `ch5-packages/packages/workspace/contract/src/Workspace.stories.tsx` | 524-627 | `SplitDockInstancesWorkspace` — canonical three-zone prototype (main/right/bottom) |
+| `ch5-packages/packages/workspace/contract/src/Workspace.stories.tsx` | 718-743 | `SplitDockviewSurface` — reusable per-zone Dockview wrapper |
+| `ch5-packages/packages/workspace/contract/src/Workspace.stories.tsx` | 629-685 | `registerSplitDockBridge` — cross-zone drag/drop handler factory |
+| `ch5-packages/packages/workspace/contract/src/Workspace.stories.tsx` | 749-792 | `addPanelIfMissing`, `splitDockviewComponents`, `splitDockPanelDescriptors` |
+| `ch5-packages/packages/workspace/contract/src/panes/SplitPane.tsx` | 1-339 | `SplitPane` primitive — animated collapsible splitter (left/right/top/bottom) |
+| `ch5-packages/packages/workspace/contract/src/panes/index.ts` | 1-21 | Barrel: `SplitPane`, `Pane`, `PaneSeam`, `ResizablePanes`, `usePaneVisibility`, `useSnapBehavior` |
+| `ch5-packages/packages/workspace/contract/src/shell/WorkspaceShell.tsx` | 1-340 | `WorkspaceShell` — 5-slot grid shell (top/toolbar/left/main/right/bottom) |
+
+### Prototype zone geometry
+```
+SplitPane(side="right", panel=<SplitDockviewSurface zone="right" />)
+  └─ SplitPane(side="bottom", panel=<SplitDockviewSurface zone="bottom" />)
+       └─ <SplitDockviewSurface zone="main" />
+```
+Each zone gets its own independent `DockviewReact` instance. Zone toggle via `SplitPane` `open` prop — dock instances persist across toggle.
+
+### Current Dockview creation path (palot)
+| File | Lines | Role |
+|---|---|---|
+| `apps/desktop/src/renderer/components/agent-detail.tsx` | 428-496 | `SessionDockviewShell` — current single-Dockview shell |
+| `apps/desktop/src/renderer/components/agent-detail.tsx` | 441-458 | `components` useMemo — 3 hardcoded panel components |
+| `apps/desktop/src/renderer/components/agent-detail.tsx` | 460-489 | `handleReady` — imperative `addPanel` calls |
+| `apps/desktop/src/renderer/components/agent-detail.tsx` | 498-500 | `DockPanel` wrapper — trivial `<div>` with bg/overflow classes |
+| `apps/desktop/src/renderer/components/agent-detail.tsx` | 86-90 | Panel ID constants |
+| `apps/desktop/src/renderer/components/agent-detail.tsx` | 416-425 | **REmount BUG**: `key` includes `sidePanelOpen` — dock destroyed on toggle |
+
+### Current shell vs prototype — key differences
+| Aspect | Current `SessionDockviewShell` | Prototype `SplitDockInstancesWorkspace` |
+|---|---|---|
+| Dockview instances | 1 monolithic `DockviewReact` | 3 independent `DockviewReact` (one per zone) |
+| Panel count | 3 panels in 1 dock | 1-2 panels per zone dock |
+| Side panel toggle | Destroys/recreates entire dock via `key` | `SplitPane` open/close — dock instances persist |
+| Resize mechanism | Dockview internal splitters | `SplitPane` animated splitters between zones |
+| Cross-zone drag | Not supported | Custom drag bridge via `SPLIT_DOCK_DRAG_MIME` |
+
+### Drag constraints
+**Prototype drag system** (stories.tsx:629-685):
+- `registerSplitDockBridge` wires three events per zone:
+  1. `api.onWillDragPanel` — attaches `SPLIT_DOCK_DRAG_MIME` (`"application/x-ch5-panel"`) data
+  2. `api.onUnhandledDragOverEvent` — accepts drop if drag data has MIME type
+  3. `api.onDidDrop` — parses descriptor, adds panel to target zone, removes from source
+- **Protected panel**: `agent-chat` in main zone cannot be dragged out when sole panel in group (stories.tsx:613-620)
+
+**Current palot drag constraints**: **None exist.** No `onWillDragPanel`, `onUnhandledDragOverEvent`, or `onDidDrop` handlers anywhere in palot renderer. Dockview default intra-dock drag only.
+
+### Safest integration seams
+
+#### 1. `SplitDockWorkspaceShell` replacement seam
+**Target**: Replace `SessionDockviewShell` (agent-detail.tsx:428-496) entirely.
+
+**Approach**:
+- Accept `main`, `right`, `bottom` zone content as props
+- Use nested `SplitPane` from `@ch5me/workspace` (already a dependency: `"@ch5me/workspace": "workspace:*"`)
+- Create 3 independent `DockviewReact` instances via reusable `SplitDockviewSurface`
+- **Remove remount-prone `key`** at line 418 — zone visibility must NOT destroy dock instances
+
+**Suggested new file**: `apps/desktop/src/renderer/components/workspace-dock/split-dock-workspace-shell.tsx`
+
+#### 2. Dock adapter seam
+**Target**: Adapt current `SessionSidePanel` content and `SessionDockWidgets` into zone-hosted panels.
+
+**Current panel → zone mapping**:
+- `SESSION_CHAT_PANEL` → `main` zone (sole panel, protected from drag)
+- `SESSION_WIDGETS_PANEL` → `bottom` zone (alongside or replaced by timeline/runs)
+- `SESSION_SURFACE_PANEL` → `right` zone (split into per-surface dock panels)
+
+**Suggested new file**: `apps/desktop/src/renderer/components/workspace-dock/agent-dock-adapters.tsx`
+
+#### 3. `DockPanel` wrapper seam
+**Target**: `DockPanel` (agent-detail.tsx:498-500) is the trivial wrapper inside every dockview panel. Provides `h-full min-h-0 overflow-hidden bg-background`. This is the exact seam that `StablePanelHostAttachmentOutlet` or portal-based transports need to wrap.
+
+## 10. TASK 4 IMPLEMENTATION — SPLIT DOCK SHELL + HOST-AWARE ADAPTERS (2026-06-14)
+
+- `SplitDockWorkspaceShell` now mirrors the prototype shape: right `SplitPane` outside bottom `SplitPane`, with independent Dockview instances for `main`, `right`, and `bottom` zones.
+- `agent-detail.tsx` no longer keys the session dock shell on side-panel visibility. Right/bottom visibility flows through `SplitPane` `open` props, so toggles resize/collapse zones without recreating the dock shell.
+- `useAgentSplitDockAdapters` owns the adapter seam from logical session content to dock panels. Chat, session widgets, and side-panel surface content are registered as stable hosts using the task-2 reverse-portal runtime, then exposed to Dockview through remount-safe attachment outlets.
+- Stable hosts use `hiddenMode: "keep-attached"`, so closing right or bottom zones changes attachment visibility metadata instead of unmounting protected content.
+- Protected main chat drag policy lives below the shell in `split-dock-protection.ts`: the only protected `session-chat` panel in main is blocked from drag, while regular panels keep normal Dockview movement.
+- Manual proof artifacts for this slice live at `.sisyphus/evidence/task-4-shell-toggle.txt` and `.sisyphus/evidence/task-4-protected-drag.txt`; targeted tests cover runtime remount behavior and protected drag policy.
+
+#### 4. `SplitPane` import path
+Already available: `import { SplitPane } from "@ch5me/workspace"` (or `@ch5me/workspace/panes` for tree-shaking). Package in `apps/desktop/package.json` as `"workspace:*"`, resolved via symlink to `../ch5-packages/packages/workspace/contract`.
+
+#### 5. Zone visibility state
+Current `sidePanelOpenAtom` / `sidePanelActiveTabAtom` must decompose into per-zone visibility:
+- `rightDockOpen` (replaces `sidePanelOpen` for right zone)
+- `bottomDockOpen` (new — for widgets/timeline zone)
+- These must NOT be part of any Dockview `key` prop
+
+### Outer shell context
+| File | Lines | Role |
+|---|---|---|
+| `apps/desktop/src/renderer/components/sidebar-layout.tsx` | 44-191 | `SidebarLayout` — uses `AppSidebarShellFrame` with left sidebar + `<Outlet/>` |
+| `apps/desktop/src/renderer/components/sidebar-layout.tsx` | 150-183 | Content area: `<main>` with `data-slot="content-area"` wrapping `<Outlet/>` — agent-detail renders here |
+
+### Existing workspace-dock infrastructure (task 2 outputs)
+| File | Role |
+|---|---|
+| `apps/desktop/src/renderer/components/workspace-dock/stable-panel-host-runtime.ts` | `StablePanelHostRuntime` + `SurfaceTransport` interface |
+| `apps/desktop/src/renderer/components/workspace-dock/reverse-portal-transport.tsx` | `createReversePortalTransport()` — first `SurfaceTransport` impl |
+
+### Other Dockview usage (not affected by task 4)
+| File | Role |
+|---|---|
+| `apps/desktop/src/renderer/components/pm-dockview.tsx` | `PmDockviewShell` — separate single-Dockview for PM console |
+
+## 10. TASK 4 IMPLEMENTATION NOTES (2026-06-14)
+- `apps/desktop/src/renderer/components/workspace-dock/split-dock-workspace-shell.tsx` now owns only three-zone geometry, Dockview zone instances, and cross-zone drag wiring; content ownership stays in adapter descriptors.
+- `apps/desktop/src/renderer/components/workspace-dock/agent-dock-adapters.tsx` now maps chat/right/bottom logical placements onto stable-host attachment outlets, so `agent-detail.tsx` no longer remounts the dock tree on side-panel toggle.
+- Protected drag policy moved into `apps/desktop/src/renderer/components/workspace-dock/split-dock-protection.ts`; the lone chat panel in the main zone is blocked when it would orphan the protected host.
+- Toggle proof remains targeted: stable-host runtime mount count for `session-chat` stays at 1 while right/bottom visibility flips reuse the same attachment id.

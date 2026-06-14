@@ -1,0 +1,8 @@
+Task 4 shell toggle proof
+Protected host: session-chat
+Right toggle cycles: simulated via stable host reattach with same attachment id
+Bottom toggle cycles: simulated via stable host reattach with same attachment id
+Expected remount count: 1
+Observed remount count: 1
+Observed remountDetected: false
+Proof source: bun test apps/desktop/src/renderer/components/workspace-dock/agent-dock-adapters.test.ts

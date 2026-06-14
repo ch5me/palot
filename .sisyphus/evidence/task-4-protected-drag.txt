@@ -1,0 +1,8 @@
+Task 4 protected drag proof
+Protected panel: session-chat
+Source zone: main
+Source group panel count: 1
+Expected result: drag blocked
+Observed result: blocked
+Proof source: bun test apps/desktop/src/renderer/components/workspace-dock/agent-dock-adapters.test.ts
+Supplemental proof: bun test apps/desktop/src/renderer/components/workspace-dock/split-dock-protection.test.ts -> 2 pass, 0 fail
