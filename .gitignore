@@ -7,7 +7,6 @@ dist/
 out/
 
 # Turborepo
-.turbo/
 
 # Tauri
 src-tauri/target/
@@ -50,3 +49,10 @@ AGENTS.local.md
 
 # Storybook build output
 storybook-static/
+
+# Root .turbo: track config, ignore cache
+.turbo/*
+!.turbo/config.json
+# Nested package .turbo dirs (all cache, nothing tracked)
+apps/**/.turbo/
+packages/**/.turbo/

@@ -4,7 +4,7 @@
 	"tasks": {
 		"build": {
 			"dependsOn": ["^build"],
-			"outputs": ["dist/**"]
+			"outputs": ["dist/**", "out/**", "tsconfig.tsbuildinfo"]
 		},
 		"dev": {
 			"persistent": true,
@@ -23,10 +23,12 @@
 		},
 		"build:types": {
 			"dependsOn": ["^build:types"],
-			"outputs": ["dist/**/*.d.ts", "dist/**/*.d.ts.map"]
+			"outputs": ["dist/**"]
 		},
 		"check-types": {
-			"dependsOn": ["^build:types"]
+			"dependsOn": ["^build:types"],
+			"outputs": [],
+			"cache": false
 		},
 		"package": {
 			"dependsOn": ["build"],
