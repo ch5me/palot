@@ -31,6 +31,14 @@ When the provider's `dist/` is stale (new exports not in built output), rebuild:
 cd ~/src/ch5/ch5-packages/packages/workspace/contract && pnpm run build
 ```
 
+**Isolated-worktree gotcha:** the root `package.json` `workspaces` use sibling-relative
+paths (`../ch5-packages/...`). A worktree checked out somewhere other than
+`~/src/ch5/palot` (e.g. a `/tmp` isolation worktree) has no sibling `ch5-packages`,
+so `bun install` fails with `Workspace not found "../ch5-packages/..."` and deps
+(`@tanstack/react-router`, etc.) never land. Fix: put a sibling symlink next to the
+worktree before installing, e.g. `ln -s ~/src/ch5/ch5-packages <worktree-parent>/ch5-packages`,
+then `bun install`.
+
 Vite needs React dedup aliases because `@react-spring/web` resolves its own React.
 See `apps/desktop/src/renderer/vite.web.config.ts` for the aliases.
 
