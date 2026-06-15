@@ -5,6 +5,7 @@ import {
 	createRouter,
 	redirect,
 } from "@tanstack/react-router"
+import { requireAuthenticated, resolveAuthStateReader } from "./auth-guard"
 import { AutomationDetail } from "./components/automations/automation-detail"
 import { AutomationRunDetail } from "./components/automations/automation-run-detail"
 import { AutomationsPage } from "./components/automations/automations-page"
@@ -48,6 +49,9 @@ const sidebarLayout = createRoute({
 	getParentRoute: () => rootRoute,
 	id: "sidebar",
 	component: SidebarLayout,
+	// Protected-route auth guard (CH5COMPAC4C-300): redirect unauthenticated
+	// users to /login before any protected route renders.
+	beforeLoad: () => requireAuthenticated(resolveAuthStateReader()),
 })
 
 const indexRoute = createRoute({
