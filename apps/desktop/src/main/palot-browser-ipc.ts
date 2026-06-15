@@ -9,6 +9,7 @@ import type {
 	SessionBinding,
 	SidePanelTabId,
 } from "../preload/api"
+import { FIREFLY_SURFACE_LANE_BY_ID } from "../shared/firefly-surface-ids"
 import {
 	browserStateSnapshotSchema,
 	dispatchBrowserToolInputSchema,
@@ -102,6 +103,11 @@ let uiStateSnapshot: PalotUiStateSnapshot = {
 		activeTab: null,
 		availableTabs: [],
 	},
+	documentPanel: {
+		open: false,
+		activeTab: null,
+		availableTabs: [],
+	},
 }
 const laneSnapshots = new Map<
 	string,
@@ -139,7 +145,7 @@ export async function broadcastOpenSidePanel(tab: SidePanelTabId): Promise<void>
 	const parsedTab = palotOpenSidePanelInputSchema.parse(tab)
 	const windows = await getPalotBrowserWindows()
 	for (const win of windows) {
-		win.webContents.send("palot:open-side-panel", parsedTab)
+		win.webContents.send("palot:open-side-panel", { tab: parsedTab })
 	}
 }
 
@@ -411,8 +417,9 @@ async function dispatchBridgeBrowserTool(payload: unknown): Promise<unknown> {
 
 async function openBridgeSidePanel(payload: unknown): Promise<PalotUiStateSnapshot> {
 	const tab = palotOpenSidePanelInputSchema.parse((payload as { tab?: unknown })?.tab)
+	const targetPanel = FIREFLY_SURFACE_LANE_BY_ID[tab] === "document" ? "documentPanel" : "sidePanel"
 	const snapshot = setUiStateSnapshot({
-		sidePanel: {
+		[targetPanel]: {
 			open: true,
 			activeTab: tab,
 		},
@@ -433,11 +440,21 @@ export function getUiStateSnapshot(): PalotUiStateSnapshot {
 			activeTab: uiStateSnapshot.sidePanel.activeTab,
 			availableTabs: [...uiStateSnapshot.sidePanel.availableTabs],
 		},
+		documentPanel: {
+			open: uiStateSnapshot.documentPanel.open,
+			activeTab: uiStateSnapshot.documentPanel.activeTab,
+			availableTabs: [...uiStateSnapshot.documentPanel.availableTabs],
+		},
 	})
 }
 
 export function setUiStateSnapshot(input: {
 	sidePanel?: {
+		open?: boolean
+		activeTab?: SidePanelTabId | null
+		availableTabs?: SidePanelTabId[]
+	}
+	documentPanel?: {
 		open?: boolean
 		activeTab?: SidePanelTabId | null
 		availableTabs?: SidePanelTabId[]
@@ -449,6 +466,13 @@ export function setUiStateSnapshot(input: {
 			activeTab: input.sidePanel?.activeTab ?? uiStateSnapshot.sidePanel.activeTab,
 			availableTabs:
 				input.sidePanel?.availableTabs ? [...input.sidePanel.availableTabs] : [...uiStateSnapshot.sidePanel.availableTabs],
+		},
+		documentPanel: {
+			open: input.documentPanel?.open ?? uiStateSnapshot.documentPanel.open,
+			activeTab: input.documentPanel?.activeTab ?? uiStateSnapshot.documentPanel.activeTab,
+			availableTabs: input.documentPanel?.availableTabs
+				? [...input.documentPanel.availableTabs]
+				: [...uiStateSnapshot.documentPanel.availableTabs],
 		},
 	}
 	return getUiStateSnapshot()

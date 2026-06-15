@@ -272,8 +272,19 @@ export interface PalotSidePanelSnapshot {
 	availableTabs: SidePanelTabId[]
 }
 
+export interface PalotDocumentPanelSnapshot {
+	open: boolean
+	activeTab: DocumentPanelTabId | null
+	availableTabs: DocumentPanelTabId[]
+}
+
 export interface PalotUiStateSnapshot {
 	sidePanel: PalotSidePanelSnapshot
+	documentPanel: PalotDocumentPanelSnapshot
+}
+
+export interface PalotOpenSidePanelPayload {
+	tab: SidePanelTabId
 }
 
 export interface LoomOpenSessionResult {
@@ -1161,6 +1172,7 @@ export interface ElfAPI {
 		setBinding: (binding: SessionBinding) => Promise<SessionBinding>
 		releaseBinding: (sessionId: string) => Promise<SessionBinding | null>
 		getUiStateSnapshot: () => Promise<PalotUiStateSnapshot>
+		setUiStateSnapshot: (snapshot: PalotUiStateSnapshot) => Promise<PalotUiStateSnapshot>
 		openSidePanel: (tab: SidePanelTabId) => Promise<PalotUiStateSnapshot>
 		openLoomSession: (sessionId: string) => Promise<LoomOpenSessionResult>
 		getArtifact: (sessionId: string, artifactId: string) => Promise<GenUiArtifactRecord | null>
@@ -1186,7 +1198,7 @@ export interface ElfAPI {
 			sessionId: string,
 			delta: { nodeId: string; field: string; value: unknown },
 		) => Promise<void>
-		onOpenSidePanel: (callback: (payload: { tab: SidePanelTabId }) => void) => () => void
+		onOpenSidePanel: (callback: (payload: PalotOpenSidePanelPayload) => void) => () => void
 		onBrowserActions: (callback: (event: BrowserActionEvent) => void) => () => void
 	}
 	onActiveOpenCodeSessionsChanged: (
