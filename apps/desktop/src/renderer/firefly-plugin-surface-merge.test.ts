@@ -39,9 +39,22 @@ describe("catalogPanelToTabDescriptor", () => {
 		const descriptor = catalogPanelToTabDescriptor(projectedPanel())
 		expect(descriptor).not.toBeNull()
 		expect(descriptor?.id).toBe("notes")
+		expect(descriptor?.lane).toBe("utility")
 		expect(descriptor?.persistenceKey).toBe("side-panel.notes")
 		expect(descriptor?.telemetryNamespace).toBe("firefly.surface.notes")
 		expect(descriptor?.available).toBe(true)
+	})
+
+	test("maps document-lane panels from catalog metadata", () => {
+		const descriptor = catalogPanelToTabDescriptor(
+			projectedPanel({
+				contributionId: "pdf-review",
+				projectedId: "firefly.built-in.side-panel.pdf-review",
+				title: "PDF Review",
+				hostTarget: { kind: "side-panel", slot: "main-pane" },
+			}),
+		)
+		expect(descriptor?.lane).toBe("document")
 	})
 
 	test("skips main-pane panels", () => {

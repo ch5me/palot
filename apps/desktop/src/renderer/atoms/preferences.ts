@@ -42,10 +42,20 @@ export type LastSidePanelTabId =
 	| "artifacts"
 	| "pdf-review"
 
+export type LastDocumentPanelTabId = "studio" | "pdf-review"
+
+export type LastUtilitySidePanelTabId = Exclude<LastSidePanelTabId, LastDocumentPanelTabId>
+
+export function isLastDocumentPanelTabId(tab: LastSidePanelTabId): tab is LastDocumentPanelTabId {
+	return tab === "studio" || tab === "pdf-review"
+}
+
 export type NavSidebarTabId = "built-in" | "built-in-duplicate"
 
 export interface FireflySurfacePreferences {
-	lastSidePanelTab: LastSidePanelTabId
+	lastUtilitySidePanelTab: LastUtilitySidePanelTabId
+	lastDocumentPanelTab: LastDocumentPanelTabId
+	documentPanelOpen: boolean
 	lastNavSidebarTab: NavSidebarTabId
 }
 
@@ -108,6 +118,49 @@ function migrateDisplayMode(): void {
 }
 migrateDisplayMode()
 
+function migrateFireflySurfacePreferences(): void {
+	if (typeof localStorage === "undefined") return
+	const key = "elf:firefly-surface-preferences"
+	const raw = localStorage.getItem(key)
+	if (!raw) return
+
+	try {
+		const parsed = JSON.parse(raw) as Partial<FireflySurfacePreferences> & {
+			lastSidePanelTab?: LastSidePanelTabId
+		}
+		const legacyTab = parsed.lastSidePanelTab
+		const migratedDocumentTab =
+			(parsed.lastDocumentPanelTab as LastSidePanelTabId | undefined) ?? legacyTab ?? "studio"
+		const lastDocumentPanelTab: LastDocumentPanelTabId = isLastDocumentPanelTabId(
+			migratedDocumentTab,
+		)
+			? migratedDocumentTab
+			: "studio"
+		const migratedUtilityTab =
+			(parsed.lastUtilitySidePanelTab as LastSidePanelTabId | undefined) ?? legacyTab ?? "review"
+		const lastUtilitySidePanelTab: LastUtilitySidePanelTabId = isLastDocumentPanelTabId(
+			migratedUtilityTab,
+		)
+			? "review"
+			: migratedUtilityTab
+
+		const next: FireflySurfacePreferences = {
+			lastUtilitySidePanelTab,
+			lastDocumentPanelTab,
+			documentPanelOpen:
+				typeof parsed.documentPanelOpen === "boolean"
+					? parsed.documentPanelOpen
+					: legacyTab !== undefined && isLastDocumentPanelTabId(legacyTab),
+			lastNavSidebarTab: parsed.lastNavSidebarTab === "built-in-duplicate" ? "built-in-duplicate" : "built-in",
+		}
+
+		localStorage.setItem(key, JSON.stringify(next))
+	} catch {
+		// Ignore malformed data
+	}
+}
+migrateFireflySurfacePreferences()
+
 // ============================================================
 // Persisted atoms — each is independent with its own localStorage key
 // ============================================================
@@ -159,7 +212,12 @@ export const automationsBannerDismissedAtom = atomWithStorage<boolean>(
 
 export const fireflySurfacePreferencesAtom = atomWithStorage<FireflySurfacePreferences>(
 	"elf:firefly-surface-preferences",
-	{ lastSidePanelTab: "review", lastNavSidebarTab: "built-in" },
+	{
+		lastUtilitySidePanelTab: "review",
+		lastDocumentPanelTab: "studio",
+		documentPanelOpen: false,
+		lastNavSidebarTab: "built-in",
+	},
 )
 
 export const browserPanelStateAtom = atomWithStorage<Record<string, BrowserPanelState>>(

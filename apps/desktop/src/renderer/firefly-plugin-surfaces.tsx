@@ -179,6 +179,7 @@ export function buildCatalogSurfaceTab(
 	const Icon = panelIcon(descriptor.iconName)
 	return {
 		id: descriptor.id,
+		lane: descriptor.lane,
 		label: descriptor.title,
 		icon: <Icon className="size-4" />,
 		title: descriptor.title,

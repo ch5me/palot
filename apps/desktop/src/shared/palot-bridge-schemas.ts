@@ -2,11 +2,14 @@ import { z } from "zod"
 // Import from the renderer-free ids module, NOT the renderer registry:
 // this file is loaded by the headless palot-bridge OpenCode plugin, where
 // renderer imports (React/monaco) fail at module load time.
-import { FIREFLY_SURFACE_IDS } from "./firefly-surface-ids"
+import { DOCUMENT_SURFACE_IDS, FIREFLY_SURFACE_IDS } from "./firefly-surface-ids"
 
 export const sidePanelTabValues = FIREFLY_SURFACE_IDS
 
 export const sidePanelTabSchema = z.enum(sidePanelTabValues)
+export const documentPanelTabValues = DOCUMENT_SURFACE_IDS
+
+export const documentPanelTabSchema = z.enum(documentPanelTabValues)
 
 export const browserActionErrorCodeSchema = z.enum([
 	"unbound_session",
@@ -201,6 +204,11 @@ export const palotSidePanelSnapshotSchema = z.object({
 
 export const palotUiStateSnapshotSchema = z.object({
 	sidePanel: palotSidePanelSnapshotSchema,
+	documentPanel: z.object({
+		open: z.boolean(),
+		activeTab: documentPanelTabSchema.nullable(),
+		availableTabs: z.array(documentPanelTabSchema),
+	}),
 })
 
 export const browserStateSnapshotSchema = z.object({

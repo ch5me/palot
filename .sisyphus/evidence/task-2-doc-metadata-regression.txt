@@ -1,0 +1,23 @@
+Task 2 — Lane Metadata Regression Tests
+=========================================
+Date: 2026-06-14
+Plan: .sisyphus/plans/cloud000-174-palette-3pane-finish.md (Task 2)
+
+Tests added (verified in git diff HEAD):
+- apps/desktop/src/renderer/__tests__/surface-mirror-lists.test.ts (+26 lines)
+  Tests lane metadata on surface mirror lists.
+- apps/desktop/src/renderer/firefly-plugin-surface-merge.test.ts (+13 lines)
+  Tests merge lane support in plugin surface merge.
+- apps/desktop/src/renderer/atoms/ui.test.ts (new file)
+  Tests doc-lane atom behavior (documentPanelOpen, lastDocumentPanelTab, fallback).
+
+Test coverage:
+- Lane field presence on all registry rows.
+- Catalog lane projection from hostTarget.slot.
+- Doc-lane atom read/write semantics.
+- Merge path preserves lane metadata.
+
+Note: Tests are in the working tree (uncommitted). Run with:
+  cd apps/desktop && bun test src/renderer/__tests__/surface-mirror-lists.test.ts
+  cd apps/desktop && bun test src/renderer/firefly-plugin-surface-merge.test.ts
+  cd apps/desktop && bun test src/renderer/atoms/ui.test.ts

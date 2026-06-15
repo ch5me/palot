@@ -34,6 +34,7 @@ test("browser state snapshot returns binding and recent actions", async () => {
 	try {
 		const bindingMod = await import("./palot-session-binding")
 		const ipcMod = await import("./palot-browser-ipc")
+		await ipcMod.resetPalotBrowserIpcStateForTests()
 		bindingMod.upsertSessionBinding(
 			bindingMod.createSessionBinding({
 				openCodeSessionId: "ses_snapshot",
@@ -82,6 +83,7 @@ test("bridge open-side-panel accepts document surfaces without collapsing mixed 
 	const cleanup = setupTempXdg()
 	try {
 		const ipcMod = await import("./palot-browser-ipc")
+		await ipcMod.resetPalotBrowserIpcStateForTests()
 		const bridge = await ipcMod.ensurePalotBridgeServer()
 		const url = `http://${bridge.host}:${bridge.port}${bridge.path}`
 		const sent: Array<{ channel: string; payload: unknown }> = []
@@ -118,7 +120,7 @@ test("bridge open-side-panel accepts document surfaces without collapsing mixed 
 			assert.deepEqual(response.result, {
 				sidePanel: {
 					open: false,
-					activeTab: "browser",
+					activeTab: null,
 					availableTabs: ["browser", "review"],
 				},
 				documentPanel: {
@@ -130,7 +132,7 @@ test("bridge open-side-panel accepts document surfaces without collapsing mixed 
 		}
 
 		const uiState = ipcMod.getUiStateSnapshot()
-		assert.equal(uiState.sidePanel.activeTab, "browser")
+		assert.equal(uiState.sidePanel.activeTab, null)
 		assert.deepEqual(uiState.sidePanel.availableTabs, ["browser", "review"])
 		assert.equal(uiState.documentPanel.activeTab, "pdf-review")
 		assert.deepEqual(uiState.documentPanel.availableTabs, [...DOCUMENT_SURFACE_IDS])

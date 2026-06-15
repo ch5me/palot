@@ -301,7 +301,14 @@ export function CommandPalette({ open, onOpenChange, agents, onForkSession }: Co
 				: [],
 		[surfaceContext, catalogSurfaceTabs],
 	)
-	const hasAvailableSurfaceTab = availableSurfaceTabs.some((surface) => surface.availability.available)
+	const availableUtilitySurfaceTabs = useMemo(
+		() =>
+			availableSurfaceTabs.filter(
+				(surface) => surface.lane === "utility" && surface.availability.available,
+			),
+		[availableSurfaceTabs],
+	)
+	const hasAvailableUtilitySurfaceTab = availableUtilitySurfaceTabs.length > 0
 
 	const hasSession = !!activeAgent
 
@@ -349,10 +356,11 @@ export function CommandPalette({ open, onOpenChange, agents, onForkSession }: Co
 					{hasSession && (
 						<CommandItem
 							onSelect={() => {
+								if (!hasAvailableUtilitySurfaceTab) return
 								setSidePanelOpen((prev) => !prev)
 								onOpenChange(false)
 							}}
-							disabled={!hasAvailableSurfaceTab}
+							disabled={!hasAvailableUtilitySurfaceTab}
 						>
 							{sidePanelOpen ? <PanelRightCloseIcon /> : <PanelRightOpenIcon />}
 							<span>{sidePanelOpen ? "Close Side Panel" : "Open Side Panel"}</span>
@@ -657,17 +665,6 @@ export function CommandPalette({ open, onOpenChange, agents, onForkSession }: Co
 					</CommandItem>
 					<CommandItem
 						keywords={["pdf", "document", "reader", "annotations", "citations"]}
-						onSelect={() => {
-							togglePdfReviewSurface()
-							onOpenChange(false)
-						}}
-					>
-						<FileTextIcon />
-						<span>{pdfReviewSurfaceEnabled ? "Disable PDF Review Surface" : "Enable PDF Review Surface"}</span>
-						{pdfReviewSurfaceEnabled && <CheckIcon className="ml-auto h-4 w-4" />}
-					</CommandItem>
-					<CommandItem
-						keywords={["pdf", "pdf review", "document", "paper", "citation"]}
 						onSelect={() => {
 							togglePdfReviewSurface()
 							onOpenChange(false)

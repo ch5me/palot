@@ -55,8 +55,10 @@ import { bridgeActivity, listBridges } from "./bridges"
 import { deleteContact, loadCrmStore, saveContact } from "./crm"
 import { customerThread, listCustomers, sendMessage as sendInboxMessage } from "./inbox"
 import type { InboxChannel } from "../preload/api"
+import { FIREFLY_SURFACE_LANE_BY_ID } from "../shared/firefly-surface-ids"
 import {
 	palotOpenSidePanelInputSchema,
+	palotUiStateSnapshotSchema,
 	publishBrowserActionInputSchema,
 	sessionBindingSchema,
 } from "../shared/palot-bridge-schemas"
@@ -453,11 +455,21 @@ export function registerIpcHandlers(): void {
 		withLogging("palot:ui-state-snapshot", async () => getUiStateSnapshot()),
 	)
 	ipcMain.handle(
+		"palot:ui-state-snapshot:set",
+		withLogging(
+			"palot:ui-state-snapshot:set",
+			async (_, snapshot: import("../preload/api").PalotUiStateSnapshot) =>
+				setUiStateSnapshot(palotUiStateSnapshotSchema.parse(snapshot)),
+		),
+	)
+	ipcMain.handle(
 		"palot:open-side-panel",
 		withLogging("palot:open-side-panel", async (_, tab: import("../preload/api").SidePanelTabId) => {
 			const parsedTab = palotOpenSidePanelInputSchema.parse(tab)
+			const targetPanel =
+				FIREFLY_SURFACE_LANE_BY_ID[parsedTab] === "document" ? "documentPanel" : "sidePanel"
 			const snapshot = setUiStateSnapshot({
-				sidePanel: {
+				[targetPanel]: {
 					open: true,
 					activeTab: parsedTab,
 				},

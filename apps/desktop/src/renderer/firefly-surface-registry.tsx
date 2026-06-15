@@ -20,6 +20,7 @@ import { V2PluginsPanel } from "./components/side-panel/v2-plugins-panel"
 import { PulsePanel } from "./components/side-panel/pulse-panel"
 import { TerminalPanel } from "./components/side-panel/terminal-panel"
 import type { Agent, FireflySurfaceTarget } from "./lib/types"
+import type { FireflySurfaceLane } from "../shared/firefly-surface-ids"
 
 const MemoryPanelHost = (({ className }: { agent: Agent; className?: string }) => (
 	<div className={`flex h-full min-h-0 items-center justify-center px-4 text-center text-xs text-muted-foreground ${className ?? ""}`}>
@@ -50,6 +51,7 @@ export interface FireflySurfaceDef {
 	title: string
 	icon: LucideIcon
 	formFactor: FireflySurfaceFormFactor
+	lane: FireflySurfaceLane
 	enabledFlag: {
 		key: string
 	}
@@ -64,6 +66,7 @@ export interface FireflySurfaceDef {
 
 export interface FireflySidePanelTab {
 	id: FireflySurfaceId
+	lane: FireflySurfaceLane
 	label: string
 	icon: ReactNode
 	title: string
@@ -74,11 +77,6 @@ export interface FireflySidePanelTab {
 	target: FireflySurfaceTarget
 	render: () => ReactNode
 }
-
-export function isDocumentSurfaceId(surfaceId: FireflySurfaceId): boolean {
-	return surfaceId === "studio" || surfaceId === "pdf-review"
-}
-
 export const FIREFLY_SURFACE_REGISTRY: FireflySurfaceDef[] = [
 	{
 		id: "review",
@@ -86,6 +84,7 @@ export const FIREFLY_SURFACE_REGISTRY: FireflySurfaceDef[] = [
 		title: "Changes",
 		icon: FileDiffIcon,
 		formFactor: "side-panel-tab",
+		lane: "utility",
 		enabledFlag: {
 			key: "review",
 		},
@@ -110,10 +109,11 @@ export const FIREFLY_SURFACE_REGISTRY: FireflySurfaceDef[] = [
 		title: "Browser",
 		icon: GlobeIcon,
 		formFactor: "side-panel-tab",
+		lane: "utility",
 		enabledFlag: {
 			key: "browserPanelEnabled",
 		},
-		defaultOn: false,
+		defaultOn: true,
 		availability: (ctx) =>
 			ctx.flags.browserPanelEnabled
 				? { available: true }
@@ -132,6 +132,7 @@ export const FIREFLY_SURFACE_REGISTRY: FireflySurfaceDef[] = [
 		title: "Pulse",
 		icon: ActivityIcon,
 		formFactor: "side-panel-tab",
+		lane: "utility",
 		enabledFlag: {
 			key: "pulse",
 		},
@@ -152,6 +153,7 @@ export const FIREFLY_SURFACE_REGISTRY: FireflySurfaceDef[] = [
 		title: "Artifacts",
 		icon: BoxesIcon,
 		formFactor: "side-panel-tab",
+		lane: "utility",
 		enabledFlag: {
 			key: "artifacts",
 		},
@@ -172,6 +174,7 @@ export const FIREFLY_SURFACE_REGISTRY: FireflySurfaceDef[] = [
 		title: "Memory",
 		icon: DatabaseIcon,
 		formFactor: "side-panel-tab",
+		lane: "utility",
 		enabledFlag: {
 			key: "memory",
 		},
@@ -204,6 +207,7 @@ export const FIREFLY_SURFACE_REGISTRY: FireflySurfaceDef[] = [
 		title: "Files",
 		icon: FilesIcon,
 		formFactor: "side-panel-tab",
+		lane: "utility",
 		enabledFlag: {
 			key: "files",
 		},
@@ -224,6 +228,7 @@ export const FIREFLY_SURFACE_REGISTRY: FireflySurfaceDef[] = [
 		title: "Terminal",
 		icon: TerminalSquareIcon,
 		formFactor: "side-panel-tab",
+		lane: "utility",
 		enabledFlag: {
 			key: "terminal",
 		},
@@ -244,6 +249,7 @@ export const FIREFLY_SURFACE_REGISTRY: FireflySurfaceDef[] = [
 		title: "Editor",
 		icon: SquarePenIcon,
 		formFactor: "side-panel-tab",
+		lane: "utility",
 		enabledFlag: {
 			key: "editor",
 		},
@@ -264,6 +270,7 @@ export const FIREFLY_SURFACE_REGISTRY: FireflySurfaceDef[] = [
 		title: "Plugins",
 		icon: PlugIcon,
 		formFactor: "side-panel-tab",
+		lane: "utility",
 		enabledFlag: {
 			key: "plugins",
 		},
@@ -284,6 +291,7 @@ export const FIREFLY_SURFACE_REGISTRY: FireflySurfaceDef[] = [
 		title: "Bridges",
 		icon: Share2Icon,
 		formFactor: "side-panel-tab",
+		lane: "utility",
 		enabledFlag: {
 			key: "bridges",
 		},
@@ -304,6 +312,7 @@ export const FIREFLY_SURFACE_REGISTRY: FireflySurfaceDef[] = [
 		title: "Contacts / CRM",
 		icon: UsersIcon,
 		formFactor: "side-panel-tab",
+		lane: "utility",
 		enabledFlag: {
 			key: "crm",
 		},
@@ -324,6 +333,7 @@ export const FIREFLY_SURFACE_REGISTRY: FireflySurfaceDef[] = [
 		title: "Studio / Office",
 		icon: MonitorPlayIcon,
 		formFactor: "side-panel-tab",
+		lane: "document",
 		enabledFlag: {
 			key: "studio",
 		},
@@ -344,6 +354,7 @@ export const FIREFLY_SURFACE_REGISTRY: FireflySurfaceDef[] = [
 		title: "Voice",
 		icon: MicIcon,
 		formFactor: "side-panel-tab",
+		lane: "utility",
 		enabledFlag: {
 			key: "voice",
 		},
@@ -364,6 +375,7 @@ export const FIREFLY_SURFACE_REGISTRY: FireflySurfaceDef[] = [
 		title: "Oracle Roster",
 		icon: WandSparklesIcon,
 		formFactor: "side-panel-tab",
+		lane: "utility",
 		enabledFlag: {
 			key: "oracle",
 		},
@@ -384,6 +396,7 @@ export const FIREFLY_SURFACE_REGISTRY: FireflySurfaceDef[] = [
 		title: "Claude Code",
 		icon: RectangleEllipsisIcon,
 		formFactor: "side-panel-tab",
+		lane: "utility",
 		enabledFlag: {
 			key: "claude",
 		},
@@ -404,6 +417,7 @@ export const FIREFLY_SURFACE_REGISTRY: FireflySurfaceDef[] = [
 		title: "CH5PM Dashboard",
 		icon: MonitorPlayIcon,
 		formFactor: "side-panel-tab",
+		lane: "utility",
 		enabledFlag: {
 			key: "ch5pm",
 		},
@@ -424,6 +438,7 @@ export const FIREFLY_SURFACE_REGISTRY: FireflySurfaceDef[] = [
 		title: "PDF Review",
 		icon: FileTextIcon,
 		formFactor: "side-panel-tab",
+		lane: "document",
 		enabledFlag: {
 			key: "pdfReview",
 		},
@@ -450,7 +465,11 @@ export const FIREFLY_SURFACE_REGISTRY: FireflySurfaceDef[] = [
  * OpenCode plugin via `palot-bridge-schemas.ts`) can import it without
  * dragging in React/monaco; it is re-exported here for renderer consumers.
  */
-export { FIREFLY_SURFACE_IDS, type FireflySurfaceId } from "../shared/firefly-surface-ids"
+export {
+	FIREFLY_SURFACE_IDS,
+	type FireflySurfaceId,
+	type FireflySurfaceLane,
+} from "../shared/firefly-surface-ids"
 import { FIREFLY_SURFACE_IDS, type FireflySurfaceId } from "../shared/firefly-surface-ids"
 
 /**
@@ -496,6 +515,7 @@ export function getFireflySurfaceTabs(ctx: FireflySurfaceContext): FireflySidePa
 			const Icon = surface.icon
 			return {
 				id: surface.id,
+				lane: surface.lane,
 				label: surface.title,
 				icon: <Icon className="size-4" />,
 				title: surface.title,

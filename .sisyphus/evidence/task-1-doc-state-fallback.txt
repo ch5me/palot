@@ -1,0 +1,20 @@
+Task 1 — Doc-Lane Fallback Behavior
+=====================================
+Date: 2026-06-14
+Plan: .sisyphus/plans/cloud000-174-palette-3pane-finish.md (Task 1)
+
+Fallback contract (verified in source):
+- setAvailableDocumentPanelTabsAtom (atoms/ui.ts lines 176-192):
+  - If tabs.length === 0: closes doc lane explicitly via setDocumentPanelOpenAtom(false)
+  - If current activeTab is still in available tabs: no-op (preserves user choice)
+  - If current activeTab is NOT in available tabs: falls back to tabs[0] (first available doc surface)
+    and bumps documentPanelFocusToken
+
+Decision (from notepads/decisions.md):
+- Unavailable remembered doc tab falls back to first available doc surface.
+- If no doc surfaces remain, doc lane closes explicitly.
+
+Runtime proof of fallback (from task-6-browser-proof.md):
+- Live browser test: disabled active PDF Review surface while it was the active doc tab.
+- Result: doc lane fell back from pdf-review to studio, header pill changed from "Doc · pdf-review" to "Doc · studio".
+- No empty/broken pane state observed.

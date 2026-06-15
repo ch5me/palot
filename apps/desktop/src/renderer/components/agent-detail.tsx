@@ -47,18 +47,26 @@ import {
 } from "../atoms/feature-flags"
 import {
 	getFireflySurfaceTabs,
-	isDocumentSurfaceId,
 	type FireflySurfaceContext,
 } from "../firefly-surface-registry"
 import { mergeSurfaceTabs } from "../firefly-plugin-surface-merge"
 import { useCatalogSurfaceTabs } from "../firefly-plugin-surfaces"
 import {
+	closeDocumentPanelAtom,
+	type DocumentPanelTabId,
+	documentPanelActiveTabAtom,
+	documentPanelOpenAtom,
+	isDocumentPanelTab,
 	reviewPanelSettingsAtom,
+	setAvailableDocumentPanelTabsAtom,
 	sessionDiffStatsFamily,
 	setAvailableSidePanelTabsAtom,
+	setDocumentPanelActiveTabAtom,
+	setDocumentPanelOpenAtom,
 	setSidePanelActiveTabAtom,
 	sidePanelActiveTabAtom,
 	sidePanelOpenAtom,
+	type UtilitySidePanelTabId,
 } from "../atoms/ui"
 import type {
 	ConfigData,
@@ -76,6 +84,7 @@ import {
 	isElectron,
 	openInTarget,
 	subscribeToPalotOpenSidePanel,
+	syncPalotUiStateSnapshot,
 } from "../services/backend"
 import { useSetAppBarContent } from "./app-bar-context"
 import { ChatView } from "./chat"
@@ -196,25 +205,15 @@ export function AgentDetail({
 
 	const [sidePanelOpen, setSidePanelOpen] = useAtom(sidePanelOpenAtom)
 	const sidePanelActiveTab = useAtomValue(sidePanelActiveTabAtom)
+	const documentPanelOpen = useAtomValue(documentPanelOpenAtom)
+	const documentPanelActiveTab = useAtomValue(documentPanelActiveTabAtom)
+	const closeDocumentPanel = useSetAtom(closeDocumentPanelAtom)
+	const setDocumentPanelActiveTab = useSetAtom(setDocumentPanelActiveTabAtom)
+	const setDocumentPanelOpen = useSetAtom(setDocumentPanelOpenAtom)
 	const setSidePanelActiveTab = useSetAtom(setSidePanelActiveTabAtom)
 	const setAvailableSidePanelTabs = useSetAtom(setAvailableSidePanelTabsAtom)
+	const setAvailableDocumentPanelTabs = useSetAtom(setAvailableDocumentPanelTabsAtom)
 	const [reviewSettings, setReviewSettings] = useAtom(reviewPanelSettingsAtom)
-
-	useEffect(() => {
-		const handleKeyDown = (e: KeyboardEvent) => {
-			if ((e.metaKey || e.ctrlKey) && e.shiftKey) {
-				if (e.key === "d" || e.key === "D") {
-					e.preventDefault()
-					setSidePanelOpen((prev) => !prev)
-				} else if (e.key === "f" || e.key === "F") {
-					e.preventDefault()
-					setReviewSettings((prev) => ({ ...prev, expanded: !prev.expanded }))
-				}
-			}
-		}
-		document.addEventListener("keydown", handleKeyDown)
-		return () => document.removeEventListener("keydown", handleKeyDown)
-	}, [setSidePanelOpen, setReviewSettings])
 
 	const prevSessionIdRef = useRef(agent.sessionId)
 	const diffStats = useAtomValue(sessionDiffStatsFamily(agent.sessionId))
@@ -224,8 +223,18 @@ export function AgentDetail({
 			if (diffStats.fileCount === 0 && sidePanelActiveTab === "review") {
 				setSidePanelOpen(false)
 			}
+			if (!documentPanelOpen) {
+				closeDocumentPanel()
+			}
 		}
-	}, [agent.sessionId, diffStats.fileCount, setSidePanelOpen, sidePanelActiveTab])
+	}, [
+		agent.sessionId,
+		closeDocumentPanel,
+		diffStats.fileCount,
+		documentPanelOpen,
+		setSidePanelOpen,
+		sidePanelActiveTab,
+	])
 
 	const startEditingTitle = useCallback(() => {
 		if (!onRename) return
@@ -323,51 +332,133 @@ export function AgentDetail({
 		() => surfaceTabs.filter((tab) => tab.availability.available),
 		[surfaceTabs],
 	)
+	const findAvailableSurfaceTab = useCallback(
+		(tabId: SidePanelTabDef["id"]): SidePanelTabDef | null =>
+			availableSurfaceTabs.find((candidate) => candidate.id === tabId) ?? null,
+		[availableSurfaceTabs],
+	)
+	const routeAvailableSurfaceTab = useCallback(
+		(targetTab: SidePanelTabDef): void => {
+			const targetTabId = targetTab.id
+			if (targetTab.lane === "document" && isDocumentPanelTab(targetTabId)) {
+				setDocumentPanelActiveTab(targetTabId)
+				setDocumentPanelOpen(true)
+				return
+			}
+			if (targetTab.lane === "utility" && !isDocumentPanelTab(targetTabId)) {
+				setSidePanelActiveTab(targetTabId)
+				setSidePanelOpen(true)
+			}
+		},
+		[
+			setDocumentPanelActiveTab,
+			setDocumentPanelOpen,
+			setSidePanelActiveTab,
+			setSidePanelOpen,
+		],
+	)
 	const docTabs = useMemo(
-		() => availableSurfaceTabs.filter((tab) => isDocumentSurfaceId(tab.id)),
+		() =>
+			availableSurfaceTabs.filter(
+				(tab): tab is SidePanelTabDef & { lane: "document"; id: DocumentPanelTabId } =>
+					tab.lane === "document" && isDocumentPanelTab(tab.id),
+			),
 		[availableSurfaceTabs],
 	)
 	const utilityTabs = useMemo(
-		() => availableSurfaceTabs.filter((tab) => !isDocumentSurfaceId(tab.id)),
+		() =>
+			availableSurfaceTabs.filter(
+				(tab): tab is SidePanelTabDef & { lane: "utility"; id: UtilitySidePanelTabId } =>
+					tab.lane === "utility" && !isDocumentPanelTab(tab.id),
+			),
 		[availableSurfaceTabs],
 	)
-	const activeDocTab = useMemo(
-		() => docTabs.find((tab) => tab.id === sidePanelActiveTab) ?? null,
-		[docTabs, sidePanelActiveTab],
-	)
-	const docPanelOpen = activeDocTab !== null
-
-	const docPortalNode = useMemo(() => createHtmlPortalNode(), [])
 
 	useEffect(() => {
-		setAvailableSidePanelTabs(availableSurfaceTabs.map((tab) => tab.id))
-	}, [availableSurfaceTabs, setAvailableSidePanelTabs])
+		const handleKeyDown = (e: KeyboardEvent) => {
+			if ((e.metaKey || e.ctrlKey) && e.shiftKey) {
+				if (e.key === "d" || e.key === "D") {
+					if (utilityTabs.length === 0) return
+					e.preventDefault()
+					setSidePanelOpen((prev) => !prev)
+				} else if (e.key === "f" || e.key === "F") {
+					e.preventDefault()
+					setReviewSettings((prev) => ({ ...prev, expanded: !prev.expanded }))
+				}
+			}
+		}
+		document.addEventListener("keydown", handleKeyDown)
+		return () => document.removeEventListener("keydown", handleKeyDown)
+	}, [setSidePanelOpen, setReviewSettings, utilityTabs.length])
+
+	const activeDocTab = useMemo(
+		() => docTabs.find((tab) => tab.id === documentPanelActiveTab) ?? docTabs[0] ?? null,
+		[docTabs, documentPanelActiveTab],
+	)
+	// Doc lane restores from explicit snapshot state, then falls back to first
+	// available doc surface when the remembered tab disappears.
+	const docPanelVisible = documentPanelOpen && activeDocTab !== null
+
+	const docPortalNodesRef = useRef<Partial<Record<SidePanelTabDef["id"], HtmlPortalNode>>>({})
+	for (const tab of docTabs) {
+		if (!docPortalNodesRef.current[tab.id]) {
+			docPortalNodesRef.current[tab.id] = createHtmlPortalNode()
+		}
+	}
+	const docPanelNode = activeDocTab ? docPortalNodesRef.current[activeDocTab.id] ?? null : null
+
+	useEffect(() => {
+		setAvailableSidePanelTabs(utilityTabs.map((tab) => tab.id))
+	}, [setAvailableSidePanelTabs, utilityTabs])
+
+	useEffect(() => {
+		setAvailableDocumentPanelTabs(docTabs.map((tab) => tab.id))
+	}, [docTabs, setAvailableDocumentPanelTabs])
+
+	useEffect(() => {
+		if (documentPanelOpen && docTabs.length === 0) {
+			closeDocumentPanel()
+		}
+	}, [closeDocumentPanel, docTabs.length, documentPanelOpen])
+
+	useEffect(() => {
+		void syncPalotUiStateSnapshot({
+			sidePanel: {
+				open: sidePanelOpen && utilityTabs.length > 0,
+				activeTab: utilityTabs.length > 0 ? sidePanelActiveTab : null,
+				availableTabs: utilityTabs.map((tab) => tab.id),
+			},
+			documentPanel: {
+				open: docPanelVisible,
+				activeTab: activeDocTab?.id ?? null,
+				availableTabs: docTabs.map((tab) => tab.id),
+			},
+		}).catch(() => undefined)
+	}, [activeDocTab?.id, docPanelVisible, docTabs, sidePanelActiveTab, sidePanelOpen, utilityTabs])
 
 	useEffect(() => {
 		const unsubscribe = subscribeToPalotOpenSidePanel(({ tab }) => {
-			if (!availableSurfaceTabs.some((candidate) => candidate.id === tab)) return
-			setSidePanelActiveTab(tab)
-			if (!isDocumentSurfaceId(tab)) {
-				setSidePanelOpen(true)
-			}
-			setAvailableSidePanelTabs(availableSurfaceTabs.map((candidate) => candidate.id))
-			void window.elf?.palot.openSidePanel(tab).catch(() => undefined)
+			const targetTab = findAvailableSurfaceTab(tab)
+			if (!targetTab) return
+			routeAvailableSurfaceTab(targetTab)
 		})
 		return unsubscribe
-	}, [availableSurfaceTabs, setAvailableSidePanelTabs, setSidePanelActiveTab, setSidePanelOpen])
+	}, [findAvailableSurfaceTab, routeAvailableSurfaceTab])
 
 	useEffect(() => {
 		void fetchPalotUiStateSnapshot().then((snapshot) => {
 			if (!snapshot) return
-			const tab = snapshot.sidePanel.activeTab
-			if (!snapshot.sidePanel.open || !tab) return
-			if (!availableSurfaceTabs.some((candidate) => candidate.id === tab)) return
-			setSidePanelActiveTab(tab)
-			if (!isDocumentSurfaceId(tab)) {
-				setSidePanelOpen(true)
+			const snapshotTabs = [
+				snapshot.sidePanel.open ? snapshot.sidePanel.activeTab : null,
+				snapshot.documentPanel.open ? snapshot.documentPanel.activeTab : null,
+			].filter((tab): tab is SidePanelTabDef["id"] => tab !== null)
+			for (const tab of snapshotTabs) {
+				const targetTab = findAvailableSurfaceTab(tab)
+				if (!targetTab) continue
+				routeAvailableSurfaceTab(targetTab)
 			}
 		})
-	}, [availableSurfaceTabs, setSidePanelActiveTab, setSidePanelOpen])
+	}, [findAvailableSurfaceTab, routeAvailableSurfaceTab])
 
 	useEffect(() => {
 		setAppBarContent(
@@ -385,7 +476,11 @@ export function AgentDetail({
 				sidePanelOpen={sidePanelOpen}
 				sidePanelActiveTab={sidePanelActiveTab}
 				hasAvailableSidePanel={utilityTabs.length > 0}
-				onToggleSidePanel={() => setSidePanelOpen((prev) => !prev)}
+				onToggleSidePanel={() => {
+					if (utilityTabs.length === 0) return
+					setSidePanelOpen((prev) => !prev)
+				}}
+				documentPanelOpen={docPanelVisible}
 				documentTab={activeDocTab}
 			/>,
 		)
@@ -405,6 +500,7 @@ export function AgentDetail({
 		setSidePanelOpen,
 		sidePanelActiveTab,
 		utilityTabs,
+		docPanelVisible,
 		activeDocTab,
 	])
 
@@ -466,7 +562,15 @@ export function AgentDetail({
 
 	return (
 		<>
-			{activeDocTab ? <InPortal node={docPortalNode}>{activeDocTab.render()}</InPortal> : null}
+			{docTabs.map((tab) => {
+				const portalNode = docPortalNodesRef.current[tab.id]
+				if (!portalNode) return null
+				return (
+					<InPortal key={tab.id} node={portalNode}>
+						{tab.render()}
+					</InPortal>
+				)
+			})}
 			<SplitPane
 				key={reviewSettings.expanded ? "side-panel-expanded" : "side-panel-default"}
 				side="right"
@@ -484,14 +588,15 @@ export function AgentDetail({
 			>
 				<SplitPane
 					side="right"
-					open={docPanelOpen}
+					open={docPanelVisible}
+					onOpenChange={setDocumentPanelOpen}
 					defaultPanelWidth={DEFAULT_DOC_PANEL_WIDTH}
 					minPanelWidth={MIN_DOC_PANEL_WIDTH}
 					maxPanelWidth={MAX_DOC_PANEL_WIDTH}
 					handleAriaLabel="Resize document pane"
 					panel={
-						activeDocTab ? (
-							<DocumentPaneShell agent={agent} tab={activeDocTab} portalNode={docPortalNode} />
+						activeDocTab && docPanelNode ? (
+							<DocumentPaneShell agent={agent} tab={activeDocTab} portalNode={docPanelNode} />
 						) : (
 							<div className="flex h-full items-center justify-center bg-background px-6 text-center text-sm text-muted-foreground">
 								Open Studio or PDF Review to use document lane.
@@ -521,6 +626,7 @@ function SessionAppBarContent({
 	sidePanelActiveTab,
 	hasAvailableSidePanel,
 	onToggleSidePanel,
+	documentPanelOpen,
 	documentTab,
 }: {
 	agent: Agent
@@ -537,6 +643,7 @@ function SessionAppBarContent({
 	sidePanelActiveTab: string
 	hasAvailableSidePanel: boolean
 	onToggleSidePanel: () => void
+	documentPanelOpen: boolean
 	documentTab: SidePanelTabDef | null
 }) {
 	const { url } = useServerConnection()
@@ -666,7 +773,7 @@ function SessionAppBarContent({
 				<WorktreeActions agent={agent} />
 				<SessionMetricsBar sessionId={agent.sessionId} />
 				<div className="rounded-full border border-border/70 px-2 py-1 text-xs text-muted-foreground">
-					{documentTab ? `Doc · ${documentTab.id}` : "Doc closed"}
+					{documentPanelOpen && documentTab ? `Doc · ${documentTab.id}` : "Doc closed"}
 				</div>
 				<div className="rounded-full border border-border/70 px-2 py-1 text-xs text-muted-foreground">
 					{sidePanelOpen ? `Utility · ${sidePanelActiveTab}` : "Utility closed"}

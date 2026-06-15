@@ -12,8 +12,9 @@
  * (`firefly-plugin-surfaces.tsx`) builds renderable tabs on top.
  */
 
-import type { SidePanelTabId } from "./atoms/ui"
 import type { ProjectedSidePanel } from "../shared/firefly-plugin/renderer-projection"
+import type { FireflySurfaceLane } from "./firefly-surface-registry"
+import type { SidePanelTabId } from "./atoms/ui"
 
 /**
  * Canonical visual order of side-panel tabs. Mirrors the registry
@@ -54,6 +55,7 @@ export function isKnownSidePanelTabId(value: string): value is SidePanelTabId {
  */
 export interface CatalogSurfaceTabDescriptor {
 	readonly id: SidePanelTabId
+	readonly lane: FireflySurfaceLane
 	readonly pluginId: string
 	readonly projectedId: string
 	readonly title: string
@@ -66,6 +68,14 @@ export interface CatalogSurfaceTabDescriptor {
 	readonly renderMode: "host-reconciler" | "declarative-props" | "iframe"
 }
 
+function laneForCatalogPanel(panel: ProjectedSidePanel): FireflySurfaceLane {
+	if (panel.hostTarget.kind !== "side-panel") {
+		return "utility"
+	}
+
+	return panel.hostTarget.slot === "main-pane" ? "document" : "utility"
+}
+
 export function catalogPanelToTabDescriptor(
 	panel: ProjectedSidePanel,
 ): CatalogSurfaceTabDescriptor | null {
@@ -73,6 +83,7 @@ export function catalogPanelToTabDescriptor(
 	if (!isKnownSidePanelTabId(panel.contributionId)) return null
 	return {
 		id: panel.contributionId,
+		lane: laneForCatalogPanel(panel),
 		pluginId: panel.pluginId,
 		projectedId: panel.projectedId,
 		title: panel.title,

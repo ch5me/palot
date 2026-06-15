@@ -54,6 +54,15 @@ generic knowledge.
 - Palot/OpenCode plugin/runtime seam is documented in `docs/palot-opencode-plugin-bridge.md`. Read it before changing plugin loading, tool registration, resolver payloads, browser action dispatch, or side-panel UI command bridges.
 - For this repo, do not treat unrelated dirty worktrees as an automatic blocker. Assume parallel agents are active, commit your scoped work frequently, and move forward unless a direct file-level conflict makes the current edit unsafe.
 
+## Temporary Staging Policy (expires after staging launch)
+
+**Browser-mode proof is the required verification path for Palette/three-pane finish work until the Electron dev runtime `bun:` ESM loader crash is fixed.** Electron-side manual proof is explicitly skipped during this staging window.
+
+- **Blocker**: Electron dev runtime crashes on app load with `ERR_UNSUPPORTED_ESM_URL_SCHEME` for the `bun:` protocol before a usable renderer window appears. Evidence: `.sisyphus/evidence/task-6-electron-pane.txt` and `.sisyphus/evidence/task-6-electron-proof.md`.
+- **What this means**: browser-mode manual proof (live Chrome + OS automation, screenshot + DOM capture) is sufficient for verification gating. Do not block final scope review or ticket closeout on missing Electron proof while this crash persists.
+- **Expires**: after staging launch, when the Electron `bun:` loader issue is resolved. At that point, re-enable Electron-side manual proof as a required verification step.
+- **Not permanent**: this is a temporary staging-window exception, not a permanent relaxation of Electron verification requirements. Once the blocker is fixed, both runtimes must be proved again.
+
 ## Commands
 
 - **Runtime policy**: manage dev services only through the root devmux wrapper commands below. Do not start `vite`, `electron-vite`, `apps/server`, `apps/desktop`, `npm`, `npx`, or raw `node ...vite` foreground processes directly in agent sessions; that fights other agents, stale tmux panes, and owned ports. If you need logs, use `bun run svc:attach -- <service>`. If a bounded diagnostic ever needs a direct process, stop it immediately and restore devmux before handoff.

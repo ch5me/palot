@@ -6,14 +6,14 @@ import {
 	sidePanelActiveTabAtom,
 	sidePanelOpenAtom,
 	setSidePanelActiveTabAtom,
-	type SidePanelTabId,
+	type UtilitySidePanelTabId,
 } from "../../atoms/ui"
 import type { Agent } from "../../lib/types"
 import type { SidePanelTabDef } from "./side-panel-tabs"
 
 interface SessionSidePanelProps {
 	agent: Agent
-	tabs: SidePanelTabDef[]
+	tabs: Array<SidePanelTabDef & { id: UtilitySidePanelTabId }>
 	className?: string
 }
 
@@ -22,7 +22,10 @@ export function SessionSidePanel({ agent: _agent, tabs, className }: SessionSide
 	const setActiveTab = useSetAtom(setSidePanelActiveTabAtom)
 	const [, setOpen] = useAtom(sidePanelOpenAtom)
 
-	const availableTabs = useMemo(() => tabs.filter((t) => t.availability.available), [tabs])
+	const availableTabs = useMemo(
+		() => tabs.filter((t): t is SidePanelTabDef & { id: UtilitySidePanelTabId } => t.availability.available),
+		[tabs],
+	)
 	const showTabStrip = availableTabs.length > 1
 	const currentTab = availableTabs.find((t) => t.id === activeTab) ?? availableTabs[0]
 
@@ -42,7 +45,11 @@ export function SessionSidePanel({ agent: _agent, tabs, className }: SessionSide
 				<Tabs
 					orientation="vertical"
 					value={currentTab.id}
-					onValueChange={(value) => setActiveTab(value as SidePanelTabId)}
+					onValueChange={(value) => {
+						const nextTab = availableTabs.find((tab) => tab.id === value)
+						if (!nextTab) return
+						setActiveTab(nextTab.id)
+					}}
 					className="flex h-full min-h-0"
 				>
 					<div className="flex h-full min-h-0 w-full">

@@ -49,8 +49,7 @@ const BRIDGE_ENV_TOKEN = "PALOT_BRIDGE_TOKEN"
 // Loom Wave 0: the side-panel tab vocabulary is owned by
 // `apps/desktop/src/renderer/firefly-surface-registry.tsx`. The Node-side
 // runtime cannot import that file (it pulls React), so it reads the same
-// 18 ids from a JSON sidecar. Drift between the registry and this list is
-// caught by `apps/desktop/src/renderer/__tests__/surface-mirror-lists.test.ts`.
+// ids from a JSON sidecar. Drift is guarded elsewhere.
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = dirname(__filename)
 const SIDE_PANEL_TABS_SIDECAR = join(
@@ -123,6 +122,7 @@ export const buildProductContextBlock = (resolved) => {
 	const snapshot = resolved?.nonSecretSnapshot ?? null
 	const binding = resolved?.binding ?? null
 	const sidePanel = resolved?.uiState?.sidePanel ?? null
+	const documentPanel = resolved?.uiState?.documentPanel ?? null
 	const connectedApps = buildConnectedAppsBlock(resolved?.connections)
 	if (!binding && !snapshot && connectedApps.length === 1 && connectedApps[0] === "none") {
 		return null
@@ -138,6 +138,9 @@ export const buildProductContextBlock = (resolved) => {
 		`side_panel_open: ${sidePanel?.open ? "yes" : "no"}`,
 		`side_panel_tab: ${sidePanel?.activeTab ?? "none"}`,
 		`side_panel_tabs: ${(sidePanel?.availableTabs ?? []).join(",") || "none"}`,
+		`document_panel_open: ${documentPanel?.open ? "yes" : "no"}`,
+		`document_panel_tab: ${documentPanel?.activeTab ?? "none"}`,
+		`document_panel_tabs: ${(documentPanel?.availableTabs ?? []).join(",") || "none"}`,
 		`loom_component_tools: ${resolved?.loomComponentToolsEnabled ? "enabled" : "disabled"}`,
 		"connected_apps:",
 		...connectedApps.map((line) => `- ${line}`),
@@ -279,6 +282,7 @@ export const buildOpenSidePanelHandler = ({ bridgeRequest, openSidePanel }) => {
 				status: "completed",
 				toolName: "open_side_panel",
 				sidePanel: snapshot?.sidePanel ?? null,
+				documentPanel: snapshot?.documentPanel ?? null,
 			})
 		}
 		if (bridgeRequest) {
@@ -287,6 +291,7 @@ export const buildOpenSidePanelHandler = ({ bridgeRequest, openSidePanel }) => {
 				status: "completed",
 				toolName: "open_side_panel",
 				sidePanel: snapshot?.sidePanel ?? null,
+				documentPanel: snapshot?.documentPanel ?? null,
 			})
 		}
 		return JSON.stringify(
@@ -304,7 +309,10 @@ export const buildUiStateHandler = ({ bridgeRequest, getUiState }) => {
 		if (bridgeRequest) {
 			return JSON.stringify(await bridgeRequest({ action: "get-ui-state" }))
 		}
-		return JSON.stringify({ sidePanel: null })
+		return JSON.stringify({
+			sidePanel: { open: false, activeTab: null, availableTabs: [] },
+			documentPanel: { open: false, activeTab: null, availableTabs: [] },
+		})
 	}
 }
 

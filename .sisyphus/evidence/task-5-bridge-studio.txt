@@ -1,0 +1,35 @@
+Task 5 — Bridge/Runtime Proof for Studio
+==========================================
+Date: 2026-06-14
+Plan: .sisyphus/plans/cloud000-174-palette-3pane-finish.md (Task 5)
+
+Tests added (verified in git diff HEAD):
+- File: apps/desktop/src/main/palot-browser-ipc.test.ts (+73 lines)
+  Tests open_side_panel("studio") through the Palot browser IPC bridge.
+  Asserts:
+  - open_side_panel accepts "studio" as a valid surface id
+  - Rebroadcasts exact "studio" id via palot:open-side-panel channel
+  - Preserves utility-surface availability (mixed availableTabs)
+  - "studio" has document lane membership (isDocumentPanelTab)
+
+- File: apps/desktop/src/main/palot-managed-runtime-verification.test.ts (+47 lines)
+  Tests open_side_panel("studio") through the managed runtime verification path.
+  Asserts same properties as browser IPC test.
+
+grep verification:
+- palot-browser-ipc.test.ts: 4 matches for studio/pdf-review/document
+- palot-managed-runtime-verification.test.ts: 13 matches for studio/pdf-review/document
+- palot:open-side-panel channel assertion at line 124 of browser-ipc test
+
+Decision (from notepads/decisions.md):
+- Automated bridge proof for doc surfaces lives in main-process/runtime tests, not
+  renderer-only tests, because the acceptance seam is open_side_panel over the real
+  Palot bridge plus plugin runtime transport.
+- Until the preload snapshot gets first-class doc-lane fields, the test oracle is
+  document lane membership for studio/pdf-review plus preserved mixed availableTabs
+  and exact palot:open-side-panel broadcasts for those ids.
+
+Learning (from notepads/learnings.md):
+- Real bridge/runtime proof can stay honest without renderer mounts by checking that
+  open_side_panel accepts studio and pdf-review, rebroadcasts those exact ids, and
+  preserves utility-surface availability instead of collapsing to a doc-only tab set.

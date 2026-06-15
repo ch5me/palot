@@ -1,8 +1,11 @@
 import { atom } from "jotai"
 import { atomFamily, atomWithStorage } from "jotai/utils"
+import { DOCUMENT_SURFACE_IDS, isDocumentSurfaceId } from "../../shared/firefly-surface-ids"
 import {
 	fireflySurfacePreferencesAtom,
+	type LastDocumentPanelTabId,
 	type LastSidePanelTabId,
+	type LastUtilitySidePanelTabId,
 	type NavSidebarTabId,
 } from "./preferences"
 import type { FileDiff } from "../lib/types"
@@ -35,18 +38,58 @@ export interface SidePanelRoute {
 	focusToken: number
 }
 
+export interface DocumentPanelRoute {
+	tab: DocumentPanelTabId
+	focusToken: number
+}
+
 export interface PaneRoutingState {
 	sidePanel: SidePanelRoute | null
+	documentPanel: DocumentPanelRoute | null
 }
 
 export const sidePanelOpenAtom = atomWithStorage<boolean>("elf:side-panel-open", false)
 
-export const sidePanelActiveTabAtom = atom<SidePanelTabId>((get) => get(fireflySurfacePreferencesAtom).lastSidePanelTab)
+export type DocumentPanelTabId = LastDocumentPanelTabId
+export type UtilitySidePanelTabId = LastUtilitySidePanelTabId
 
-export const setSidePanelActiveTabAtom = atom(null, (get, set, tab: SidePanelTabId) => {
+export const DOCUMENT_PANEL_TABS = DOCUMENT_SURFACE_IDS as readonly DocumentPanelTabId[]
+
+export const isDocumentPanelTab = (value: SidePanelTabId): value is DocumentPanelTabId =>
+	isDocumentSurfaceId(value)
+
+// Utility and document lanes persist independently so restore/fallback stays
+// deterministic when a session switches or a doc surface becomes unavailable.
+
+export const sidePanelActiveTabAtom = atom<LastUtilitySidePanelTabId>(
+	(get) => get(fireflySurfacePreferencesAtom).lastUtilitySidePanelTab,
+)
+
+export const setSidePanelActiveTabAtom = atom(null, (get, set, tab: LastUtilitySidePanelTabId) => {
 	set(fireflySurfacePreferencesAtom, {
 		...get(fireflySurfacePreferencesAtom),
-		lastSidePanelTab: tab,
+		lastUtilitySidePanelTab: tab,
+	})
+})
+
+export const documentPanelOpenAtom = atom((get) => get(fireflySurfacePreferencesAtom).documentPanelOpen)
+
+export const setDocumentPanelOpenAtom = atom(null, (get, set, open: boolean) => {
+	set(fireflySurfacePreferencesAtom, {
+		...get(fireflySurfacePreferencesAtom),
+		documentPanelOpen: open,
+	})
+})
+
+export const documentPanelActiveTabAtom = atom<DocumentPanelTabId>(
+	(get) => get(fireflySurfacePreferencesAtom).lastDocumentPanelTab,
+)
+
+export const setDocumentPanelActiveTabAtom = atom(null, (get, set, tab: DocumentPanelTabId) => {
+	set(fireflySurfacePreferencesAtom, {
+		...get(fireflySurfacePreferencesAtom),
+		lastDocumentPanelTab: tab,
+		documentPanelOpen: true,
 	})
 })
 
@@ -75,6 +118,7 @@ export const setAvailableNavSidebarTabsAtom = atom(null, (get, set, tabs: NavSid
 })
 
 export const sidePanelFocusTokenAtom = atom(0)
+export const documentPanelFocusTokenAtom = atom(0)
 
 export const paneRoutingStateAtom = atom<PaneRoutingState>((get) => ({
 	sidePanel: get(sidePanelOpenAtom)
@@ -83,9 +127,20 @@ export const paneRoutingStateAtom = atom<PaneRoutingState>((get) => ({
 			focusToken: get(sidePanelFocusTokenAtom)
 		}
 		: null,
+	documentPanel: get(documentPanelOpenAtom)
+		? {
+			tab: get(documentPanelActiveTabAtom),
+			focusToken: get(documentPanelFocusTokenAtom),
+		}
+		: null,
 }))
 
 export const openSidePanelTabAtom = atom(null, (get, set, tab: SidePanelTabId) => {
+	if (isDocumentPanelTab(tab)) {
+		set(setDocumentPanelActiveTabAtom, tab)
+		set(documentPanelFocusTokenAtom, get(documentPanelFocusTokenAtom) + 1)
+		return
+	}
 	set(sidePanelOpenAtom, true)
 	set(setSidePanelActiveTabAtom, tab)
 	set(sidePanelFocusTokenAtom, get(sidePanelFocusTokenAtom) + 1)
@@ -95,20 +150,46 @@ export const closeSidePanelAtom = atom(null, (_get, set) => {
 	set(sidePanelOpenAtom, false)
 })
 
-export const setAvailableSidePanelTabsAtom = atom(null, (get, set, tabs: SidePanelTabId[]) => {
-	if (tabs.length === 0) {
-		set(sidePanelOpenAtom, false)
-		return
-	}
-
-	const activeTab = get(sidePanelActiveTabAtom)
-	if (tabs.includes(activeTab)) {
-		return
-	}
-
-	set(setSidePanelActiveTabAtom, tabs[0])
-	set(sidePanelFocusTokenAtom, get(sidePanelFocusTokenAtom) + 1)
+export const closeDocumentPanelAtom = atom(null, (_get, set) => {
+	set(setDocumentPanelOpenAtom, false)
 })
+
+export const setAvailableSidePanelTabsAtom = atom(
+	null,
+	(get, set, tabs: UtilitySidePanelTabId[]) => {
+		const utilityTabs = tabs.filter((tab): tab is UtilitySidePanelTabId => !isDocumentPanelTab(tab))
+		if (utilityTabs.length === 0) {
+			set(sidePanelOpenAtom, false)
+			return
+		}
+
+		const activeTab = get(sidePanelActiveTabAtom) as UtilitySidePanelTabId
+		if (utilityTabs.includes(activeTab)) {
+			return
+		}
+
+		set(setSidePanelActiveTabAtom, utilityTabs[0])
+		set(sidePanelFocusTokenAtom, get(sidePanelFocusTokenAtom) + 1)
+	},
+)
+
+export const setAvailableDocumentPanelTabsAtom = atom(
+	null,
+	(get, set, tabs: DocumentPanelTabId[]) => {
+		if (tabs.length === 0) {
+			set(setDocumentPanelOpenAtom, false)
+			return
+		}
+
+		const activeTab = get(documentPanelActiveTabAtom)
+		if (tabs.includes(activeTab)) {
+			return
+		}
+
+		set(setDocumentPanelActiveTabAtom, tabs[0])
+		set(documentPanelFocusTokenAtom, get(documentPanelFocusTokenAtom) + 1)
+	},
+)
 
 export const reviewPanelOpenAtom = sidePanelOpenAtom
 

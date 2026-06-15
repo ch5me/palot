@@ -1,0 +1,35 @@
+Task 5 — Bridge/Runtime Proof for PDF Review
+==============================================
+Date: 2026-06-14
+Plan: .sisyphus/plans/cloud000-174-palette-3pane-finish.md (Task 5)
+
+Tests added (verified in git diff HEAD):
+- File: apps/desktop/src/main/palot-browser-ipc.test.ts (+73 lines)
+  Tests open_side_panel("pdf-review") through the Palot browser IPC bridge.
+  Asserts:
+  - open_side_panel accepts "pdf-review" as a valid surface id
+  - Rebroadcasts exact "pdf-review" id via palot:open-side-panel channel
+  - Preserves utility-surface availability (mixed availableTabs)
+  - "pdf-review" has document lane membership (isDocumentPanelTab)
+
+- File: apps/desktop/src/main/palot-managed-runtime-verification.test.ts (+47 lines)
+  Tests open_side_panel("pdf-review") through the managed runtime verification path.
+  Asserts same properties as browser IPC test.
+
+Combined test coverage (studio + pdf-review):
+- Both doc surfaces route to document lane through bridge/runtime path.
+- Both preserve utility-surface availability (no collapse to doc-only tab set).
+- Both rebroadcast exact surface ids (no id mangling).
+- Both assert document lane membership via isDocumentPanelTab.
+
+Decision (from notepads/decisions.md):
+- Same as task-5-bridge-studio.txt — automated bridge proof lives in main-process tests.
+- Test oracle: document lane membership + preserved mixed availableTabs + exact
+  palot:open-side-panel broadcasts.
+
+Runtime proof (from task-6-browser-proof.md):
+- Live browser test: opened PDF Review from command palette.
+- Document lane switched from Studio/Office to PDF Review.
+- Utility lane stayed on Files (independent of doc lane switch).
+- Header pill changed to "Doc · pdf-review".
+- Disabling PDF Review while active triggered fallback to studio (not empty pane).

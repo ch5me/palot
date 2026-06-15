@@ -31,3 +31,34 @@ export const FIREFLY_SURFACE_IDS = [
 ] as const
 
 export type FireflySurfaceId = (typeof FIREFLY_SURFACE_IDS)[number]
+
+export type FireflySurfaceLane = "utility" | "document"
+
+export const FIREFLY_SURFACE_LANE_BY_ID = {
+	review: "utility",
+	browser: "utility",
+	notes: "utility",
+	pulse: "utility",
+	artifacts: "utility",
+	memory: "utility",
+	files: "utility",
+	terminal: "utility",
+	editor: "utility",
+	plugins: "utility",
+	bridges: "utility",
+	crm: "utility",
+	studio: "document",
+	voice: "utility",
+	oracle: "utility",
+	claude: "utility",
+	ch5pm: "utility",
+	"pdf-review": "document",
+} as const satisfies Record<FireflySurfaceId, FireflySurfaceLane>
+
+export function isDocumentSurfaceId(surfaceId: FireflySurfaceId): boolean {
+	return FIREFLY_SURFACE_LANE_BY_ID[surfaceId] === "document"
+}
+
+export const DOCUMENT_SURFACE_IDS = FIREFLY_SURFACE_IDS.filter(
+	(id): id is Extract<FireflySurfaceId, "studio" | "pdf-review"> => isDocumentSurfaceId(id),
+)

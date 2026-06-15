@@ -1,0 +1,31 @@
+Task 3 — Storybook Screenshot (Substitute Note)
+=================================================
+Date: 2026-06-14
+Plan: .sisyphus/plans/cloud000-174-palette-3pane-finish.md (Task 3)
+
+This file is a substitute for task-3-storybook-proof.png.
+
+Why no screenshot:
+- Storybook service was running (devmux service "storybook" on port 10618) during the
+  evidence-gathering window, but no browser-lane or Chrome automation was used to capture
+  a Storybook screenshot specifically for Task 3.
+- The browser-lane tool returned "unbound_session" during Task 6 proof, and the same
+  constraint applied during Task 3 work.
+- Task 6 browser proof DID capture a full-screen screenshot of the live Palot app
+  (task-6-browser-proof.png, 1.0M PNG, 3024x1964), which shows the real nested-pane
+  shell composition in browser mode.
+
+Existing substitute evidence:
+- Story file: packages/ui/src/stories/ai-elements/palot-three-pane-shell.stories.tsx
+  (534 lines, 17.6K) — verified present on disk.
+- Story uses layout: "fullscreen" (line 24) so it renders like the real shell.
+- Live browser screenshot: .sisyphus/evidence/task-6-browser-proof.png — proves the real
+  nested pane composition (sidebar + chat + doc pane + utility pane) in the actual app.
+- Task 6 browser proof text: .sisyphus/evidence/task-6-browser-proof.md — documents
+  exact DOM observations of three-pane composition.
+
+Honest limitation:
+- The Storybook story uses mock doc content (not live runtime coupling), so a Storybook
+  screenshot would prove nested pane composition but not live bridge/runtime behavior.
+- The live browser screenshot in task-6-browser-proof.png provides stronger proof because
+  it shows the real runtime, not mock data.

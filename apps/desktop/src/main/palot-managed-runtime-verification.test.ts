@@ -24,7 +24,7 @@ function assertDocumentOpenResult(result: unknown, expectedTab: "studio" | "pdf-
 		toolName: "open_side_panel",
 		sidePanel: {
 			open: false,
-			activeTab: "browser",
+			activeTab: null,
 			availableTabs: ["browser", "review"],
 		},
 		documentPanel: {
@@ -42,6 +42,7 @@ test("real plugin over real bridge server proves managed runtime contract end-to
 		const bindingMod = await import("./palot-session-binding")
 		const ipcMod = await import("./palot-browser-ipc")
 		const pluginSource = await import("./palot-plugin-entry.js")
+		await ipcMod.resetPalotBrowserIpcStateForTests()
 
 		bindingMod.upsertSessionBinding(
 			bindingMod.createSessionBinding({
@@ -136,14 +137,14 @@ test("real plugin over real bridge server proves managed runtime contract end-to
 		assertDocumentOpenResult(openedStudio, "studio")
 		const uiStateAfterStudio = JSON.parse(await tools.ui_state.execute({}))
 		assert.deepEqual(uiStateAfterStudio.sidePanel.availableTabs, ["browser", "review"])
-		assert.equal(uiStateAfterStudio.sidePanel.activeTab, "browser")
+		assert.equal(uiStateAfterStudio.sidePanel.activeTab, null)
 		assert.deepEqual(uiStateAfterStudio.documentPanel.availableTabs, ["studio", "pdf-review"])
 		assert.equal(uiStateAfterStudio.documentPanel.activeTab, "studio")
 
 		const openedPdfReview = JSON.parse(await tools.open_side_panel.execute({ tab: "pdf-review" }))
 		assertDocumentOpenResult(openedPdfReview, "pdf-review")
 		const uiState = JSON.parse(await tools.ui_state.execute({}))
-		assert.equal(uiState.sidePanel.activeTab, "browser")
+		assert.equal(uiState.sidePanel.activeTab, null)
 		assert.deepEqual(uiState.sidePanel.availableTabs, ["browser", "review"])
 		assert.equal(uiState.documentPanel.activeTab, "pdf-review")
 		assert.deepEqual(uiState.documentPanel.availableTabs, ["studio", "pdf-review"])
@@ -168,6 +169,7 @@ test("catalog tools project dynamically into the real plugin and dispatch throug
 		const ipcMod = await import("./palot-browser-ipc")
 		const dispatchMod = await import("./firefly-plugin/dispatch")
 		const pluginSource = await import("./palot-plugin-entry.js")
+		await ipcMod.resetPalotBrowserIpcStateForTests()
 
 		// Host side: notes handlers registered exactly like main/index.ts does.
 		dispatchMod.registerBuiltInHostCommands()

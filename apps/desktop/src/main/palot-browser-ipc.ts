@@ -122,6 +122,21 @@ const laneSnapshots = new Map<
 let browserWindowProvider: BrowserWindowProvider | null = null
 let palotBridgeServer: (PalotBridgeServer & { server: Server }) | null = null
 
+function buildDefaultUiStateSnapshot(): PalotUiStateSnapshot {
+	return {
+		sidePanel: {
+			open: false,
+			activeTab: null,
+			availableTabs: [],
+		},
+		documentPanel: {
+			open: false,
+			activeTab: null,
+			availableTabs: [],
+		},
+	}
+}
+
 async function broadcastBrowserAction(event: BrowserActionEvent): Promise<void> {
 	const windows = await getPalotBrowserWindows()
 	for (const win of windows) {
@@ -139,6 +154,28 @@ async function getPalotBrowserWindows(): Promise<BrowserWindowLike[]> {
 
 export function registerPalotBrowserWindows(provider: BrowserWindowProvider): void {
 	browserWindowProvider = provider
+}
+
+export async function resetPalotBrowserIpcStateForTests(): Promise<void> {
+	const activeBridgeServer = palotBridgeServer
+	actionEvents.length = 0
+	sequenceBySession.clear()
+	humanTakeoverPaused = false
+	laneSnapshots.clear()
+	browserWindowProvider = null
+	uiStateSnapshot = buildDefaultUiStateSnapshot()
+	palotBridgeServer = null
+	if (activeBridgeServer) {
+		await new Promise<void>((resolve, reject) => {
+			activeBridgeServer.server.close((error) => {
+				if (error) {
+					reject(error)
+					return
+				}
+				resolve()
+			})
+		})
+	}
 }
 
 export async function broadcastOpenSidePanel(tab: SidePanelTabId): Promise<void> {
