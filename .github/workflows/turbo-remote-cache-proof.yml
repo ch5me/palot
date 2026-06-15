@@ -18,5 +18,27 @@ jobs:
       - uses: oven-sh/setup-bun@v2
         with:
           bun-version: '1.3.8'
+      # Stub missing sibling workspace dirs (ch5-packages/* — not in this repo).
+      # elf-server + mcp-runtime-shared have no deps on them; bun just needs the
+      # directories to exist with a package.json so workspace resolution succeeds.
+      - name: Stub sibling ch5-packages workspaces
+        run: |
+          for pkg in \
+            "../ch5-packages/packages/firefly/design" \
+            "../ch5-packages/packages/workspace/contract" \
+            "../ch5-packages/packages/motion/motion" \
+            "../ch5-packages/packages/effects/contract" \
+            "../ch5-packages/packages/react-native/skia-canvas-init" \
+            "../ch5-packages/packages/tooling/storybook-rn-init" \
+            "../ch5-packages/packages/tooling/vitest-react-native-mocks" \
+            "../ch5-packages/packages/web/agent-ui-web" \
+            "../ch5-packages/packages/web/ch5-design-web" \
+            "../ch5-packages/packages/web/ch5-ui-web" \
+            "../ch5-packages/packages/web/dag-sparkline" \
+            "../ch5-packages/packages/web/html-react-inspector" \
+            "../ch5-packages/packages/web/react-dev-surface"; do
+            mkdir -p "$pkg"
+            echo '{"name":"'$(basename "$pkg")'","version":"0.0.0","private":true}' > "$pkg/package.json"
+          done
       - run: bun install --frozen-lockfile
       - run: bun x turbo run build --filter=@ch5me/elf-server
