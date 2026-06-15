@@ -37,5 +37,8 @@ jobs:
           stub "../ch5-packages/packages/web/dag-sparkline"               "@ch5me/dag-sparkline"              "0.0.0"
           stub "../ch5-packages/packages/web/html-react-inspector"        "@ch5me/html-react-inspector"       "0.0.0"
           stub "../ch5-packages/packages/web/react-dev-surface"           "@ch5me/react-dev-surface"          "0.0.0"
-      - run: bun install --frozen-lockfile
+      # Not --frozen-lockfile: the sibling stubs are empty shells, so bun sees
+      # the workspace as changed vs the lockfile. Safe here — this is a cache
+      # proof, not a security gate.
+      - run: bun install
       - run: bun x turbo run build --filter=@ch5me/elf-server
