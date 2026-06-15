@@ -66,7 +66,7 @@ export async function pollSignIn(): Promise<ElfAuthStateDto | null> {
 	try {
 		const result = await pollForApproval({
 			deviceCode: pendingDeviceCode,
-			expiresAtSec: 600,
+			expiresInSec: 600,
 			signal: abortController.signal,
 		})
 

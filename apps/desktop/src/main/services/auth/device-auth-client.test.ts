@@ -82,7 +82,7 @@ describe("pollForApproval", () => {
 		const result = await pollForApproval({
 			deviceCode: "dc-123",
 			intervalSec: 0,
-			expiresAtSec: Math.floor(Date.now() / 1000) + 60,
+			expiresInSec: 60,
 			fetchImpl: mockFetch,
 		})
 
@@ -104,7 +104,7 @@ describe("pollForApproval", () => {
 			pollForApproval({
 				deviceCode: "dc-123",
 				intervalSec: 0,
-				expiresAtSec: Math.floor(Date.now() / 1000) + 60,
+				expiresInSec: 60,
 				fetchImpl: mockFetch,
 			})
 		).rejects.toThrow(ExpiredTokenError)
@@ -123,9 +123,75 @@ describe("pollForApproval", () => {
 			pollForApproval({
 				deviceCode: "dc-123",
 				intervalSec: 0,
-				expiresAtSec: Math.floor(Date.now() / 1000) + 60,
+				expiresInSec: 60,
 				fetchImpl: mockFetch,
 			})
 		).rejects.toThrow(AccessDeniedError)
+	})
+
+	// Regression for CH5COMPAC4C-301: expiresInSec is a RELATIVE TTL, not an
+	// absolute epoch deadline. Passing the real caller value (600) must NOT
+	// make the loop give up immediately — it must keep polling and accept the
+	// token. The old `expiresAtSec: 600` semantics computed a 1970-era deadline
+	// (600 * 1000 ms since epoch), so the first `Date.now() < deadline` check
+	// failed and it threw ExpiredTokenError before the user could authorize.
+	it("treats expiresInSec as a relative TTL — 600 does not expire on the first iteration", async () => {
+		mockFetch
+			.mockResolvedValueOnce(
+				new Response(JSON.stringify({ error: "authorization_pending" }), {
+					status: 400,
+					headers: { "content-type": "application/json" },
+				})
+			)
+			.mockResolvedValueOnce(
+				new Response(
+					JSON.stringify({
+						accessToken: "ttl-token",
+						refreshToken: "ttl-refresh",
+						expiresIn: 3600,
+						elfUserId: "user-ttl",
+						issuer: "https://auth.elf.dance",
+						audience: "https://api.elf.dance",
+					}),
+					{ status: 200, headers: { "content-type": "application/json" } }
+				)
+			)
+
+		const { pollForApproval } = await loadClient()
+		const result = await pollForApproval({
+			deviceCode: "dc-ttl",
+			intervalSec: 0,
+			// The exact value the real auth-controller passes for "10 minutes".
+			expiresInSec: 600,
+			fetchImpl: mockFetch,
+		})
+
+		// Loop survived past the first pending response and returned the token,
+		// proving the 600 was interpreted as "600 seconds from now", not an
+		// absolute epoch deadline in the distant past.
+		expect(result.accessToken).toBe("ttl-token")
+		expect(mockFetch).toHaveBeenCalledTimes(2)
+	})
+
+	// Complements the above: a TTL that has effectively already elapsed (0s)
+	// must give up immediately with ExpiredTokenError, confirming the deadline
+	// is computed from the relative TTL and still enforced.
+	it("gives up with ExpiredTokenError when the relative TTL is already exhausted", async () => {
+		mockFetch.mockResolvedValue(
+			new Response(JSON.stringify({ error: "authorization_pending" }), {
+				status: 400,
+				headers: { "content-type": "application/json" },
+			})
+		)
+
+		const { pollForApproval, ExpiredTokenError } = await loadClient()
+		await expect(
+			pollForApproval({
+				deviceCode: "dc-expired",
+				intervalSec: 0,
+				expiresInSec: 0,
+				fetchImpl: mockFetch,
+			})
+		).rejects.toThrow(ExpiredTokenError)
 	})
 })
