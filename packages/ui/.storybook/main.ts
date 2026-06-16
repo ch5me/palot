@@ -16,7 +16,7 @@ const require = createRequire(import.meta.url)
 const config: StorybookConfig = {
 	stories: [
 		"../src/**/*.stories.@(ts|tsx|mdx)",
-		"../../apps/desktop/src/renderer/**/*.stories.@(ts|tsx|mdx)",
+		"../../../apps/desktop/src/renderer/**/*.stories.@(ts|tsx|mdx)",
 	],
 	addons: [
 		getAbsolutePath("@storybook/addon-docs"),
