@@ -1,16 +1,16 @@
 import { useMemo, useState } from "react"
 import { Button } from "@ch5me/ch5-ui-web"
 import { MicIcon } from "lucide-react"
-import type { Agent } from "../../lib/types"
-import { paneWriters } from "../../atoms/pane-bus"
-import { VoiceButton } from "../chat/voice-button"
+import type { Agent } from "../../../src/renderer/lib/types"
+import { paneWriters } from "../../../src/renderer/atoms/pane-bus"
+import { VoiceButton } from "../../../src/renderer/components/chat/voice-button"
 
 interface VoicePanelProps {
 	agent: Agent
 	className?: string
 }
 
-export function VoicePanel({ agent, className }: VoicePanelProps) {
+export default function VoicePanel({ agent, className }: VoicePanelProps) {
 	const [lastTranscript, setLastTranscript] = useState<string | null>(null)
 	const writer = useMemo(() => paneWriters.get(agent.sessionId) ?? null, [agent.sessionId])
 

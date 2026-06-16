@@ -1,4 +1,4 @@
-import { FileTextIcon, GlobeIcon, MicIcon, MonitorPlayIcon, PlugIcon, UsersIcon, type LucideIcon } from "lucide-react"
+import { FileTextIcon, GlobeIcon, MonitorPlayIcon, PlugIcon, UsersIcon, type LucideIcon } from "lucide-react"
 
 import type { ReactNode } from "react"
 
@@ -9,7 +9,8 @@ import { BrowserPanel } from "./components/side-panel/browser-panel"
 import { CrmPanel } from "./components/side-panel/crm-panel"
 import { PdfReviewPanel } from "./components/side-panel/pdf-review-panel"
 import { StudioPanel } from "./components/side-panel/studio-panel"
-import { VoicePanel } from "./components/side-panel/voice-panel"
+// `voice` is served from the plugin catalog (firefly.built-in.surface.voice,
+// apps/desktop/plugins/voice) — do not re-add an import or row here.
 import { V2PluginsPanel } from "./components/side-panel/v2-plugins-panel"
 // `terminal` is served from the plugin catalog (firefly.built-in.surface.terminal,
 // apps/desktop/plugins/terminal) — do not re-add a row or import here.
@@ -168,27 +169,8 @@ export const FIREFLY_SURFACE_REGISTRY: FireflySurfaceDef[] = [
 		target: { kind: "side-panel", tab: "studio" },
 		spawn: (ctx) => <StudioPanel agent={ctx.agent} />,
 	},
-	{
-		id: "voice",
-		manifestId: "firefly.built-in.side-panel.voice",
-		title: "Voice",
-		icon: MicIcon,
-		formFactor: "side-panel-tab",
-		lane: "utility",
-		enabledFlag: {
-			key: "voice",
-		},
-		defaultOn: true,
-		availability: (ctx) =>
-			ctx.flags.voice
-				? { available: true }
-				: { available: false, reason: "Voice surface is disabled in feature flags" },
-		commandIds: ["surface.voice.open", "surface.voice.toggle"],
-		persistenceKey: "side-panel.voice",
-		telemetryNamespace: "firefly.surface.voice",
-		target: { kind: "side-panel", tab: "voice" },
-		spawn: (ctx) => <VoicePanel agent={ctx.agent} />,
-	},
+	// `voice` is served from the plugin catalog (firefly.built-in.surface.voice,
+	// apps/desktop/plugins/voice) — do not re-add a row here.
 	// oracle — served from catalog (firefly.built-in.surface.oracle) — do not re-add
 	{
 		id: "ch5pm",
@@ -256,7 +238,7 @@ import { FIREFLY_SURFACE_IDS, type FireflySurfaceId } from "../shared/firefly-su
  * they are served from the plugin catalog (host plugin lifecycle owns
  * their enable/disable). First migrated surface: notes.
  */
-export const CATALOG_SERVED_SURFACE_IDS: readonly FireflySurfaceId[] = ["notes", "review", "files", "artifacts", "bridges", "pulse", "memory", "editor", "terminal", "claude", "oracle"]
+export const CATALOG_SERVED_SURFACE_IDS: readonly FireflySurfaceId[] = ["notes", "review", "files", "artifacts", "bridges", "pulse", "memory", "editor", "terminal", "claude", "oracle", "voice"]
 
 export const FIREFLY_SURFACE_DEFAULT_ON = Object.fromEntries(
 	FIREFLY_SURFACE_REGISTRY.map((surface) => [surface.id, surface.defaultOn]),

@@ -975,6 +975,63 @@ export function registerOracleHostHandlers(deps?: Partial<OracleHostDeps>): void
 }
 
 // ---------------------------------------------------------------------------
+// Voice surface host handlers (firefly.built-in.surface.voice)
+// ---------------------------------------------------------------------------
+
+export interface VoiceHostDeps {
+	openSidePanel: (tab: "voice") => Promise<void>
+	getSidePanelState: () => SidePanelStateSnapshot
+	setPluginEnabled: (pluginId: string, enabled: boolean) => { enabled: boolean }
+}
+
+const VOICE_PLUGIN_ID = "firefly.built-in.surface.voice"
+
+export function registerVoiceHostHandlers(deps?: Partial<VoiceHostDeps>): void {
+	const openSidePanel =
+		deps?.openSidePanel ??
+		(async (tab: "voice") => {
+			const { broadcastOpenSidePanel } = await import("../palot-browser-ipc")
+			await broadcastOpenSidePanel(tab)
+		})
+	const getSidePanelState = deps?.getSidePanelState ?? defaultGetSidePanelState
+	const setEnabled =
+		deps?.setPluginEnabled ??
+		((pluginId: string, enabled: boolean) => {
+			// eslint-disable-next-line @typescript-eslint/no-var-requires
+			const authority = require("./authority") as typeof import("./authority")
+			return authority.setPluginEnabled(pluginId, enabled)
+		})
+
+	registerHostTool(VOICE_PLUGIN_ID, "plugin.firefly.built-in.surface.voice.open", async () => {
+		await openSidePanel("voice")
+		return ok({ opened: true, tab: "voice", source: "v2-plugin-tool-dispatch" })
+	})
+
+	registerHostTool(VOICE_PLUGIN_ID, "plugin.firefly.built-in.surface.voice.state", async () => {
+		const sidePanel = getSidePanelState()
+		return ok({
+			tab: "voice",
+			available: sidePanel.availableTabs.includes("voice"),
+			open: sidePanel.open,
+			active: sidePanel.open && sidePanel.activeTab === "voice",
+		})
+	})
+
+	registerHostCommand(VOICE_PLUGIN_ID, "open-voice", async () => {
+		await openSidePanel("voice")
+		return ok({ opened: true, tab: "voice" })
+	})
+
+	registerHostCommand(VOICE_PLUGIN_ID, "toggle-voice", async () => {
+		const catalog = getPluginCatalog()
+		const state = catalog.capabilityStates[VOICE_PLUGIN_ID]
+		const currentlyEnabled = !(state?.pluginDisabled ?? false)
+		const next = setEnabled(VOICE_PLUGIN_ID, !currentlyEnabled)
+		return ok({ pluginId: VOICE_PLUGIN_ID, enabled: next.enabled })
+	})
+}
+
+// ---------------------------------------------------------------------------
 // DevMux Toolbar host handlers (firefly.built-in.devmux-toolbar)
 //
 // The Node-only work lives in `main/devmux/service.ts` and is reached here
@@ -1083,6 +1140,7 @@ export function registerBuiltInHostCommands(): void {
 	registerTerminalHostHandlers()
 	registerClaudeHostHandlers()
 	registerOracleHostHandlers()
+	registerVoiceHostHandlers()
 	registerDevmuxHostHandlers()
 	log.info("Registered V2 host command handlers", {
 		commands: Array.from(handlers.keys()),

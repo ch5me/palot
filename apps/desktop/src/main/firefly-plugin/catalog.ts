@@ -72,6 +72,10 @@ import {
 	oraclePluginManifest,
 	ORACLE_PLUGIN_ID,
 } from "../../../plugins/oracle/manifest"
+import {
+	voicePluginManifest,
+	VOICE_PLUGIN_ID,
+} from "../../../plugins/voice/manifest"
 import { BUILT_IN_DEFAULT_CAPABILITIES } from "../../shared/firefly-plugin/capabilities"
 import { type PluginDescriptor } from "../../shared/firefly-plugin/descriptor"
 import {
@@ -130,6 +134,7 @@ const BUILT_IN_MANIFESTS: readonly PluginManifest[] = [
 	terminalPluginManifest,
 	claudePluginManifest,
 	oraclePluginManifest,
+	voicePluginManifest,
 	acmeComponentsExemplarManifest,
 	devmuxToolbarManifest,
 ]
@@ -490,4 +495,5 @@ export const KNOWN_PLUGIN_IDS = {
 	oracle: ORACLE_PLUGIN_ID,
 	acmeComponents: ACME_COMPONENTS_PLUGIN_ID,
 	devmuxToolbar: DEVMUX_TOOLBAR_PLUGIN_ID,
+	voice: VOICE_PLUGIN_ID,
 } as const

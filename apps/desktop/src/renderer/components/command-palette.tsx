@@ -63,7 +63,7 @@ import {
 	pluginsSurfaceEnabledAtom,
 	pdfReviewSurfaceEnabledAtom,
 	studioSurfaceEnabledAtom,
-	voiceSurfaceEnabledAtom,
+	// voiceSurfaceEnabledAtom removed — voice is catalog-served (firefly.built-in.surface.voice).
 	toggleAutomationsAtom,
 	toggleBrowserPanelAtom,
 	toggleCh5PmSurfaceAtom,
@@ -72,7 +72,7 @@ import {
 	togglePdfReviewSurfaceAtom,
 	togglePluginsSurfaceAtom,
 	toggleStudioSurfaceAtom,
-	toggleVoiceSurfaceAtom,
+	// toggleVoiceSurfaceAtom removed — voice is catalog-served; toggle via window.elf.plugins.setEnabled.
 } from "../atoms/feature-flags"
 import { getFireflySurfaceTabs, type FireflySurfaceContext } from "../firefly-surface-registry"
 import { mergeSurfaceTabs } from "../firefly-plugin-surface-merge"
@@ -137,17 +137,17 @@ export function CommandPalette({ open, onOpenChange, agents, onForkSession }: Co
 	const browserPanelEnabled = useAtomValue(browserPanelEnabledAtom)
 	// terminalSurfaceEnabled removed — terminal is catalog-served (firefly.built-in.surface.terminal).
 	// claudeSurfaceEnabled removed — claude is catalog-served (firefly.built-in.surface.claude).
+	// voiceSurfaceEnabled removed — voice is catalog-served (firefly.built-in.surface.voice).
 	const pluginsSurfaceEnabled = useAtomValue(pluginsSurfaceEnabledAtom)
 	const crmSurfaceEnabled = useAtomValue(crmSurfaceEnabledAtom)
 	const studioSurfaceEnabled = useAtomValue(studioSurfaceEnabledAtom)
-	const voiceSurfaceEnabled = useAtomValue(voiceSurfaceEnabledAtom)
 	const ch5pmSurfaceEnabled = useAtomValue(ch5pmSurfaceEnabledAtom)
 	const pdfReviewSurfaceEnabled = useAtomValue(pdfReviewSurfaceEnabledAtom)
 	const toggleBrowserPanel = useSetAtom(toggleBrowserPanelAtom)
 	const togglePluginsSurface = useSetAtom(togglePluginsSurfaceAtom)
 	const toggleCrmSurface = useSetAtom(toggleCrmSurfaceAtom)
 	const toggleStudioSurface = useSetAtom(toggleStudioSurfaceAtom)
-	const toggleVoiceSurface = useSetAtom(toggleVoiceSurfaceAtom)
+	// toggleVoiceSurface removed — voice is catalog-served; toggle via voicePluginEnabled + window.elf.plugins.setEnabled.
 	const toggleCh5PmSurface = useSetAtom(toggleCh5PmSurfaceAtom)
 	const togglePdfReviewSurface = useSetAtom(togglePdfReviewSurfaceAtom)
 	const navSidebarActiveTab = useAtomValue(navSidebarActiveTabAtom)
@@ -220,7 +220,6 @@ export function CommandPalette({ open, onOpenChange, agents, onForkSession }: Co
 				plugins: pluginsSurfaceEnabled,
 				crm: crmSurfaceEnabled,
 				studio: studioSurfaceEnabled,
-				voice: voiceSurfaceEnabled,
 				ch5pm: ch5pmSurfaceEnabled,
 				pdfReview: pdfReviewSurfaceEnabled,
 			},
@@ -232,7 +231,6 @@ export function CommandPalette({ open, onOpenChange, agents, onForkSession }: Co
 		pluginsSurfaceEnabled,
 		crmSurfaceEnabled,
 		studioSurfaceEnabled,
-		voiceSurfaceEnabled,
 		ch5pmSurfaceEnabled,
 		pdfReviewSurfaceEnabled,
 	])
@@ -356,6 +354,19 @@ export function CommandPalette({ open, onOpenChange, agents, onForkSession }: Co
 		await window.elf?.plugins.setEnabled("firefly.built-in.surface.claude", !claudePluginEnabled)
 		await queryClient.invalidateQueries({ queryKey: ["firefly-plugin"] })
 	}, [claudePluginEnabled, queryClient])
+
+	// Voice is a catalog-served plugin: its enable/disable flows through
+	// the host plugin lifecycle, not a renderer feature-flag atom.
+	const voicePluginEntry = pluginList?.plugins.find(
+		(plugin) => plugin.pluginId === "firefly.built-in.surface.voice",
+	)
+	const voicePluginEnabled = voicePluginEntry
+		? voicePluginEntry.status !== "disabled" && voicePluginEntry.status !== "quarantined"
+		: true
+	const toggleVoicePlugin = useCallback(async () => {
+		await window.elf?.plugins.setEnabled("firefly.built-in.surface.voice", !voicePluginEnabled)
+		await queryClient.invalidateQueries({ queryKey: ["firefly-plugin"] })
+	}, [voicePluginEnabled, queryClient])
 
 	const catalogSurfaceTabs = useCatalogSurfaceTabs(activeAgent)
 	const availableSurfaceTabs = useMemo(
@@ -707,14 +718,14 @@ export function CommandPalette({ open, onOpenChange, agents, onForkSession }: Co
 					</CommandItem>
 					<CommandItem
 						keywords={["voice", "speech", "microphone", "audio"]}
-						onSelect={() => {
-							toggleVoiceSurface()
+						onSelect={async () => {
+							await toggleVoicePlugin()
 							onOpenChange(false)
 						}}
 					>
 						<MicIcon />
-						<span>{voiceSurfaceEnabled ? "Disable Voice Surface" : "Enable Voice Surface"}</span>
-						{voiceSurfaceEnabled && <CheckIcon className="ml-auto h-4 w-4" />}
+						<span>{voicePluginEnabled ? "Disable Voice Surface" : "Enable Voice Surface"}</span>
+						{voicePluginEnabled && <CheckIcon className="ml-auto h-4 w-4" />}
 					</CommandItem>
 					<CommandItem
 						keywords={["claude", "claude code", "migration", "compatibility"]}

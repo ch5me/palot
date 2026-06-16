@@ -67,6 +67,10 @@ export const SURFACE_FLAG_MIGRATIONS: readonly SurfaceFlagMigration[] = [
 		pluginId: "firefly.built-in.surface.oracle",
 		legacyStorageKey: "elf:oracleSurfaceEnabled",
 	},
+	{
+		pluginId: "firefly.built-in.surface.voice",
+		legacyStorageKey: "elf:voiceSurfaceEnabled",
+	},
 ]
 
 const MARKER_PREFIX = "elf:plugin-flag-migrated:"

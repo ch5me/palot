@@ -88,16 +88,15 @@ export const toggleLoomAcmeComponentsAtom = atom(null, (get, set) => {
 })
 
 // NOTE: `notes`, `review`, `files`, `artifacts`, `bridges`, `pulse`, `memory`,
-// `editor`, `terminal`, and `claude` have no feature flags any more — they are
-// catalog-served plugins; their enable/disable state lives in the host plugin
-// lifecycle store. The legacy localStorage values are migrated once by
-// `renderer/firefly-plugin-flag-migration.ts`.
+// `editor`, `terminal`, `claude`, `oracle`, and `voice` have no feature flags
+// any more — they are catalog-served plugins; their enable/disable state lives
+// in the host plugin lifecycle store. The legacy localStorage values are
+// migrated once by `renderer/firefly-plugin-flag-migration.ts`.
 export const fireflySurfaceDefaults = {
 	browserPanelEnabled: true,
 	plugins: true,
 	crm: true,
 	studio: true,
-	voice: true,
 	ch5pm: false,
 	pdfReview: false,
 } as const
@@ -107,10 +106,10 @@ export type FireflySurfaceFlagKey = keyof typeof fireflySurfaceDefaults
 export const browserPanelEnabledAtom = atomWithStorage<boolean>("elf:browserPanelEnabled", true)
 // `terminalSurfaceEnabledAtom` deleted — terminal is catalog-served (firefly.built-in.surface.terminal).
 // `claudeSurfaceEnabledAtom` deleted — claude is catalog-served (firefly.built-in.surface.claude).
+// `voiceSurfaceEnabledAtom` deleted — voice is catalog-served (firefly.built-in.surface.voice).
 export const pluginsSurfaceEnabledAtom = atomWithStorage<boolean>("elf:pluginsSurfaceEnabled", true)
 export const crmSurfaceEnabledAtom = atomWithStorage<boolean>("elf:crmSurfaceEnabled", true)
 export const studioSurfaceEnabledAtom = atomWithStorage<boolean>("elf:studioSurfaceEnabled", true)
-export const voiceSurfaceEnabledAtom = atomWithStorage<boolean>("elf:voiceSurfaceEnabled", true)
 // `oracleSurfaceEnabledAtom` deleted — oracle is catalog-served (firefly.built-in.surface.oracle).
 export const ch5pmSurfaceEnabledAtom = atomWithStorage<boolean>("elf:ch5pmSurfaceEnabled", false)
 export const pdfReviewSurfaceEnabledAtom = atomWithStorage<boolean>("elf:pdfReviewSurfaceEnabled", false)
@@ -120,7 +119,6 @@ export const fireflySurfaceFlagAtoms: Record<FireflySurfaceFlagKey, typeof brows
 	plugins: pluginsSurfaceEnabledAtom,
 	crm: crmSurfaceEnabledAtom,
 	studio: studioSurfaceEnabledAtom,
-	voice: voiceSurfaceEnabledAtom,
 	ch5pm: ch5pmSurfaceEnabledAtom,
 	pdfReview: pdfReviewSurfaceEnabledAtom,
 }
@@ -130,7 +128,6 @@ export const fireflySurfaceLabels: Record<FireflySurfaceFlagKey, string> = {
 	plugins: "Plugins",
 	crm: "Contacts / CRM",
 	studio: "Studio / Office",
-	voice: "Voice",
 	ch5pm: "CH5PM Dashboard",
 	pdfReview: "PDF Review",
 }
@@ -153,10 +150,7 @@ export const toggleStudioSurfaceAtom = atom(null, (get, set) => {
 	set(studioSurfaceEnabledAtom, !get(studioSurfaceEnabledAtom))
 })
 
-export const toggleVoiceSurfaceAtom = atom(null, (get, set) => {
-	set(voiceSurfaceEnabledAtom, !get(voiceSurfaceEnabledAtom))
-})
-
+// `toggleVoiceSurfaceAtom` deleted — voice is catalog-served; toggle via window.elf.plugins.setEnabled.
 // `toggleOracleSurfaceAtom` deleted — oracle is catalog-served; toggle via window.elf.plugins.setEnabled.
 
 // `toggleClaudeSurfaceAtom` deleted — claude is catalog-served; toggle via window.elf.plugins.setEnabled.
