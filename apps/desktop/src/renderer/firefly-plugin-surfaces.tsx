@@ -31,6 +31,7 @@ import {
 	catalogPanelToTabDescriptor,
 	type CatalogSurfaceTabDescriptor,
 } from "./firefly-plugin-surface-merge"
+import { fireflyPluginBridge } from "./hooks/use-firefly-plugins"
 import { createLogger } from "./lib/logger"
 import type { Agent } from "./lib/types"
 
@@ -183,9 +184,13 @@ export class PluginPanelBoundary extends Component<
 // ---------------------------------------------------------------------------
 
 async function fetchCatalogPanels(): Promise<ProjectedSidePanel[]> {
-	if (typeof window === "undefined" || !window.elf?.plugins) return []
-	const result = await window.elf.plugins.panels()
-	return result.items as ProjectedSidePanel[]
+	if (typeof window === "undefined") return []
+	const result = await fireflyPluginBridge().panels()
+	// FireflyPluginPanelItem is the IPC-serialized mirror of ProjectedSidePanel —
+	// identical runtime data minus the host-only `family`/`contract` fields (unused
+	// downstream). The bridge interface types items as the IPC shape; cross-cast to
+	// the projection shape the consumers expect.
+	return result.items as unknown as ProjectedSidePanel[]
 }
 
 export function buildCatalogSurfaceTab(
@@ -254,8 +259,8 @@ export function useCatalogSurfaceTabs(agent: Agent | null): FireflySidePanelTab[
 	})
 
 	useEffect(() => {
-		if (typeof window === "undefined" || !window.elf?.plugins) return
-		return window.elf.plugins.onChanged(() => {
+		if (typeof window === "undefined") return
+		return fireflyPluginBridge().onChanged(() => {
 			void queryClient.invalidateQueries({ queryKey: ["firefly-plugin"] })
 		})
 	}, [queryClient])
