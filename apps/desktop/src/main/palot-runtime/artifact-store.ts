@@ -1,7 +1,7 @@
 import fs from "node:fs"
 import path from "node:path"
 
-import { Database } from "bun:sqlite"
+import { DatabaseSync } from "node:sqlite"
 
 import { getDataDir } from "../automation/paths"
 import type { GenUiArtifactRecord } from "../../renderer/lib/types"
@@ -107,12 +107,12 @@ function stringifyRecord(record: GenUiArtifactRecord, sessionId: string, orderIn
 }
 
 export class ArtifactStore {
-	private readonly db: Database
+	private readonly db: DatabaseSync
 	private readonly jsonlPath: string
 
 	constructor(databasePath = getDatabasePath()) {
 		ensureLoomDir()
-		this.db = new Database(databasePath)
+		this.db = new DatabaseSync(databasePath)
 		this.jsonlPath = getJsonlPath()
 		this.db.exec(`
 			CREATE TABLE IF NOT EXISTS artifacts (
@@ -138,13 +138,13 @@ export class ArtifactStore {
 	}
 
 	close(): void {
-		this.db.close(false)
+		this.db.close()
 	}
 
 	listArtifacts(sessionId: string): ArtifactListResult {
 		const rows = this.db
 			.prepare("SELECT * FROM artifacts WHERE sessionId = ? ORDER BY orderIndex ASC")
-			.all(sessionId) as ArtifactRow[]
+			.all(sessionId) as unknown as ArtifactRow[]
 		const order: string[] = []
 		const records: Record<string, GenUiArtifactRecord> = {}
 		for (const row of rows) {
@@ -158,7 +158,7 @@ export class ArtifactStore {
 	getArtifact(sessionId: string, artifactId: string): GenUiArtifactRecord | null {
 		const row = this.db
 			.prepare("SELECT * FROM artifacts WHERE sessionId = ? AND id = ?")
-			.get(sessionId, artifactId) as ArtifactRow | null
+			.get(sessionId, artifactId) as unknown as ArtifactRow | undefined
 		return row ? parseRow(row) : null
 	}
 
