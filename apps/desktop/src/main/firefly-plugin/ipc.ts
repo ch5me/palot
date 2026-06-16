@@ -1,4 +1,4 @@
-import { BrowserWindow, ipcMain } from "electron"
+import { ipcMain } from "electron"
 
 import { pluginDescribeArgsShape } from "../../shared/firefly-plugin/index"
 import { z } from "zod"
@@ -7,6 +7,9 @@ const describeArgsSchema = z.object(pluginDescribeArgsShape)
 const stateArgsSchema = describeArgsSchema
 
 import { createLogger } from "../logger"
+import { broadcastCatalogChanged } from "./catalog-broadcast"
+import { getBootedPluginWorkerSupervisor } from "./supervisor-boot"
+import { applyEnabledToSupervisor } from "./supervisor-apply"
 import {
 	describePlugin,
 	getPluginCapabilities,
@@ -175,8 +178,25 @@ export function registerFireflyPluginIpc(): void {
 		if (typeof args.enabled !== "boolean") {
 			throw new Error("set-enabled requires { pluginId, enabled }")
 		}
+		// 1. Persist the durable enable/disable + invalidate the catalog overlay.
 		const state = setPluginEnabled(args.pluginId, args.enabled)
-		broadcastCatalogChanged()
+		// 2. Make it take real runtime effect: stop/start the worker. A
+		//    surface-only plugin (no worker entry, no registration) is a safe
+		//    no-op here — the renderer unmount/remount is the whole effect.
+		const supervised = applyEnabledToSupervisor(
+			getBootedPluginWorkerSupervisor(),
+			args.pluginId,
+			args.enabled,
+		)
+		// 3. Tell every renderer the catalog moved so it reprojects (and, for
+		//    surface plugins, tears down / re-mounts the surface instance).
+		broadcastCatalogChanged(`set-enabled:${args.enabled ? "enable" : "disable"}`)
+		log.info("Plugin set-enabled applied", {
+			pluginId: args.pluginId,
+			enabled: args.enabled,
+			supervised: supervised.supervised,
+			workerState: supervised.summary?.state ?? null,
+		})
 		return { pluginId: args.pluginId, ...state }
 	})
 
@@ -232,16 +252,6 @@ export function registerFireflyPluginIpc(): void {
 	log.info("Registered V2 plugin IPC channels", {
 		channels: Object.values(FIREFLY_PLUGIN_IPC_CHANNELS),
 	})
-}
-
-function broadcastCatalogChanged(): void {
-	const catalog = getPluginCatalog()
-	for (const win of BrowserWindow.getAllWindows()) {
-		win.webContents.send("firefly-plugin:changed", {
-			appVersion: catalog.appVersion,
-			pluginCount: catalog.descriptors.length,
-		})
-	}
 }
 
 function coerceArgs(raw: unknown): unknown {

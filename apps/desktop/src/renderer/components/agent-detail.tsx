@@ -565,6 +565,35 @@ export function AgentDetail({
 		}
 	}, [registry, agent.sessionId, utilityTabs, docTabs])
 
+	// Unmount-on-disable (Firefly plugin P0): when a catalog-served surface's
+	// plugin becomes unavailable (disabled/quarantined → `availability.available`
+	// flips false on the `firefly-plugin:changed` broadcast), its tab drops out of
+	// the served set above but its surface instance keeps running in the hidden
+	// host layer. DESTROY that instance so the surface actually stops; re-enable
+	// re-creates it fresh via `getOrCreate` on the next open. Scoped to the current
+	// session so other sessions' surfaces are untouched.
+	const servedTabInstanceIdsRef = useRef<{ sessionId: string; ids: Set<string> }>({
+		sessionId: agent.sessionId,
+		ids: new Set(),
+	})
+	useEffect(() => {
+		const currentIds = new Set<string>()
+		for (const tab of utilityTabs) currentIds.add(`${tab.id}:${agent.sessionId}`)
+		for (const tab of docTabs) currentIds.add(`${tab.id}:${agent.sessionId}`)
+
+		const prev = servedTabInstanceIdsRef.current
+		// Only diff within the same session; a session switch is not a disable.
+		if (prev.sessionId === agent.sessionId) {
+			for (const instanceId of prev.ids) {
+				if (!currentIds.has(instanceId)) {
+					// Surface's plugin is no longer served → tear it down.
+					registry.evict(instanceId)
+				}
+			}
+		}
+		servedTabInstanceIdsRef.current = { sessionId: agent.sessionId, ids: currentIds }
+	}, [registry, agent.sessionId, utilityTabs, docTabs])
+
 	// Publish live props every render so once-mounted hosts stay current.
 	// Chat: full ChatView props object. Tabs: the freshly-bound render() closure
 	// (produced by the surfaceTabs useMemo; captures latest agent/flags/ctx).

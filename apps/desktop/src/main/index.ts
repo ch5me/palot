@@ -29,6 +29,10 @@ import {
 	bootPluginWorkerSupervisor,
 	disposePluginWorkerSupervisor,
 } from "./firefly-plugin/supervisor-boot"
+import {
+	bootDevPluginWatcher,
+	disposeDevPluginWatcher,
+} from "./firefly-plugin/dev-watcher-boot"
 
 
 const log = createLogger("app")
@@ -326,6 +330,9 @@ if (!gotLock) {
 		registerBuiltInHostCommands()
 		registerFireflyPluginIpc()
 		bootPluginWorkerSupervisor()
+		// Dev-only: watch plugin roots and hot-reload on edit (no app restart).
+		// Packaged builds get a no-op (the executor/watcher require disk roots).
+		bootDevPluginWatcher({ isPackaged: app.isPackaged })
 		initBrowserLaneManager().catch(console.error)
 		initAutomations().catch(console.error)
 		initNotchCommandFileWatcher()
@@ -355,6 +362,7 @@ if (!gotLock) {
 	app.on("before-quit", () => {
 		destroyTray()
 		shutdownNotchCommandFileWatcher()
+		disposeDevPluginWatcher()
 		disposePluginWorkerSupervisor().catch(console.error)
 		shutdownAutomations()
 		shutdownBrowserLaneManager().catch(console.error)
