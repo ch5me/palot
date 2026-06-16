@@ -63,7 +63,18 @@ export default defineConfig({
 		},
 	},
 	optimizeDeps: {
-		include: ["@react-spring/core", "@react-spring/shared", "@react-spring/web"],
+		// "ansi-to-react" is CJS (exports.__esModule = true; exports.default = Ansi).
+		// When esbuild inlines it into the @ch5me/agent-ui-web pre-bundle it uses node
+		// mode and binds the whole exports object as `.default`, so the Terminal
+		// surface renders an object as a JSX type → "Element type is invalid". Forcing
+		// it as a standalone optimized dep pre-bundles it under browser mode and the
+		// default export resolves to the Ansi component. (Rollup/Electron is unaffected.)
+		include: [
+			"@react-spring/core",
+			"@react-spring/shared",
+			"@react-spring/web",
+			"ansi-to-react",
+		],
 		esbuildOptions: {
 			preserveSymlinks: true,
 		},
