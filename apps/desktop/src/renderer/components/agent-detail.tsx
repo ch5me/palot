@@ -24,7 +24,7 @@ import {
 	PencilIcon,
 	TerminalIcon,
 } from "lucide-react"
-import { type ComponentProps, useCallback, useEffect, useMemo, useRef, useState } from "react"
+import { type ComponentProps, useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react"
 import { createHtmlPortalNode, InPortal, OutPortal, type HtmlPortalNode } from "react-reverse-portal"
 import type { OpenInTarget } from "../../preload/api"
 import {
@@ -50,7 +50,6 @@ import { useColorScheme } from "../hooks/use-theme"
 import { useSurfaceRegistry } from "../surface-host/surface-host-provider"
 import { DockShell, type DockSeedPanel } from "../workspace/dock-shell"
 import { surfacePropBridge, useSurfaceProps } from "../workspace/surface-prop-bridge"
-import { FilesPanel } from "./side-panel/files-panel"
 import {
 	getFireflySurfaceTabs,
 	type FireflySurfaceContext,
@@ -189,15 +188,23 @@ function ChatSurface({ instanceId }: { instanceId: string }) {
 	return <ChatView {...props} />
 }
 
-/** Live Files surface: reads the latest agent published for its identity. */
-function FilesSurface({ instanceId }: { instanceId: string }) {
-	const agent = useSurfaceProps<Agent>(instanceId)
-	if (!agent) return null
-	return (
-		<div className="flex h-full min-h-0 min-w-0 flex-col bg-background">
-			<FilesPanel agent={agent} className="min-h-0 flex-1" />
-		</div>
-	)
+/**
+ * Generic tab surface: re-renders when the published render closure changes.
+ *
+ * `SidePanelTabDef.render()` is a pre-bound closure that captures the latest
+ * FireflySurfaceContext. AgentDetail republishes it via the surfacePropBridge
+ * every render (whenever agent/flags change a new `render` fn is produced by
+ * the `useMemo` that builds surfaceTabs). TabSurface calls it to render fresh
+ * content without remounting the host.
+ *
+ * NOTE: Jotai store and React Query client are at app root (above the hidden
+ * host layer) so atom reads and query hooks inside panels work normally.
+ * The `agent` object and feature-flag booleans reach panels via this closure.
+ */
+function TabSurface({ instanceId }: { instanceId: string }) {
+	const renderFn = useSurfaceProps<() => ReactNode>(instanceId)
+	if (!renderFn) return null
+	return <>{renderFn()}</>
 }
 
 /** Resolve the active dark/light mode for theming the dock. */
@@ -610,10 +617,8 @@ export function AgentDetail({
 	const isDarkMode = useIsDarkMode()
 	const registry = useSurfaceRegistry()
 	const chatInstanceId = `chat:${agent.sessionId}:view-main`
-	const filesInstanceId = `files:${agent.sessionId}`
 
-	// Register the dock proof surfaces once per identity (idempotent). Done in an
-	// effect so the registry's notify() doesn't fire during render.
+	// Register chat surface once per session identity (idempotent).
 	useEffect(() => {
 		if (!workspaceDockEnabled) return
 		registry.getOrCreate(chatInstanceId, {
@@ -621,27 +626,66 @@ export function AgentDetail({
 			title: "Chat",
 			render: () => <ChatSurface instanceId={chatInstanceId} />,
 		})
-		registry.getOrCreate(filesInstanceId, {
-			type: "files",
-			title: "Files",
-			render: () => <FilesSurface instanceId={filesInstanceId} />,
-		})
-	}, [workspaceDockEnabled, registry, chatInstanceId, filesInstanceId])
+	}, [workspaceDockEnabled, registry, chatInstanceId])
 
-	// Publish live props every render so the once-mounted hosts stay current.
+	// Register each utility/document tab surface once per session+tab identity.
+	// `getOrCreate` is idempotent — safe to call every render when the set changes.
+	useEffect(() => {
+		if (!workspaceDockEnabled) return
+		for (const tab of utilityTabs) {
+			const instanceId = `${tab.id}:${agent.sessionId}`
+			registry.getOrCreate(instanceId, {
+				type: tab.id,
+				title: tab.title,
+				render: () => <TabSurface instanceId={instanceId} />,
+			})
+		}
+		for (const tab of docTabs) {
+			const instanceId = `${tab.id}:${agent.sessionId}`
+			registry.getOrCreate(instanceId, {
+				type: tab.id,
+				title: tab.title,
+				render: () => <TabSurface instanceId={instanceId} />,
+			})
+		}
+	}, [workspaceDockEnabled, registry, agent.sessionId, utilityTabs, docTabs])
+
+	// Publish live props every render so once-mounted hosts stay current.
+	// Chat: full ChatView props object. Tabs: the freshly-bound render() closure
+	// (produced by the surfaceTabs useMemo; captures latest agent/flags/ctx).
 	useEffect(() => {
 		if (!workspaceDockEnabled) return
 		surfacePropBridge.publish(chatInstanceId, chatViewProps)
-		surfacePropBridge.publish(filesInstanceId, agent)
+		for (const tab of utilityTabs) {
+			surfacePropBridge.publish(`${tab.id}:${agent.sessionId}`, tab.render)
+		}
+		for (const tab of docTabs) {
+			surfacePropBridge.publish(`${tab.id}:${agent.sessionId}`, tab.render)
+		}
 	})
 
-	const dockSeedPanels = useMemo<DockSeedPanel[]>(
-		() => [
+	const dockSeedPanels = useMemo<DockSeedPanel[]>(() => {
+		const panels: DockSeedPanel[] = [
 			{ instanceId: chatInstanceId, surfaceType: "chat", title: "Chat", zone: "main" },
-			{ instanceId: filesInstanceId, surfaceType: "files", title: "Files", zone: "right" },
-		],
-		[chatInstanceId, filesInstanceId],
-	)
+		]
+		for (const tab of utilityTabs) {
+			panels.push({
+				instanceId: `${tab.id}:${agent.sessionId}`,
+				surfaceType: tab.id,
+				title: tab.title,
+				zone: "right",
+			})
+		}
+		for (const tab of docTabs) {
+			panels.push({
+				instanceId: `${tab.id}:${agent.sessionId}`,
+				surfaceType: tab.id,
+				title: tab.title,
+				zone: "bottom",
+			})
+		}
+		return panels
+	}, [chatInstanceId, agent.sessionId, utilityTabs, docTabs])
 
 	if (workspaceDockEnabled) {
 		return <DockShell seedPanels={dockSeedPanels} isDarkMode={isDarkMode} />
