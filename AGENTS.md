@@ -196,9 +196,13 @@ The components live in the sibling `ch5-packages` repo and Tailwind v4 auto-dete
 
 Biome v2 cannot parse Tailwind v4 syntax. CSS linting/formatting is disabled. Do not try to enable it.
 
+### Git -- NEVER open PRs; merge to main
+
+**Do not open pull requests.** When work on a branch is verified and done, merge it directly to `main` and push: `git checkout main && git pull --rebase origin main && git merge <branch> && git push origin main` (refetch+rebase+retry on non-fast-forward). Do not run `gh pr create`. (Chris, 2026-06-16, emphatic.)
+
 ### Changesets -- versioning workflow
 
-All five workspace packages are **linked** (version together). When making user-facing changes, run `bun changeset` before opening a PR.
+All five workspace packages are **linked** (version together). When making user-facing changes, run `bun changeset` before merging to main.
 
 ### Packaging -- macOS without code signing
 
