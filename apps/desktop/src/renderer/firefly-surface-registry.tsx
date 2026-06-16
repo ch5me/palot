@@ -1,4 +1,4 @@
-import { FileTextIcon, PlugIcon, UsersIcon, type LucideIcon } from "lucide-react"
+import { PlugIcon, UsersIcon, type LucideIcon } from "lucide-react"
 
 import type { ReactNode } from "react"
 
@@ -9,7 +9,8 @@ import type { ReactNode } from "react"
 // `claude` is served from the plugin catalog (firefly.built-in.surface.claude,
 // apps/desktop/plugins/claude) — do not re-add a row or import here.
 import { CrmPanel } from "./components/side-panel/crm-panel"
-import { PdfReviewPanel } from "./components/side-panel/pdf-review-panel"
+// `pdf-review` is served from the plugin catalog (firefly.built-in.surface.pdf-review,
+// apps/desktop/plugins/pdf-review) — do not re-add a row or import here.
 // `studio` is served from the plugin catalog (firefly.built-in.surface.studio,
 // apps/desktop/plugins/studio) — do not re-add a row or import here.
 // `voice` is served from the plugin catalog (firefly.built-in.surface.voice,
@@ -138,27 +139,8 @@ export const FIREFLY_SURFACE_REGISTRY: FireflySurfaceDef[] = [
 	// oracle — served from catalog (firefly.built-in.surface.oracle) — do not re-add
 	// `ch5pm` is served from the plugin catalog (firefly.built-in.surface.ch5pm,
 	// apps/desktop/plugins/ch5pm) — do not re-add a row here.
-	{
-		id: "pdf-review",
-		manifestId: "firefly.built-in.side-panel.pdf-review",
-		title: "PDF Review",
-		icon: FileTextIcon,
-		formFactor: "side-panel-tab",
-		lane: "document",
-		enabledFlag: {
-			key: "pdfReview",
-		},
-		defaultOn: false,
-		availability: (ctx) =>
-			ctx.flags.pdfReview
-				? { available: true }
-				: { available: false, reason: "PDF review surface is disabled in feature flags" },
-		commandIds: ["surface.pdfReview.open", "surface.pdfReview.toggle"],
-		persistenceKey: "side-panel.pdf-review",
-		telemetryNamespace: "firefly.surface.pdf-review",
-		target: { kind: "side-panel", tab: "pdf-review" },
-		spawn: (ctx) => <PdfReviewPanel agent={ctx.agent} />,
-	},
+	// `pdf-review` is served from the plugin catalog (firefly.built-in.surface.pdf-review,
+	// apps/desktop/plugins/pdf-review) — do not re-add a row here.
 ]
 
 /**
@@ -183,7 +165,7 @@ import { FIREFLY_SURFACE_IDS, type FireflySurfaceId } from "../shared/firefly-su
  * they are served from the plugin catalog (host plugin lifecycle owns
  * their enable/disable). First migrated surface: notes.
  */
-export const CATALOG_SERVED_SURFACE_IDS: readonly FireflySurfaceId[] = ["browser", "notes", "review", "files", "artifacts", "bridges", "pulse", "memory", "editor", "terminal", "claude", "oracle", "voice", "studio", "ch5pm"]
+export const CATALOG_SERVED_SURFACE_IDS: readonly FireflySurfaceId[] = ["browser", "notes", "review", "files", "artifacts", "bridges", "pulse", "memory", "editor", "terminal", "claude", "oracle", "voice", "studio", "ch5pm", "pdf-review"]
 
 export const FIREFLY_SURFACE_DEFAULT_ON = Object.fromEntries(
 	FIREFLY_SURFACE_REGISTRY.map((surface) => [surface.id, surface.defaultOn]),

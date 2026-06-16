@@ -36,7 +36,7 @@ import {
 	// browserPanelEnabledAtom removed — browser is catalog-served (firefly.built-in.surface.browser).
 	// studioSurfaceEnabledAtom removed — studio is catalog-served (firefly.built-in.surface.studio).
 	pluginsSurfaceEnabledAtom,
-	pdfReviewSurfaceEnabledAtom,
+	// pdfReviewSurfaceEnabledAtom removed — pdf-review is catalog-served (firefly.built-in.surface.pdf-review).
 	workspaceDockEnabledAtom,
 } from "../atoms/feature-flags"
 import { useColorScheme } from "../hooks/use-theme"
@@ -314,7 +314,7 @@ export function AgentDetail({
 	const pluginsSurfaceEnabled = useAtomValue(pluginsSurfaceEnabledAtom)
 	const crmSurfaceEnabled = useAtomValue(crmSurfaceEnabledAtom)
 	// ch5pmSurfaceEnabled removed — ch5pm is catalog-served (firefly.built-in.surface.ch5pm).
-	const pdfReviewSurfaceEnabled = useAtomValue(pdfReviewSurfaceEnabledAtom)
+	// pdfReviewSurfaceEnabled removed — pdf-review is catalog-served (firefly.built-in.surface.pdf-review).
 
 	const catalogSurfaceTabs = useCatalogSurfaceTabs(agent)
 	const surfaceTabs: SidePanelTabDef[] = useMemo(() => {
@@ -324,7 +324,6 @@ export function AgentDetail({
 			flags: {
 				plugins: pluginsSurfaceEnabled,
 				crm: crmSurfaceEnabled,
-				pdfReview: pdfReviewSurfaceEnabled,
 			},
 			chatTurnCount: chatTurns.length,
 		}
@@ -335,7 +334,6 @@ export function AgentDetail({
 		diffStats,
 		pluginsSurfaceEnabled,
 		crmSurfaceEnabled,
-		pdfReviewSurfaceEnabled,
 		chatTurns.length,
 	])
 

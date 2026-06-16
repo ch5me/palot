@@ -61,7 +61,7 @@ import {
 	// claudeSurfaceEnabledAtom removed — claude is catalog-served (firefly.built-in.surface.claude).
 	crmSurfaceEnabledAtom,
 	pluginsSurfaceEnabledAtom,
-	pdfReviewSurfaceEnabledAtom,
+	// pdfReviewSurfaceEnabledAtom removed — pdf-review is catalog-served (firefly.built-in.surface.pdf-review).
 	// studioSurfaceEnabledAtom removed — studio is catalog-served (firefly.built-in.surface.studio).
 	// voiceSurfaceEnabledAtom removed — voice is catalog-served (firefly.built-in.surface.voice).
 	toggleAutomationsAtom,
@@ -69,7 +69,7 @@ import {
 	// toggleCh5PmSurfaceAtom removed — ch5pm is catalog-served; toggle via window.elf.plugins.setEnabled.
 	// toggleClaudeSurfaceAtom removed — claude is catalog-served; toggle via window.elf.plugins.setEnabled.
 	toggleCrmSurfaceAtom,
-	togglePdfReviewSurfaceAtom,
+	// togglePdfReviewSurfaceAtom removed — pdf-review is catalog-served; toggle via window.elf.plugins.setEnabled.
 	togglePluginsSurfaceAtom,
 	// toggleStudioSurfaceAtom removed — studio is catalog-served; toggle via window.elf.plugins.setEnabled.
 	// toggleVoiceSurfaceAtom removed — voice is catalog-served; toggle via window.elf.plugins.setEnabled.
@@ -142,14 +142,14 @@ export function CommandPalette({ open, onOpenChange, agents, onForkSession }: Co
 	// ch5pmSurfaceEnabled removed — ch5pm is catalog-served (firefly.built-in.surface.ch5pm).
 	const pluginsSurfaceEnabled = useAtomValue(pluginsSurfaceEnabledAtom)
 	const crmSurfaceEnabled = useAtomValue(crmSurfaceEnabledAtom)
-	const pdfReviewSurfaceEnabled = useAtomValue(pdfReviewSurfaceEnabledAtom)
+	// pdfReviewSurfaceEnabled removed — pdf-review is catalog-served (firefly.built-in.surface.pdf-review).
 	// toggleBrowserPanel removed — browser is catalog-served; toggle via browserPluginEnabled + window.elf.plugins.setEnabled.
 	const togglePluginsSurface = useSetAtom(togglePluginsSurfaceAtom)
 	const toggleCrmSurface = useSetAtom(toggleCrmSurfaceAtom)
 	// toggleStudioSurface removed — studio is catalog-served; toggle via studioPluginEnabled + window.elf.plugins.setEnabled.
 	// toggleVoiceSurface removed — voice is catalog-served; toggle via voicePluginEnabled + window.elf.plugins.setEnabled.
 	// toggleCh5PmSurface removed — ch5pm is catalog-served; toggle via ch5pmPluginEnabled + window.elf.plugins.setEnabled.
-	const togglePdfReviewSurface = useSetAtom(togglePdfReviewSurfaceAtom)
+	// togglePdfReviewSurface removed — pdf-review is catalog-served; toggle via pdfReviewPluginEnabled + window.elf.plugins.setEnabled.
 	const navSidebarActiveTab = useAtomValue(navSidebarActiveTabAtom)
 	const openSidePanelTab = useSetAtom(openSidePanelTabAtom)
 	const [sidePanelOpen, setSidePanelOpen] = useAtom(sidePanelOpenAtom)
@@ -219,7 +219,7 @@ export function CommandPalette({ open, onOpenChange, agents, onForkSession }: Co
 				plugins: pluginsSurfaceEnabled,
 				crm: crmSurfaceEnabled,
 				// ch5pm removed — ch5pm is catalog-served (firefly.built-in.surface.ch5pm).
-				pdfReview: pdfReviewSurfaceEnabled,
+				// pdfReview removed — pdf-review is catalog-served (firefly.built-in.surface.pdf-review).
 			},
 			chatTurnCount: 1,
 		}
@@ -227,7 +227,6 @@ export function CommandPalette({ open, onOpenChange, agents, onForkSession }: Co
 		activeAgent,
 		pluginsSurfaceEnabled,
 		crmSurfaceEnabled,
-		pdfReviewSurfaceEnabled,
 	])
 
 
@@ -401,6 +400,19 @@ export function CommandPalette({ open, onOpenChange, agents, onForkSession }: Co
 		await window.elf?.plugins.setEnabled("firefly.built-in.surface.studio", !studioPluginEnabled)
 		await queryClient.invalidateQueries({ queryKey: ["firefly-plugin"] })
 	}, [studioPluginEnabled, queryClient])
+
+	// PDF Review is a catalog-served plugin: its enable/disable flows through
+	// the host plugin lifecycle, not a renderer feature-flag atom.
+	const pdfReviewPluginEntry = pluginList?.plugins.find(
+		(plugin) => plugin.pluginId === "firefly.built-in.surface.pdf-review",
+	)
+	const pdfReviewPluginEnabled = pdfReviewPluginEntry
+		? pdfReviewPluginEntry.status !== "disabled" && pdfReviewPluginEntry.status !== "quarantined"
+		: false
+	const togglePdfReviewPlugin = useCallback(async () => {
+		await window.elf?.plugins.setEnabled("firefly.built-in.surface.pdf-review", !pdfReviewPluginEnabled)
+		await queryClient.invalidateQueries({ queryKey: ["firefly-plugin"] })
+	}, [pdfReviewPluginEnabled, queryClient])
 
 	const catalogSurfaceTabs = useCatalogSurfaceTabs(activeAgent)
 	const availableSurfaceTabs = useMemo(
@@ -784,14 +796,14 @@ export function CommandPalette({ open, onOpenChange, agents, onForkSession }: Co
 					</CommandItem>
 					<CommandItem
 						keywords={["pdf", "document", "reader", "annotations", "citations"]}
-						onSelect={() => {
-							togglePdfReviewSurface()
+						onSelect={async () => {
+							await togglePdfReviewPlugin()
 							onOpenChange(false)
 						}}
 					>
 						<FileTextIcon />
-						<span>{pdfReviewSurfaceEnabled ? "Disable PDF Review Surface" : "Enable PDF Review Surface"}</span>
-						{pdfReviewSurfaceEnabled && <CheckIcon className="ml-auto h-4 w-4" />}
+						<span>{pdfReviewPluginEnabled ? "Disable PDF Review Surface" : "Enable PDF Review Surface"}</span>
+						{pdfReviewPluginEnabled && <CheckIcon className="ml-auto h-4 w-4" />}
 					</CommandItem>
 				</CommandGroup>
 				{hasSession && availableSurfaceTabs.length > 0 && (

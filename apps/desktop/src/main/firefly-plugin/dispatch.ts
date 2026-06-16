@@ -1264,6 +1264,63 @@ export function registerCh5pmHostHandlers(deps?: Partial<Ch5pmHostDeps>): void {
 	})
 }
 
+// ---------------------------------------------------------------------------
+// PDF Review surface host handlers (firefly.built-in.surface.pdf-review)
+// ---------------------------------------------------------------------------
+
+export interface PdfReviewHostDeps {
+	openSidePanel: (tab: "pdf-review") => Promise<void>
+	getSidePanelState: () => SidePanelStateSnapshot
+	setPluginEnabled: (pluginId: string, enabled: boolean) => { enabled: boolean }
+}
+
+const PDF_REVIEW_PLUGIN_ID = "firefly.built-in.surface.pdf-review"
+
+export function registerPdfReviewHostHandlers(deps?: Partial<PdfReviewHostDeps>): void {
+	const openSidePanel =
+		deps?.openSidePanel ??
+		(async (tab: "pdf-review") => {
+			const { broadcastOpenSidePanel } = await import("../palot-browser-ipc")
+			await broadcastOpenSidePanel(tab)
+		})
+	const getSidePanelState = deps?.getSidePanelState ?? defaultGetSidePanelState
+	const setEnabled =
+		deps?.setPluginEnabled ??
+		((pluginId: string, enabled: boolean) => {
+			// eslint-disable-next-line @typescript-eslint/no-var-requires
+			const authority = require("./authority") as typeof import("./authority")
+			return authority.setPluginEnabled(pluginId, enabled)
+		})
+
+	registerHostTool(PDF_REVIEW_PLUGIN_ID, "plugin.firefly.built-in.surface.pdf-review.open", async () => {
+		await openSidePanel("pdf-review")
+		return ok({ opened: true, tab: "pdf-review", source: "v2-plugin-tool-dispatch" })
+	})
+
+	registerHostTool(PDF_REVIEW_PLUGIN_ID, "plugin.firefly.built-in.surface.pdf-review.state", async () => {
+		const sidePanel = getSidePanelState()
+		return ok({
+			tab: "pdf-review",
+			available: sidePanel.availableTabs.includes("pdf-review"),
+			open: sidePanel.open,
+			active: sidePanel.open && sidePanel.activeTab === "pdf-review",
+		})
+	})
+
+	registerHostCommand(PDF_REVIEW_PLUGIN_ID, "open-pdf-review", async () => {
+		await openSidePanel("pdf-review")
+		return ok({ opened: true, tab: "pdf-review" })
+	})
+
+	registerHostCommand(PDF_REVIEW_PLUGIN_ID, "toggle-pdf-review", async () => {
+		const catalog = getPluginCatalog()
+		const state = catalog.capabilityStates[PDF_REVIEW_PLUGIN_ID]
+		const currentlyEnabled = !(state?.pluginDisabled ?? false)
+		const next = setEnabled(PDF_REVIEW_PLUGIN_ID, !currentlyEnabled)
+		return ok({ pluginId: PDF_REVIEW_PLUGIN_ID, enabled: next.enabled })
+	})
+}
+
 export function registerDevmuxHostHandlers(): void {
 	// UI commands (renderer-invoked via firefly-plugin:invoke).
 	registerHostCommand(DEVMUX_TOOLBAR_PLUGIN_ID, "devmux-list", ({ args }) => devmuxList(args))
@@ -1315,6 +1372,7 @@ export function registerBuiltInHostCommands(): void {
 	registerVoiceHostHandlers()
 	registerStudioHostHandlers()
 	registerCh5pmHostHandlers()
+	registerPdfReviewHostHandlers()
 	registerDevmuxHostHandlers()
 	log.info("Registered V2 host command handlers", {
 		commands: Array.from(handlers.keys()),

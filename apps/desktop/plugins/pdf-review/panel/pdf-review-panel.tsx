@@ -1,13 +1,8 @@
 import { FileTextIcon, ScrollTextIcon } from "lucide-react"
-import type { Agent } from "../../lib/types"
-import { PDF_LOCATOR_SCHEMA_VERSION, buildResolvedLocator, serializePdfLocator } from "../../../shared/pdf-locator"
+import { PDF_LOCATOR_SCHEMA_VERSION, buildResolvedLocator, serializePdfLocator } from "../../../src/shared/pdf-locator"
+import type { PluginPanelProps } from "../../../src/renderer/firefly-plugin-surfaces"
 
-interface PdfReviewPanelProps {
-	agent: Agent
-	className?: string
-}
-
-export function PdfReviewPanel({ agent, className }: PdfReviewPanelProps) {
+export default function PdfReviewPanel({ agent }: PluginPanelProps) {
 	const sampleLocator = buildResolvedLocator({
 		documentId: "sample-document",
 		page: 1,
@@ -16,7 +11,7 @@ export function PdfReviewPanel({ agent, className }: PdfReviewPanelProps) {
 	})
 	return (
 		<div
-			className={`flex h-full min-h-0 flex-col bg-background ${className ?? ""}`}
+			className="flex h-full min-h-0 flex-col bg-background"
 			data-testid="pdf-review-panel"
 			aria-label="PDF Review panel"
 		>

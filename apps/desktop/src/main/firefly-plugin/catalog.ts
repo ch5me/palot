@@ -88,6 +88,10 @@ import {
 	ch5pmPluginManifest,
 	CH5PM_PLUGIN_ID,
 } from "../../../plugins/ch5pm/manifest"
+import {
+	pdfReviewPluginManifest,
+	PDF_REVIEW_PLUGIN_ID,
+} from "../../../plugins/pdf-review/manifest"
 import { BUILT_IN_DEFAULT_CAPABILITIES } from "../../shared/firefly-plugin/capabilities"
 import { type PluginDescriptor } from "../../shared/firefly-plugin/descriptor"
 import {
@@ -152,6 +156,7 @@ const BUILT_IN_MANIFESTS: readonly PluginManifest[] = [
 	devmuxToolbarManifest,
 	studioPluginManifest,
 	ch5pmPluginManifest,
+	pdfReviewPluginManifest,
 ]
 
 /**
@@ -514,4 +519,5 @@ export const KNOWN_PLUGIN_IDS = {
 	voice: VOICE_PLUGIN_ID,
 	studio: STUDIO_PLUGIN_ID,
 	ch5pm: CH5PM_PLUGIN_ID,
+	pdfReview: PDF_REVIEW_PLUGIN_ID,
 } as const
