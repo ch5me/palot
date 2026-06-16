@@ -33,6 +33,14 @@ import {
 	type TrustTier,
 	type WidgetContribution,
 } from "./manifest"
+import {
+	DEFAULT_RUNTIME_SURFACES,
+	inferDefaultHostKind,
+	resolveRuntimeLocation,
+	type BuildSurface,
+	type RuntimeDeclaration,
+	type RuntimeResolution,
+} from "./runtime-location"
 
 /** Host-known panel slots the projection must align to. V2 may not mint
  *  new slots; the set is closed and the host owns it. */
@@ -52,6 +60,12 @@ export interface DerivePluginDescriptorOptions {
 	defaultQuarantineOnCrashCount?: number
 	defaultToolTimeoutMs?: number
 	defaultDispatchTimeoutMs?: number
+	/**
+	 * The build currently running the host. Drives §2.3 runtime-location
+	 * resolution. Defaults to `"electron"` — palot ships only the desktop
+	 * build today; the web build passes `"web"` once firefly-cloud lands.
+	 */
+	currentBuild?: BuildSurface
 }
 
 export class PluginDescriptorError extends Error {
@@ -85,8 +99,22 @@ export interface PluginDescriptor {
 	readonly grammars: readonly GrammarContribution[]
 	readonly iconThemes: readonly IconThemeContribution[]
 	readonly bridge: BridgeMetadata | null
+	/**
+	 * Effective runtime declaration (design §2.5). Always present: either the
+	 * manifest's explicit `runtime` block, or a back-compat default inferred
+	 * from the contributions (`inferDefaultHostKind`).
+	 */
+	readonly runtime: RuntimeDeclaration
+	/**
+	 * Resolved §2.3 location for the host's current build. `{ supported:false }`
+	 * names exactly why a location does not exist (e.g. a node-worker on web
+	 * with no cloud-host) — the projection surfaces this as "unsupported on this
+	 * surface" rather than silently disabling (CH5 #9, no silent fallback).
+	 */
+	readonly runtimeResolution: RuntimeResolution
 	readonly derived: {
 		readonly appVersion: string
+		readonly currentBuild: BuildSurface
 		readonly derivedAt: number
 		readonly quarantineOnCrashCount: number
 		readonly defaultToolTimeoutMs: number
@@ -200,6 +228,32 @@ export function derivePluginDescriptor(
 		throw new PluginDescriptorError(manifest.id, issues)
 	}
 
+	// Resolve the effective runtime declaration (design §2.5). Explicit
+	// `runtime` wins; otherwise infer a back-compat default from the
+	// contributions so pre-`runtime` manifests keep their current behavior.
+	// Tolerate partially-populated contributions: a validated manifest always
+	// has every family (Zod `.default([])`), but `derivePluginDescriptor` is
+	// also called directly in tests with hand-built partial manifests, and the
+	// rest of this function never assumes a family is present either.
+	const c = manifest.contributes
+	const n = (arr: readonly unknown[] | undefined): number => arr?.length ?? 0
+	const runtime: RuntimeDeclaration = manifest.runtime ?? {
+		hostKind: inferDefaultHostKind({
+			codeContributions: n(c.commands) + n(c.tools) + (manifest.bridge ? 1 : 0),
+			uiContributions: n(c.panels) + n(c.navSidebars) + n(c.widgets) + n(c.components),
+			dataContributions: n(c.themes) + n(c.snippets) + n(c.languages) + n(c.grammars) + n(c.iconThemes),
+		}),
+		surfaces: [...DEFAULT_RUNTIME_SURFACES],
+		webStrategy: "unsupported",
+	}
+	const currentBuild: BuildSurface = options.currentBuild ?? "electron"
+	const runtimeResolution = resolveRuntimeLocation({
+		hostKind: runtime.hostKind,
+		build: currentBuild,
+		webStrategy: runtime.webStrategy,
+		surfaces: runtime.surfaces,
+	})
+
 	return {
 		manifest,
 		normalizedId: manifest.id,
@@ -219,8 +273,11 @@ export function derivePluginDescriptor(
 		grammars: manifest.contributes.grammars,
 		iconThemes: manifest.contributes.iconThemes,
 		bridge: manifest.bridge ?? null,
+		runtime,
+		runtimeResolution,
 		derived: {
 			appVersion: options.appVersion,
+			currentBuild,
 			derivedAt: Date.now(),
 			quarantineOnCrashCount: manifest.lifecycle.quarantineOnCrashCount ?? options.defaultQuarantineOnCrashCount ?? 3,
 			defaultToolTimeoutMs: options.defaultToolTimeoutMs ?? 60_000,

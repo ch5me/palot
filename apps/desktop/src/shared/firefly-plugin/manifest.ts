@@ -34,6 +34,8 @@
 
 import { z } from "zod"
 
+import { runtimeDeclarationSchema } from "./runtime-location"
+
 /**
  * Reserved top-level namespaces. Only host-owned built-ins and first-party
  * exemplars may claim these. `acme` is reserved for in-tree exemplars only.
@@ -640,6 +642,18 @@ export const pluginManifestSchema = z
 
 		capabilities: z.array(capabilityTokenSchema).default([]),
 
+		/**
+		 * Runtime declaration (design §2.5): the `hostKind` contract, which
+		 * builds this version supports, and the web strategy for node-workers.
+		 *
+		 * OPTIONAL for back-compat — when omitted the host infers a default
+		 * `hostKind` from the contributions (`inferDefaultHostKind`) so existing
+		 * built-ins keep their current behavior. New / third-party extensions
+		 * should declare it explicitly. Resolved to an effective
+		 * `RuntimeDeclaration` + `RuntimeResolution` in `derivePluginDescriptor`.
+		 */
+		runtime: runtimeDeclarationSchema.optional(),
+
 		bridge: bridgeMetadataSchema.optional(),
 
 		/**
@@ -861,6 +875,7 @@ export type ActivationEvent = z.infer<typeof activationEventSchema>
 export type TrustTier = z.infer<typeof trustTierSchema>
 export type LifecycleHints = z.infer<typeof lifecycleHintsSchema>
 export type BridgeMetadata = z.infer<typeof bridgeMetadataSchema>
+export type { RuntimeDeclaration, HostKind, BuildSurface, WebStrategy, RuntimeLocation } from "./runtime-location"
 
 /**
  * Parse a manifest from an unknown payload, returning a parsed/typed
