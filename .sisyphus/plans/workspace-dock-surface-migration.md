@@ -2,7 +2,7 @@
 
 - **Date:** 2026-06-15
 - **Branch:** `feat/workspace-dock-surface-migration`
-- **Status:** Authoritative / executing slice-by-slice (overnight)
+- **Status:** ✅ COMPLETE on `feat/workspace-dock-surface-migration` (27 commits, pushed, PR-ready). All 16 surfaces migrated to V2 plugins; feature flags removed; dock is the sole session UI (proven by default in the web build); deep-link focus wired; Storybook regression proof landed. tsgo + biome + full electron-vite build all green. Deferred (documented below): eviction enforcement + resource controllers (safe no-op today; needs test infra), the pre-existing `@ch5me/agent-ui-web` terminal-in-web quirk, and an Electron click-through.
 - **Author authority:** Chris (2026-06-15) — supersedes any prior tracked plan where they conflict (see §4).
 
 ## Progress (updated 2026-06-16, overnight)
