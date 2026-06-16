@@ -462,6 +462,63 @@ export function registerReviewHostHandlers(deps?: Partial<ReviewHostDeps>): void
 }
 
 // ---------------------------------------------------------------------------
+// Files surface host handlers (firefly.built-in.surface.files)
+// ---------------------------------------------------------------------------
+
+export interface FilesHostDeps {
+	openSidePanel: (tab: "files") => Promise<void>
+	getSidePanelState: () => SidePanelStateSnapshot
+	setPluginEnabled: (pluginId: string, enabled: boolean) => { enabled: boolean }
+}
+
+const FILES_PLUGIN_ID = "firefly.built-in.surface.files"
+
+export function registerFilesHostHandlers(deps?: Partial<FilesHostDeps>): void {
+	const openSidePanel =
+		deps?.openSidePanel ??
+		(async (tab: "files") => {
+			const { broadcastOpenSidePanel } = await import("../palot-browser-ipc")
+			await broadcastOpenSidePanel(tab)
+		})
+	const getSidePanelState = deps?.getSidePanelState ?? defaultGetSidePanelState
+	const setEnabled =
+		deps?.setPluginEnabled ??
+		((pluginId: string, enabled: boolean) => {
+			// eslint-disable-next-line @typescript-eslint/no-var-requires
+			const authority = require("./authority") as typeof import("./authority")
+			return authority.setPluginEnabled(pluginId, enabled)
+		})
+
+	registerHostTool(FILES_PLUGIN_ID, "plugin.firefly.built-in.surface.files.open", async () => {
+		await openSidePanel("files")
+		return ok({ opened: true, tab: "files", source: "v2-plugin-tool-dispatch" })
+	})
+
+	registerHostTool(FILES_PLUGIN_ID, "plugin.firefly.built-in.surface.files.state", async () => {
+		const sidePanel = getSidePanelState()
+		return ok({
+			tab: "files",
+			available: sidePanel.availableTabs.includes("files"),
+			open: sidePanel.open,
+			active: sidePanel.open && sidePanel.activeTab === "files",
+		})
+	})
+
+	registerHostCommand(FILES_PLUGIN_ID, "open-files", async () => {
+		await openSidePanel("files")
+		return ok({ opened: true, tab: "files" })
+	})
+
+	registerHostCommand(FILES_PLUGIN_ID, "toggle-files", async () => {
+		const catalog = getPluginCatalog()
+		const state = catalog.capabilityStates[FILES_PLUGIN_ID]
+		const currentlyEnabled = !(state?.pluginDisabled ?? false)
+		const next = setEnabled(FILES_PLUGIN_ID, !currentlyEnabled)
+		return ok({ pluginId: FILES_PLUGIN_ID, enabled: next.enabled })
+	})
+}
+
+// ---------------------------------------------------------------------------
 // DevMux Toolbar host handlers (firefly.built-in.devmux-toolbar)
 //
 // The Node-only work lives in `main/devmux/service.ts` and is reached here
@@ -561,6 +618,7 @@ export function registerBuiltInHostCommands(): void {
 	registerHostCommand("acme.acme-notebook", "acme-notebook-clear", invokeAcmeNotebookClear)
 	registerNotesHostHandlers()
 	registerReviewHostHandlers()
+	registerFilesHostHandlers()
 	registerDevmuxHostHandlers()
 	log.info("Registered V2 host command handlers", {
 		commands: Array.from(handlers.keys()),

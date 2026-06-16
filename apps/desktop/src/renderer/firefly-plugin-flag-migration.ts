@@ -31,6 +31,10 @@ export const SURFACE_FLAG_MIGRATIONS: readonly SurfaceFlagMigration[] = [
 		pluginId: "firefly.built-in.surface.review",
 		legacyStorageKey: "elf:reviewSurfaceEnabled",
 	},
+	{
+		pluginId: "firefly.built-in.surface.files",
+		legacyStorageKey: "elf:filesSurfaceEnabled",
+	},
 ]
 
 const MARKER_PREFIX = "elf:plugin-flag-migrated:"

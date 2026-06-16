@@ -34,7 +34,6 @@ import {
 	claudeSurfaceEnabledAtom,
 	crmSurfaceEnabledAtom,
 	editorSurfaceEnabledAtom,
-	filesSurfaceEnabledAtom,
 	memorySurfaceEnabledAtom,
 	oracleSurfaceEnabledAtom,
 	pluginsSurfaceEnabledAtom,
@@ -314,7 +313,6 @@ export function AgentDetail({
 	const browserPanelEnabled = useAtomValue(browserPanelEnabledAtom)
 	const pulseSurfaceEnabled = useAtomValue(pulseSurfaceEnabledAtom)
 	const memorySurfaceEnabled = useAtomValue(memorySurfaceEnabledAtom)
-	const filesSurfaceEnabled = useAtomValue(filesSurfaceEnabledAtom)
 	const terminalSurfaceEnabled = useAtomValue(terminalSurfaceEnabledAtom)
 	const editorSurfaceEnabled = useAtomValue(editorSurfaceEnabledAtom)
 	const pluginsSurfaceEnabled = useAtomValue(pluginsSurfaceEnabledAtom)
@@ -336,7 +334,6 @@ export function AgentDetail({
 				browserPanelEnabled,
 				pulse: pulseSurfaceEnabled,
 				memory: memorySurfaceEnabled,
-				files: filesSurfaceEnabled,
 				terminal: terminalSurfaceEnabled,
 				editor: editorSurfaceEnabled,
 				plugins: pluginsSurfaceEnabled,
@@ -359,7 +356,6 @@ export function AgentDetail({
 		browserPanelEnabled,
 		pulseSurfaceEnabled,
 		memorySurfaceEnabled,
-		filesSurfaceEnabled,
 		terminalSurfaceEnabled,
 		editorSurfaceEnabled,
 		pluginsSurfaceEnabled,

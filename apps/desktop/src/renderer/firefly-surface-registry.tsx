@@ -1,4 +1,4 @@
-import { 	ActivityIcon, BoxesIcon, DatabaseIcon, FileTextIcon, FilesIcon, GlobeIcon, MicIcon, MonitorPlayIcon, PlugIcon, RectangleEllipsisIcon, Share2Icon, SquarePenIcon, TerminalSquareIcon, UsersIcon, WandSparklesIcon, type LucideIcon } from "lucide-react"
+import { ActivityIcon, BoxesIcon, DatabaseIcon, FileTextIcon, GlobeIcon, MicIcon, MonitorPlayIcon, PlugIcon, RectangleEllipsisIcon, Share2Icon, SquarePenIcon, TerminalSquareIcon, UsersIcon, WandSparklesIcon, type LucideIcon } from "lucide-react"
 
 import type { ReactNode } from "react"
 
@@ -14,7 +14,6 @@ import { PdfReviewPanel } from "./components/side-panel/pdf-review-panel"
 import { StudioPanel } from "./components/side-panel/studio-panel"
 import { VoicePanel } from "./components/side-panel/voice-panel"
 import { EditorPanel } from "./components/side-panel/editor-panel"
-import { FilesPanel } from "./components/side-panel/files-panel"
 import { V2PluginsPanel } from "./components/side-panel/v2-plugins-panel"
 import { PulsePanel } from "./components/side-panel/pulse-panel"
 import { TerminalPanel } from "./components/side-panel/terminal-panel"
@@ -177,27 +176,8 @@ export const FIREFLY_SURFACE_REGISTRY: FireflySurfaceDef[] = [
 			/>
 		),
 	},
-	{
-		id: "files",
-		manifestId: "firefly.built-in.side-panel.files",
-		title: "Files",
-		icon: FilesIcon,
-		formFactor: "side-panel-tab",
-		lane: "utility",
-		enabledFlag: {
-			key: "files",
-		},
-		defaultOn: true,
-		availability: (ctx) =>
-			ctx.flags.files
-				? { available: true }
-				: { available: false, reason: "Files surface is disabled in feature flags" },
-		commandIds: ["surface.files.open", "surface.files.toggle"],
-		persistenceKey: "side-panel.files",
-		telemetryNamespace: "firefly.surface.files",
-		target: { kind: "side-panel", tab: "files" },
-		spawn: (ctx) => <FilesPanel agent={ctx.agent} />,
-	},
+	// `files` is served from the plugin catalog (firefly.built-in.surface.files,
+	// apps/desktop/plugins/files) — do not re-add a row here.
 	{
 		id: "terminal",
 		manifestId: "firefly.built-in.side-panel.terminal",
@@ -453,7 +433,7 @@ import { FIREFLY_SURFACE_IDS, type FireflySurfaceId } from "../shared/firefly-su
  * they are served from the plugin catalog (host plugin lifecycle owns
  * their enable/disable). First migrated surface: notes.
  */
-export const CATALOG_SERVED_SURFACE_IDS: readonly FireflySurfaceId[] = ["notes", "review"]
+export const CATALOG_SERVED_SURFACE_IDS: readonly FireflySurfaceId[] = ["notes", "review", "files"]
 
 export const FIREFLY_SURFACE_DEFAULT_ON = Object.fromEntries(
 	FIREFLY_SURFACE_REGISTRY.map((surface) => [surface.id, surface.defaultOn]),

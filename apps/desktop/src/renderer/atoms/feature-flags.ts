@@ -87,7 +87,7 @@ export const toggleLoomAcmeComponentsAtom = atom(null, (get, set) => {
 	set(loomAcmeComponentsAtom, !get(loomAcmeComponentsAtom))
 })
 
-// NOTE: `notes` and `review` have no feature flags any more — they are
+// NOTE: `notes`, `review`, and `files` have no feature flags any more — they are
 // catalog-served plugins; their enable/disable state lives in the host
 // plugin lifecycle store. The legacy localStorage values are migrated
 // once by `renderer/firefly-plugin-flag-migration.ts`.
@@ -95,7 +95,6 @@ export const fireflySurfaceDefaults = {
 	browserPanelEnabled: true,
 	pulse: false,
 	memory: false,
-	files: true,
 	terminal: true,
 	editor: true,
 	plugins: true,
@@ -115,7 +114,6 @@ export type FireflySurfaceFlagKey = keyof typeof fireflySurfaceDefaults
 export const browserPanelEnabledAtom = atomWithStorage<boolean>("elf:browserPanelEnabled", true)
 export const pulseSurfaceEnabledAtom = atomWithStorage<boolean>("elf:pulseSurfaceEnabled", false)
 export const memorySurfaceEnabledAtom = atomWithStorage<boolean>("elf:memorySurfaceEnabled", false)
-export const filesSurfaceEnabledAtom = atomWithStorage<boolean>("elf:filesSurfaceEnabled", true)
 export const terminalSurfaceEnabledAtom = atomWithStorage<boolean>("elf:terminalSurfaceEnabled", true)
 export const editorSurfaceEnabledAtom = atomWithStorage<boolean>("elf:editorSurfaceEnabled", true)
 export const pluginsSurfaceEnabledAtom = atomWithStorage<boolean>("elf:pluginsSurfaceEnabled", true)
@@ -133,7 +131,6 @@ export const fireflySurfaceFlagAtoms: Record<FireflySurfaceFlagKey, typeof brows
 	browserPanelEnabled: browserPanelEnabledAtom,
 	pulse: pulseSurfaceEnabledAtom,
 	memory: memorySurfaceEnabledAtom,
-	files: filesSurfaceEnabledAtom,
 	terminal: terminalSurfaceEnabledAtom,
 	editor: editorSurfaceEnabledAtom,
 	plugins: pluginsSurfaceEnabledAtom,
@@ -152,7 +149,6 @@ export const fireflySurfaceLabels: Record<FireflySurfaceFlagKey, string> = {
 	browserPanelEnabled: "Browser",
 	pulse: "Pulse",
 	memory: "Memory",
-	files: "Files",
 	terminal: "Terminal",
 	editor: "Editor",
 	plugins: "Plugins",
@@ -177,10 +173,6 @@ export const togglePulseSurfaceAtom = atom(null, (get, set) => {
 
 export const toggleMemorySurfaceAtom = atom(null, (get, set) => {
 	set(memorySurfaceEnabledAtom, !get(memorySurfaceEnabledAtom))
-})
-
-export const toggleFilesSurfaceAtom = atom(null, (get, set) => {
-	set(filesSurfaceEnabledAtom, !get(filesSurfaceEnabledAtom))
 })
 
 export const toggleTerminalSurfaceAtom = atom(null, (get, set) => {

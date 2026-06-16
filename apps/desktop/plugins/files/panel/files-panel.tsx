@@ -13,9 +13,9 @@ import {
 	SearchIcon,
 } from "lucide-react"
 import { useSetAtom } from "jotai"
-import { viewFileInDiffPanelAtom } from "../../atoms/ui"
-import { detectContentLanguage, detectLanguage, prettyPrintJson } from "../../lib/language"
-import type { Agent } from "../../lib/types"
+import { viewFileInDiffPanelAtom } from "@/atoms/ui"
+import { detectContentLanguage, detectLanguage, prettyPrintJson } from "@/lib/language"
+import type { Agent } from "@/lib/types"
 import {
 	fetchFileGitStatus,
 	fetchFilePreview,
@@ -23,7 +23,7 @@ import {
 	readDirectoryTree,
 	type FilePreview,
 	type FileSystemEntry,
-} from "../../services/backend"
+} from "@/services/backend"
 
 interface FilesPanelProps {
 	agent: Agent
@@ -421,3 +421,5 @@ export function FilesPanel({ agent, className }: FilesPanelProps) {
 		</div>
 	)
 }
+
+export default FilesPanel

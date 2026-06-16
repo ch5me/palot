@@ -60,7 +60,6 @@ import {
 	claudeSurfaceEnabledAtom,
 	crmSurfaceEnabledAtom,
 	editorSurfaceEnabledAtom,
-	filesSurfaceEnabledAtom,
 	memorySurfaceEnabledAtom,
 	pluginsSurfaceEnabledAtom,
 	pdfReviewSurfaceEnabledAtom,
@@ -74,7 +73,6 @@ import {
 	toggleCh5PmSurfaceAtom,
 	toggleClaudeSurfaceAtom,
 	toggleCrmSurfaceAtom,
-	toggleFilesSurfaceAtom,
 	toggleMemorySurfaceAtom,
 	togglePdfReviewSurfaceAtom,
 	togglePluginsSurfaceAtom,
@@ -146,7 +144,6 @@ export function CommandPalette({ open, onOpenChange, agents, onForkSession }: Co
 	const browserPanelEnabled = useAtomValue(browserPanelEnabledAtom)
 	const pulseSurfaceEnabled = useAtomValue(pulseSurfaceEnabledAtom)
 	const memorySurfaceEnabled = useAtomValue(memorySurfaceEnabledAtom)
-	const filesSurfaceEnabled = useAtomValue(filesSurfaceEnabledAtom)
 	const terminalSurfaceEnabled = useAtomValue(terminalSurfaceEnabledAtom)
 	const editorSurfaceEnabled = useAtomValue(editorSurfaceEnabledAtom)
 	const pluginsSurfaceEnabled = useAtomValue(pluginsSurfaceEnabledAtom)
@@ -160,7 +157,6 @@ export function CommandPalette({ open, onOpenChange, agents, onForkSession }: Co
 	const toggleBrowserPanel = useSetAtom(toggleBrowserPanelAtom)
 	const togglePulseSurface = useSetAtom(togglePulseSurfaceAtom)
 	const toggleMemorySurface = useSetAtom(toggleMemorySurfaceAtom)
-	const toggleFilesSurface = useSetAtom(toggleFilesSurfaceAtom)
 	const togglePluginsSurface = useSetAtom(togglePluginsSurfaceAtom)
 	const toggleBridgesSurface = useSetAtom(toggleBridgesSurfaceAtom)
 	const toggleCrmSurface = useSetAtom(toggleCrmSurfaceAtom)
@@ -239,7 +235,6 @@ export function CommandPalette({ open, onOpenChange, agents, onForkSession }: Co
 				browserPanelEnabled,
 				pulse: pulseSurfaceEnabled,
 				memory: memorySurfaceEnabled,
-				files: filesSurfaceEnabled,
 				terminal: terminalSurfaceEnabled,
 				editor: editorSurfaceEnabled,
 				plugins: pluginsSurfaceEnabled,
@@ -258,7 +253,6 @@ export function CommandPalette({ open, onOpenChange, agents, onForkSession }: Co
 		browserPanelEnabled,
 		pulseSurfaceEnabled,
 		memorySurfaceEnabled,
-		filesSurfaceEnabled,
 		terminalSurfaceEnabled,
 		editorSurfaceEnabled,
 		pluginsSurfaceEnabled,
@@ -299,6 +293,19 @@ export function CommandPalette({ open, onOpenChange, agents, onForkSession }: Co
 		await window.elf?.plugins.setEnabled("firefly.built-in.surface.review", !reviewPluginEnabled)
 		await queryClient.invalidateQueries({ queryKey: ["firefly-plugin"] })
 	}, [reviewPluginEnabled, queryClient])
+
+	// Files is a catalog-served plugin: its enable/disable flows through
+	// the host plugin lifecycle, not a renderer feature-flag atom.
+	const filesPluginEntry = pluginList?.plugins.find(
+		(plugin) => plugin.pluginId === "firefly.built-in.surface.files",
+	)
+	const filesPluginEnabled = filesPluginEntry
+		? filesPluginEntry.status !== "disabled" && filesPluginEntry.status !== "quarantined"
+		: true
+	const toggleFilesPlugin = useCallback(async () => {
+		await window.elf?.plugins.setEnabled("firefly.built-in.surface.files", !filesPluginEnabled)
+		await queryClient.invalidateQueries({ queryKey: ["firefly-plugin"] })
+	}, [filesPluginEnabled, queryClient])
 
 	const catalogSurfaceTabs = useCatalogSurfaceTabs(activeAgent)
 	const availableSurfaceTabs = useMemo(
@@ -574,13 +581,13 @@ export function CommandPalette({ open, onOpenChange, agents, onForkSession }: Co
 					<CommandItem
 						keywords={["files", "surface", "review", "project files"]}
 						onSelect={() => {
-							toggleFilesSurface()
+							void toggleFilesPlugin()
 							onOpenChange(false)
 						}}
 					>
 						<FilesIcon />
-						<span>{filesSurfaceEnabled ? "Disable Files Surface" : "Enable Files Surface"}</span>
-						{filesSurfaceEnabled && <CheckIcon className="ml-auto h-4 w-4" />}
+						<span>{filesPluginEnabled ? "Disable Files Surface" : "Enable Files Surface"}</span>
+						{filesPluginEnabled && <CheckIcon className="ml-auto h-4 w-4" />}
 					</CommandItem>
 					<CommandItem
 						keywords={["terminal", "shell", "pty", "attach"]}
