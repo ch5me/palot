@@ -22,7 +22,9 @@ export interface SessionWidgetZoneAvailability {
 const DEFAULT_LAYOUT: SessionWidgetLayout = {
 	placement: {
 		"above-chat": ["devmux-toolbar", "session-task-list"],
-		"chat-inline-right": ["genui-artifacts"],
+		// Artifacts widget temporarily disabled (see session-widget-registry.tsx).
+		// Inline-right starts empty; other widgets can still be dragged into it.
+		"chat-inline-right": [],
 	},
 }
 

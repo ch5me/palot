@@ -220,6 +220,12 @@ export function SessionWidgetCard({ agent, widgetId, zoneId }: SessionWidgetCard
 		[transform],
 	)
 
+	// A persisted layout may reference a widget id whose definition is disabled
+	// (e.g. the removed `genui-artifacts`). Skip it rather than crash.
+	if (!widget) {
+		return null
+	}
+
 	return (
 		<div
 			ref={setNodeRef}

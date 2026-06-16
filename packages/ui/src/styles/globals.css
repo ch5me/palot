@@ -15,6 +15,10 @@
 @source "../stories";
 @source "../../../../node_modules/@ch5me/ch5-ui-web/dist";
 @source "../../../../node_modules/@ch5me/agent-ui-web/dist";
+/* Storybook also hosts apps/desktop renderer stories (see .storybook/main.ts).
+ * That tree is outside this package, so Tailwind's auto-detection misses it —
+ * scan it explicitly or desktop story utility classes never get generated. */
+@source "../../../../apps/desktop/src/renderer";
 
 @custom-variant dark (&:is(.dark *));
 
