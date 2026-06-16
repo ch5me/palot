@@ -178,16 +178,22 @@ NO git add/commit/push rule — one rogue agent pushed P4 to main.
   future code-extension install path.
 - **L6 firefly-cloud RPC contract: DOCUMENTED** (design §16) for the cross-repo server.
 
+- **L4 TextMate grammar runtime: DONE** (`fde35ad5f`). Was env-blocked (`bun add` 401'd
+  on the HQ registry); resolved via `hush run -- bun add` (NPM_TOKEN injected). Added
+  vscode-textmate + vscode-oniguruma; `renderer/lib/textmate-runtime.ts` loads the
+  oniguruma WASM + bridges grammars into Monaco as TokensProviders (re-exported from
+  monaco.ts). tsgo EXIT 0; 47 renderer/lib tests pass. Remaining tie-in: feed it the
+  catalog's projected grammars + a package-store content loader over IPC, then confirm
+  tokenization by opening a grammar-language file (GUI-only check).
+
 ## Remaining
 
 In-repo:
-- **TextMate grammar runtime: BLOCKED (environment).** `bun add vscode-textmate
-  vscode-oniguruma` fails because the cross-workspace graph can't resolve
-  `@ch5me/federation-build@workspace:*` (referenced by an external `../ch5-packages/*`
-  member, not by palot). Repairing that foreign workspace is out of scope. Unblock: fix the
-  `@ch5me/federation-build` workspace ref, then add the deps + wire the loader into
-  `renderer/lib/monaco.ts` (the P2 typed grammar boundary is the seam). Also: TextMate
-  tokenization is GUI-verification-only (needs an app launch).
+- **Catalog→grammar-content IPC tie-in** for L4 (feed projected grammars + a package-store
+  grammar loader to `registerTextMateGrammars`), then a GUI tokenization check.
+- **Capability-bearing code-extension install path** — the trigger that exercises the L1/L2/L3
+  consent + worker-RPC machinery end-to-end (mechanism is built + unit-tested; no live
+  consumer yet).
 - **P4 review** (design-fit of the landed classifier/importer).
 
 Cross-repo (CANNOT land from palot):
