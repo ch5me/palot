@@ -14,8 +14,8 @@
 	"type": "module",
 	"main": "./out/main/index.js",
 	"scripts": {
-		"dev": "bunx devmux ensure desktop",
-		"dev:wayland": "bunx devmux ensure desktop-wayland",
+		"dev": "cd ../.. && bunx devmux ensure desktop",
+		"dev:wayland": "cd ../.. && bunx devmux ensure desktop-wayland",
 		"dev:web": "node ../../node_modules/vite/bin/vite.js --config src/renderer/vite.web.config.ts --port $PORT",
 		"dev:electron-local": "node ../../node_modules/electron-vite/bin/electron-vite.js dev",
 		"dev:electron-wayland-local": "node ../../node_modules/electron-vite/bin/electron-vite.js dev -- --ozone-platform=wayland --enable-features=WaylandWindowDecorations --disable-features=WaylandFractionalScaleV1",
