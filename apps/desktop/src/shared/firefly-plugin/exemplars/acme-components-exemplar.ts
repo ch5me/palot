@@ -38,7 +38,7 @@ export const acmeComponentsExemplarManifest: PluginManifest = {
 	license: "Apache-2.0",
 	homepage: "https://acme.example.com/components",
 	manifestRevision: 1,
-	engines: { desktop: "0.11.0" },
+	engines: { firefly: ">=0.11.0" },
 	trust: "signed-third-party",
 	lifecycle: {
 		autoEnable: false,

@@ -60,7 +60,7 @@ export const acmeNotebookManifest: PluginManifest = {
 	homepage: "https://acme.example.com/notebook",
 	manifestRevision: 1,
 	engines: {
-		desktop: "0.11.0",
+		firefly: ">=0.11.0",
 	},
 	trust: ACME_NOTEBOOK_TRUST,
 	lifecycle: {

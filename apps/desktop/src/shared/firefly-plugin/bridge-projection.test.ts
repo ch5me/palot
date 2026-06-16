@@ -22,7 +22,7 @@ const baseManifest = {
 	displayName: "Bridge Projection Test",
 	version: "0.11.0",
 	manifestRevision: 1,
-	engines: { desktop: "0.11.0" },
+	engines: { firefly: ">=0.11.0" },
 	trust: "built-in",
 	lifecycle: {
 		autoEnable: true,

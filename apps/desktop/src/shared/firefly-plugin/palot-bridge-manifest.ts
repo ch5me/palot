@@ -240,7 +240,7 @@ export const palotBridgeManifest: PluginManifest = {
 	license: "MIT",
 	manifestRevision: 1,
 	engines: {
-		desktop: "0.11.0",
+		firefly: ">=0.11.0",
 	},
 	trust: "built-in",
 	lifecycle: {

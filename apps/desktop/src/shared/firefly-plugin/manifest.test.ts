@@ -223,7 +223,7 @@ describe("derivePluginDescriptor", () => {
 		expect(descriptor.derived.quarantineOnCrashCount).toBe(7)
 	})
 
-	test("rejects when appVersion is below engines.desktop floor", () => {
+	test("rejects when appVersion is below engines.desktop floor (migration alias)", () => {
 		const manifest = parsePluginManifest({
 			...baseManifest,
 			engines: { desktop: "1.0.0" },
@@ -231,6 +231,43 @@ describe("derivePluginDescriptor", () => {
 		expect(() => derivePluginDescriptor(manifest, { appVersion: "0.11.0" })).toThrow(
 			PluginDescriptorError,
 		)
+	})
+
+	test("rejects when appVersion does not satisfy engines.firefly range (floor only)", () => {
+		const manifest = parsePluginManifest({
+			...baseManifest,
+			engines: { firefly: ">=1.0.0" },
+		})
+		expect(() => derivePluginDescriptor(manifest, { appVersion: "0.11.0" })).toThrow(
+			PluginDescriptorError,
+		)
+	})
+
+	test("rejects when appVersion exceeds engines.firefly upper bound", () => {
+		const manifest = parsePluginManifest({
+			...baseManifest,
+			engines: { firefly: ">=0.11.0 <0.12.0" },
+		})
+		expect(() => derivePluginDescriptor(manifest, { appVersion: "0.12.0" })).toThrow(
+			PluginDescriptorError,
+		)
+	})
+
+	test("accepts when appVersion satisfies engines.firefly compound range", () => {
+		const manifest = parsePluginManifest({
+			...baseManifest,
+			engines: { firefly: ">=0.11.0 <1.0.0" },
+		})
+		expect(() => derivePluginDescriptor(manifest, { appVersion: "0.11.0" })).not.toThrow()
+	})
+
+	test("engines.firefly takes precedence over engines.desktop when both present", () => {
+		// firefly: passes; desktop would fail if evaluated — firefly must win
+		const manifest = parsePluginManifest({
+			...baseManifest,
+			engines: { firefly: ">=0.11.0", desktop: "99.0.0" },
+		})
+		expect(() => derivePluginDescriptor(manifest, { appVersion: "0.11.0" })).not.toThrow()
 	})
 
 	test("rejects when a panel declares an unknown host panel slot", () => {
@@ -272,10 +309,18 @@ describe("derivePluginDescriptor", () => {
 		)
 	})
 
-	test("derivePluginDescriptorOrNull returns null on host rejection", () => {
+	test("derivePluginDescriptorOrNull returns null on host rejection (desktop alias)", () => {
 		const manifest = parsePluginManifest({
 			...baseManifest,
 			engines: { desktop: "1.0.0" },
+		})
+		expect(derivePluginDescriptorOrNull(manifest, { appVersion: "0.11.0" })).toBeNull()
+	})
+
+	test("derivePluginDescriptorOrNull returns null when engines.firefly range not satisfied", () => {
+		const manifest = parsePluginManifest({
+			...baseManifest,
+			engines: { firefly: ">=1.0.0 <2.0.0" },
 		})
 		expect(derivePluginDescriptorOrNull(manifest, { appVersion: "0.11.0" })).toBeNull()
 	})

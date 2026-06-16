@@ -99,6 +99,31 @@ const semverSchema = z
 	)
 
 /**
+ * SemVer range constraint used by `engines.firefly`. Accepts the same
+ * subset that the Firefly host evaluates via `satisfiesSemverRange` in
+ * `descriptor.ts`:
+ *
+ *   `>=X.Y.Z`               – floor only (most common built-in form)
+ *   `>=X.Y.Z <A.B.C`        – floor + exclusive upper bound
+ *   `>=X.Y.Z <=A.B.C`       – floor + inclusive upper bound
+ *   `>X.Y.Z`                – exclusive floor (uncommon)
+ *   `<X.Y.Z` / `<=X.Y.Z`   – upper-only constraint
+ *   `X.Y.Z`                 – bare exact version (treated as `>=X.Y.Z`)
+ *
+ * Intentionally a subset of npm semver — complex range syntax (`||`, `~`,
+ * `^`, hyphen ranges) is not accepted to keep compatibility solving
+ * auditable at a glance.
+ */
+const semverRangeSchema = z
+	.string()
+	.min(1)
+	.max(80)
+	.regex(
+		/^(?:>=?|<=?)\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?(?:\s+(?:>=?|<=?)\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?)*$|^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?$/u,
+		"engines.firefly must be a semver range (e.g. '>=0.12.0', '>=0.12.0 <1.0.0')",
+	)
+
+/**
  * Activation triggers. Discriminated by `kind` so the host can index
  * activation cheaply. Unknown kinds are rejected to keep the activation
  * surface auditable.
@@ -469,11 +494,23 @@ export const pluginManifestSchema = z
 		manifestRevision: z.number().int().positive().max(64).default(1),
 
 		/**
-		 * Minimum host (desktop app) version that can load this plugin. The
-		 * host rejects activation if its own `appVersion` is below this.
+		 * Host compatibility constraints for this plugin.
+		 *
+		 * `engines.firefly` (canonical) — a SemVer range the host app version
+		 * must satisfy before loading this plugin (e.g. `">=0.12.0 <1.0.0"`).
+		 * Evaluated by `satisfiesSemverRange` in `descriptor.ts`.
+		 *
+		 * `engines.desktop` (migration alias, deprecated) — the old bare-floor
+		 * string from before the §5.2 rename. Treated by the host as
+		 * `>=${desktop}`. Remove once all built-ins have migrated.
+		 *
+		 * When both fields are present `engines.firefly` takes precedence;
+		 * `engines.desktop` is ignored.
 		 */
 		engines: z
 			.object({
+				firefly: semverRangeSchema.optional(),
+				/** @deprecated use `engines.firefly` — kept as migration alias */
 				desktop: semverSchema.optional(),
 			})
 			.strict()

@@ -526,23 +526,58 @@ describe("negotiateManifestRevision", () => {
 	})
 })
 
-describe("negotiateApiVersion (revision + engines.desktop)", () => {
-	test("compatible when both manifest revision and engines floor pass", () => {
+describe("negotiateApiVersion (revision + engines.firefly / engines.desktop alias)", () => {
+	test("compatible when both manifest revision and engines range pass (no range)", () => {
 		const decision = negotiateApiVersion({
 			hostAppVersion: CURRENT_HOST_VERSION,
 			hostKnownMaxRevision: 1,
 			manifestRevision: 1,
-			enginesDesktopFloor: null,
+			enginesFireflyRange: null,
 		})
 		expect(decision.compatible).toBe(true)
 		expect(decision.enginesFloorOk).toBe(true)
 	})
 
-	test("incompatible when engines.desktop floor is higher than host version", () => {
+	test("compatible when engines.firefly range is satisfied", () => {
 		const decision = negotiateApiVersion({
 			hostAppVersion: "0.11.0",
 			hostKnownMaxRevision: 1,
 			manifestRevision: 1,
+			enginesFireflyRange: ">=0.11.0 <1.0.0",
+		})
+		expect(decision.compatible).toBe(true)
+		expect(decision.enginesFloorOk).toBe(true)
+	})
+
+	test("incompatible when engines.firefly floor is higher than host version", () => {
+		const decision = negotiateApiVersion({
+			hostAppVersion: "0.11.0",
+			hostKnownMaxRevision: 1,
+			manifestRevision: 1,
+			enginesFireflyRange: ">=1.0.0",
+		})
+		expect(decision.compatible).toBe(false)
+		expect(decision.enginesFloorOk).toBe(false)
+		expect(decision.reason).toContain("engines.firefly range")
+	})
+
+	test("incompatible when host version exceeds engines.firefly upper bound", () => {
+		const decision = negotiateApiVersion({
+			hostAppVersion: "1.0.0",
+			hostKnownMaxRevision: 1,
+			manifestRevision: 1,
+			enginesFireflyRange: ">=0.11.0 <1.0.0",
+		})
+		expect(decision.compatible).toBe(false)
+		expect(decision.enginesFloorOk).toBe(false)
+	})
+
+	test("incompatible when engines.desktop alias floor is higher than host version (deprecated path)", () => {
+		const decision = negotiateApiVersion({
+			hostAppVersion: "0.11.0",
+			hostKnownMaxRevision: 1,
+			manifestRevision: 1,
+			enginesFireflyRange: null,
 			enginesDesktopFloor: "1.0.0",
 		})
 		expect(decision.compatible).toBe(false)
@@ -550,12 +585,25 @@ describe("negotiateApiVersion (revision + engines.desktop)", () => {
 		expect(decision.reason).toContain("engines.desktop floor")
 	})
 
+	test("engines.firefly takes precedence over engines.desktop alias", () => {
+		// firefly says compatible; desktop alias (if evaluated) would fail
+		const decision = negotiateApiVersion({
+			hostAppVersion: "0.11.0",
+			hostKnownMaxRevision: 1,
+			manifestRevision: 1,
+			enginesFireflyRange: ">=0.11.0",
+			enginesDesktopFloor: "99.0.0",
+		})
+		expect(decision.compatible).toBe(true)
+		expect(decision.enginesFloorOk).toBe(true)
+	})
+
 	test("incompatible when manifest revision is too high for the host", () => {
 		const decision = negotiateApiVersion({
 			hostAppVersion: CURRENT_HOST_VERSION,
 			hostKnownMaxRevision: 0,
 			manifestRevision: 1,
-			enginesDesktopFloor: null,
+			enginesFireflyRange: null,
 		})
 		expect(decision.compatible).toBe(false)
 		expect(decision.enginesFloorOk).toBe(true)

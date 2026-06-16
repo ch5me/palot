@@ -103,6 +103,44 @@ function compareSemver(a: string, b: string): number {
 }
 
 /**
+ * Evaluate whether `hostVersion` satisfies `range`.
+ *
+ * Supports the subset accepted by `semverRangeSchema` in `manifest.ts`:
+ *   `>=X.Y.Z`           – floor (inclusive)
+ *   `>X.Y.Z`            – floor (exclusive)
+ *   `<X.Y.Z`            – upper bound (exclusive)
+ *   `<=X.Y.Z`           – upper bound (inclusive)
+ *   `>=X.Y.Z <A.B.C`    – compound (space-separated; all must pass)
+ *   `X.Y.Z`             – bare version treated as `>=X.Y.Z`
+ *
+ * Throws if a constraint token cannot be parsed (which should not happen
+ * when the range was validated by `semverRangeSchema` at parse time).
+ */
+export function satisfiesSemverRange(hostVersion: string, range: string): boolean {
+	// bare version → treat as >=
+	const trimmed = range.trim()
+	if (/^\d/u.test(trimmed)) {
+		return compareSemver(hostVersion, trimmed) >= 0
+	}
+	// split compound range on whitespace, evaluate every constraint
+	const tokens = trimmed.split(/\s+/u)
+	for (const token of tokens) {
+		const match = /^(>=?|<=?)(\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?)$/u.exec(token)
+		if (!match) {
+			throw new Error(`satisfiesSemverRange: cannot parse constraint token "${token}" in range "${range}"`)
+		}
+		const op = match[1]!
+		const ver = match[2]!
+		const cmp = compareSemver(hostVersion, ver)
+		if (op === ">=" && cmp < 0) return false
+		if (op === ">" && cmp <= 0) return false
+		if (op === "<=" && cmp > 0) return false
+		if (op === "<" && cmp >= 0) return false
+	}
+	return true
+}
+
+/**
  * Derive a `PluginDescriptor` from a validated manifest. Pure & deterministic
  * so reload cycles can re-run this without state drift.
  *
@@ -118,10 +156,15 @@ export function derivePluginDescriptor(
 	const knownPanelSlot = options.knownPanelSlot ?? defaultKnownPanelSlot
 	const knownWidgetZone = options.knownWidgetZone ?? defaultKnownWidgetZone
 
-	if (manifest.engines.desktop && compareSemver(options.appVersion, manifest.engines.desktop) < 0) {
+	// Resolve the effective engines range: `engines.firefly` is canonical;
+	// `engines.desktop` is the migration alias treated as `>=<floor>`.
+	const enginesRange: string | undefined =
+		manifest.engines.firefly ?? (manifest.engines.desktop ? `>=${manifest.engines.desktop}` : undefined)
+	if (enginesRange !== undefined && !satisfiesSemverRange(options.appVersion, enginesRange)) {
+		const field = manifest.engines.firefly ? "engines.firefly" : "engines.desktop"
 		issues.push({
-			path: ["engines", "desktop"],
-			message: `host appVersion ${options.appVersion} is below plugin floor ${manifest.engines.desktop}`,
+			path: ["engines", "firefly"],
+			message: `host appVersion ${options.appVersion} does not satisfy ${field} range "${enginesRange}"`,
 		})
 	}
 

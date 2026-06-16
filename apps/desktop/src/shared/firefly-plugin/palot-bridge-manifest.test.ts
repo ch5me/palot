@@ -69,12 +69,16 @@ describe("palotBridgeManifest", () => {
 		expect(byName("ui_state")?.requires).toContain("host:bridge.ui-state-read")
 	})
 
-	test("engine floor matches the current app version (managed server only in V2)", () => {
+	test("engine range matches current app version via engines.firefly (managed server only in V2)", () => {
 		const parsed = parsePluginManifest(palotBridgeManifest)
-		expect(parsed.engines.desktop).toBe("0.11.0")
+		expect(parsed.engines.firefly).toBe(">=0.11.0")
+		expect(parsed.engines.desktop).toBeUndefined()
 		expect(() =>
 			derivePluginDescriptor(parsed, { appVersion: "0.10.0" }),
 		).toThrow()
+		expect(() =>
+			derivePluginDescriptor(parsed, { appVersion: "0.11.0" }),
+		).not.toThrow()
 	})
 
 	test("side panel tab enum matches the current 18-tab inventory", () => {

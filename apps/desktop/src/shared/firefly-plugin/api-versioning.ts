@@ -34,6 +34,7 @@
 import { z } from "zod"
 
 import type { TrustTier } from "./manifest"
+import { satisfiesSemverRange } from "./descriptor"
 
 // ---------------------------------------------------------------------------
 // Wire / revision constants
@@ -565,16 +566,27 @@ export function negotiateManifestRevision(
 }
 
 /**
- * Convenience wrapper that also folds in the optional `engines.desktop`
- * floor check from the manifest. Either floor failing causes rejection;
- * the returned `rule` reflects the manifest revision rule, not the
- * engines floor, so the caller can log both.
+ * Convenience wrapper that also folds in the optional `engines.firefly`
+ * range check (or the deprecated `engines.desktop` floor alias) from the
+ * manifest. Either check failing causes rejection; the returned `rule`
+ * reflects the manifest revision rule, not the engines range, so the
+ * caller can log both.
  */
 export interface NegotiateApiVersionInput {
 	readonly hostAppVersion: string
 	readonly hostKnownMaxRevision: number
 	readonly manifestRevision: number
-	readonly enginesDesktopFloor: string | null
+	/**
+	 * SemVer range from `engines.firefly` (canonical, §5.2).
+	 * When both `enginesFireflyRange` and `enginesDesktopFloor` are
+	 * provided, `enginesFireflyRange` takes precedence.
+	 */
+	readonly enginesFireflyRange: string | null
+	/**
+	 * @deprecated Migration alias for `engines.desktop` (bare floor).
+	 * Ignored when `enginesFireflyRange` is non-null.
+	 */
+	readonly enginesDesktopFloor?: string | null
 }
 
 export interface NegotiateApiVersionDecision {
@@ -590,16 +602,24 @@ export function negotiateApiVersion(input: NegotiateApiVersionInput): NegotiateA
 		hostAppVersion: input.hostAppVersion,
 		hostKnownMaxRevision: input.hostKnownMaxRevision,
 	})
+
+	// Resolve the effective range: canonical field first, then alias.
+	const effectiveRange: string | null =
+		input.enginesFireflyRange ?? (input.enginesDesktopFloor ? `>=${input.enginesDesktopFloor}` : null)
+
 	let enginesFloorOk = true
-	if (input.enginesDesktopFloor) {
-		if (compareSemver(input.hostAppVersion, input.enginesDesktopFloor) < 0) {
+	if (effectiveRange) {
+		if (!satisfiesSemverRange(input.hostAppVersion, effectiveRange)) {
 			enginesFloorOk = false
 		}
 	}
 	const compatible = revisionDecision.compatible && enginesFloorOk
 	let reason = revisionDecision.reason
 	if (!enginesFloorOk) {
-		reason = `${reason}; engines.desktop floor ${input.enginesDesktopFloor} not met by host ${input.hostAppVersion}`
+		const rangeLabel = input.enginesFireflyRange
+			? `engines.firefly range "${effectiveRange}"`
+			: `engines.desktop floor ${input.enginesDesktopFloor}`
+		reason = `${reason}; ${rangeLabel} not satisfied by host ${input.hostAppVersion}`
 	}
 	return { compatible, reason, revisionDecision, enginesFloorOk }
 }
