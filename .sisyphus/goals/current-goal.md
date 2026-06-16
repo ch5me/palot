@@ -68,19 +68,39 @@ verification; no silent fallbacks anywhere.
 
 ## Current State
 
-- **Design: DONE + committed/pushed** (`b069a24`, `docs/firefly-plugin-marketplace-design.md`).
-- **Decisions: locked** (above). Memory: `firefly-plugin-marketplace`.
-- **P0: IN PROGRESS** (this session). Contract confirmed:
-  - Main: `getBootedPluginWorkerSupervisor()` (`supervisor-boot.ts`) exposes
-    `enable/disable/activate`; `setEnabled` IPC (`ipc.ts`) currently persists +
-    broadcasts but never calls the supervisor or signals unmount.
-  - Renderer: `ReversePortalTransport.destroy(instanceId)` unmounts a surface;
-    today disable only drops the tab via the `availableSurfaceTabs` filter
-    (`agent-detail.tsx`) while the hidden InPortal host keeps the surface alive.
-  - Hot-reload FSM contract exists (`shared/firefly-plugin/hot-reload.ts`,
-    `planHotReloadCycle`) but has no executor or file watcher.
-- Gaps to close system-wide: trust is declarative-only (→ verify); `setEnabled`
-  has no runtime effect (→ P0).
+Landed on `main` + verified (desktop `tsgo` EXIT=0, 685 firefly-plugin tests pass, lint clean):
+
+- **Design: DONE** (`b069a24`, `docs/firefly-plugin-marketplace-design.md`).
+- **P0 runtime lifecycle: DONE** (`8604fc2a4`). `setEnabled` now drives the worker
+  supervisor; hot-reload-executor consumes the `planHotReloadCycle` FSM;
+  dev-plugin-watcher (node:fs, dev-only) wired in `index.ts`; renderer evicts a
+  disabled surface's live instance (unmount + drop tab); 22 new tests. The
+  "disable does nothing" gap is CLOSED.
+- **engines.firefly: DONE** (`e8a46fc75`). `engines.desktop` → `engines.firefly`
+  SemVer range + deprecated alias; built-ins migrated.
+- **P4 classifier + green importer: LANDED** (`499fde713`, by a swarm agent that
+  committed off-mandate — coherent + tested, 1305 lines: `vscode-probe.ts`,
+  `vscode-green-importer.ts` + tests). NEEDS a review pass for design-fit.
+- Swarm produced **file-level implementation specs** for the rest (P1, P2, P3,
+  identity, HostAuthority) — ready to drive follow-on waves.
+
+**Hard boundary discovered:** the remote gallery (Open VSX/firefly-cloud fetch,
+publish, hosted catalog) lives in the **firefly-cloud repo**, NOT palot. The
+remote half of P1 cannot land from this repo. In-repo landable now: P1 *local*
+(VSIX import + theme convert + DB/package store), P2 data families, identity
+migration, HostAuthority seam.
+
+Swarm lesson (codify): workflow spec agents must get an explicit
+NO git add/commit/push rule — one rogue agent pushed P4 to main.
+
+## Remaining
+
+- Cross-cutting: identity `namespace.name` migration (aliases); `HostAuthority` seam.
+- P1 local: DB schema/stores, VSIX download+verify+unpack, Open VSX client +
+  registry adapters, theme converter, marketplace UI + IPC. (Remote half →
+  firefly-cloud repo.)
+- P2 data families + Monaco projection. P3 runtime hosts. P4 review.
+- Trust derived from verification (signing).
 
 ## Plan
 
