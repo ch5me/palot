@@ -1321,6 +1321,63 @@ export function registerPdfReviewHostHandlers(deps?: Partial<PdfReviewHostDeps>)
 	})
 }
 
+// ---------------------------------------------------------------------------
+// CRM surface host handlers (firefly.built-in.surface.crm)
+// ---------------------------------------------------------------------------
+
+export interface CrmHostDeps {
+	openSidePanel: (tab: "crm") => Promise<void>
+	getSidePanelState: () => SidePanelStateSnapshot
+	setPluginEnabled: (pluginId: string, enabled: boolean) => { enabled: boolean }
+}
+
+const CRM_PLUGIN_ID = "firefly.built-in.surface.crm"
+
+export function registerCrmHostHandlers(deps?: Partial<CrmHostDeps>): void {
+	const openSidePanel =
+		deps?.openSidePanel ??
+		(async (tab: "crm") => {
+			const { broadcastOpenSidePanel } = await import("../palot-browser-ipc")
+			await broadcastOpenSidePanel(tab)
+		})
+	const getSidePanelState = deps?.getSidePanelState ?? defaultGetSidePanelState
+	const setEnabled =
+		deps?.setPluginEnabled ??
+		((pluginId: string, enabled: boolean) => {
+			// eslint-disable-next-line @typescript-eslint/no-var-requires
+			const authority = require("./authority") as typeof import("./authority")
+			return authority.setPluginEnabled(pluginId, enabled)
+		})
+
+	registerHostTool(CRM_PLUGIN_ID, "plugin.firefly.built-in.surface.crm.open", async () => {
+		await openSidePanel("crm")
+		return ok({ opened: true, tab: "crm", source: "v2-plugin-tool-dispatch" })
+	})
+
+	registerHostTool(CRM_PLUGIN_ID, "plugin.firefly.built-in.surface.crm.state", async () => {
+		const sidePanel = getSidePanelState()
+		return ok({
+			tab: "crm",
+			available: sidePanel.availableTabs.includes("crm"),
+			open: sidePanel.open,
+			active: sidePanel.open && sidePanel.activeTab === "crm",
+		})
+	})
+
+	registerHostCommand(CRM_PLUGIN_ID, "open-crm", async () => {
+		await openSidePanel("crm")
+		return ok({ opened: true, tab: "crm" })
+	})
+
+	registerHostCommand(CRM_PLUGIN_ID, "toggle-crm", async () => {
+		const catalog = getPluginCatalog()
+		const state = catalog.capabilityStates[CRM_PLUGIN_ID]
+		const currentlyEnabled = !(state?.pluginDisabled ?? false)
+		const next = setEnabled(CRM_PLUGIN_ID, !currentlyEnabled)
+		return ok({ pluginId: CRM_PLUGIN_ID, enabled: next.enabled })
+	})
+}
+
 export function registerDevmuxHostHandlers(): void {
 	// UI commands (renderer-invoked via firefly-plugin:invoke).
 	registerHostCommand(DEVMUX_TOOLBAR_PLUGIN_ID, "devmux-list", ({ args }) => devmuxList(args))
@@ -1373,6 +1430,7 @@ export function registerBuiltInHostCommands(): void {
 	registerStudioHostHandlers()
 	registerCh5pmHostHandlers()
 	registerPdfReviewHostHandlers()
+	registerCrmHostHandlers()
 	registerDevmuxHostHandlers()
 	log.info("Registered V2 host command handlers", {
 		commands: Array.from(handlers.keys()),

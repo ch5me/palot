@@ -92,6 +92,10 @@ import {
 	pdfReviewPluginManifest,
 	PDF_REVIEW_PLUGIN_ID,
 } from "../../../plugins/pdf-review/manifest"
+import {
+	crmPluginManifest,
+	CRM_PLUGIN_ID,
+} from "../../../plugins/crm/manifest"
 import { BUILT_IN_DEFAULT_CAPABILITIES } from "../../shared/firefly-plugin/capabilities"
 import { type PluginDescriptor } from "../../shared/firefly-plugin/descriptor"
 import {
@@ -157,6 +161,7 @@ const BUILT_IN_MANIFESTS: readonly PluginManifest[] = [
 	studioPluginManifest,
 	ch5pmPluginManifest,
 	pdfReviewPluginManifest,
+	crmPluginManifest,
 ]
 
 /**
@@ -520,4 +525,5 @@ export const KNOWN_PLUGIN_IDS = {
 	studio: STUDIO_PLUGIN_ID,
 	ch5pm: CH5PM_PLUGIN_ID,
 	pdfReview: PDF_REVIEW_PLUGIN_ID,
+	crm: CRM_PLUGIN_ID,
 } as const

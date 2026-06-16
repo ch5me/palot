@@ -30,7 +30,7 @@ import type { OpenInTarget } from "../../preload/api"
 import {
 	// ch5pmSurfaceEnabledAtom removed — ch5pm is catalog-served (firefly.built-in.surface.ch5pm).
 	// claudeSurfaceEnabledAtom removed — claude is catalog-served (firefly.built-in.surface.claude).
-	crmSurfaceEnabledAtom,
+	// crmSurfaceEnabledAtom removed — crm is catalog-served (firefly.built-in.surface.crm).
 	// oracleSurfaceEnabledAtom removed — oracle is catalog-served (firefly.built-in.surface.oracle).
 	// voiceSurfaceEnabledAtom removed — voice is catalog-served (firefly.built-in.surface.voice).
 	// browserPanelEnabledAtom removed — browser is catalog-served (firefly.built-in.surface.browser).
@@ -312,7 +312,7 @@ export function AgentDetail({
 	// voiceSurfaceEnabled removed — voice is catalog-served (firefly.built-in.surface.voice).
 	// studioSurfaceEnabled removed — studio is catalog-served (firefly.built-in.surface.studio).
 	const pluginsSurfaceEnabled = useAtomValue(pluginsSurfaceEnabledAtom)
-	const crmSurfaceEnabled = useAtomValue(crmSurfaceEnabledAtom)
+	// crmSurfaceEnabled removed — crm is catalog-served (firefly.built-in.surface.crm).
 	// ch5pmSurfaceEnabled removed — ch5pm is catalog-served (firefly.built-in.surface.ch5pm).
 	// pdfReviewSurfaceEnabled removed — pdf-review is catalog-served (firefly.built-in.surface.pdf-review).
 
@@ -323,7 +323,6 @@ export function AgentDetail({
 			diffStats,
 			flags: {
 				plugins: pluginsSurfaceEnabled,
-				crm: crmSurfaceEnabled,
 			},
 			chatTurnCount: chatTurns.length,
 		}
@@ -333,7 +332,6 @@ export function AgentDetail({
 		catalogSurfaceTabs,
 		diffStats,
 		pluginsSurfaceEnabled,
-		crmSurfaceEnabled,
 		chatTurns.length,
 	])
 

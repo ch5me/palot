@@ -1,3 +1,9 @@
+/**
+ * CRM / Contacts — plugin panel component.
+ * Moved from apps/desktop/src/renderer/components/side-panel/crm-panel.tsx
+ * as part of the V2 catalog migration (firefly.built-in.surface.crm).
+ */
+
 import { Button, Input, Textarea } from "@ch5me/ch5-ui-web";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import {
@@ -16,7 +22,7 @@ import {
 } from "lucide-react"
 import { useEffect, useMemo, useState } from "react"
 import { toast } from "sonner"
-import type { Agent } from "../../lib/types"
+import type { Agent } from "../../../src/renderer/lib/types"
 import {
 	deleteCrmContact,
 	fetchCrmStore,
@@ -25,12 +31,11 @@ import {
 	saveCrmContact,
 	sendInboxMessage,
 	type InboxMessage,
-} from "../../services/backend"
-import type { CrmContact, Customer } from "../../../preload/api"
+} from "../../../src/renderer/services/backend"
+import type { CrmContact, Customer } from "../../../src/preload/api"
 
-interface CrmPanelProps {
+export interface PluginPanelProps {
 	agent: Agent
-	className?: string
 }
 
 const CHANNEL_OPTIONS: Array<{ value: CrmContact["channel"]; label: string }> = [
@@ -90,7 +95,7 @@ function isElectronMode(): boolean {
 	return typeof window !== "undefined" && "elf" in window
 }
 
-export function CrmPanel({ agent, className }: CrmPanelProps) {
+export default function CrmPanel({ agent }: PluginPanelProps) {
 	const queryClient = useQueryClient()
 	const store = useCrmStore()
 	const customers = useCustomers()
@@ -206,7 +211,7 @@ export function CrmPanel({ agent, className }: CrmPanelProps) {
 	}
 
 	return (
-		<div className={`flex h-full min-h-0 flex-col bg-background ${className ?? ""}`}>
+		<div className="flex h-full min-h-0 flex-col bg-background">
 			<div className="border-b border-border px-4 py-3">
 				<div className="flex items-center justify-between gap-3">
 					<div>

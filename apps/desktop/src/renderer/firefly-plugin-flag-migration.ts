@@ -87,6 +87,10 @@ export const SURFACE_FLAG_MIGRATIONS: readonly SurfaceFlagMigration[] = [
 		pluginId: "firefly.built-in.surface.pdf-review",
 		legacyStorageKey: "elf:pdfReviewSurfaceEnabled",
 	},
+	{
+		pluginId: "firefly.built-in.surface.crm",
+		legacyStorageKey: "elf:crmSurfaceEnabled",
+	},
 ]
 
 const MARKER_PREFIX = "elf:plugin-flag-migrated:"

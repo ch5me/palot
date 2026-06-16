@@ -22,7 +22,7 @@ import { Component, lazy, Suspense, useMemo, type ComponentType, type ErrorInfo,
  * sandbox policy task).
  */
 
-import { ActivityIcon, BookTextIcon, BoxesIcon, DatabaseIcon, FileDiffIcon, FilesIcon, FileTextIcon, GlobeIcon, MicIcon, MonitorPlayIcon, PlugIcon, RectangleEllipsisIcon, Share2Icon, SquarePenIcon, TerminalSquareIcon, WandSparklesIcon, type LucideIcon } from "lucide-react"
+import { ActivityIcon, BookTextIcon, BoxesIcon, DatabaseIcon, FileDiffIcon, FilesIcon, FileTextIcon, GlobeIcon, MicIcon, MonitorPlayIcon, PlugIcon, RectangleEllipsisIcon, Share2Icon, SquarePenIcon, TerminalSquareIcon, UsersIcon, WandSparklesIcon, type LucideIcon } from "lucide-react"
 import { Button } from "@ch5me/ch5-ui-web"
 import { useQuery, useQueryClient } from "@tanstack/react-query"
 import type { ProjectedSidePanel } from "../shared/firefly-plugin/renderer-projection"
@@ -64,6 +64,7 @@ export const PLUGIN_PANEL_COMPONENTS: Readonly<
 	"firefly.built-in.surface.studio.studio": lazy(() => import("../../plugins/studio/panel/studio-panel")),
 	"firefly.built-in.surface.ch5pm.ch5pm": lazy(() => import("../../plugins/ch5pm/panel/ch5pm-panel")),
 	"firefly.built-in.surface.pdf-review.pdf-review": lazy(() => import("../../plugins/pdf-review/panel/pdf-review-panel")),
+	"firefly.built-in.surface.crm.crm": lazy(() => import("../../plugins/crm/panel/crm-panel")),
 }
 
 /** Manifest icon-name → Lucide component. Extend per migrated surface. */
@@ -83,6 +84,7 @@ const PANEL_ICONS: Readonly<Record<string, LucideIcon>> = {
 	"mic": MicIcon,
 	"monitor-play": MonitorPlayIcon,
 	"file-text": FileTextIcon,
+	"users": UsersIcon,
 }
 
 function panelIcon(iconName: string | null): LucideIcon {

@@ -1,4 +1,4 @@
-import { PlugIcon, UsersIcon, type LucideIcon } from "lucide-react"
+import { PlugIcon, type LucideIcon } from "lucide-react"
 
 import type { ReactNode } from "react"
 
@@ -8,7 +8,8 @@ import type { ReactNode } from "react"
 // apps/desktop/plugins/browser) — do not re-add a row or import here.
 // `claude` is served from the plugin catalog (firefly.built-in.surface.claude,
 // apps/desktop/plugins/claude) — do not re-add a row or import here.
-import { CrmPanel } from "./components/side-panel/crm-panel"
+// `crm` is served from the plugin catalog (firefly.built-in.surface.crm,
+// apps/desktop/plugins/crm) — do not re-add a row or import here.
 // `pdf-review` is served from the plugin catalog (firefly.built-in.surface.pdf-review,
 // apps/desktop/plugins/pdf-review) — do not re-add a row or import here.
 // `studio` is served from the plugin catalog (firefly.built-in.surface.studio,
@@ -111,27 +112,8 @@ export const FIREFLY_SURFACE_REGISTRY: FireflySurfaceDef[] = [
 	},
 	// `bridges` is served from the plugin catalog (firefly.built-in.surface.bridges,
 	// apps/desktop/plugins/bridges) — do not re-add a row here.
-	{
-		id: "crm",
-		manifestId: "firefly.built-in.side-panel.crm",
-		title: "Contacts / CRM",
-		icon: UsersIcon,
-		formFactor: "side-panel-tab",
-		lane: "utility",
-		enabledFlag: {
-			key: "crm",
-		},
-		defaultOn: true,
-		availability: (ctx) =>
-			ctx.flags.crm
-				? { available: true }
-				: { available: false, reason: "Contacts / CRM surface is disabled in feature flags" },
-		commandIds: ["surface.crm.open", "surface.crm.toggle"],
-		persistenceKey: "side-panel.crm",
-		telemetryNamespace: "firefly.surface.crm",
-		target: { kind: "side-panel", tab: "crm" },
-		spawn: (ctx) => <CrmPanel agent={ctx.agent} />,
-	},
+	// `crm` is served from the plugin catalog (firefly.built-in.surface.crm,
+	// apps/desktop/plugins/crm) — do not re-add a row here.
 	// `studio` is served from the plugin catalog (firefly.built-in.surface.studio,
 	// apps/desktop/plugins/studio) — do not re-add a row here.
 	// `voice` is served from the plugin catalog (firefly.built-in.surface.voice,
@@ -165,7 +147,7 @@ import { FIREFLY_SURFACE_IDS, type FireflySurfaceId } from "../shared/firefly-su
  * they are served from the plugin catalog (host plugin lifecycle owns
  * their enable/disable). First migrated surface: notes.
  */
-export const CATALOG_SERVED_SURFACE_IDS: readonly FireflySurfaceId[] = ["browser", "notes", "review", "files", "artifacts", "bridges", "pulse", "memory", "editor", "terminal", "claude", "oracle", "voice", "studio", "ch5pm", "pdf-review"]
+export const CATALOG_SERVED_SURFACE_IDS: readonly FireflySurfaceId[] = ["browser", "notes", "review", "files", "artifacts", "bridges", "pulse", "memory", "editor", "terminal", "claude", "oracle", "voice", "studio", "ch5pm", "pdf-review", "crm"]
 
 export const FIREFLY_SURFACE_DEFAULT_ON = Object.fromEntries(
 	FIREFLY_SURFACE_REGISTRY.map((surface) => [surface.id, surface.defaultOn]),

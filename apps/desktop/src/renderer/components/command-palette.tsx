@@ -59,7 +59,7 @@ import {
 	// browserPanelEnabledAtom removed — browser is catalog-served (firefly.built-in.surface.browser).
 	// ch5pmSurfaceEnabledAtom removed — ch5pm is catalog-served (firefly.built-in.surface.ch5pm).
 	// claudeSurfaceEnabledAtom removed — claude is catalog-served (firefly.built-in.surface.claude).
-	crmSurfaceEnabledAtom,
+	// crmSurfaceEnabledAtom removed — crm is catalog-served (firefly.built-in.surface.crm).
 	pluginsSurfaceEnabledAtom,
 	// pdfReviewSurfaceEnabledAtom removed — pdf-review is catalog-served (firefly.built-in.surface.pdf-review).
 	// studioSurfaceEnabledAtom removed — studio is catalog-served (firefly.built-in.surface.studio).
@@ -68,7 +68,7 @@ import {
 	// toggleBrowserPanelAtom removed — browser is catalog-served; toggle via window.elf.plugins.setEnabled.
 	// toggleCh5PmSurfaceAtom removed — ch5pm is catalog-served; toggle via window.elf.plugins.setEnabled.
 	// toggleClaudeSurfaceAtom removed — claude is catalog-served; toggle via window.elf.plugins.setEnabled.
-	toggleCrmSurfaceAtom,
+	// toggleCrmSurfaceAtom removed — crm is catalog-served; toggle via window.elf.plugins.setEnabled.
 	// togglePdfReviewSurfaceAtom removed — pdf-review is catalog-served; toggle via window.elf.plugins.setEnabled.
 	togglePluginsSurfaceAtom,
 	// toggleStudioSurfaceAtom removed — studio is catalog-served; toggle via window.elf.plugins.setEnabled.
@@ -141,11 +141,11 @@ export function CommandPalette({ open, onOpenChange, agents, onForkSession }: Co
 	// studioSurfaceEnabled removed — studio is catalog-served (firefly.built-in.surface.studio).
 	// ch5pmSurfaceEnabled removed — ch5pm is catalog-served (firefly.built-in.surface.ch5pm).
 	const pluginsSurfaceEnabled = useAtomValue(pluginsSurfaceEnabledAtom)
-	const crmSurfaceEnabled = useAtomValue(crmSurfaceEnabledAtom)
+	// crmSurfaceEnabled removed — crm is catalog-served (firefly.built-in.surface.crm).
 	// pdfReviewSurfaceEnabled removed — pdf-review is catalog-served (firefly.built-in.surface.pdf-review).
 	// toggleBrowserPanel removed — browser is catalog-served; toggle via browserPluginEnabled + window.elf.plugins.setEnabled.
 	const togglePluginsSurface = useSetAtom(togglePluginsSurfaceAtom)
-	const toggleCrmSurface = useSetAtom(toggleCrmSurfaceAtom)
+	// toggleCrmSurface removed — crm is catalog-served; toggle via crmPluginEnabled + window.elf.plugins.setEnabled.
 	// toggleStudioSurface removed — studio is catalog-served; toggle via studioPluginEnabled + window.elf.plugins.setEnabled.
 	// toggleVoiceSurface removed — voice is catalog-served; toggle via voicePluginEnabled + window.elf.plugins.setEnabled.
 	// toggleCh5PmSurface removed — ch5pm is catalog-served; toggle via ch5pmPluginEnabled + window.elf.plugins.setEnabled.
@@ -217,7 +217,7 @@ export function CommandPalette({ open, onOpenChange, agents, onForkSession }: Co
 			},
 			flags: {
 				plugins: pluginsSurfaceEnabled,
-				crm: crmSurfaceEnabled,
+				// crm removed — crm is catalog-served (firefly.built-in.surface.crm).
 				// ch5pm removed — ch5pm is catalog-served (firefly.built-in.surface.ch5pm).
 				// pdfReview removed — pdf-review is catalog-served (firefly.built-in.surface.pdf-review).
 			},
@@ -226,7 +226,6 @@ export function CommandPalette({ open, onOpenChange, agents, onForkSession }: Co
 	}, [
 		activeAgent,
 		pluginsSurfaceEnabled,
-		crmSurfaceEnabled,
 	])
 
 
@@ -413,6 +412,19 @@ export function CommandPalette({ open, onOpenChange, agents, onForkSession }: Co
 		await window.elf?.plugins.setEnabled("firefly.built-in.surface.pdf-review", !pdfReviewPluginEnabled)
 		await queryClient.invalidateQueries({ queryKey: ["firefly-plugin"] })
 	}, [pdfReviewPluginEnabled, queryClient])
+
+	// CRM is a catalog-served plugin: its enable/disable flows through
+	// the host plugin lifecycle, not a renderer feature-flag atom.
+	const crmPluginEntry = pluginList?.plugins.find(
+		(plugin) => plugin.pluginId === "firefly.built-in.surface.crm",
+	)
+	const crmPluginEnabled = crmPluginEntry
+		? crmPluginEntry.status !== "disabled" && crmPluginEntry.status !== "quarantined"
+		: true
+	const toggleCrmPlugin = useCallback(async () => {
+		await window.elf?.plugins.setEnabled("firefly.built-in.surface.crm", !crmPluginEnabled)
+		await queryClient.invalidateQueries({ queryKey: ["firefly-plugin"] })
+	}, [crmPluginEnabled, queryClient])
 
 	const catalogSurfaceTabs = useCatalogSurfaceTabs(activeAgent)
 	const availableSurfaceTabs = useMemo(
@@ -741,14 +753,14 @@ export function CommandPalette({ open, onOpenChange, agents, onForkSession }: Co
 					</CommandItem>
 					<CommandItem
 						keywords={["crm", "contacts", "people", "relationships"]}
-						onSelect={() => {
-							toggleCrmSurface()
+						onSelect={async () => {
+							await toggleCrmPlugin()
 							onOpenChange(false)
 						}}
 					>
 						<UsersIcon />
-						<span>{crmSurfaceEnabled ? "Disable Contacts / CRM Surface" : "Enable Contacts / CRM Surface"}</span>
-						{crmSurfaceEnabled && <CheckIcon className="ml-auto h-4 w-4" />}
+						<span>{crmPluginEnabled ? "Disable Contacts / CRM Surface" : "Enable Contacts / CRM Surface"}</span>
+						{crmPluginEnabled && <CheckIcon className="ml-auto h-4 w-4" />}
 					</CommandItem>
 					<CommandItem
 						keywords={["studio", "office", "documents", "preview"]}
