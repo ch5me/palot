@@ -260,6 +260,21 @@ contextBridge.exposeInMainWorld("elf", {
 	},
 
 	openExternal: (url: string) => ipcRenderer.invoke("browser:open-external", url),
+	marketplace: {
+		gallerySearch: (options: {
+			query?: string
+			category?: string
+			size?: number
+			offset?: number
+		}) => ipcRenderer.invoke("firefly-marketplace:gallery-search", options),
+		install: (input: import("./api").MarketplaceInstallInput) =>
+			ipcRenderer.invoke("firefly-marketplace:install", input),
+		listInstalled: () => ipcRenderer.invoke("firefly-marketplace:list-installed"),
+		uninstall: (installationId: string) =>
+			ipcRenderer.invoke("firefly-marketplace:uninstall", { installationId }),
+		applyTheme: (installationId: string, themeId: string) =>
+			ipcRenderer.invoke("firefly-marketplace:apply-theme", { installationId, themeId }),
+	},
 	plugins: {
 		list: () => ipcRenderer.invoke("firefly-plugin:list"),
 		describe: (pluginId: string) => ipcRenderer.invoke("firefly-plugin:describe", { pluginId }),

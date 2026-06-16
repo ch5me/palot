@@ -140,6 +140,72 @@ export type HostToolDispatchEnvelope = {
 }
 
 // ---------------------------------------------------------------------------
+// Marketplace types (§7, §8) — additive, no existing types changed
+// ---------------------------------------------------------------------------
+
+export interface MarketplaceSearchOptions {
+	query?: string
+	category?: string
+	size?: number
+	offset?: number
+}
+
+export interface MarketplaceSearchEntry {
+	namespace: string
+	name: string
+	displayName: string | null
+	description: string | null
+	version: string
+	iconUrl: string | null
+	downloadCount: number | null
+}
+
+export interface MarketplaceSearchResult {
+	offset: number
+	totalSize: number
+	extensions: MarketplaceSearchEntry[]
+}
+
+export interface MarketplaceInstallInput {
+	kind: "open-vsx" | "local-vsix"
+	// open-vsx fields
+	namespace?: string
+	name?: string
+	version?: string
+	// local-vsix fields
+	vsixPath?: string
+	expectedSha256?: string
+}
+
+export interface MarketplaceInstalledTheme {
+	id: string
+	label: string
+	kind: "light" | "dark" | "high-contrast"
+}
+
+export interface MarketplaceInstallResult {
+	packageId: string
+	installationId: string
+	externalId: string
+	displayName: string | null
+	version: string
+	themes: MarketplaceInstalledTheme[]
+	alreadyInstalled: boolean
+}
+
+export interface MarketplaceInstalledEntry {
+	packageId: string
+	installationId: string
+	externalId: string
+	displayName: string | null
+	version: string
+	registrySource: string
+	lifecycleState: string
+	appliedThemeId: string | null
+	themes: MarketplaceInstalledTheme[]
+}
+
+// ---------------------------------------------------------------------------
 // The HostAuthority interface — one contract, two implementations (§2.4)
 // ---------------------------------------------------------------------------
 
@@ -208,4 +274,23 @@ export interface HostAuthority {
 
 	/** Release a quarantined plugin back to service. */
 	releaseQuarantine(pluginId: string, note: string): HostPluginReleaseQuarantineResult
+
+	// -------------------------------------------------------------------------
+	// Marketplace methods (§7, §8) — additive
+	// -------------------------------------------------------------------------
+
+	/** Search the Open VSX gallery for theme extensions. */
+	gallerySearch(options: MarketplaceSearchOptions): Promise<MarketplaceSearchResult>
+
+	/** Install an extension from Open VSX or a local .vsix path. */
+	installExtension(input: MarketplaceInstallInput): Promise<MarketplaceInstallResult>
+
+	/** List all installed extensions. */
+	listInstalledExtensions(): Promise<{ extensions: MarketplaceInstalledEntry[] }>
+
+	/** Uninstall an extension by installation id. */
+	uninstallExtension(installationId: string): Promise<{ ok: true }>
+
+	/** Record the applied theme id on an installation. */
+	applyTheme(installationId: string, themeId: string): Promise<{ ok: true }>
 }

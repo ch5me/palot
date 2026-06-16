@@ -883,6 +883,63 @@ export interface McpConnectionConfigMutationInput {
 // Firefly Cloud auth types
 // ============================================================
 
+// ============================================================
+// Marketplace types (§7, §8)
+// ============================================================
+
+export interface MarketplaceSearchEntry {
+	namespace: string
+	name: string
+	displayName: string | null
+	description: string | null
+	version: string
+	iconUrl: string | null
+	downloadCount: number | null
+}
+
+export interface MarketplaceSearchResult {
+	offset: number
+	totalSize: number
+	extensions: MarketplaceSearchEntry[]
+}
+
+export interface MarketplaceInstallInput {
+	kind: "open-vsx" | "local-vsix"
+	namespace?: string
+	name?: string
+	version?: string
+	vsixPath?: string
+	expectedSha256?: string
+}
+
+export interface MarketplaceInstalledTheme {
+	id: string
+	label: string
+	kind: "light" | "dark" | "high-contrast"
+}
+
+export interface MarketplaceInstallResult {
+	packageId: string
+	installationId: string
+	externalId: string
+	displayName: string | null
+	version: string
+	themes: MarketplaceInstalledTheme[]
+	alreadyInstalled: boolean
+}
+
+export interface MarketplaceInstalledEntry {
+	packageId: string
+	installationId: string
+	externalId: string
+	displayName: string | null
+	version: string
+	registrySource: string
+	lifecycleState: string
+	appliedThemeId: string | null
+	themes: MarketplaceInstalledTheme[]
+}
+
 export interface ElfAuthStateDto {
 	hasToken: boolean
 	elfUserId: string | null
@@ -1605,6 +1662,20 @@ restoreBackup: () => Promise<{
 
 	auth: ElfAuthApi
 	cloud: FireflyCloudApi
+
+	/** Firefly Plugin Marketplace — search, install, manage theme extensions. */
+	marketplace: {
+		gallerySearch: (options: {
+			query?: string
+			category?: string
+			size?: number
+			offset?: number
+		}) => Promise<MarketplaceSearchResult>
+		install: (input: MarketplaceInstallInput) => Promise<MarketplaceInstallResult>
+		listInstalled: () => Promise<{ extensions: MarketplaceInstalledEntry[] }>
+		uninstall: (installationId: string) => Promise<{ ok: true }>
+		applyTheme: (installationId: string, themeId: string) => Promise<{ ok: true }>
+	}
 }
 
 declare global {

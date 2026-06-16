@@ -11,6 +11,15 @@ import { ElectronHostAuthority } from "./host-authority"
 
 const log = createLogger("firefly-plugin-ipc")
 
+// Marketplace IPC channel names (additive — do not rename existing channels)
+export const FIREFLY_MARKETPLACE_IPC_CHANNELS = {
+	gallerySearch: "firefly-marketplace:gallery-search",
+	install: "firefly-marketplace:install",
+	listInstalled: "firefly-marketplace:list-installed",
+	uninstall: "firefly-marketplace:uninstall",
+	applyTheme: "firefly-marketplace:apply-theme",
+} as const
+
 export const FIREFLY_PLUGIN_IPC_CHANNELS = {
 	list: "firefly-plugin:list",
 	describe: "firefly-plugin:describe",
@@ -136,6 +145,68 @@ export function registerFireflyPluginIpc(): void {
 
 	log.info("Registered V2 plugin IPC channels", {
 		channels: Object.values(FIREFLY_PLUGIN_IPC_CHANNELS),
+	})
+
+	// -------------------------------------------------------------------------
+	// Marketplace channels (additive)
+	// -------------------------------------------------------------------------
+
+	const gallerySearchArgsSchema = z.object({
+		query: z.string().max(200).optional(),
+		category: z.string().max(100).optional(),
+		size: z.number().int().positive().max(100).optional(),
+		offset: z.number().int().nonnegative().optional(),
+	})
+
+	const installArgsSchema = z.union([
+		z.object({
+			kind: z.literal("open-vsx"),
+			namespace: z.string().min(1).max(200),
+			name: z.string().min(1).max(200),
+			version: z.string().max(80).optional(),
+		}),
+		z.object({
+			kind: z.literal("local-vsix"),
+			vsixPath: z.string().min(1).max(500),
+			expectedSha256: z.string().length(64).optional(),
+		}),
+	])
+
+	const installationIdSchema = z.object({
+		installationId: z.string().min(1).max(200),
+	})
+
+	const applyThemeArgsSchema = z.object({
+		installationId: z.string().min(1).max(200),
+		themeId: z.string().min(1).max(200),
+	})
+
+	ipcMain.handle(FIREFLY_MARKETPLACE_IPC_CHANNELS.gallerySearch, async (_event, rawArgs: unknown) => {
+		const args = gallerySearchArgsSchema.parse(coerceArgs(rawArgs))
+		return authority.gallerySearch(args)
+	})
+
+	ipcMain.handle(FIREFLY_MARKETPLACE_IPC_CHANNELS.install, async (_event, rawArgs: unknown) => {
+		const args = installArgsSchema.parse(coerceArgs(rawArgs))
+		return authority.installExtension(args)
+	})
+
+	ipcMain.handle(FIREFLY_MARKETPLACE_IPC_CHANNELS.listInstalled, async () => {
+		return authority.listInstalledExtensions()
+	})
+
+	ipcMain.handle(FIREFLY_MARKETPLACE_IPC_CHANNELS.uninstall, async (_event, rawArgs: unknown) => {
+		const args = installationIdSchema.parse(coerceArgs(rawArgs))
+		return authority.uninstallExtension(args.installationId)
+	})
+
+	ipcMain.handle(FIREFLY_MARKETPLACE_IPC_CHANNELS.applyTheme, async (_event, rawArgs: unknown) => {
+		const args = applyThemeArgsSchema.parse(coerceArgs(rawArgs))
+		return authority.applyTheme(args.installationId, args.themeId)
+	})
+
+	log.info("Registered marketplace IPC channels", {
+		channels: Object.values(FIREFLY_MARKETPLACE_IPC_CHANNELS),
 	})
 }
 

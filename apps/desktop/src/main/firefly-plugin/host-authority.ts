@@ -28,7 +28,15 @@ import type {
 	HostPluginStateResult,
 	HostPluginToolsResult,
 	HostToolDispatchEnvelope,
+	MarketplaceSearchOptions,
+	MarketplaceSearchResult,
+	MarketplaceInstallInput,
+	MarketplaceInstallResult,
+	MarketplaceInstalledEntry,
 } from "../../shared/firefly-plugin/host-authority-types"
+import { createOpenVsxClient } from "./registry/open-vsx-client"
+import { installExtension, uninstallExtension, applyInstalledTheme } from "./install/install-orchestrator"
+import { listInstalledExtensions } from "./install/extension-store"
 
 import {
 	describePlugin,
@@ -200,6 +208,101 @@ export class ElectronHostAuthority implements HostAuthority {
 		broadcastCatalogChanged()
 		return { pluginId, ...state }
 	}
+
+	// -------------------------------------------------------------------------
+	// Marketplace methods (§7, §8) — additive
+	// -------------------------------------------------------------------------
+
+	async gallerySearch(options: MarketplaceSearchOptions): Promise<MarketplaceSearchResult> {
+		const client = createOpenVsxClient()
+		const result = await client.search({
+			query: options.query,
+			category: options.category ?? "Themes",
+			size: options.size ?? 18,
+			offset: options.offset ?? 0,
+			sortBy: "downloadCount",
+			sortOrder: "desc",
+		})
+		return {
+			offset: result.offset,
+			totalSize: result.totalSize,
+			extensions: result.extensions.map((e) => ({
+				namespace: e.namespace,
+				name: e.name,
+				displayName: e.displayName,
+				description: e.description,
+				version: e.version,
+				iconUrl: e.iconUrl,
+				downloadCount: e.downloadCount,
+			})),
+		}
+	}
+
+	async installExtension(input: MarketplaceInstallInput): Promise<MarketplaceInstallResult> {
+		let installInput: Parameters<typeof installExtension>[0]
+		if (input.kind === "open-vsx") {
+			if (!input.namespace || !input.name) {
+				throw new Error("open-vsx install requires namespace and name")
+			}
+			installInput = {
+				kind: "open-vsx",
+				namespace: input.namespace,
+				name: input.name,
+				version: input.version,
+			}
+		} else {
+			if (!input.vsixPath) {
+				throw new Error("local-vsix install requires vsixPath")
+			}
+			installInput = {
+				kind: "local-vsix",
+				vsixPath: input.vsixPath,
+				expectedSha256: input.expectedSha256,
+			}
+		}
+
+		const result = await installExtension(installInput)
+		return {
+			packageId: result.package.id,
+			installationId: result.installation.id,
+			externalId: result.package.externalId,
+			displayName: result.package.displayName,
+			version: result.package.version,
+			themes: result.themes.map((t) => ({ id: t.id, label: t.label, kind: t.kind })),
+			alreadyInstalled: result.alreadyInstalled,
+		}
+	}
+
+	async listInstalledExtensions(): Promise<{ extensions: MarketplaceInstalledEntry[] }> {
+		const installed = await listInstalledExtensions()
+		return {
+			extensions: installed.map(({ package: pkg, installation }) => {
+				const themes: { id: string; label: string; kind: "light" | "dark" | "high-contrast" }[] =
+					pkg.themesJson ? (JSON.parse(pkg.themesJson) as typeof themes) : []
+				return {
+					packageId: pkg.id,
+					installationId: installation.id,
+					externalId: pkg.externalId,
+					displayName: pkg.displayName,
+					version: pkg.version,
+					registrySource: pkg.registrySource,
+					lifecycleState: installation.lifecycleState,
+					appliedThemeId: installation.appliedThemeId,
+					themes,
+				}
+			}),
+		}
+	}
+
+	async uninstallExtension(installationId: string): Promise<{ ok: true }> {
+		await uninstallExtension(installationId)
+		return { ok: true }
+	}
+
+	async applyTheme(installationId: string, themeId: string): Promise<{ ok: true }> {
+		await applyInstalledTheme(installationId, themeId)
+		return { ok: true }
+	}
 }
 
 // ---------------------------------------------------------------------------
@@ -289,5 +392,25 @@ export class CloudHostAuthority implements HostAuthority {
 
 	releaseQuarantine(_pluginId: string, _note: string): HostPluginReleaseQuarantineResult {
 		return CloudHostAuthority.notImplemented("releaseQuarantine")
+	}
+
+	async gallerySearch(_options: MarketplaceSearchOptions): Promise<MarketplaceSearchResult> {
+		return CloudHostAuthority.notImplemented("gallerySearch")
+	}
+
+	async installExtension(_input: MarketplaceInstallInput): Promise<MarketplaceInstallResult> {
+		return CloudHostAuthority.notImplemented("installExtension")
+	}
+
+	async listInstalledExtensions(): Promise<{ extensions: MarketplaceInstalledEntry[] }> {
+		return CloudHostAuthority.notImplemented("listInstalledExtensions")
+	}
+
+	async uninstallExtension(_installationId: string): Promise<{ ok: true }> {
+		return CloudHostAuthority.notImplemented("uninstallExtension")
+	}
+
+	async applyTheme(_installationId: string, _themeId: string): Promise<{ ok: true }> {
+		return CloudHostAuthority.notImplemented("applyTheme")
 	}
 }
