@@ -63,14 +63,13 @@ generic knowledge.
 - Palot/OpenCode plugin/runtime seam is documented in `docs/palot-opencode-plugin-bridge.md`. Read it before changing plugin loading, tool registration, resolver payloads, browser action dispatch, or side-panel UI command bridges.
 - For this repo, do not treat unrelated dirty worktrees as an automatic blocker. Assume parallel agents are active, commit your scoped work frequently, and move forward unless a direct file-level conflict makes the current edit unsafe.
 
-## Temporary Staging Policy (expires after staging launch)
+## Temporary Staging Policy (expires at full launch)
 
-**Browser-mode proof is the required verification path for Palette/three-pane finish work until the Electron dev runtime `bun:` ESM loader crash is fixed.** Electron-side manual proof is explicitly skipped during this staging window.
+**Hot path = the web build (browser mode). Electron is NOT the hot path right now.** Until the full launch, do visual/manual verification ONLY on the web version (`bun run dev` → browser mode on `20883`, live Chrome + screenshot/DOM capture). Electron-side visual proof is not required and must not block scope review or ticket closeout. A current Electron dev blocker reinforces this, but the policy holds until launch regardless of that blocker.
 
-- **Blocker**: Electron dev runtime crashes on app load with `ERR_UNSUPPORTED_ESM_URL_SCHEME` for the `bun:` protocol before a usable renderer window appears. Evidence: `.sisyphus/evidence/task-6-electron-pane.txt` and `.sisyphus/evidence/task-6-electron-proof.md`.
-- **What this means**: browser-mode manual proof (live Chrome + OS automation, screenshot + DOM capture) is sufficient for verification gating. Do not block final scope review or ticket closeout on missing Electron proof while this crash persists.
-- **Expires**: after staging launch, when the Electron `bun:` loader issue is resolved. At that point, re-enable Electron-side manual proof as a required verification step.
-- **Not permanent**: this is a temporary staging-window exception, not a permanent relaxation of Electron verification requirements. Once the blocker is fixed, both runtimes must be proved again.
+- **Blocker (context)**: Electron dev runtime crashes on app load with `ERR_UNSUPPORTED_ESM_URL_SCHEME` for the `bun:` protocol before a usable renderer window appears. Evidence: `.sisyphus/evidence/task-6-electron-pane.txt` and `.sisyphus/evidence/task-6-electron-proof.md`.
+- **Caveat**: a renderer surface that only works in Electron (e.g. anything depending on `window.elf` IPC, which is absent in the web build) cannot be visually verified during this window — prove the host/logic path headlessly and defer the pixels to post-launch Electron proof. Note this explicitly in the handoff rather than claiming visual proof.
+- **Expires**: at full launch, when Electron becomes a shipped runtime again. At that point, re-enable Electron-side visual proof as a required verification step for both runtimes.
 
 ## Commands
 
