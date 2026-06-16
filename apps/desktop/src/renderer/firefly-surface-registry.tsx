@@ -1,9 +1,8 @@
-import { 	ActivityIcon, BoxesIcon, DatabaseIcon, FileDiffIcon, FileTextIcon, FilesIcon, GlobeIcon, MicIcon, MonitorPlayIcon, PlugIcon, RectangleEllipsisIcon, Share2Icon, SquarePenIcon, TerminalSquareIcon, UsersIcon, WandSparklesIcon, type LucideIcon } from "lucide-react"
+import { 	ActivityIcon, BoxesIcon, DatabaseIcon, FileTextIcon, FilesIcon, GlobeIcon, MicIcon, MonitorPlayIcon, PlugIcon, RectangleEllipsisIcon, Share2Icon, SquarePenIcon, TerminalSquareIcon, UsersIcon, WandSparklesIcon, type LucideIcon } from "lucide-react"
 
 import type { ReactNode } from "react"
 
 import { Ch5PmDashboardPanel } from "./ch5pm-dashboard/panel"
-import { ReviewPanel } from "./components/review/review-panel"
 import { ArtifactsPanel } from "./components/side-panel/artifacts-panel"
 import { BrowserPanel } from "./components/side-panel/browser-panel"
 import { BridgesPanel } from "./components/side-panel/bridges-panel"
@@ -77,32 +76,9 @@ export interface FireflySidePanelTab {
 	target: FireflySurfaceTarget
 	render: () => ReactNode
 }
+// `review` is served from the plugin catalog (firefly.built-in.surface.review,
+// apps/desktop/plugins/review) — do not re-add a row here.
 export const FIREFLY_SURFACE_REGISTRY: FireflySurfaceDef[] = [
-	{
-		id: "review",
-		manifestId: "firefly.built-in.side-panel.review",
-		title: "Changes",
-		icon: FileDiffIcon,
-		formFactor: "side-panel-tab",
-		lane: "utility",
-		enabledFlag: {
-			key: "review",
-		},
-		defaultOn: true,
-		availability: (ctx) => {
-			if (!ctx.flags.review) {
-				return { available: false, reason: "Changes surface is disabled in feature flags" }
-			}
-			return ctx.diffStats.fileCount > 0
-				? { available: true }
-				: { available: false, reason: "No file changes in this session yet" }
-		},
-		commandIds: ["surface.review.open"],
-		persistenceKey: "side-panel.review",
-		telemetryNamespace: "firefly.surface.review",
-		target: { kind: "side-panel", tab: "review" },
-		spawn: (ctx) => <ReviewPanel sessionId={ctx.agent.sessionId} directory={ctx.agent.directory} />,
-	},
 	{
 		id: "browser",
 		manifestId: "firefly.built-in.side-panel.browser",
@@ -477,7 +453,7 @@ import { FIREFLY_SURFACE_IDS, type FireflySurfaceId } from "../shared/firefly-su
  * they are served from the plugin catalog (host plugin lifecycle owns
  * their enable/disable). First migrated surface: notes.
  */
-export const CATALOG_SERVED_SURFACE_IDS: readonly FireflySurfaceId[] = ["notes"]
+export const CATALOG_SERVED_SURFACE_IDS: readonly FireflySurfaceId[] = ["notes", "review"]
 
 export const FIREFLY_SURFACE_DEFAULT_ON = Object.fromEntries(
 	FIREFLY_SURFACE_REGISTRY.map((surface) => [surface.id, surface.defaultOn]),

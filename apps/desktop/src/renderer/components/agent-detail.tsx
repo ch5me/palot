@@ -40,7 +40,6 @@ import {
 	pluginsSurfaceEnabledAtom,
 	pdfReviewSurfaceEnabledAtom,
 	pulseSurfaceEnabledAtom,
-	reviewSurfaceEnabledAtom,
 	studioSurfaceEnabledAtom,
 	terminalSurfaceEnabledAtom,
 	voiceSurfaceEnabledAtom,
@@ -313,7 +312,6 @@ export function AgentDetail({
 	}, [isEditingTitle])
 
 	const browserPanelEnabled = useAtomValue(browserPanelEnabledAtom)
-	const reviewSurfaceEnabled = useAtomValue(reviewSurfaceEnabledAtom)
 	const pulseSurfaceEnabled = useAtomValue(pulseSurfaceEnabledAtom)
 	const memorySurfaceEnabled = useAtomValue(memorySurfaceEnabledAtom)
 	const filesSurfaceEnabled = useAtomValue(filesSurfaceEnabledAtom)
@@ -336,7 +334,6 @@ export function AgentDetail({
 			diffStats,
 			flags: {
 				browserPanelEnabled,
-				review: reviewSurfaceEnabled,
 				pulse: pulseSurfaceEnabled,
 				memory: memorySurfaceEnabled,
 				files: filesSurfaceEnabled,
@@ -360,7 +357,6 @@ export function AgentDetail({
 		catalogSurfaceTabs,
 		diffStats,
 		browserPanelEnabled,
-		reviewSurfaceEnabled,
 		pulseSurfaceEnabled,
 		memorySurfaceEnabled,
 		filesSurfaceEnabled,

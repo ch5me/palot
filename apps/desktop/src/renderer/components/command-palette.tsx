@@ -65,7 +65,6 @@ import {
 	pluginsSurfaceEnabledAtom,
 	pdfReviewSurfaceEnabledAtom,
 	pulseSurfaceEnabledAtom,
-	reviewSurfaceEnabledAtom,
 	studioSurfaceEnabledAtom,
 	terminalSurfaceEnabledAtom,
 	voiceSurfaceEnabledAtom,
@@ -80,7 +79,6 @@ import {
 	togglePdfReviewSurfaceAtom,
 	togglePluginsSurfaceAtom,
 	togglePulseSurfaceAtom,
-	toggleReviewSurfaceAtom,
 	toggleStudioSurfaceAtom,
 	toggleTerminalSurfaceAtom,
 	toggleVoiceSurfaceAtom,
@@ -146,7 +144,6 @@ export function CommandPalette({ open, onOpenChange, agents, onForkSession }: Co
 	const automationsEnabled = useAtomValue(automationsEnabledAtom)
 	const toggleAutomations = useSetAtom(toggleAutomationsAtom)
 	const browserPanelEnabled = useAtomValue(browserPanelEnabledAtom)
-	const reviewSurfaceEnabled = useAtomValue(reviewSurfaceEnabledAtom)
 	const pulseSurfaceEnabled = useAtomValue(pulseSurfaceEnabledAtom)
 	const memorySurfaceEnabled = useAtomValue(memorySurfaceEnabledAtom)
 	const filesSurfaceEnabled = useAtomValue(filesSurfaceEnabledAtom)
@@ -161,7 +158,6 @@ export function CommandPalette({ open, onOpenChange, agents, onForkSession }: Co
 	const ch5pmSurfaceEnabled = useAtomValue(ch5pmSurfaceEnabledAtom)
 	const pdfReviewSurfaceEnabled = useAtomValue(pdfReviewSurfaceEnabledAtom)
 	const toggleBrowserPanel = useSetAtom(toggleBrowserPanelAtom)
-	const toggleReviewSurface = useSetAtom(toggleReviewSurfaceAtom)
 	const togglePulseSurface = useSetAtom(togglePulseSurfaceAtom)
 	const toggleMemorySurface = useSetAtom(toggleMemorySurfaceAtom)
 	const toggleFilesSurface = useSetAtom(toggleFilesSurfaceAtom)
@@ -241,7 +237,6 @@ export function CommandPalette({ open, onOpenChange, agents, onForkSession }: Co
 			},
 			flags: {
 				browserPanelEnabled,
-				review: reviewSurfaceEnabled,
 				pulse: pulseSurfaceEnabled,
 				memory: memorySurfaceEnabled,
 				files: filesSurfaceEnabled,
@@ -261,7 +256,6 @@ export function CommandPalette({ open, onOpenChange, agents, onForkSession }: Co
 	}, [
 		activeAgent,
 		browserPanelEnabled,
-		reviewSurfaceEnabled,
 		pulseSurfaceEnabled,
 		memorySurfaceEnabled,
 		filesSurfaceEnabled,
@@ -292,6 +286,19 @@ export function CommandPalette({ open, onOpenChange, agents, onForkSession }: Co
 		await window.elf?.plugins.setEnabled("firefly.built-in.surface.notes", !notesPluginEnabled)
 		await queryClient.invalidateQueries({ queryKey: ["firefly-plugin"] })
 	}, [notesPluginEnabled, queryClient])
+
+	// Review is a catalog-served plugin: its enable/disable flows through
+	// the host plugin lifecycle, not a renderer feature-flag atom.
+	const reviewPluginEntry = pluginList?.plugins.find(
+		(plugin) => plugin.pluginId === "firefly.built-in.surface.review",
+	)
+	const reviewPluginEnabled = reviewPluginEntry
+		? reviewPluginEntry.status !== "disabled" && reviewPluginEntry.status !== "quarantined"
+		: true
+	const toggleReviewPlugin = useCallback(async () => {
+		await window.elf?.plugins.setEnabled("firefly.built-in.surface.review", !reviewPluginEnabled)
+		await queryClient.invalidateQueries({ queryKey: ["firefly-plugin"] })
+	}, [reviewPluginEnabled, queryClient])
 
 	const catalogSurfaceTabs = useCatalogSurfaceTabs(activeAgent)
 	const availableSurfaceTabs = useMemo(
@@ -500,15 +507,15 @@ export function CommandPalette({ open, onOpenChange, agents, onForkSession }: Co
 						{automationsEnabled && <CheckIcon className="ml-auto h-4 w-4" />}
 					</CommandItem>
 					<CommandItem
-						keywords={["review", "changes", "diff", "side panel"]}
+						keywords={["review", "changes", "diff", "side panel", "plugin"]}
 						onSelect={() => {
-							toggleReviewSurface()
+							void toggleReviewPlugin()
 							onOpenChange(false)
 						}}
 					>
 						<FileDiffIcon />
-						<span>{reviewSurfaceEnabled ? "Disable Changes Surface" : "Enable Changes Surface"}</span>
-						{reviewSurfaceEnabled && <CheckIcon className="ml-auto h-4 w-4" />}
+						<span>{reviewPluginEnabled ? "Disable Changes Surface" : "Enable Changes Surface"}</span>
+						{reviewPluginEnabled && <CheckIcon className="ml-auto h-4 w-4" />}
 					</CommandItem>
 				<CommandItem
 					keywords={["nav sidebar", "folio", "palot", "sidebar tabs"]}

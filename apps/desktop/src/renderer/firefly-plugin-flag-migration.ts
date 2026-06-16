@@ -27,6 +27,10 @@ export const SURFACE_FLAG_MIGRATIONS: readonly SurfaceFlagMigration[] = [
 		pluginId: "firefly.built-in.surface.notes",
 		legacyStorageKey: "elf:notesSurfaceEnabled",
 	},
+	{
+		pluginId: "firefly.built-in.surface.review",
+		legacyStorageKey: "elf:reviewSurfaceEnabled",
+	},
 ]
 
 const MARKER_PREFIX = "elf:plugin-flag-migrated:"

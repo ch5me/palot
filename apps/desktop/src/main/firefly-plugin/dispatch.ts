@@ -405,6 +405,63 @@ export function registerNotesHostHandlers(deps?: Partial<NotesHostDeps>): void {
 }
 
 // ---------------------------------------------------------------------------
+// Review surface host handlers (firefly.built-in.surface.review)
+// ---------------------------------------------------------------------------
+
+export interface ReviewHostDeps {
+	openSidePanel: (tab: "review") => Promise<void>
+	getSidePanelState: () => SidePanelStateSnapshot
+	setPluginEnabled: (pluginId: string, enabled: boolean) => { enabled: boolean }
+}
+
+const REVIEW_PLUGIN_ID = "firefly.built-in.surface.review"
+
+export function registerReviewHostHandlers(deps?: Partial<ReviewHostDeps>): void {
+	const openSidePanel =
+		deps?.openSidePanel ??
+		(async (tab: "review") => {
+			const { broadcastOpenSidePanel } = await import("../palot-browser-ipc")
+			await broadcastOpenSidePanel(tab)
+		})
+	const getSidePanelState = deps?.getSidePanelState ?? defaultGetSidePanelState
+	const setEnabled =
+		deps?.setPluginEnabled ??
+		((pluginId: string, enabled: boolean) => {
+			// eslint-disable-next-line @typescript-eslint/no-var-requires
+			const authority = require("./authority") as typeof import("./authority")
+			return authority.setPluginEnabled(pluginId, enabled)
+		})
+
+	registerHostTool(REVIEW_PLUGIN_ID, "plugin.firefly.built-in.surface.review.open", async () => {
+		await openSidePanel("review")
+		return ok({ opened: true, tab: "review", source: "v2-plugin-tool-dispatch" })
+	})
+
+	registerHostTool(REVIEW_PLUGIN_ID, "plugin.firefly.built-in.surface.review.state", async () => {
+		const sidePanel = getSidePanelState()
+		return ok({
+			tab: "review",
+			available: sidePanel.availableTabs.includes("review"),
+			open: sidePanel.open,
+			active: sidePanel.open && sidePanel.activeTab === "review",
+		})
+	})
+
+	registerHostCommand(REVIEW_PLUGIN_ID, "open-review", async () => {
+		await openSidePanel("review")
+		return ok({ opened: true, tab: "review" })
+	})
+
+	registerHostCommand(REVIEW_PLUGIN_ID, "toggle-review", async () => {
+		const catalog = getPluginCatalog()
+		const state = catalog.capabilityStates[REVIEW_PLUGIN_ID]
+		const currentlyEnabled = !(state?.pluginDisabled ?? false)
+		const next = setEnabled(REVIEW_PLUGIN_ID, !currentlyEnabled)
+		return ok({ pluginId: REVIEW_PLUGIN_ID, enabled: next.enabled })
+	})
+}
+
+// ---------------------------------------------------------------------------
 // DevMux Toolbar host handlers (firefly.built-in.devmux-toolbar)
 //
 // The Node-only work lives in `main/devmux/service.ts` and is reached here
@@ -503,6 +560,7 @@ export function registerBuiltInHostCommands(): void {
 	registerHostCommand("acme.acme-notebook", "acme-notebook-open", invokeAcmeNotebookOpen)
 	registerHostCommand("acme.acme-notebook", "acme-notebook-clear", invokeAcmeNotebookClear)
 	registerNotesHostHandlers()
+	registerReviewHostHandlers()
 	registerDevmuxHostHandlers()
 	log.info("Registered V2 host command handlers", {
 		commands: Array.from(handlers.keys()),

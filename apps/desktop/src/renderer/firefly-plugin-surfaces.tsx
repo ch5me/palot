@@ -22,7 +22,7 @@ import { Component, lazy, Suspense, useMemo, type ComponentType, type ErrorInfo,
  * sandbox policy task).
  */
 
-import { BookTextIcon, PlugIcon, type LucideIcon } from "lucide-react"
+import { BookTextIcon, FileDiffIcon, PlugIcon, type LucideIcon } from "lucide-react"
 import { Button } from "@ch5me/ch5-ui-web"
 import { useQuery, useQueryClient } from "@tanstack/react-query"
 import type { ProjectedSidePanel } from "../shared/firefly-plugin/renderer-projection"
@@ -49,11 +49,13 @@ export const PLUGIN_PANEL_COMPONENTS: Readonly<
 	Record<string, LazyExoticComponent<ComponentType<PluginPanelProps>>>
 > = {
 	"firefly.built-in.surface.notes.notes": lazy(() => import("../../plugins/notes/panel/notes-panel")),
+	"firefly.built-in.surface.review.review": lazy(() => import("../../plugins/review/panel/review-panel")),
 }
 
 /** Manifest icon-name → Lucide component. Extend per migrated surface. */
 const PANEL_ICONS: Readonly<Record<string, LucideIcon>> = {
 	"book-text": BookTextIcon,
+	"file-diff": FileDiffIcon,
 }
 
 function panelIcon(iconName: string | null): LucideIcon {

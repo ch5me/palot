@@ -33,6 +33,10 @@ import {
 	NOTES_PLUGIN_ID,
 } from "../../../plugins/notes/manifest"
 import {
+	reviewPluginManifest,
+	REVIEW_PLUGIN_ID,
+} from "../../../plugins/review/manifest"
+import {
 	devmuxToolbarManifest,
 	DEVMUX_TOOLBAR_PLUGIN_ID,
 } from "../../../plugins/devmux-toolbar/manifest"
@@ -82,6 +86,7 @@ const BUILT_IN_MANIFESTS: readonly PluginManifest[] = [
 	memorySurfaceManifest,
 	acmeNotebookManifest,
 	notesPluginManifest,
+	reviewPluginManifest,
 	acmeComponentsExemplarManifest,
 	devmuxToolbarManifest,
 ]
@@ -431,6 +436,7 @@ export const KNOWN_PLUGIN_IDS = {
 	memorySurface: MEMORY_SURFACE_PLUGIN_ID,
 	acmeNotebook: ACME_NOTEBOOK_PLUGIN_ID,
 	notes: NOTES_PLUGIN_ID,
+	review: REVIEW_PLUGIN_ID,
 	acmeComponents: ACME_COMPONENTS_PLUGIN_ID,
 	devmuxToolbar: DEVMUX_TOOLBAR_PLUGIN_ID,
 } as const
