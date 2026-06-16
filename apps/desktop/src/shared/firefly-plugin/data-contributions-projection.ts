@@ -25,12 +25,12 @@
  *
  * TextMate grammar note:
  *   Standard `monaco-editor` (v0.x) does not expose TextMate grammar injection
- *   natively. `vscode-textmate` + `vscode-oniguruma` are NOT currently
- *   installed. Grammar registrations therefore pass through the typed
- *   `registerGrammar` callback so callers can wire their own TextMate
- *   integration layer (e.g. `monaco-textmate`) when those deps are added.
- *   Until then, callers may ignore the callback or use it to drive Monarch
- *   tokenizer registration. See `MonacoGrammarRegistration` for the shape.
+ *   natively. The concrete bridge is now LANDED (L4): `vscode-textmate` +
+ *   `vscode-oniguruma` are installed and `renderer/lib/textmate-runtime.ts`
+ *   implements the registry + Monaco TokensProvider. Callers map each
+ *   `ProjectedGrammar` via `toMonacoGrammarRegistration` and pass the list to
+ *   `registerTextMateGrammars` (re-exported from `renderer/lib/monaco.ts`) with
+ *   a content loader that reads grammar JSON from the package store.
  *
  * Snippet completion provider note:
  *   Snippet file bodies are JSON on disk and cannot be loaded in this
@@ -45,10 +45,10 @@
  *     flow alongside the existing renderer families.
  *   - Call `registerDataContributionsWithMonaco` from `renderer/lib/monaco.ts`
  *     once catalog projection is wired into the renderer.
- *   - Add `vscode-textmate` + `vscode-oniguruma` to deps and implement a
- *     concrete `registerGrammar` callback that loads grammar JSON and calls
- *     the TextMate registry. Until then the grammar registration shape is
- *     fully typed and ready for wiring.
+ *   - DONE (L4): `vscode-textmate` + `vscode-oniguruma` added; concrete grammar
+ *     runtime in `renderer/lib/textmate-runtime.ts`. Remaining tie-in: feed it
+ *     the catalog's projected grammars + a package-store grammar-content loader
+ *     over IPC, and verify tokenization by opening a grammar-language file.
  */
 
 import type { PluginDescriptor } from "./descriptor"

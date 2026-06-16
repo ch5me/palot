@@ -5,6 +5,12 @@ declare module "monaco-editor/esm/vs/editor/editor.worker?worker" {
 	export default WorkerFactory
 }
 
+// vite `?url` asset import for the oniguruma WASM (TextMate grammar runtime).
+declare module "vscode-oniguruma/release/onig.wasm?url" {
+	const url: string
+	export default url
+}
+
 declare module "monaco-editor/esm/vs/language/json/json.worker?worker" {
 	const WorkerFactory: {
 		new (): Worker

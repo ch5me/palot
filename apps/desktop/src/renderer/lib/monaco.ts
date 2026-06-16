@@ -5,6 +5,17 @@ import htmlWorker from "monaco-editor/esm/vs/language/html/html.worker?worker"
 import jsonWorker from "monaco-editor/esm/vs/language/json/json.worker?worker"
 import tsWorker from "monaco-editor/esm/vs/language/typescript/ts.worker?worker"
 
+/**
+ * TextMate grammar runtime (L4). The concrete `registerGrammar` implementation
+ * the P2 data-contributions projection left as a typed boundary now lives in
+ * `textmate-runtime.ts`. The editor surface registers installed-extension
+ * grammars by calling `registerTextMateGrammars({ monaco, registrations,
+ * loadGrammarContent })` with the catalog's projected grammars
+ * (`toMonacoGrammarRegistration`) and a content loader that reads grammar JSON
+ * from the content-addressed package store over IPC.
+ */
+export { registerTextMateGrammars, createTextMateRegistry, lastScope } from "./textmate-runtime"
+
 let initialized = false
 
 export function initMonaco(): typeof monaco {
