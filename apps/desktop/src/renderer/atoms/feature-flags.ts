@@ -25,6 +25,24 @@ export const toggleAutomationsAtom = atom(null, (get, set) => {
 
 
 // ============================================================
+// Workspace Dock (temporary — removed in the migration Cleanup phase)
+// ============================================================
+
+/**
+ * Whether the experimental Dockview-based workspace shell renders in place of the
+ * legacy SplitPane utility/document panes. Default off: the legacy path stays the
+ * default until the surface migration completes. This is the ONLY new flag for the
+ * migration and is deleted in the Cleanup phase.
+ */
+export const workspaceDockEnabledAtom = atomWithStorage<boolean>("elf:workspaceDockEnabled", false)
+
+/** Write-only toggle for the command palette. */
+export const toggleWorkspaceDockAtom = atom(null, (get, set) => {
+	set(workspaceDockEnabledAtom, !get(workspaceDockEnabledAtom))
+})
+
+
+// ============================================================
 // Loom (GenUI) feature flags
 // ============================================================
 

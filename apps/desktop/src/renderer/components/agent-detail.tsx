@@ -24,7 +24,7 @@ import {
 	PencilIcon,
 	TerminalIcon,
 } from "lucide-react"
-import { useCallback, useEffect, useMemo, useRef, useState } from "react"
+import { type ComponentProps, useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { createHtmlPortalNode, InPortal, OutPortal, type HtmlPortalNode } from "react-reverse-portal"
 import type { OpenInTarget } from "../../preload/api"
 import {
@@ -44,7 +44,13 @@ import {
 	studioSurfaceEnabledAtom,
 	terminalSurfaceEnabledAtom,
 	voiceSurfaceEnabledAtom,
+	workspaceDockEnabledAtom,
 } from "../atoms/feature-flags"
+import { useColorScheme } from "../hooks/use-theme"
+import { useSurfaceRegistry } from "../surface-host/surface-host-provider"
+import { DockShell, type DockSeedPanel } from "../workspace/dock-shell"
+import { surfacePropBridge, useSurfaceProps } from "../workspace/surface-prop-bridge"
+import { FilesPanel } from "./side-panel/files-panel"
 import {
 	getFireflySurfaceTabs,
 	type FireflySurfaceContext,
@@ -164,6 +170,43 @@ function DocumentPaneShell({
 			</div>
 		</div>
 	)
+}
+
+// ============================================================
+// Workspace dock surfaces (gated behind workspaceDockEnabledAtom)
+//
+// Each surface is mounted ONCE into the hidden host layer by stable identity.
+// Live props flow through the surfacePropBridge (the host layer renders in a
+// different React subtree than AgentDetail, so closure props would freeze).
+// ============================================================
+
+type ChatSurfaceProps = ComponentProps<typeof ChatView>
+
+/** Live ChatView surface: reads the latest chat props published for its identity. */
+function ChatSurface({ instanceId }: { instanceId: string }) {
+	const props = useSurfaceProps<ChatSurfaceProps>(instanceId)
+	if (!props) return null
+	return <ChatView {...props} />
+}
+
+/** Live Files surface: reads the latest agent published for its identity. */
+function FilesSurface({ instanceId }: { instanceId: string }) {
+	const agent = useSurfaceProps<Agent>(instanceId)
+	if (!agent) return null
+	return (
+		<div className="flex h-full min-h-0 min-w-0 flex-col bg-background">
+			<FilesPanel agent={agent} className="min-h-0 flex-1" />
+		</div>
+	)
+}
+
+/** Resolve the active dark/light mode for theming the dock. */
+function useIsDarkMode(): boolean {
+	const scheme = useColorScheme()
+	if (scheme === "system") {
+		return typeof window !== "undefined" && window.matchMedia("(prefers-color-scheme: dark)").matches
+	}
+	return scheme === "dark"
 }
 
 export function AgentDetail({
@@ -504,6 +547,35 @@ export function AgentDetail({
 		activeDocTab,
 	])
 
+	const chatViewProps: ComponentProps<typeof ChatView> = {
+		turns: chatTurns,
+		loading: chatLoading ?? false,
+		loadingEarlier: chatLoadingEarlier ?? false,
+		hasEarlierMessages: chatHasEarlier ?? false,
+		onLoadEarlier,
+		agent,
+		isConnected: isConnected ?? false,
+		onSendMessage,
+		onStop,
+		providers,
+		config,
+		vcs,
+		openCodeAgents,
+		onApprove,
+		onDeny,
+		onReplyQuestion,
+		onRejectQuestion,
+		canUndo,
+		canRedo,
+		onUndo,
+		onRedo,
+		isReverted,
+		onRevertToMessage,
+		onForkFromTurn,
+		onDeletePart,
+		sidePanelOpen,
+	}
+
 	const chatContent = (
 		<>
 			{agent.parentId ? (
@@ -528,37 +600,52 @@ export function AgentDetail({
 			) : null}
 
 			<div className="min-h-0 flex-1">
-				<ChatView
-					turns={chatTurns}
-					loading={chatLoading ?? false}
-					loadingEarlier={chatLoadingEarlier ?? false}
-					hasEarlierMessages={chatHasEarlier ?? false}
-					onLoadEarlier={onLoadEarlier}
-					agent={agent}
-					isConnected={isConnected ?? false}
-					onSendMessage={onSendMessage}
-					onStop={onStop}
-					providers={providers}
-					config={config}
-					vcs={vcs}
-					openCodeAgents={openCodeAgents}
-					onApprove={onApprove}
-					onDeny={onDeny}
-					onReplyQuestion={onReplyQuestion}
-					onRejectQuestion={onRejectQuestion}
-					canUndo={canUndo}
-					canRedo={canRedo}
-					onUndo={onUndo}
-					onRedo={onRedo}
-					isReverted={isReverted}
-					onRevertToMessage={onRevertToMessage}
-					onForkFromTurn={onForkFromTurn}
-					onDeletePart={onDeletePart}
-					sidePanelOpen={sidePanelOpen}
-				/>
+				<ChatView {...chatViewProps} />
 			</div>
 		</>
 	)
+
+	// ========== Workspace dock (gated; legacy SplitPane stays default) ==========
+	const workspaceDockEnabled = useAtomValue(workspaceDockEnabledAtom)
+	const isDarkMode = useIsDarkMode()
+	const registry = useSurfaceRegistry()
+	const chatInstanceId = `chat:${agent.sessionId}:view-main`
+	const filesInstanceId = `files:${agent.sessionId}`
+
+	// Register the dock proof surfaces once per identity (idempotent). Done in an
+	// effect so the registry's notify() doesn't fire during render.
+	useEffect(() => {
+		if (!workspaceDockEnabled) return
+		registry.getOrCreate(chatInstanceId, {
+			type: "chat",
+			title: "Chat",
+			render: () => <ChatSurface instanceId={chatInstanceId} />,
+		})
+		registry.getOrCreate(filesInstanceId, {
+			type: "files",
+			title: "Files",
+			render: () => <FilesSurface instanceId={filesInstanceId} />,
+		})
+	}, [workspaceDockEnabled, registry, chatInstanceId, filesInstanceId])
+
+	// Publish live props every render so the once-mounted hosts stay current.
+	useEffect(() => {
+		if (!workspaceDockEnabled) return
+		surfacePropBridge.publish(chatInstanceId, chatViewProps)
+		surfacePropBridge.publish(filesInstanceId, agent)
+	})
+
+	const dockSeedPanels = useMemo<DockSeedPanel[]>(
+		() => [
+			{ instanceId: chatInstanceId, surfaceType: "chat", title: "Chat", zone: "main" },
+			{ instanceId: filesInstanceId, surfaceType: "files", title: "Files", zone: "right" },
+		],
+		[chatInstanceId, filesInstanceId],
+	)
+
+	if (workspaceDockEnabled) {
+		return <DockShell seedPanels={dockSeedPanels} isDarkMode={isDarkMode} />
+	}
 
 	return (
 		<>
