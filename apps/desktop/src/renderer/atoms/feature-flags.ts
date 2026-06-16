@@ -93,7 +93,6 @@ export const toggleLoomAcmeComponentsAtom = atom(null, (get, set) => {
 // localStorage values are migrated once by `renderer/firefly-plugin-flag-migration.ts`.
 export const fireflySurfaceDefaults = {
 	browserPanelEnabled: true,
-	terminal: true,
 	plugins: true,
 	crm: true,
 	studio: true,
@@ -107,7 +106,7 @@ export const fireflySurfaceDefaults = {
 export type FireflySurfaceFlagKey = keyof typeof fireflySurfaceDefaults
 
 export const browserPanelEnabledAtom = atomWithStorage<boolean>("elf:browserPanelEnabled", true)
-export const terminalSurfaceEnabledAtom = atomWithStorage<boolean>("elf:terminalSurfaceEnabled", true)
+// `terminalSurfaceEnabledAtom` deleted — terminal is catalog-served (firefly.built-in.surface.terminal).
 export const pluginsSurfaceEnabledAtom = atomWithStorage<boolean>("elf:pluginsSurfaceEnabled", true)
 export const crmSurfaceEnabledAtom = atomWithStorage<boolean>("elf:crmSurfaceEnabled", true)
 export const studioSurfaceEnabledAtom = atomWithStorage<boolean>("elf:studioSurfaceEnabled", true)
@@ -119,7 +118,6 @@ export const pdfReviewSurfaceEnabledAtom = atomWithStorage<boolean>("elf:pdfRevi
 
 export const fireflySurfaceFlagAtoms: Record<FireflySurfaceFlagKey, typeof browserPanelEnabledAtom> = {
 	browserPanelEnabled: browserPanelEnabledAtom,
-	terminal: terminalSurfaceEnabledAtom,
 	plugins: pluginsSurfaceEnabledAtom,
 	crm: crmSurfaceEnabledAtom,
 	studio: studioSurfaceEnabledAtom,
@@ -132,7 +130,6 @@ export const fireflySurfaceFlagAtoms: Record<FireflySurfaceFlagKey, typeof brows
 
 export const fireflySurfaceLabels: Record<FireflySurfaceFlagKey, string> = {
 	browserPanelEnabled: "Browser",
-	terminal: "Terminal",
 	plugins: "Plugins",
 	crm: "Contacts / CRM",
 	studio: "Studio / Office",
@@ -147,9 +144,7 @@ export const toggleBrowserPanelAtom = atom(null, (get, set) => {
 	set(browserPanelEnabledAtom, !get(browserPanelEnabledAtom))
 })
 
-export const toggleTerminalSurfaceAtom = atom(null, (get, set) => {
-	set(terminalSurfaceEnabledAtom, !get(terminalSurfaceEnabledAtom))
-})
+// `toggleTerminalSurfaceAtom` deleted — terminal is catalog-served; toggle via window.elf.plugins.setEnabled.
 
 export const togglePluginsSurfaceAtom = atom(null, (get, set) => {
 	set(pluginsSurfaceEnabledAtom, !get(pluginsSurfaceEnabledAtom))

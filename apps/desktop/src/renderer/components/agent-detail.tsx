@@ -36,7 +36,6 @@ import {
 	pluginsSurfaceEnabledAtom,
 	pdfReviewSurfaceEnabledAtom,
 	studioSurfaceEnabledAtom,
-	terminalSurfaceEnabledAtom,
 	voiceSurfaceEnabledAtom,
 	workspaceDockEnabledAtom,
 } from "../atoms/feature-flags"
@@ -307,7 +306,7 @@ export function AgentDetail({
 	}, [isEditingTitle])
 
 	const browserPanelEnabled = useAtomValue(browserPanelEnabledAtom)
-	const terminalSurfaceEnabled = useAtomValue(terminalSurfaceEnabledAtom)
+	// terminalSurfaceEnabled removed — terminal is catalog-served (firefly.built-in.surface.terminal).
 	const pluginsSurfaceEnabled = useAtomValue(pluginsSurfaceEnabledAtom)
 	const crmSurfaceEnabled = useAtomValue(crmSurfaceEnabledAtom)
 	const studioSurfaceEnabled = useAtomValue(studioSurfaceEnabledAtom)
@@ -324,7 +323,6 @@ export function AgentDetail({
 			diffStats,
 			flags: {
 				browserPanelEnabled,
-				terminal: terminalSurfaceEnabled,
 				plugins: pluginsSurfaceEnabled,
 				crm: crmSurfaceEnabled,
 				studio: studioSurfaceEnabled,
@@ -342,7 +340,6 @@ export function AgentDetail({
 		catalogSurfaceTabs,
 		diffStats,
 		browserPanelEnabled,
-		terminalSurfaceEnabled,
 		pluginsSurfaceEnabled,
 		crmSurfaceEnabled,
 		studioSurfaceEnabled,

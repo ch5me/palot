@@ -60,6 +60,10 @@ import {
 	editorPluginManifest,
 	EDITOR_PLUGIN_ID,
 } from "../../../plugins/editor/manifest"
+import {
+	terminalPluginManifest,
+	TERMINAL_PLUGIN_ID,
+} from "../../../plugins/terminal/manifest"
 import { BUILT_IN_DEFAULT_CAPABILITIES } from "../../shared/firefly-plugin/capabilities"
 import { type PluginDescriptor } from "../../shared/firefly-plugin/descriptor"
 import {
@@ -115,6 +119,7 @@ const BUILT_IN_MANIFESTS: readonly PluginManifest[] = [
 	bridgesPluginManifest,
 	pulsePluginManifest,
 	editorPluginManifest,
+	terminalPluginManifest,
 	acmeComponentsExemplarManifest,
 	devmuxToolbarManifest,
 ]
@@ -470,6 +475,7 @@ export const KNOWN_PLUGIN_IDS = {
 	bridges: BRIDGES_PLUGIN_ID,
 	pulse: PULSE_PLUGIN_ID,
 	editor: EDITOR_PLUGIN_ID,
+	terminal: TERMINAL_PLUGIN_ID,
 	acmeComponents: ACME_COMPONENTS_PLUGIN_ID,
 	devmuxToolbar: DEVMUX_TOOLBAR_PLUGIN_ID,
 } as const

@@ -7,9 +7,9 @@ import {
 	TerminalTitle,
 } from "@ch5me/agent-ui-web"
 import { useEffect, useMemo, useRef, useState } from "react"
-import { DEFAULT_LOCAL_SERVER_PORT } from "../../../shared/server-config"
-import { paneSubmitters, paneWriters } from "../../atoms/pane-bus"
-import type { Agent } from "../../lib/types"
+import { DEFAULT_LOCAL_SERVER_PORT } from "../../../src/shared/server-config"
+import { paneSubmitters, paneWriters } from "../../../src/renderer/atoms/pane-bus"
+import type { Agent } from "../../../src/renderer/lib/types"
 import {
 	killPty,
 	onPtyData,
@@ -17,8 +17,8 @@ import {
 	resizePty,
 	spawnPtyTerminal,
 	writePty,
-} from "../../services/backend"
-import { useServerConnection } from "../../hooks/use-server"
+} from "../../../src/renderer/services/backend"
+import { useServerConnection } from "../../../src/renderer/hooks/use-server"
 
 interface TerminalPanelProps {
 	agent: Agent
@@ -237,3 +237,5 @@ export function TerminalPanel({ agent, className }: TerminalPanelProps) {
 		</div>
 	)
 }
+
+export default TerminalPanel

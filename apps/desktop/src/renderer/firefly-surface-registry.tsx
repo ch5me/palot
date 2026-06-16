@@ -1,4 +1,4 @@
-import { FileTextIcon, GlobeIcon, MicIcon, MonitorPlayIcon, PlugIcon, RectangleEllipsisIcon, TerminalSquareIcon, UsersIcon, WandSparklesIcon, type LucideIcon } from "lucide-react"
+import { FileTextIcon, GlobeIcon, MicIcon, MonitorPlayIcon, PlugIcon, RectangleEllipsisIcon, UsersIcon, WandSparklesIcon, type LucideIcon } from "lucide-react"
 
 import type { ReactNode } from "react"
 
@@ -11,7 +11,8 @@ import { PdfReviewPanel } from "./components/side-panel/pdf-review-panel"
 import { StudioPanel } from "./components/side-panel/studio-panel"
 import { VoicePanel } from "./components/side-panel/voice-panel"
 import { V2PluginsPanel } from "./components/side-panel/v2-plugins-panel"
-import { TerminalPanel } from "./components/side-panel/terminal-panel"
+// `terminal` is served from the plugin catalog (firefly.built-in.surface.terminal,
+// apps/desktop/plugins/terminal) — do not re-add a row or import here.
 import type { Agent, FireflySurfaceTarget } from "./lib/types"
 import type { FireflySurfaceLane } from "../shared/firefly-surface-ids"
 
@@ -98,27 +99,8 @@ export const FIREFLY_SURFACE_REGISTRY: FireflySurfaceDef[] = [
 	// apps/desktop/plugins/memory) — do not re-add a row here.
 	// `files` is served from the plugin catalog (firefly.built-in.surface.files,
 	// apps/desktop/plugins/files) — do not re-add a row here.
-	{
-		id: "terminal",
-		manifestId: "firefly.built-in.side-panel.terminal",
-		title: "Terminal",
-		icon: TerminalSquareIcon,
-		formFactor: "side-panel-tab",
-		lane: "utility",
-		enabledFlag: {
-			key: "terminal",
-		},
-		defaultOn: true,
-		availability: (ctx) =>
-			ctx.flags.terminal
-				? { available: true }
-				: { available: false, reason: "Terminal surface is disabled in feature flags" },
-		commandIds: ["surface.terminal.open", "surface.terminal.toggle"],
-		persistenceKey: "side-panel.terminal",
-		telemetryNamespace: "firefly.surface.terminal",
-		target: { kind: "side-panel", tab: "terminal" },
-		spawn: (ctx) => <TerminalPanel agent={ctx.agent} />,
-	},
+	// `terminal` is served from the plugin catalog (firefly.built-in.surface.terminal,
+	// apps/desktop/plugins/terminal) — do not re-add a row here.
 	// `editor` is served from the plugin catalog (firefly.built-in.surface.editor,
 	// apps/desktop/plugins/editor) — do not re-add a row here.
 	{
@@ -315,7 +297,7 @@ import { FIREFLY_SURFACE_IDS, type FireflySurfaceId } from "../shared/firefly-su
  * they are served from the plugin catalog (host plugin lifecycle owns
  * their enable/disable). First migrated surface: notes.
  */
-export const CATALOG_SERVED_SURFACE_IDS: readonly FireflySurfaceId[] = ["notes", "review", "files", "artifacts", "bridges", "pulse", "memory", "editor"]
+export const CATALOG_SERVED_SURFACE_IDS: readonly FireflySurfaceId[] = ["notes", "review", "files", "artifacts", "bridges", "pulse", "memory", "editor", "terminal"]
 
 export const FIREFLY_SURFACE_DEFAULT_ON = Object.fromEntries(
 	FIREFLY_SURFACE_REGISTRY.map((surface) => [surface.id, surface.defaultOn]),

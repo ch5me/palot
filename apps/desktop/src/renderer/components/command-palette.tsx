@@ -63,7 +63,6 @@ import {
 	pluginsSurfaceEnabledAtom,
 	pdfReviewSurfaceEnabledAtom,
 	studioSurfaceEnabledAtom,
-	terminalSurfaceEnabledAtom,
 	voiceSurfaceEnabledAtom,
 	toggleAutomationsAtom,
 	toggleBrowserPanelAtom,
@@ -73,7 +72,6 @@ import {
 	togglePdfReviewSurfaceAtom,
 	togglePluginsSurfaceAtom,
 	toggleStudioSurfaceAtom,
-	toggleTerminalSurfaceAtom,
 	toggleVoiceSurfaceAtom,
 } from "../atoms/feature-flags"
 import { getFireflySurfaceTabs, type FireflySurfaceContext } from "../firefly-surface-registry"
@@ -137,7 +135,7 @@ export function CommandPalette({ open, onOpenChange, agents, onForkSession }: Co
 	const automationsEnabled = useAtomValue(automationsEnabledAtom)
 	const toggleAutomations = useSetAtom(toggleAutomationsAtom)
 	const browserPanelEnabled = useAtomValue(browserPanelEnabledAtom)
-	const terminalSurfaceEnabled = useAtomValue(terminalSurfaceEnabledAtom)
+	// terminalSurfaceEnabled removed — terminal is catalog-served (firefly.built-in.surface.terminal).
 	const pluginsSurfaceEnabled = useAtomValue(pluginsSurfaceEnabledAtom)
 	const crmSurfaceEnabled = useAtomValue(crmSurfaceEnabledAtom)
 	const studioSurfaceEnabled = useAtomValue(studioSurfaceEnabledAtom)
@@ -153,7 +151,6 @@ export function CommandPalette({ open, onOpenChange, agents, onForkSession }: Co
 	const toggleClaudeSurface = useSetAtom(toggleClaudeSurfaceAtom)
 	const toggleCh5PmSurface = useSetAtom(toggleCh5PmSurfaceAtom)
 	const togglePdfReviewSurface = useSetAtom(togglePdfReviewSurfaceAtom)
-	const toggleTerminalSurface = useSetAtom(toggleTerminalSurfaceAtom)
 	const navSidebarActiveTab = useAtomValue(navSidebarActiveTabAtom)
 	const openSidePanelTab = useSetAtom(openSidePanelTabAtom)
 	const [sidePanelOpen, setSidePanelOpen] = useAtom(sidePanelOpenAtom)
@@ -221,7 +218,6 @@ export function CommandPalette({ open, onOpenChange, agents, onForkSession }: Co
 			},
 			flags: {
 				browserPanelEnabled,
-				terminal: terminalSurfaceEnabled,
 				plugins: pluginsSurfaceEnabled,
 				crm: crmSurfaceEnabled,
 				studio: studioSurfaceEnabled,
@@ -235,7 +231,6 @@ export function CommandPalette({ open, onOpenChange, agents, onForkSession }: Co
 	}, [
 		activeAgent,
 		browserPanelEnabled,
-		terminalSurfaceEnabled,
 		pluginsSurfaceEnabled,
 		crmSurfaceEnabled,
 		studioSurfaceEnabled,
@@ -338,6 +333,19 @@ export function CommandPalette({ open, onOpenChange, agents, onForkSession }: Co
 		await window.elf?.plugins.setEnabled("firefly.built-in.surface.editor", !editorPluginEnabled)
 		await queryClient.invalidateQueries({ queryKey: ["firefly-plugin"] })
 	}, [editorPluginEnabled, queryClient])
+
+	// Terminal is a catalog-served plugin: its enable/disable flows through
+	// the host plugin lifecycle, not a renderer feature-flag atom.
+	const terminalPluginEntry = pluginList?.plugins.find(
+		(plugin) => plugin.pluginId === "firefly.built-in.surface.terminal",
+	)
+	const terminalPluginEnabled = terminalPluginEntry
+		? terminalPluginEntry.status !== "disabled" && terminalPluginEntry.status !== "quarantined"
+		: true
+	const toggleTerminalPlugin = useCallback(async () => {
+		await window.elf?.plugins.setEnabled("firefly.built-in.surface.terminal", !terminalPluginEnabled)
+		await queryClient.invalidateQueries({ queryKey: ["firefly-plugin"] })
+	}, [terminalPluginEnabled, queryClient])
 
 	const catalogSurfaceTabs = useCatalogSurfaceTabs(activeAgent)
 	const availableSurfaceTabs = useMemo(
@@ -624,13 +632,13 @@ export function CommandPalette({ open, onOpenChange, agents, onForkSession }: Co
 					<CommandItem
 						keywords={["terminal", "shell", "pty", "attach"]}
 						onSelect={() => {
-							toggleTerminalSurface()
+							void toggleTerminalPlugin()
 							onOpenChange(false)
 						}}
 					>
 						<TerminalSquareIcon />
-						<span>{terminalSurfaceEnabled ? "Disable Terminal Surface" : "Enable Terminal Surface"}</span>
-						{terminalSurfaceEnabled && <CheckIcon className="ml-auto h-4 w-4" />}
+						<span>{terminalPluginEnabled ? "Disable Terminal Surface" : "Enable Terminal Surface"}</span>
+						{terminalPluginEnabled && <CheckIcon className="ml-auto h-4 w-4" />}
 					</CommandItem>
 					<CommandItem
 						keywords={["editor", "monaco", "code", "file", "text"]}

@@ -804,6 +804,63 @@ export function registerEditorHostHandlers(deps?: Partial<EditorHostDeps>): void
 }
 
 // ---------------------------------------------------------------------------
+// Terminal surface host handlers (firefly.built-in.surface.terminal)
+// ---------------------------------------------------------------------------
+
+export interface TerminalHostDeps {
+	openSidePanel: (tab: "terminal") => Promise<void>
+	getSidePanelState: () => SidePanelStateSnapshot
+	setPluginEnabled: (pluginId: string, enabled: boolean) => { enabled: boolean }
+}
+
+const TERMINAL_PLUGIN_ID = "firefly.built-in.surface.terminal"
+
+export function registerTerminalHostHandlers(deps?: Partial<TerminalHostDeps>): void {
+	const openSidePanel =
+		deps?.openSidePanel ??
+		(async (tab: "terminal") => {
+			const { broadcastOpenSidePanel } = await import("../palot-browser-ipc")
+			await broadcastOpenSidePanel(tab)
+		})
+	const getSidePanelState = deps?.getSidePanelState ?? defaultGetSidePanelState
+	const setEnabled =
+		deps?.setPluginEnabled ??
+		((pluginId: string, enabled: boolean) => {
+			// eslint-disable-next-line @typescript-eslint/no-var-requires
+			const authority = require("./authority") as typeof import("./authority")
+			return authority.setPluginEnabled(pluginId, enabled)
+		})
+
+	registerHostTool(TERMINAL_PLUGIN_ID, "plugin.firefly.built-in.surface.terminal.open", async () => {
+		await openSidePanel("terminal")
+		return ok({ opened: true, tab: "terminal", source: "v2-plugin-tool-dispatch" })
+	})
+
+	registerHostTool(TERMINAL_PLUGIN_ID, "plugin.firefly.built-in.surface.terminal.state", async () => {
+		const sidePanel = getSidePanelState()
+		return ok({
+			tab: "terminal",
+			available: sidePanel.availableTabs.includes("terminal"),
+			open: sidePanel.open,
+			active: sidePanel.open && sidePanel.activeTab === "terminal",
+		})
+	})
+
+	registerHostCommand(TERMINAL_PLUGIN_ID, "open-terminal", async () => {
+		await openSidePanel("terminal")
+		return ok({ opened: true, tab: "terminal" })
+	})
+
+	registerHostCommand(TERMINAL_PLUGIN_ID, "toggle-terminal", async () => {
+		const catalog = getPluginCatalog()
+		const state = catalog.capabilityStates[TERMINAL_PLUGIN_ID]
+		const currentlyEnabled = !(state?.pluginDisabled ?? false)
+		const next = setEnabled(TERMINAL_PLUGIN_ID, !currentlyEnabled)
+		return ok({ pluginId: TERMINAL_PLUGIN_ID, enabled: next.enabled })
+	})
+}
+
+// ---------------------------------------------------------------------------
 // DevMux Toolbar host handlers (firefly.built-in.devmux-toolbar)
 //
 // The Node-only work lives in `main/devmux/service.ts` and is reached here
@@ -909,6 +966,7 @@ export function registerBuiltInHostCommands(): void {
 	registerPulseHostHandlers()
 	registerMemoryHostHandlers()
 	registerEditorHostHandlers()
+	registerTerminalHostHandlers()
 	registerDevmuxHostHandlers()
 	log.info("Registered V2 host command handlers", {
 		commands: Array.from(handlers.keys()),
