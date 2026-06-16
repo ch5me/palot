@@ -183,6 +183,21 @@ export async function createExtensionInstallation(
 }
 
 /**
+ * Fetch a single ExtensionInstallation by its id. Returns null when not found.
+ */
+export async function getInstallationById(
+	id: string,
+): Promise<ExtensionInstallationRecord | null> {
+	const db = await ensureDb()
+	const rows = await db
+		.select()
+		.from(extensionInstallations)
+		.where(eq(extensionInstallations.id, id))
+		.limit(1)
+	return (rows[0] as ExtensionInstallationRecord | undefined) ?? null
+}
+
+/**
  * Find the active (most recent non-removed) installation for a package.
  */
 export async function getActiveInstallation(

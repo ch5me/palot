@@ -274,10 +274,10 @@ describe("installExtension (end-to-end)", () => {
 		const theme = result.themes[0]!
 		expect(theme.label).toBe("Test Dark Theme")
 		expect(theme.kind).toBe("dark")
-		// Color map assertions
-		expect(theme.appTokens["--ff-editor-bg"]).toBe("#1e1e1e")
-		expect(theme.appTokens["--ff-editor-fg"]).toBe("#d4d4d4")
-		expect(theme.appTokens["--ff-sidebar-bg"]).toBe("#252526")
+		// Color map assertions (real shadcn tokens — see VSCODE_COLOR_MAP)
+		expect(theme.appTokens["--background"]).toBe("#1e1e1e")
+		expect(theme.appTokens["--foreground"]).toBe("#d4d4d4")
+		expect(theme.appTokens["--sidebar"]).toBe("#252526")
 
 		// Assert: source provenance
 		expect(theme.source.registry).toBe("manual-vsix")

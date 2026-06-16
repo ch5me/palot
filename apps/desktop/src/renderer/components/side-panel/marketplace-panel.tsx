@@ -13,8 +13,8 @@
  *   - Search results come from Open VSX via main process IPC (gallery-search).
  *   - Install/uninstall/apply-theme are IPC mutations.
  *   - Installed list is fetched via list-installed IPC.
- *   - "Apply" only records the applied theme id (Phase 1 stub).
- *     Full CSS-var injection is out of scope for Phase 1.
+ *   - "Apply" registers the theme's CSS tokens and calls useSetTheme so
+ *     useThemeEffect injects the real shadcn CSS vars into the DOM immediately.
  */
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
@@ -30,6 +30,8 @@ import {
 } from "lucide-react"
 import { useEffect, useRef, useState } from "react"
 import { Button } from "@ch5me/ch5-ui-web"
+import { registerAndActivateImportedTheme } from "../../lib/imported-themes"
+import { useSetTheme } from "../../hooks/use-theme"
 
 // ---------------------------------------------------------------------------
 // Bridge helpers (Electron only)
@@ -243,6 +245,7 @@ export function MarketplacePanel({ className }: MarketplacePanelProps) {
 	const [activeTab, setActiveTab] = useState<"browse" | "installed">("browse")
 	const inputRef = useRef<HTMLInputElement>(null)
 	const queryClient = useQueryClient()
+	const setTheme = useSetTheme()
 
 	// Trigger search on Enter or debounce
 	useEffect(() => {
@@ -286,7 +289,18 @@ export function MarketplacePanel({ className }: MarketplacePanelProps) {
 	const applyThemeMutation = useMutation({
 		mutationFn: ({ installationId, themeId }: { installationId: string; themeId: string }) =>
 			getMarketplaceBridge().applyTheme(installationId, themeId),
-		onSuccess: () => {
+		onSuccess: (result, variables) => {
+			// If the IPC returned appTokens, register the theme and activate it.
+			// This causes useThemeEffect to inject the real shadcn CSS vars into the DOM.
+			if (result.appTokens && result.kind) {
+				registerAndActivateImportedTheme({
+					id: variables.themeId,
+					label: variables.themeId,
+					kind: result.kind,
+					appTokens: result.appTokens,
+				})
+				setTheme(variables.themeId)
+			}
 			void queryClient.invalidateQueries({ queryKey: ["marketplace", "installed"] })
 		},
 	})

@@ -240,12 +240,12 @@ describe("convertVscodeTheme", () => {
 		}
 	})
 
-	test("appTokens uses Firefly CSS var names as keys", () => {
+	test("appTokens uses shadcn/ui CSS var names as keys", () => {
 		const result = convertVscodeTheme(pkg, decl, SAMPLE_THEME_JSON, { registry: "open-vsx" })
-		expect(result.appTokens["--ff-editor-bg"]).toBe("#282C34")
-		expect(result.appTokens["--ff-editor-fg"]).toBe("#ABB2BF")
-		expect(result.appTokens["--ff-focus-ring"]).toBe("#528BFF")
-		expect(result.appTokens["--ff-selection-bg"]).toBe("#3E4451")
+		expect(result.appTokens["--background"]).toBe("#282C34")
+		expect(result.appTokens["--foreground"]).toBe("#ABB2BF")
+		expect(result.appTokens["--ring"]).toBe("#528BFF")
+		expect(result.appTokens["--accent"]).toBe("#3E4451")
 	})
 
 	test("unmapped colors go to editorTokens.vscodeColors", () => {
@@ -265,7 +265,10 @@ describe("convertVscodeTheme", () => {
 	test("no vscode color id leaks into appTokens", () => {
 		const result = convertVscodeTheme(pkg, decl, SAMPLE_THEME_JSON, { registry: "open-vsx" })
 		for (const key of Object.keys(result.appTokens)) {
-			expect(key.startsWith("--ff-")).toBe(true)
+			// All keys must be CSS custom properties (start with --)
+			expect(key.startsWith("--")).toBe(true)
+			// No old-style --ff- prefixed tokens should appear
+			expect(key.startsWith("--ff-")).toBe(false)
 		}
 	})
 
@@ -461,7 +464,8 @@ describe("VSCODE_COLOR_MAP_ENTRIES", () => {
 		for (const entry of VSCODE_COLOR_MAP_ENTRIES) {
 			expect(typeof entry.vscodeId).toBe("string")
 			expect(typeof entry.fireflyToken).toBe("string")
-			expect(entry.fireflyToken.startsWith("--ff-")).toBe(true)
+			// All tokens must be CSS custom properties (start with --)
+			expect(entry.fireflyToken.startsWith("--")).toBe(true)
 		}
 	})
 
@@ -497,9 +501,9 @@ describe("ImportedThemeContribution shape lock", () => {
 		expect(typeof theme.source.themePath).toBe("string")
 		expect(typeof theme.source.contentSha256).toBe("string")
 
-		// appTokens: only Firefly CSS var keys
+		// appTokens: only CSS custom property keys (shadcn/ui tokens)
 		for (const key of Object.keys(theme.appTokens)) {
-			expect(key.startsWith("--ff-")).toBe(true)
+			expect(key.startsWith("--")).toBe(true)
 		}
 
 		// editorTokens

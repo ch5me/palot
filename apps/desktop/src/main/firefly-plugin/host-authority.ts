@@ -33,6 +33,7 @@ import type {
 	MarketplaceInstallInput,
 	MarketplaceInstallResult,
 	MarketplaceInstalledEntry,
+	MarketplaceInstalledTheme,
 } from "../../shared/firefly-plugin/host-authority-types"
 import { createOpenVsxClient } from "./registry/open-vsx-client"
 import { installExtension, uninstallExtension, applyInstalledTheme } from "./install/install-orchestrator"
@@ -277,8 +278,8 @@ export class ElectronHostAuthority implements HostAuthority {
 		const installed = await listInstalledExtensions()
 		return {
 			extensions: installed.map(({ package: pkg, installation }) => {
-				const themes: { id: string; label: string; kind: "light" | "dark" | "high-contrast" }[] =
-					pkg.themesJson ? (JSON.parse(pkg.themesJson) as typeof themes) : []
+				const themes: MarketplaceInstalledTheme[] =
+					pkg.themesJson ? (JSON.parse(pkg.themesJson) as MarketplaceInstalledTheme[]) : []
 				return {
 					packageId: pkg.id,
 					installationId: installation.id,
@@ -299,8 +300,26 @@ export class ElectronHostAuthority implements HostAuthority {
 		return { ok: true }
 	}
 
-	async applyTheme(installationId: string, themeId: string): Promise<{ ok: true }> {
+	async applyTheme(
+		installationId: string,
+		themeId: string,
+	): Promise<{ ok: true; appTokens?: Record<string, string>; kind?: "light" | "dark" | "high-contrast" }> {
 		await applyInstalledTheme(installationId, themeId)
+
+		// Resolve appTokens for this themeId so the renderer can inject CSS vars immediately.
+		const { getInstallationById, getExtensionPackage } = await import("./install/extension-store")
+		const installation = await getInstallationById(installationId)
+		if (installation) {
+			const pkg = await getExtensionPackage(installation.packageId)
+			if (pkg?.themesJson) {
+				const themes = JSON.parse(pkg.themesJson) as MarketplaceInstalledTheme[]
+				const matched = themes.find((t) => t.id === themeId)
+				if (matched?.appTokens) {
+					return { ok: true, appTokens: matched.appTokens, kind: matched.kind }
+				}
+			}
+		}
+
 		return { ok: true }
 	}
 }
@@ -410,7 +429,10 @@ export class CloudHostAuthority implements HostAuthority {
 		return CloudHostAuthority.notImplemented("uninstallExtension")
 	}
 
-	async applyTheme(_installationId: string, _themeId: string): Promise<{ ok: true }> {
+	async applyTheme(
+		_installationId: string,
+		_themeId: string,
+	): Promise<{ ok: true; appTokens?: Record<string, string>; kind?: "light" | "dark" | "high-contrast" }> {
 		return CloudHostAuthority.notImplemented("applyTheme")
 	}
 }

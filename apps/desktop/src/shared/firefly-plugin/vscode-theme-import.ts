@@ -35,24 +35,24 @@ import { z } from "zod"
  * (the set is locked-append).
  */
 export const VSCODE_COLOR_MAP: Readonly<Record<string, string>> = {
-	"editor.background": "--ff-editor-bg",
-	"editor.foreground": "--ff-editor-fg",
-	"sideBar.background": "--ff-sidebar-bg",
-	"sideBar.foreground": "--ff-sidebar-fg",
-	"activityBar.background": "--ff-activity-bg",
-	"activityBar.foreground": "--ff-activity-fg",
-	"statusBar.background": "--ff-status-bg",
-	"statusBar.foreground": "--ff-status-fg",
-	"panel.background": "--ff-panel-bg",
-	"panel.border": "--ff-panel-border",
-	"tab.activeBackground": "--ff-tab-active-bg",
-	"tab.inactiveBackground": "--ff-tab-inactive-bg",
-	"button.background": "--ff-button-bg",
-	"button.foreground": "--ff-button-fg",
-	"input.background": "--ff-input-bg",
-	"input.foreground": "--ff-input-fg",
-	"focusBorder": "--ff-focus-ring",
-	"selection.background": "--ff-selection-bg",
+	"editor.background": "--background",
+	"editor.foreground": "--foreground",
+	"sideBar.background": "--sidebar",
+	"sideBar.foreground": "--sidebar-foreground",
+	"activityBar.background": "--sidebar-accent",
+	"activityBar.foreground": "--sidebar-foreground",
+	"statusBar.background": "--secondary",
+	"statusBar.foreground": "--secondary-foreground",
+	"panel.background": "--card",
+	"panel.border": "--border",
+	"tab.activeBackground": "--background",
+	"tab.inactiveBackground": "--muted",
+	"button.background": "--primary",
+	"button.foreground": "--primary-foreground",
+	"input.background": "--input",
+	"input.foreground": "--foreground",
+	"focusBorder": "--ring",
+	"selection.background": "--accent",
 } as const
 
 export type FireflyToken = string
@@ -176,9 +176,9 @@ export interface ImportedThemeContribution {
 		contentSha256: string
 	}
 	/**
-	 * VS Code `colors` entries that mapped → Firefly CSS custom properties.
-	 * Keys are Firefly CSS var names (e.g. `--ff-editor-bg`); values are
-	 * the hex/rgba colors from the theme.
+	 * VS Code `colors` entries that mapped → app CSS custom properties.
+	 * Keys are shadcn/ui token names (e.g. `--background`, `--primary`);
+	 * values are the hex/rgba colors from the theme.
 	 */
 	appTokens: Record<string, string>
 	/**

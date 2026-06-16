@@ -249,17 +249,36 @@ export const systemTheme: ThemeDefinition = {
 export const themes: ThemeDefinition[] = [systemTheme, cortexTheme, liquidGlassTheme]
 
 /**
- * Return only themes available on the given platform.
- * Themes without a `platforms` restriction are always included.
+ * Runtime registry for dynamically imported themes (e.g. installed VS Code themes).
+ * Keyed by theme id. Entries here are consulted after the static `themes` array.
+ * This is a module-level singleton that lives for the renderer process lifetime.
  */
-export function getAvailableThemes(platform?: NodeJS.Platform): ThemeDefinition[] {
-	if (!platform) return themes
-	return themes.filter((t) => !t.platforms || t.platforms.includes(platform))
+const importedThemeRegistry = new Map<string, ThemeDefinition>()
+
+/**
+ * Register a dynamically imported theme so `getTheme` / `getAvailableThemes`
+ * can resolve it. Idempotent: re-registering the same id replaces the entry.
+ */
+export function registerImportedTheme(def: ThemeDefinition): void {
+	importedThemeRegistry.set(def.id, def)
 }
 
 /**
- * Look up a theme by id.  Falls back to default if not found.
+ * Return only themes available on the given platform.
+ * Themes without a `platforms` restriction are always included.
+ * Includes dynamically registered imported themes.
+ */
+export function getAvailableThemes(platform?: NodeJS.Platform): ThemeDefinition[] {
+	const imported = Array.from(importedThemeRegistry.values())
+	const all = [...themes, ...imported]
+	if (!platform) return all
+	return all.filter((t) => !t.platforms || t.platforms.includes(platform))
+}
+
+/**
+ * Look up a theme by id.  Checks the static registry first, then imported themes.
+ * Falls back to default if not found in either.
  */
 export function getTheme(id: string): ThemeDefinition {
-	return themes.find((t) => t.id === id) ?? systemTheme
+	return themes.find((t) => t.id === id) ?? importedThemeRegistry.get(id) ?? systemTheme
 }

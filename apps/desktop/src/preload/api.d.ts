@@ -916,6 +916,8 @@ export interface MarketplaceInstalledTheme {
 	id: string
 	label: string
 	kind: "light" | "dark" | "high-contrast"
+	/** Mapped CSS custom property tokens (shadcn/ui token names). */
+	appTokens?: Record<string, string>
 }
 
 export interface MarketplaceInstallResult {
@@ -1674,7 +1676,10 @@ restoreBackup: () => Promise<{
 		install: (input: MarketplaceInstallInput) => Promise<MarketplaceInstallResult>
 		listInstalled: () => Promise<{ extensions: MarketplaceInstalledEntry[] }>
 		uninstall: (installationId: string) => Promise<{ ok: true }>
-		applyTheme: (installationId: string, themeId: string) => Promise<{ ok: true }>
+		applyTheme: (
+			installationId: string,
+			themeId: string,
+		) => Promise<{ ok: true; appTokens?: Record<string, string>; kind?: "light" | "dark" | "high-contrast" }>
 	}
 }
 

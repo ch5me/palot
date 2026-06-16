@@ -288,8 +288,14 @@ export async function installExtension(
 		})
 
 		// 5. Write ExtensionPackage (idempotent)
+		// Include appTokens so the renderer can inject CSS vars without re-converting.
 		const themesJson = JSON.stringify(
-			conversionResult.themes.map((t) => ({ id: t.id, label: t.label, kind: t.kind })),
+			conversionResult.themes.map((t) => ({
+				id: t.id,
+				label: t.label,
+				kind: t.kind,
+				appTokens: t.appTokens,
+			})),
 		)
 
 		const pkg = await store.upsertExtensionPackage({

@@ -181,6 +181,8 @@ export interface MarketplaceInstalledTheme {
 	id: string
 	label: string
 	kind: "light" | "dark" | "high-contrast"
+	/** Mapped CSS custom property tokens for this theme (shadcn/ui token names). */
+	appTokens?: Record<string, string>
 }
 
 export interface MarketplaceInstallResult {
@@ -291,6 +293,9 @@ export interface HostAuthority {
 	/** Uninstall an extension by installation id. */
 	uninstallExtension(installationId: string): Promise<{ ok: true }>
 
-	/** Record the applied theme id on an installation. */
-	applyTheme(installationId: string, themeId: string): Promise<{ ok: true }>
+	/** Record the applied theme id on an installation. Returns appTokens when available. */
+	applyTheme(
+		installationId: string,
+		themeId: string,
+	): Promise<{ ok: true; appTokens?: Record<string, string>; kind?: "light" | "dark" | "high-contrast" }>
 }
