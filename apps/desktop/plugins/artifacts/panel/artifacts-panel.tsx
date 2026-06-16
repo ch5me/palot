@@ -1,7 +1,7 @@
 import { useAtomValue, useSetAtom } from "jotai"
-import { pinnedGenUiArtifactListFamily, pinGenUiArtifactAtom, sessionGenUiArtifactListFamily } from "../../atoms/genui-artifacts"
-import type { Agent, GenUiArtifactPlacement } from "../../lib/types"
-import { GenUiArtifactCard } from "../genui/genui-artifact-card"
+import { pinnedGenUiArtifactListFamily, pinGenUiArtifactAtom, sessionGenUiArtifactListFamily } from "@/atoms/genui-artifacts"
+import type { Agent, GenUiArtifactPlacement } from "@/lib/types"
+import { GenUiArtifactCard } from "@/components/genui/genui-artifact-card"
 
 interface ArtifactsPanelProps {
 	agent: Agent
@@ -54,3 +54,5 @@ export function ArtifactsPanel({ agent, className }: ArtifactsPanelProps) {
 		</div>
 	)
 }
+
+export default ArtifactsPanel

@@ -1,9 +1,8 @@
-import { ActivityIcon, BoxesIcon, DatabaseIcon, FileTextIcon, GlobeIcon, MicIcon, MonitorPlayIcon, PlugIcon, RectangleEllipsisIcon, Share2Icon, SquarePenIcon, TerminalSquareIcon, UsersIcon, WandSparklesIcon, type LucideIcon } from "lucide-react"
+import { ActivityIcon, DatabaseIcon, FileTextIcon, GlobeIcon, MicIcon, MonitorPlayIcon, PlugIcon, RectangleEllipsisIcon, Share2Icon, SquarePenIcon, TerminalSquareIcon, UsersIcon, WandSparklesIcon, type LucideIcon } from "lucide-react"
 
 import type { ReactNode } from "react"
 
 import { Ch5PmDashboardPanel } from "./ch5pm-dashboard/panel"
-import { ArtifactsPanel } from "./components/side-panel/artifacts-panel"
 import { BrowserPanel } from "./components/side-panel/browser-panel"
 import { BridgesPanel } from "./components/side-panel/bridges-panel"
 import { ClaudePanel } from "./components/side-panel/claude-panel"
@@ -122,27 +121,8 @@ export const FIREFLY_SURFACE_REGISTRY: FireflySurfaceDef[] = [
 		target: { kind: "side-panel", tab: "pulse" },
 		spawn: (ctx) => <PulsePanel agent={ctx.agent} />,
 	},
-	{
-		id: "artifacts",
-		manifestId: "firefly.built-in.side-panel.artifacts",
-		title: "Artifacts",
-		icon: BoxesIcon,
-		formFactor: "side-panel-tab",
-		lane: "utility",
-		enabledFlag: {
-			key: "artifacts",
-		},
-		defaultOn: true,
-		availability: (ctx) =>
-			ctx.flags.artifacts
-				? { available: true }
-				: { available: false, reason: "Artifacts surface is disabled in feature flags" },
-		commandIds: ["surface.artifacts.open", "surface.artifacts.toggle"],
-		persistenceKey: "side-panel.artifacts",
-		telemetryNamespace: "firefly.surface.artifacts",
-		target: { kind: "side-panel", tab: "artifacts" },
-		spawn: (ctx) => <ArtifactsPanel agent={ctx.agent} />,
-	},
+	// `artifacts` is served from the plugin catalog (firefly.built-in.surface.artifacts,
+	// apps/desktop/plugins/artifacts) — do not re-add a row here.
 	{
 		id: "memory",
 		manifestId: "firefly.built-in.side-panel.memory",
@@ -433,7 +413,7 @@ import { FIREFLY_SURFACE_IDS, type FireflySurfaceId } from "../shared/firefly-su
  * they are served from the plugin catalog (host plugin lifecycle owns
  * their enable/disable). First migrated surface: notes.
  */
-export const CATALOG_SERVED_SURFACE_IDS: readonly FireflySurfaceId[] = ["notes", "review", "files"]
+export const CATALOG_SERVED_SURFACE_IDS: readonly FireflySurfaceId[] = ["notes", "review", "files", "artifacts"]
 
 export const FIREFLY_SURFACE_DEFAULT_ON = Object.fromEntries(
 	FIREFLY_SURFACE_REGISTRY.map((surface) => [surface.id, surface.defaultOn]),

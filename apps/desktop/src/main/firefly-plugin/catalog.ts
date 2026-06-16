@@ -44,6 +44,10 @@ import {
 	filesPluginManifest,
 	FILES_PLUGIN_ID,
 } from "../../../plugins/files/manifest"
+import {
+	artifactsPluginManifest,
+	ARTIFACTS_PLUGIN_ID,
+} from "../../../plugins/artifacts/manifest"
 import { BUILT_IN_DEFAULT_CAPABILITIES } from "../../shared/firefly-plugin/capabilities"
 import { type PluginDescriptor } from "../../shared/firefly-plugin/descriptor"
 import { memorySurfaceManifest, MEMORY_SURFACE_PLUGIN_ID } from "../../shared/firefly-plugin/memory-surface-manifest"
@@ -92,6 +96,7 @@ const BUILT_IN_MANIFESTS: readonly PluginManifest[] = [
 	notesPluginManifest,
 	reviewPluginManifest,
 	filesPluginManifest,
+	artifactsPluginManifest,
 	acmeComponentsExemplarManifest,
 	devmuxToolbarManifest,
 ]
@@ -443,6 +448,7 @@ export const KNOWN_PLUGIN_IDS = {
 	notes: NOTES_PLUGIN_ID,
 	review: REVIEW_PLUGIN_ID,
 	files: FILES_PLUGIN_ID,
+	artifacts: ARTIFACTS_PLUGIN_ID,
 	acmeComponents: ACME_COMPONENTS_PLUGIN_ID,
 	devmuxToolbar: DEVMUX_TOOLBAR_PLUGIN_ID,
 } as const

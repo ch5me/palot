@@ -87,7 +87,7 @@ export const toggleLoomAcmeComponentsAtom = atom(null, (get, set) => {
 	set(loomAcmeComponentsAtom, !get(loomAcmeComponentsAtom))
 })
 
-// NOTE: `notes`, `review`, and `files` have no feature flags any more — they are
+// NOTE: `notes`, `review`, `files`, and `artifacts` have no feature flags any more — they are
 // catalog-served plugins; their enable/disable state lives in the host
 // plugin lifecycle store. The legacy localStorage values are migrated
 // once by `renderer/firefly-plugin-flag-migration.ts`.
@@ -105,7 +105,6 @@ export const fireflySurfaceDefaults = {
 	oracle: true,
 	claude: true,
 	ch5pm: false,
-	artifacts: true,
 	pdfReview: false,
 } as const
 
@@ -124,7 +123,6 @@ export const voiceSurfaceEnabledAtom = atomWithStorage<boolean>("elf:voiceSurfac
 export const oracleSurfaceEnabledAtom = atomWithStorage<boolean>("elf:oracleSurfaceEnabled", true)
 export const claudeSurfaceEnabledAtom = atomWithStorage<boolean>("elf:claudeSurfaceEnabled", true)
 export const ch5pmSurfaceEnabledAtom = atomWithStorage<boolean>("elf:ch5pmSurfaceEnabled", false)
-export const artifactsSurfaceEnabledAtom = atomWithStorage<boolean>("elf:artifactsSurfaceEnabled", true)
 export const pdfReviewSurfaceEnabledAtom = atomWithStorage<boolean>("elf:pdfReviewSurfaceEnabled", false)
 
 export const fireflySurfaceFlagAtoms: Record<FireflySurfaceFlagKey, typeof browserPanelEnabledAtom> = {
@@ -141,7 +139,6 @@ export const fireflySurfaceFlagAtoms: Record<FireflySurfaceFlagKey, typeof brows
 	oracle: oracleSurfaceEnabledAtom,
 	claude: claudeSurfaceEnabledAtom,
 	ch5pm: ch5pmSurfaceEnabledAtom,
-	artifacts: artifactsSurfaceEnabledAtom,
 	pdfReview: pdfReviewSurfaceEnabledAtom,
 }
 
@@ -159,7 +156,6 @@ export const fireflySurfaceLabels: Record<FireflySurfaceFlagKey, string> = {
 	oracle: "Oracle Roster",
 	claude: "Claude Code",
 	ch5pm: "CH5PM Dashboard",
-	artifacts: "Artifacts",
 	pdfReview: "PDF Review",
 }
 
@@ -213,10 +209,6 @@ export const toggleClaudeSurfaceAtom = atom(null, (get, set) => {
 
 export const toggleCh5PmSurfaceAtom = atom(null, (get, set) => {
 	set(ch5pmSurfaceEnabledAtom, !get(ch5pmSurfaceEnabledAtom))
-})
-
-export const toggleArtifactsSurfaceAtom = atom(null, (get, set) => {
-	set(artifactsSurfaceEnabledAtom, !get(artifactsSurfaceEnabledAtom))
 })
 
 export const togglePdfReviewSurfaceAtom = atom(null, (get, set) => {

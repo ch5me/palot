@@ -519,6 +519,63 @@ export function registerFilesHostHandlers(deps?: Partial<FilesHostDeps>): void {
 }
 
 // ---------------------------------------------------------------------------
+// Artifacts surface host handlers (firefly.built-in.surface.artifacts)
+// ---------------------------------------------------------------------------
+
+export interface ArtifactsHostDeps {
+	openSidePanel: (tab: "artifacts") => Promise<void>
+	getSidePanelState: () => SidePanelStateSnapshot
+	setPluginEnabled: (pluginId: string, enabled: boolean) => { enabled: boolean }
+}
+
+const ARTIFACTS_PLUGIN_ID = "firefly.built-in.surface.artifacts"
+
+export function registerArtifactsHostHandlers(deps?: Partial<ArtifactsHostDeps>): void {
+	const openSidePanel =
+		deps?.openSidePanel ??
+		(async (tab: "artifacts") => {
+			const { broadcastOpenSidePanel } = await import("../palot-browser-ipc")
+			await broadcastOpenSidePanel(tab)
+		})
+	const getSidePanelState = deps?.getSidePanelState ?? defaultGetSidePanelState
+	const setEnabled =
+		deps?.setPluginEnabled ??
+		((pluginId: string, enabled: boolean) => {
+			// eslint-disable-next-line @typescript-eslint/no-var-requires
+			const authority = require("./authority") as typeof import("./authority")
+			return authority.setPluginEnabled(pluginId, enabled)
+		})
+
+	registerHostTool(ARTIFACTS_PLUGIN_ID, "plugin.firefly.built-in.surface.artifacts.open", async () => {
+		await openSidePanel("artifacts")
+		return ok({ opened: true, tab: "artifacts", source: "v2-plugin-tool-dispatch" })
+	})
+
+	registerHostTool(ARTIFACTS_PLUGIN_ID, "plugin.firefly.built-in.surface.artifacts.state", async () => {
+		const sidePanel = getSidePanelState()
+		return ok({
+			tab: "artifacts",
+			available: sidePanel.availableTabs.includes("artifacts"),
+			open: sidePanel.open,
+			active: sidePanel.open && sidePanel.activeTab === "artifacts",
+		})
+	})
+
+	registerHostCommand(ARTIFACTS_PLUGIN_ID, "open-artifacts", async () => {
+		await openSidePanel("artifacts")
+		return ok({ opened: true, tab: "artifacts" })
+	})
+
+	registerHostCommand(ARTIFACTS_PLUGIN_ID, "toggle-artifacts", async () => {
+		const catalog = getPluginCatalog()
+		const state = catalog.capabilityStates[ARTIFACTS_PLUGIN_ID]
+		const currentlyEnabled = !(state?.pluginDisabled ?? false)
+		const next = setEnabled(ARTIFACTS_PLUGIN_ID, !currentlyEnabled)
+		return ok({ pluginId: ARTIFACTS_PLUGIN_ID, enabled: next.enabled })
+	})
+}
+
+// ---------------------------------------------------------------------------
 // DevMux Toolbar host handlers (firefly.built-in.devmux-toolbar)
 //
 // The Node-only work lives in `main/devmux/service.ts` and is reached here
@@ -619,6 +676,7 @@ export function registerBuiltInHostCommands(): void {
 	registerNotesHostHandlers()
 	registerReviewHostHandlers()
 	registerFilesHostHandlers()
+	registerArtifactsHostHandlers()
 	registerDevmuxHostHandlers()
 	log.info("Registered V2 host command handlers", {
 		commands: Array.from(handlers.keys()),
