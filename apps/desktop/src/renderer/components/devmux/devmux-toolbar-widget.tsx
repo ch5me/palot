@@ -10,16 +10,17 @@
  * The surrounding card chrome (border, "DevMux" title, drag handle) is
  * provided by SessionWidgetCard; this component renders only the body.
  *
- * Behaviour: lists declared services with a live running dot; clicking a
- * service reveals "In app" (hands the URL to the Browser side-panel surface via
- * `useOpenInBrowserPanel` — plugin → surface communication) and "Browser"
- * (system browser) actions; both ensure the service is running first. If the
- * project has no devmux config (or the host is unreachable), it renders nothing.
+ * Behaviour: lists declared services with a live running dot. Clicking a service
+ * ensures it's running and opens it in the Browser side-panel surface (via
+ * `useOpenInBrowserPanel` — plugin → surface communication). Shift-click opens it
+ * in the system browser instead (the in-app browser panel also has its own
+ * open-external button). If the project has no devmux config (or the host is
+ * unreachable), it renders nothing.
  */
 
 import { useCallback, useEffect, useState } from "react"
 import { cn } from "@ch5me/ch5-ui-web"
-import { ExternalLink, Loader2, MonitorPlay, RefreshCw } from "lucide-react"
+import { Loader2, RefreshCw } from "lucide-react"
 
 import { openExternalUrl } from "../../services/backend"
 import {
@@ -50,7 +51,6 @@ export function DevmuxToolbarWidget({ agent }: { agent: Agent }) {
 	const [hidden, setHidden] = useState(false)
 	const [runtime, setRuntime] = useState<Record<string, DevmuxServiceRuntime>>({})
 	const [busy, setBusy] = useState<Record<string, boolean>>({})
-	const [selected, setSelected] = useState<string | null>(null)
 	const [note, setNote] = useState<string | null>(null)
 	const openInBrowserPanel = useOpenInBrowserPanel()
 
@@ -69,7 +69,6 @@ export function DevmuxToolbarWidget({ agent }: { agent: Agent }) {
 		let cancelled = false
 		setServices(null)
 		setHidden(false)
-		setSelected(null)
 		setRuntime({})
 		void (async () => {
 			try {
@@ -110,7 +109,6 @@ export function DevmuxToolbarWidget({ agent }: { agent: Agent }) {
 				} else {
 					await openExternalUrl(result.url)
 				}
-				setSelected(null)
 			} catch (cause) {
 				setNote(cause instanceof Error ? cause.message : `Could not start ${service}`)
 			} finally {
@@ -128,52 +126,25 @@ export function DevmuxToolbarWidget({ agent }: { agent: Agent }) {
 				{services.map((service) => {
 					const live = runtime[service.name]
 					const isBusy = busy[service.name]
-					const isOpen = selected === service.name
 					return (
-						<div key={service.name} className="flex items-center">
-							<button
-								type="button"
-								title={`${statusTitle(live)} — ${service.description ?? service.command}`}
-								onClick={() => setSelected(isOpen ? null : service.name)}
-								className={cn(
-									"flex items-center gap-1.5 rounded-md border px-2 py-1 transition-colors",
-									isOpen
-										? "border-border bg-muted"
-										: "border-border/50 bg-muted/40 hover:bg-muted",
-								)}
-							>
-								{isBusy ? (
-									<Loader2 className="size-3 animate-spin text-amber-500" />
-								) : (
-									<span className={cn("size-2 rounded-full", statusDotClass(live))} />
-								)}
-								<span className="text-foreground">{service.name}</span>
-								{service.port ? (
-									<span className="text-[11px] text-muted-foreground">:{service.port}</span>
-								) : null}
-							</button>
-
-							{isOpen ? (
-								<div className="ml-1 flex items-center gap-1">
-									<button
-										type="button"
-										disabled={isBusy}
-										onClick={() => void launch(service.name, "embed")}
-										className="flex items-center gap-1 rounded-md border border-border/50 bg-muted/40 px-2 py-1 text-xs text-foreground/80 hover:bg-muted disabled:opacity-50"
-									>
-										<MonitorPlay className="size-3" /> In app
-									</button>
-									<button
-										type="button"
-										disabled={isBusy}
-										onClick={() => void launch(service.name, "external")}
-										className="flex items-center gap-1 rounded-md border border-border/50 bg-muted/40 px-2 py-1 text-xs text-foreground/80 hover:bg-muted disabled:opacity-50"
-									>
-										<ExternalLink className="size-3" /> Browser
-									</button>
-								</div>
+						<button
+							key={service.name}
+							type="button"
+							disabled={isBusy}
+							title={`${statusTitle(live)} — ${service.description ?? service.command}\nClick to open in the browser panel · Shift-click to open in your system browser`}
+							onClick={(event) => void launch(service.name, event.shiftKey ? "external" : "embed")}
+							className="flex items-center gap-1.5 rounded-md border border-border/50 bg-muted/40 px-2 py-1 transition-colors hover:bg-muted disabled:opacity-60"
+						>
+							{isBusy ? (
+								<Loader2 className="size-3 animate-spin text-amber-500" />
+							) : (
+								<span className={cn("size-2 rounded-full", statusDotClass(live))} />
+							)}
+							<span className="text-foreground">{service.name}</span>
+							{service.port ? (
+								<span className="text-[11px] text-muted-foreground">:{service.port}</span>
 							) : null}
-						</div>
+						</button>
 					)
 				})}
 
