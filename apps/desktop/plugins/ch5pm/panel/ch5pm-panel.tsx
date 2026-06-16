@@ -11,8 +11,8 @@
  * now flows through the host plugin lifecycle (firefly.built-in.surface.ch5pm).
  */
 
-import type { PluginPanelProps } from "../../src/renderer/firefly-plugin-surfaces"
-import { Ch5PmDashboardPanel } from "../../src/renderer/ch5pm-dashboard/panel"
+import { Ch5PmDashboardPanel } from "@/ch5pm-dashboard/panel"
+import type { PluginPanelProps } from "@/firefly-plugin-surfaces"
 
 export default function Ch5pmPanel(_props: PluginPanelProps) {
 	return <Ch5PmDashboardPanel />
