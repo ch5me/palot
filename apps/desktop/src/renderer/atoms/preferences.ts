@@ -147,10 +147,13 @@ function migrateFireflySurfacePreferences(): void {
 		const next: FireflySurfacePreferences = {
 			lastUtilitySidePanelTab,
 			lastDocumentPanelTab,
+			// Only preserve documentPanelOpen if the stored value is explicitly
+			// true. The legacy format had no documentPanelOpen field, so
+			// inferring open=true from the legacyTab caused the Studio / Office
+			// panel to auto-appear for any user whose last active tab was a
+			// document-lane tab. Default closed; let the user re-open.
 			documentPanelOpen:
-				typeof parsed.documentPanelOpen === "boolean"
-					? parsed.documentPanelOpen
-					: legacyTab !== undefined && isLastDocumentPanelTabId(legacyTab),
+				typeof parsed.documentPanelOpen === "boolean" ? parsed.documentPanelOpen : false,
 			lastNavSidebarTab: parsed.lastNavSidebarTab === "built-in-duplicate" ? "built-in-duplicate" : "built-in",
 		}
 

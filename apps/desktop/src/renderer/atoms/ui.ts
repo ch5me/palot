@@ -186,7 +186,14 @@ export const setAvailableDocumentPanelTabsAtom = atom(
 			return
 		}
 
-		set(setDocumentPanelActiveTabAtom, tabs[0])
+		// Only update the stored tab preference — do NOT open the panel. The
+		// panel was not open before this fallback, so forcing it open here is
+		// what caused the Studio / Office panel to auto-appear on session load.
+		// If the panel IS already open, keep it open (open state is unchanged).
+		set(fireflySurfacePreferencesAtom, {
+			...get(fireflySurfacePreferencesAtom),
+			lastDocumentPanelTab: tabs[0],
+		})
 		set(documentPanelFocusTokenAtom, get(documentPanelFocusTokenAtom) + 1)
 	},
 )
