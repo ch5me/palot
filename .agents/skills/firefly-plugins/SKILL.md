@@ -184,13 +184,27 @@ fail-fast); never silently fall back.
     a localhost service in-app with a plain `<iframe>` — no app-side CSP blocks it
     (only the target's own `X-Frame-Options`/`frame-ancestors` would).
 
+11. **Cross-surface (plugin → plugin) communication is a renderer action, and the
+    TARGET surface owns the API.** All surfaces render in the same renderer, so one
+    surface drives another through a shared write-only **action atom** or a hook the
+    target exports — not by reaching into the target's internals. Example: the DevMux
+    toolbar's "In app" opens a service in the **Browser** side panel via
+    `useOpenInBrowserPanel()` (`components/side-panel/open-in-browser-panel.ts`).
+    The browser surface owns that hook and hides its own complexity (the panel only
+    renders an `<iframe>` for a `direct-iframe` browser *lane*, so the hook
+    ensures/reuses one, makes it active, sets the URL, and opens the panel). The
+    caller stays ignorant of lanes. This is pure atoms + HTTP, so it works in both
+    builds. (A capability-brokered, host-routed surface-command bus — gated by e.g.
+    `host:browser.tab-control` — is the future formalization; today it's a direct
+    renderer call.)
+
 ## Worked example: `firefly.built-in.devmux-toolbar`
 
 An inline `above-chat` widget that reads the active project's
 `devmux.config.json`, lists its DevMux services, shows live running state, and
-launches them (embed in-app or open in the system browser). Works in **both**
-the Electron and web builds. It is the canonical "plugin that needs a host
-callback". Files:
+launches them (open in the Browser side panel, or the system browser). Works in
+**both** the Electron and web builds. It is the canonical "plugin that needs a
+host callback" AND "plugin that hands off to another surface". Files:
 
 - `apps/desktop/plugins/devmux-toolbar/manifest.ts` — widget + commands + tools + capabilities (`host:devmux.read`, `host:devmux.control`).
 - `apps/desktop/src/main/devmux/service.ts` — the runtime-neutral host service wrapping `@chriscode/devmux` (lazy ESM import; no Electron/DOM).
@@ -199,7 +213,8 @@ callback". Files:
 - `apps/desktop/src/main/firefly-plugin/catalog.ts` — manifest registered in `BUILT_IN_MANIFESTS`.
 - `apps/server/src/routes/devmux.ts` — the **web** transport (`/api/devmux/list|status|ensure`), adapting `@chriscode/devmux` directly.
 - `apps/desktop/src/renderer/services/devmux.ts` — renderer client that picks IPC (Electron) vs server `fetch` (web).
-- `apps/desktop/src/renderer/components/devmux/devmux-toolbar-widget.tsx` — the host-bundled component (uses the client + `backend.openExternalUrl`).
+- `apps/desktop/src/renderer/components/side-panel/open-in-browser-panel.ts` — the Browser surface's `useOpenInBrowserPanel()` API (plugin → surface handoff; owns its lane management).
+- `apps/desktop/src/renderer/components/devmux/devmux-toolbar-widget.tsx` — the host-bundled component (devmux client + `useOpenInBrowserPanel` + `backend.openExternalUrl`).
 - `apps/desktop/src/renderer/session-widget-registry.tsx` + `atoms/session-widgets.ts` — registry row + `SessionWidgetId` + default placement.
 
 DevMux library notes (`@chriscode/devmux`, ESM-only, shells out to `tmux`):

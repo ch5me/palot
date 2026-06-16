@@ -11,14 +11,15 @@
  * provided by SessionWidgetCard; this component renders only the body.
  *
  * Behaviour: lists declared services with a live running dot; clicking a
- * service reveals "In app" (embedded iframe) and "Browser" (system browser)
- * actions; both ensure the service is running first. If the project has no
- * devmux config (or the host is unreachable), the widget renders nothing.
+ * service reveals "In app" (hands the URL to the Browser side-panel surface via
+ * `useOpenInBrowserPanel` — plugin → surface communication) and "Browser"
+ * (system browser) actions; both ensure the service is running first. If the
+ * project has no devmux config (or the host is unreachable), it renders nothing.
  */
 
 import { useCallback, useEffect, useState } from "react"
 import { cn } from "@ch5me/ch5-ui-web"
-import { ExternalLink, Loader2, MonitorPlay, RefreshCw, X } from "lucide-react"
+import { ExternalLink, Loader2, MonitorPlay, RefreshCw } from "lucide-react"
 
 import { openExternalUrl } from "../../services/backend"
 import {
@@ -28,6 +29,7 @@ import {
 	listServices,
 	statusAll,
 } from "../../services/devmux"
+import { useOpenInBrowserPanel } from "../side-panel/open-in-browser-panel"
 import type { Agent } from "../../lib/types"
 
 function statusDotClass(runtime: DevmuxServiceRuntime | undefined): string {
@@ -49,8 +51,8 @@ export function DevmuxToolbarWidget({ agent }: { agent: Agent }) {
 	const [runtime, setRuntime] = useState<Record<string, DevmuxServiceRuntime>>({})
 	const [busy, setBusy] = useState<Record<string, boolean>>({})
 	const [selected, setSelected] = useState<string | null>(null)
-	const [embed, setEmbed] = useState<{ service: string; url: string } | null>(null)
 	const [note, setNote] = useState<string | null>(null)
+	const openInBrowserPanel = useOpenInBrowserPanel()
 
 	const refreshStatus = useCallback(async () => {
 		try {
@@ -67,7 +69,6 @@ export function DevmuxToolbarWidget({ agent }: { agent: Agent }) {
 		let cancelled = false
 		setServices(null)
 		setHidden(false)
-		setEmbed(null)
 		setSelected(null)
 		setRuntime({})
 		void (async () => {
@@ -105,7 +106,7 @@ export function DevmuxToolbarWidget({ agent }: { agent: Agent }) {
 					return
 				}
 				if (target === "embed") {
-					setEmbed({ service, url: result.url })
+					await openInBrowserPanel(result.url, `devmux-${service}`, service)
 				} else {
 					await openExternalUrl(result.url)
 				}
@@ -116,7 +117,7 @@ export function DevmuxToolbarWidget({ agent }: { agent: Agent }) {
 				setBusy((prev) => ({ ...prev, [service]: false }))
 			}
 		},
-		[projectDir, refreshStatus],
+		[projectDir, refreshStatus, openInBrowserPanel],
 	)
 
 	if (hidden || !services || services.length === 0) return null
@@ -187,36 +188,6 @@ export function DevmuxToolbarWidget({ agent }: { agent: Agent }) {
 			</div>
 
 			{note ? <div className="text-[11px] text-amber-600 dark:text-amber-400">{note}</div> : null}
-
-			{embed ? (
-				<div className="overflow-hidden rounded-md border border-border/50">
-					<div className="flex items-center gap-2 border-b border-border/40 bg-muted/40 px-2 py-1 text-xs">
-						<span className="text-foreground/80">{embed.service}</span>
-						<span className="truncate text-muted-foreground">{embed.url}</span>
-						<button
-							type="button"
-							title="Open in browser"
-							onClick={() => void openExternalUrl(embed.url)}
-							className="ml-auto rounded p-1 text-muted-foreground hover:bg-muted hover:text-foreground"
-						>
-							<ExternalLink className="size-3.5" />
-						</button>
-						<button
-							type="button"
-							title="Close preview"
-							onClick={() => setEmbed(null)}
-							className="rounded p-1 text-muted-foreground hover:bg-muted hover:text-foreground"
-						>
-							<X className="size-3.5" />
-						</button>
-					</div>
-					<iframe
-						title={`${embed.service} preview`}
-						src={embed.url}
-						className="h-[420px] w-full border-0 bg-white"
-					/>
-				</div>
-			) : null}
 		</div>
 	)
 }
