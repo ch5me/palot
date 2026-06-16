@@ -35,6 +35,7 @@ import {
 	PlugIcon,
 	RectangleEllipsisIcon,
 	Share2Icon,
+	SquarePenIcon,
 	TerminalSquareIcon,
 	UsersIcon,
 	MoonIcon,
@@ -59,7 +60,6 @@ import {
 	ch5pmSurfaceEnabledAtom,
 	claudeSurfaceEnabledAtom,
 	crmSurfaceEnabledAtom,
-	editorSurfaceEnabledAtom,
 	pluginsSurfaceEnabledAtom,
 	pdfReviewSurfaceEnabledAtom,
 	studioSurfaceEnabledAtom,
@@ -138,7 +138,6 @@ export function CommandPalette({ open, onOpenChange, agents, onForkSession }: Co
 	const toggleAutomations = useSetAtom(toggleAutomationsAtom)
 	const browserPanelEnabled = useAtomValue(browserPanelEnabledAtom)
 	const terminalSurfaceEnabled = useAtomValue(terminalSurfaceEnabledAtom)
-	const editorSurfaceEnabled = useAtomValue(editorSurfaceEnabledAtom)
 	const pluginsSurfaceEnabled = useAtomValue(pluginsSurfaceEnabledAtom)
 	const crmSurfaceEnabled = useAtomValue(crmSurfaceEnabledAtom)
 	const studioSurfaceEnabled = useAtomValue(studioSurfaceEnabledAtom)
@@ -223,7 +222,6 @@ export function CommandPalette({ open, onOpenChange, agents, onForkSession }: Co
 			flags: {
 				browserPanelEnabled,
 				terminal: terminalSurfaceEnabled,
-				editor: editorSurfaceEnabled,
 				plugins: pluginsSurfaceEnabled,
 				crm: crmSurfaceEnabled,
 				studio: studioSurfaceEnabled,
@@ -238,7 +236,6 @@ export function CommandPalette({ open, onOpenChange, agents, onForkSession }: Co
 		activeAgent,
 		browserPanelEnabled,
 		terminalSurfaceEnabled,
-		editorSurfaceEnabled,
 		pluginsSurfaceEnabled,
 		crmSurfaceEnabled,
 		studioSurfaceEnabled,
@@ -328,6 +325,19 @@ export function CommandPalette({ open, onOpenChange, agents, onForkSession }: Co
 		await window.elf?.plugins.setEnabled("firefly.built-in.surface.memory", !memoryPluginEnabled)
 		await queryClient.invalidateQueries({ queryKey: ["firefly-plugin"] })
 	}, [memoryPluginEnabled, queryClient])
+
+	// Editor is a catalog-served plugin: its enable/disable flows through
+	// the host plugin lifecycle, not a renderer feature-flag atom.
+	const editorPluginEntry = pluginList?.plugins.find(
+		(plugin) => plugin.pluginId === "firefly.built-in.surface.editor",
+	)
+	const editorPluginEnabled = editorPluginEntry
+		? editorPluginEntry.status !== "disabled" && editorPluginEntry.status !== "quarantined"
+		: true
+	const toggleEditorPlugin = useCallback(async () => {
+		await window.elf?.plugins.setEnabled("firefly.built-in.surface.editor", !editorPluginEnabled)
+		await queryClient.invalidateQueries({ queryKey: ["firefly-plugin"] })
+	}, [editorPluginEnabled, queryClient])
 
 	const catalogSurfaceTabs = useCatalogSurfaceTabs(activeAgent)
 	const availableSurfaceTabs = useMemo(
@@ -621,6 +631,17 @@ export function CommandPalette({ open, onOpenChange, agents, onForkSession }: Co
 						<TerminalSquareIcon />
 						<span>{terminalSurfaceEnabled ? "Disable Terminal Surface" : "Enable Terminal Surface"}</span>
 						{terminalSurfaceEnabled && <CheckIcon className="ml-auto h-4 w-4" />}
+					</CommandItem>
+					<CommandItem
+						keywords={["editor", "monaco", "code", "file", "text"]}
+						onSelect={() => {
+							void toggleEditorPlugin()
+							onOpenChange(false)
+						}}
+					>
+						<SquarePenIcon />
+						<span>{editorPluginEnabled ? "Disable Editor Surface" : "Enable Editor Surface"}</span>
+						{editorPluginEnabled && <CheckIcon className="ml-auto h-4 w-4" />}
 					</CommandItem>
 					<CommandItem
 						keywords={["plugins", "skills", "mcp", "integrations"]}

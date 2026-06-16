@@ -747,6 +747,63 @@ export function registerMemoryHostHandlers(deps?: Partial<MemoryHostDeps>): void
 }
 
 // ---------------------------------------------------------------------------
+// Editor surface host handlers (firefly.built-in.surface.editor)
+// ---------------------------------------------------------------------------
+
+export interface EditorHostDeps {
+	openSidePanel: (tab: "editor") => Promise<void>
+	getSidePanelState: () => SidePanelStateSnapshot
+	setPluginEnabled: (pluginId: string, enabled: boolean) => { enabled: boolean }
+}
+
+const EDITOR_PLUGIN_ID = "firefly.built-in.surface.editor"
+
+export function registerEditorHostHandlers(deps?: Partial<EditorHostDeps>): void {
+	const openSidePanel =
+		deps?.openSidePanel ??
+		(async (tab: "editor") => {
+			const { broadcastOpenSidePanel } = await import("../palot-browser-ipc")
+			await broadcastOpenSidePanel(tab)
+		})
+	const getSidePanelState = deps?.getSidePanelState ?? defaultGetSidePanelState
+	const setEnabled =
+		deps?.setPluginEnabled ??
+		((pluginId: string, enabled: boolean) => {
+			// eslint-disable-next-line @typescript-eslint/no-var-requires
+			const authority = require("./authority") as typeof import("./authority")
+			return authority.setPluginEnabled(pluginId, enabled)
+		})
+
+	registerHostTool(EDITOR_PLUGIN_ID, "plugin.firefly.built-in.surface.editor.open", async () => {
+		await openSidePanel("editor")
+		return ok({ opened: true, tab: "editor", source: "v2-plugin-tool-dispatch" })
+	})
+
+	registerHostTool(EDITOR_PLUGIN_ID, "plugin.firefly.built-in.surface.editor.state", async () => {
+		const sidePanel = getSidePanelState()
+		return ok({
+			tab: "editor",
+			available: sidePanel.availableTabs.includes("editor"),
+			open: sidePanel.open,
+			active: sidePanel.open && sidePanel.activeTab === "editor",
+		})
+	})
+
+	registerHostCommand(EDITOR_PLUGIN_ID, "open-editor", async () => {
+		await openSidePanel("editor")
+		return ok({ opened: true, tab: "editor" })
+	})
+
+	registerHostCommand(EDITOR_PLUGIN_ID, "toggle-editor", async () => {
+		const catalog = getPluginCatalog()
+		const state = catalog.capabilityStates[EDITOR_PLUGIN_ID]
+		const currentlyEnabled = !(state?.pluginDisabled ?? false)
+		const next = setEnabled(EDITOR_PLUGIN_ID, !currentlyEnabled)
+		return ok({ pluginId: EDITOR_PLUGIN_ID, enabled: next.enabled })
+	})
+}
+
+// ---------------------------------------------------------------------------
 // DevMux Toolbar host handlers (firefly.built-in.devmux-toolbar)
 //
 // The Node-only work lives in `main/devmux/service.ts` and is reached here
@@ -851,6 +908,7 @@ export function registerBuiltInHostCommands(): void {
 	registerBridgesHostHandlers()
 	registerPulseHostHandlers()
 	registerMemoryHostHandlers()
+	registerEditorHostHandlers()
 	registerDevmuxHostHandlers()
 	log.info("Registered V2 host command handlers", {
 		commands: Array.from(handlers.keys()),

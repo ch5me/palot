@@ -1,4 +1,4 @@
-import { FileTextIcon, GlobeIcon, MicIcon, MonitorPlayIcon, PlugIcon, RectangleEllipsisIcon, SquarePenIcon, TerminalSquareIcon, UsersIcon, WandSparklesIcon, type LucideIcon } from "lucide-react"
+import { FileTextIcon, GlobeIcon, MicIcon, MonitorPlayIcon, PlugIcon, RectangleEllipsisIcon, TerminalSquareIcon, UsersIcon, WandSparklesIcon, type LucideIcon } from "lucide-react"
 
 import type { ReactNode } from "react"
 
@@ -10,7 +10,6 @@ import { OraclePanel } from "./components/side-panel/oracle-panel"
 import { PdfReviewPanel } from "./components/side-panel/pdf-review-panel"
 import { StudioPanel } from "./components/side-panel/studio-panel"
 import { VoicePanel } from "./components/side-panel/voice-panel"
-import { EditorPanel } from "./components/side-panel/editor-panel"
 import { V2PluginsPanel } from "./components/side-panel/v2-plugins-panel"
 import { TerminalPanel } from "./components/side-panel/terminal-panel"
 import type { Agent, FireflySurfaceTarget } from "./lib/types"
@@ -120,27 +119,8 @@ export const FIREFLY_SURFACE_REGISTRY: FireflySurfaceDef[] = [
 		target: { kind: "side-panel", tab: "terminal" },
 		spawn: (ctx) => <TerminalPanel agent={ctx.agent} />,
 	},
-	{
-		id: "editor",
-		manifestId: "firefly.built-in.side-panel.editor",
-		title: "Editor",
-		icon: SquarePenIcon,
-		formFactor: "side-panel-tab",
-		lane: "utility",
-		enabledFlag: {
-			key: "editor",
-		},
-		defaultOn: true,
-		availability: (ctx) =>
-			ctx.flags.editor
-				? { available: true }
-				: { available: false, reason: "Editor surface is disabled in feature flags" },
-		commandIds: ["surface.editor.open", "surface.editor.toggle"],
-		persistenceKey: "side-panel.editor",
-		telemetryNamespace: "firefly.surface.editor",
-		target: { kind: "side-panel", tab: "editor" },
-		spawn: (ctx) => <EditorPanel agent={ctx.agent} />,
-	},
+	// `editor` is served from the plugin catalog (firefly.built-in.surface.editor,
+	// apps/desktop/plugins/editor) — do not re-add a row here.
 	{
 		id: "plugins",
 		manifestId: "firefly.built-in.side-panel.plugins",
@@ -335,7 +315,7 @@ import { FIREFLY_SURFACE_IDS, type FireflySurfaceId } from "../shared/firefly-su
  * they are served from the plugin catalog (host plugin lifecycle owns
  * their enable/disable). First migrated surface: notes.
  */
-export const CATALOG_SERVED_SURFACE_IDS: readonly FireflySurfaceId[] = ["notes", "review", "files", "artifacts", "bridges", "pulse", "memory"]
+export const CATALOG_SERVED_SURFACE_IDS: readonly FireflySurfaceId[] = ["notes", "review", "files", "artifacts", "bridges", "pulse", "memory", "editor"]
 
 export const FIREFLY_SURFACE_DEFAULT_ON = Object.fromEntries(
 	FIREFLY_SURFACE_REGISTRY.map((surface) => [surface.id, surface.defaultOn]),

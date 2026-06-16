@@ -1,18 +1,24 @@
+/**
+ * Editor surface panel — moved from
+ * `src/renderer/components/side-panel/editor-panel.tsx`.
+ * Part of the V2 plugin catalog migration (firefly.built-in.surface.editor).
+ */
+
 import { Button, Input } from "@ch5me/ch5-ui-web";
 import { useEffect, useMemo, useRef, useState } from "react"
 import type * as Monaco from "monaco-editor"
 import { CheckIcon, CircleIcon, ExternalLinkIcon, FileIcon, Loader2Icon } from "lucide-react"
-import { useFileSearch } from "../../hooks/use-file-search"
-import { initMonaco, languageForPath } from "../../lib/monaco"
-import type { Agent } from "../../lib/types"
-import { readTextFile, writeTextFile } from "../../services/backend"
+import { useFileSearch } from "../../../src/renderer/hooks/use-file-search"
+import { initMonaco, languageForPath } from "../../../src/renderer/lib/monaco"
+import type { Agent } from "../../../src/renderer/lib/types"
+import { readTextFile, writeTextFile } from "../../../src/renderer/services/backend"
 
 interface EditorPanelProps {
 	agent: Agent
 	className?: string
 }
 
-export function EditorPanel({ agent, className }: EditorPanelProps) {
+export default function EditorPanel({ agent, className }: EditorPanelProps) {
 	const [query, setQuery] = useState("")
 	const { files: results, isLoading: loadingResults } = useFileSearch(agent.worktreePath ?? agent.directory, query, true)
 	const [selectedPath, setSelectedPath] = useState<string | null>(null)

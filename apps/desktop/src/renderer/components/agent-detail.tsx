@@ -32,7 +32,6 @@ import {
 	ch5pmSurfaceEnabledAtom,
 	claudeSurfaceEnabledAtom,
 	crmSurfaceEnabledAtom,
-	editorSurfaceEnabledAtom,
 	oracleSurfaceEnabledAtom,
 	pluginsSurfaceEnabledAtom,
 	pdfReviewSurfaceEnabledAtom,
@@ -309,7 +308,6 @@ export function AgentDetail({
 
 	const browserPanelEnabled = useAtomValue(browserPanelEnabledAtom)
 	const terminalSurfaceEnabled = useAtomValue(terminalSurfaceEnabledAtom)
-	const editorSurfaceEnabled = useAtomValue(editorSurfaceEnabledAtom)
 	const pluginsSurfaceEnabled = useAtomValue(pluginsSurfaceEnabledAtom)
 	const crmSurfaceEnabled = useAtomValue(crmSurfaceEnabledAtom)
 	const studioSurfaceEnabled = useAtomValue(studioSurfaceEnabledAtom)
@@ -327,7 +325,6 @@ export function AgentDetail({
 			flags: {
 				browserPanelEnabled,
 				terminal: terminalSurfaceEnabled,
-				editor: editorSurfaceEnabled,
 				plugins: pluginsSurfaceEnabled,
 				crm: crmSurfaceEnabled,
 				studio: studioSurfaceEnabled,
@@ -346,7 +343,6 @@ export function AgentDetail({
 		diffStats,
 		browserPanelEnabled,
 		terminalSurfaceEnabled,
-		editorSurfaceEnabled,
 		pluginsSurfaceEnabled,
 		crmSurfaceEnabled,
 		studioSurfaceEnabled,
