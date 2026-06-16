@@ -24,6 +24,10 @@ export interface SurfaceFlagMigration {
 /** One row per migrated surface. Append on each migration slice. */
 export const SURFACE_FLAG_MIGRATIONS: readonly SurfaceFlagMigration[] = [
 	{
+		pluginId: "firefly.built-in.surface.browser",
+		legacyStorageKey: "elf:browserPanelEnabled",
+	},
+	{
 		pluginId: "firefly.built-in.surface.notes",
 		legacyStorageKey: "elf:notesSurfaceEnabled",
 	},

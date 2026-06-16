@@ -1,3 +1,11 @@
+/**
+ * Browser surface panel — V2 plugin panel component.
+ *
+ * Relocated from `src/renderer/components/side-panel/browser-panel.tsx`
+ * as part of the browser surface V2 migration. Props satisfy
+ * `PluginPanelProps` (`{ agent: Agent }`).
+ */
+
 import { Button, DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger, Input } from "@ch5me/ch5-ui-web";
 import {
 	AlertTriangleIcon,
@@ -18,7 +26,7 @@ import {
 	buildNavigableUrl,
 	lastBrowserUrlAtom,
 	pushBrowserHistory,
-} from "../../atoms/browser"
+} from "../../../src/renderer/atoms/browser"
 import {
 	createRemoteBrowserLane,
 	ELF_SERVER_BASE_URL,
@@ -31,12 +39,12 @@ import {
 	resetBrowserLaneProfile,
 	startBrowserLane,
 	writeHostClipboardText,
-} from "../../services/backend"
+} from "../../../src/renderer/services/backend"
 import {
 	summarizeBrowserLaneHealth,
 	type BrowserLaneSurfaceKind,
-} from "../../../shared/browser-lanes"
-import type { Agent, BrowserLane, BrowserLaneHealth } from "../../lib/types"
+} from "../../../src/shared/browser-lanes"
+import type { Agent, BrowserLane, BrowserLaneHealth } from "../../../src/renderer/lib/types"
 
 interface BrowserPanelProps {
 	agent: Agent
@@ -66,7 +74,7 @@ function isLikelyStreamUrl(url: string): boolean {
 	return false
 }
 
-export function BrowserPanel({ agent: _agent, className }: BrowserPanelProps) {
+function BrowserPanel({ agent: _agent, className }: BrowserPanelProps) {
 	const [persistedUrl, setPersistedUrl] = useAtom(lastBrowserUrlAtom)
 	const [, setHistory] = useAtom(browserHistoryAtom)
 	const [activeLaneId, setActiveLaneId] = useAtom(activeBrowserLaneIdAtom)
@@ -778,3 +786,5 @@ export function BrowserPanel({ agent: _agent, className }: BrowserPanelProps) {
 		</div>
 	)
 }
+
+export default BrowserPanel

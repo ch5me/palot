@@ -29,6 +29,10 @@ import {
 	ACME_NOTEBOOK_PLUGIN_ID,
 } from "../../shared/firefly-plugin/acme-notebook-exemplar"
 import {
+	browserPluginManifest,
+	BROWSER_PLUGIN_ID,
+} from "../../../plugins/browser/manifest"
+import {
 	notesPluginManifest,
 	NOTES_PLUGIN_ID,
 } from "../../../plugins/notes/manifest"
@@ -124,6 +128,7 @@ const BUILT_IN_MANIFESTS: readonly PluginManifest[] = [
 	palotBridgeManifest,
 	memoryPluginManifest,
 	acmeNotebookManifest,
+	browserPluginManifest,
 	notesPluginManifest,
 	reviewPluginManifest,
 	filesPluginManifest,
@@ -483,6 +488,7 @@ export const KNOWN_PLUGIN_IDS = {
 	palotBridge: PALOT_BRIDGE_PLUGIN_ID,
 	memorySurface: MEMORY_PLUGIN_ID,
 	acmeNotebook: ACME_NOTEBOOK_PLUGIN_ID,
+	browser: BROWSER_PLUGIN_ID,
 	notes: NOTES_PLUGIN_ID,
 	review: REVIEW_PLUGIN_ID,
 	files: FILES_PLUGIN_ID,

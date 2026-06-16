@@ -1093,6 +1093,63 @@ async function devmuxLaunch(args: unknown): Promise<HostCommandResult> {
 	}
 }
 
+// ---------------------------------------------------------------------------
+// Browser surface host handlers (firefly.built-in.surface.browser)
+// ---------------------------------------------------------------------------
+
+export interface BrowserHostDeps {
+	openSidePanel: (tab: "browser") => Promise<void>
+	getSidePanelState: () => SidePanelStateSnapshot
+	setPluginEnabled: (pluginId: string, enabled: boolean) => { enabled: boolean }
+}
+
+const BROWSER_PLUGIN_ID = "firefly.built-in.surface.browser"
+
+export function registerBrowserHostHandlers(deps?: Partial<BrowserHostDeps>): void {
+	const openSidePanel =
+		deps?.openSidePanel ??
+		(async (tab: "browser") => {
+			const { broadcastOpenSidePanel } = await import("../palot-browser-ipc")
+			await broadcastOpenSidePanel(tab)
+		})
+	const getSidePanelState = deps?.getSidePanelState ?? defaultGetSidePanelState
+	const setEnabled =
+		deps?.setPluginEnabled ??
+		((pluginId: string, enabled: boolean) => {
+			// eslint-disable-next-line @typescript-eslint/no-var-requires
+			const authority = require("./authority") as typeof import("./authority")
+			return authority.setPluginEnabled(pluginId, enabled)
+		})
+
+	registerHostTool(BROWSER_PLUGIN_ID, "plugin.firefly.built-in.surface.browser.open", async () => {
+		await openSidePanel("browser")
+		return ok({ opened: true, tab: "browser", source: "v2-plugin-tool-dispatch" })
+	})
+
+	registerHostTool(BROWSER_PLUGIN_ID, "plugin.firefly.built-in.surface.browser.state", async () => {
+		const sidePanel = getSidePanelState()
+		return ok({
+			tab: "browser",
+			available: sidePanel.availableTabs.includes("browser"),
+			open: sidePanel.open,
+			active: sidePanel.open && sidePanel.activeTab === "browser",
+		})
+	})
+
+	registerHostCommand(BROWSER_PLUGIN_ID, "open-browser", async () => {
+		await openSidePanel("browser")
+		return ok({ opened: true, tab: "browser" })
+	})
+
+	registerHostCommand(BROWSER_PLUGIN_ID, "toggle-browser", async () => {
+		const catalog = getPluginCatalog()
+		const state = catalog.capabilityStates[BROWSER_PLUGIN_ID]
+		const currentlyEnabled = !(state?.pluginDisabled ?? false)
+		const next = setEnabled(BROWSER_PLUGIN_ID, !currentlyEnabled)
+		return ok({ pluginId: BROWSER_PLUGIN_ID, enabled: next.enabled })
+	})
+}
+
 export function registerDevmuxHostHandlers(): void {
 	// UI commands (renderer-invoked via firefly-plugin:invoke).
 	registerHostCommand(DEVMUX_TOOLBAR_PLUGIN_ID, "devmux-list", ({ args }) => devmuxList(args))
@@ -1129,6 +1186,7 @@ export function registerBuiltInHostCommands(): void {
 	registerHostCommand("firefly.built-in.palot-bridge", "palot-ui-state", invokePalotUiState)
 	registerHostCommand("acme.acme-notebook", "acme-notebook-open", invokeAcmeNotebookOpen)
 	registerHostCommand("acme.acme-notebook", "acme-notebook-clear", invokeAcmeNotebookClear)
+	registerBrowserHostHandlers()
 	registerNotesHostHandlers()
 	registerReviewHostHandlers()
 	registerFilesHostHandlers()

@@ -28,12 +28,12 @@ import { type ComponentProps, useCallback, useEffect, useMemo, useRef, useState,
 import { createHtmlPortalNode, InPortal, OutPortal, type HtmlPortalNode } from "react-reverse-portal"
 import type { OpenInTarget } from "../../preload/api"
 import {
-	browserPanelEnabledAtom,
 	ch5pmSurfaceEnabledAtom,
 	// claudeSurfaceEnabledAtom removed — claude is catalog-served (firefly.built-in.surface.claude).
 	crmSurfaceEnabledAtom,
 	// oracleSurfaceEnabledAtom removed — oracle is catalog-served (firefly.built-in.surface.oracle).
 	// voiceSurfaceEnabledAtom removed — voice is catalog-served (firefly.built-in.surface.voice).
+	// browserPanelEnabledAtom removed — browser is catalog-served (firefly.built-in.surface.browser).
 	pluginsSurfaceEnabledAtom,
 	pdfReviewSurfaceEnabledAtom,
 	studioSurfaceEnabledAtom,
@@ -305,7 +305,7 @@ export function AgentDetail({
 		}
 	}, [isEditingTitle])
 
-	const browserPanelEnabled = useAtomValue(browserPanelEnabledAtom)
+	// browserPanelEnabled removed — browser is catalog-served (firefly.built-in.surface.browser).
 	// terminalSurfaceEnabled removed — terminal is catalog-served (firefly.built-in.surface.terminal).
 	// claudeSurfaceEnabled removed — claude is catalog-served (firefly.built-in.surface.claude).
 	// oracleSurfaceEnabled removed — oracle is catalog-served (firefly.built-in.surface.oracle).
@@ -322,7 +322,6 @@ export function AgentDetail({
 			agent,
 			diffStats,
 			flags: {
-				browserPanelEnabled,
 				plugins: pluginsSurfaceEnabled,
 				crm: crmSurfaceEnabled,
 				studio: studioSurfaceEnabled,
@@ -336,7 +335,6 @@ export function AgentDetail({
 		agent,
 		catalogSurfaceTabs,
 		diffStats,
-		browserPanelEnabled,
 		pluginsSurfaceEnabled,
 		crmSurfaceEnabled,
 		studioSurfaceEnabled,

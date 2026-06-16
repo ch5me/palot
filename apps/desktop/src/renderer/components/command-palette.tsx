@@ -56,7 +56,7 @@ import { invokePluginCommand, useFireflyPlugins } from "../hooks/use-firefly-plu
 import { useQueryClient } from "@tanstack/react-query"
 import {
 	automationsEnabledAtom,
-	browserPanelEnabledAtom,
+	// browserPanelEnabledAtom removed — browser is catalog-served (firefly.built-in.surface.browser).
 	ch5pmSurfaceEnabledAtom,
 	// claudeSurfaceEnabledAtom removed — claude is catalog-served (firefly.built-in.surface.claude).
 	crmSurfaceEnabledAtom,
@@ -65,7 +65,7 @@ import {
 	studioSurfaceEnabledAtom,
 	// voiceSurfaceEnabledAtom removed — voice is catalog-served (firefly.built-in.surface.voice).
 	toggleAutomationsAtom,
-	toggleBrowserPanelAtom,
+	// toggleBrowserPanelAtom removed — browser is catalog-served; toggle via window.elf.plugins.setEnabled.
 	toggleCh5PmSurfaceAtom,
 	// toggleClaudeSurfaceAtom removed — claude is catalog-served; toggle via window.elf.plugins.setEnabled.
 	toggleCrmSurfaceAtom,
@@ -134,7 +134,7 @@ export function CommandPalette({ open, onOpenChange, agents, onForkSession }: Co
 	const toggleDevSurface = useSetAtom(toggleDevSurfaceAtom)
 	const automationsEnabled = useAtomValue(automationsEnabledAtom)
 	const toggleAutomations = useSetAtom(toggleAutomationsAtom)
-	const browserPanelEnabled = useAtomValue(browserPanelEnabledAtom)
+	// browserPanelEnabled removed — browser is catalog-served (firefly.built-in.surface.browser).
 	// terminalSurfaceEnabled removed — terminal is catalog-served (firefly.built-in.surface.terminal).
 	// claudeSurfaceEnabled removed — claude is catalog-served (firefly.built-in.surface.claude).
 	// voiceSurfaceEnabled removed — voice is catalog-served (firefly.built-in.surface.voice).
@@ -143,7 +143,7 @@ export function CommandPalette({ open, onOpenChange, agents, onForkSession }: Co
 	const studioSurfaceEnabled = useAtomValue(studioSurfaceEnabledAtom)
 	const ch5pmSurfaceEnabled = useAtomValue(ch5pmSurfaceEnabledAtom)
 	const pdfReviewSurfaceEnabled = useAtomValue(pdfReviewSurfaceEnabledAtom)
-	const toggleBrowserPanel = useSetAtom(toggleBrowserPanelAtom)
+	// toggleBrowserPanel removed — browser is catalog-served; toggle via browserPluginEnabled + window.elf.plugins.setEnabled.
 	const togglePluginsSurface = useSetAtom(togglePluginsSurfaceAtom)
 	const toggleCrmSurface = useSetAtom(toggleCrmSurfaceAtom)
 	const toggleStudioSurface = useSetAtom(toggleStudioSurfaceAtom)
@@ -216,7 +216,6 @@ export function CommandPalette({ open, onOpenChange, agents, onForkSession }: Co
 				fileCount: 1,
 			},
 			flags: {
-				browserPanelEnabled,
 				plugins: pluginsSurfaceEnabled,
 				crm: crmSurfaceEnabled,
 				studio: studioSurfaceEnabled,
@@ -227,7 +226,6 @@ export function CommandPalette({ open, onOpenChange, agents, onForkSession }: Co
 		}
 	}, [
 		activeAgent,
-		browserPanelEnabled,
 		pluginsSurfaceEnabled,
 		crmSurfaceEnabled,
 		studioSurfaceEnabled,
@@ -236,10 +234,23 @@ export function CommandPalette({ open, onOpenChange, agents, onForkSession }: Co
 	])
 
 
-	// Notes is a catalog-served plugin: its enable/disable flows through
+	// Browser is a catalog-served plugin: its enable/disable flows through
 	// the host plugin lifecycle, not a renderer feature-flag atom.
 	const queryClient = useQueryClient()
 	const { data: pluginList } = useFireflyPlugins()
+	const browserPluginEntry = pluginList?.plugins.find(
+		(plugin) => plugin.pluginId === "firefly.built-in.surface.browser",
+	)
+	const browserPluginEnabled = browserPluginEntry
+		? browserPluginEntry.status !== "disabled" && browserPluginEntry.status !== "quarantined"
+		: true
+	const toggleBrowserPlugin = useCallback(async () => {
+		await window.elf?.plugins.setEnabled("firefly.built-in.surface.browser", !browserPluginEnabled)
+		await queryClient.invalidateQueries({ queryKey: ["firefly-plugin"] })
+	}, [browserPluginEnabled, queryClient])
+
+	// Notes is a catalog-served plugin: its enable/disable flows through
+	// the host plugin lifecycle, not a renderer feature-flag atom.
 	const notesPluginEntry = pluginList?.plugins.find(
 		(plugin) => plugin.pluginId === "firefly.built-in.surface.notes",
 	)
@@ -597,14 +608,13 @@ export function CommandPalette({ open, onOpenChange, agents, onForkSession }: Co
 				<CommandItem
 					keywords={["browser", "web", "webview", "inline browser", "panel"]}
 					onSelect={() => {
-						toggleBrowserPanel()
+						void toggleBrowserPlugin()
 						onOpenChange(false)
 					}}
 				>
-
 						{availableSurfaceTabs.find((surface) => surface.id === "browser")?.icon ?? <MonitorIcon />}
-						<span>{browserPanelEnabled ? "Disable Browser Panel" : "Enable Browser Panel"}</span>
-						{browserPanelEnabled && <CheckIcon className="ml-auto h-4 w-4" />}
+						<span>{browserPluginEnabled ? "Disable Browser Panel" : "Enable Browser Panel"}</span>
+						{browserPluginEnabled && <CheckIcon className="ml-auto h-4 w-4" />}
 					</CommandItem>
 					<CommandItem
 						keywords={["notes", "surface", "side panel", "plugin"]}

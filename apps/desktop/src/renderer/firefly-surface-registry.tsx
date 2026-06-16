@@ -1,9 +1,10 @@
-import { FileTextIcon, GlobeIcon, MonitorPlayIcon, PlugIcon, UsersIcon, type LucideIcon } from "lucide-react"
+import { FileTextIcon, MonitorPlayIcon, PlugIcon, UsersIcon, type LucideIcon } from "lucide-react"
 
 import type { ReactNode } from "react"
 
 import { Ch5PmDashboardPanel } from "./ch5pm-dashboard/panel"
-import { BrowserPanel } from "./components/side-panel/browser-panel"
+// `browser` is served from the plugin catalog (firefly.built-in.surface.browser,
+// apps/desktop/plugins/browser) — do not re-add a row or import here.
 // `claude` is served from the plugin catalog (firefly.built-in.surface.claude,
 // apps/desktop/plugins/claude) — do not re-add a row or import here.
 import { CrmPanel } from "./components/side-panel/crm-panel"
@@ -69,27 +70,7 @@ export interface FireflySidePanelTab {
 // `review` is served from the plugin catalog (firefly.built-in.surface.review,
 // apps/desktop/plugins/review) — do not re-add a row here.
 export const FIREFLY_SURFACE_REGISTRY: FireflySurfaceDef[] = [
-	{
-		id: "browser",
-		manifestId: "firefly.built-in.side-panel.browser",
-		title: "Browser",
-		icon: GlobeIcon,
-		formFactor: "side-panel-tab",
-		lane: "utility",
-		enabledFlag: {
-			key: "browserPanelEnabled",
-		},
-		defaultOn: true,
-		availability: (ctx) =>
-			ctx.flags.browserPanelEnabled
-				? { available: true }
-				: { available: false, reason: "Browser surface is disabled in feature flags" },
-		commandIds: ["surface.browser.open", "surface.browser.toggle"],
-		persistenceKey: "side-panel.browser",
-		telemetryNamespace: "firefly.surface.browser",
-		target: { kind: "side-panel", tab: "browser" },
-		spawn: (ctx) => <BrowserPanel agent={ctx.agent} />,
-	},
+	// `browser` is served from the plugin catalog (firefly.built-in.surface.browser) — do not re-add.
 	// `notes` is served from the plugin catalog (firefly.built-in.surface.notes,
 	// apps/desktop/plugins/notes) — first migrated surface. Do not re-add a row.
 	// `pulse` is served from the plugin catalog (firefly.built-in.surface.pulse,
@@ -238,7 +219,7 @@ import { FIREFLY_SURFACE_IDS, type FireflySurfaceId } from "../shared/firefly-su
  * they are served from the plugin catalog (host plugin lifecycle owns
  * their enable/disable). First migrated surface: notes.
  */
-export const CATALOG_SERVED_SURFACE_IDS: readonly FireflySurfaceId[] = ["notes", "review", "files", "artifacts", "bridges", "pulse", "memory", "editor", "terminal", "claude", "oracle", "voice"]
+export const CATALOG_SERVED_SURFACE_IDS: readonly FireflySurfaceId[] = ["browser", "notes", "review", "files", "artifacts", "bridges", "pulse", "memory", "editor", "terminal", "claude", "oracle", "voice"]
 
 export const FIREFLY_SURFACE_DEFAULT_ON = Object.fromEntries(
 	FIREFLY_SURFACE_REGISTRY.map((surface) => [surface.id, surface.defaultOn]),
