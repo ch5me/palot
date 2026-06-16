@@ -93,7 +93,6 @@ export const toggleLoomAcmeComponentsAtom = atom(null, (get, set) => {
 // once by `renderer/firefly-plugin-flag-migration.ts`.
 export const fireflySurfaceDefaults = {
 	browserPanelEnabled: true,
-	pulse: false,
 	memory: false,
 	terminal: true,
 	editor: true,
@@ -110,7 +109,6 @@ export const fireflySurfaceDefaults = {
 export type FireflySurfaceFlagKey = keyof typeof fireflySurfaceDefaults
 
 export const browserPanelEnabledAtom = atomWithStorage<boolean>("elf:browserPanelEnabled", true)
-export const pulseSurfaceEnabledAtom = atomWithStorage<boolean>("elf:pulseSurfaceEnabled", false)
 export const memorySurfaceEnabledAtom = atomWithStorage<boolean>("elf:memorySurfaceEnabled", false)
 export const terminalSurfaceEnabledAtom = atomWithStorage<boolean>("elf:terminalSurfaceEnabled", true)
 export const editorSurfaceEnabledAtom = atomWithStorage<boolean>("elf:editorSurfaceEnabled", true)
@@ -125,7 +123,6 @@ export const pdfReviewSurfaceEnabledAtom = atomWithStorage<boolean>("elf:pdfRevi
 
 export const fireflySurfaceFlagAtoms: Record<FireflySurfaceFlagKey, typeof browserPanelEnabledAtom> = {
 	browserPanelEnabled: browserPanelEnabledAtom,
-	pulse: pulseSurfaceEnabledAtom,
 	memory: memorySurfaceEnabledAtom,
 	terminal: terminalSurfaceEnabledAtom,
 	editor: editorSurfaceEnabledAtom,
@@ -141,7 +138,6 @@ export const fireflySurfaceFlagAtoms: Record<FireflySurfaceFlagKey, typeof brows
 
 export const fireflySurfaceLabels: Record<FireflySurfaceFlagKey, string> = {
 	browserPanelEnabled: "Browser",
-	pulse: "Pulse",
 	memory: "Memory",
 	terminal: "Terminal",
 	editor: "Editor",
@@ -157,10 +153,6 @@ export const fireflySurfaceLabels: Record<FireflySurfaceFlagKey, string> = {
 
 export const toggleBrowserPanelAtom = atom(null, (get, set) => {
 	set(browserPanelEnabledAtom, !get(browserPanelEnabledAtom))
-})
-
-export const togglePulseSurfaceAtom = atom(null, (get, set) => {
-	set(pulseSurfaceEnabledAtom, !get(pulseSurfaceEnabledAtom))
 })
 
 export const toggleMemorySurfaceAtom = atom(null, (get, set) => {

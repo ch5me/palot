@@ -11,6 +11,7 @@ import {
 import { useNavigate, useParams } from "@tanstack/react-router"
 import { useAtom, useAtomValue, useSetAtom } from "jotai"
 import {
+	ActivityIcon,
 	BlocksIcon,
 	BotIcon,
 	BookTextIcon,
@@ -62,7 +63,6 @@ import {
 	memorySurfaceEnabledAtom,
 	pluginsSurfaceEnabledAtom,
 	pdfReviewSurfaceEnabledAtom,
-	pulseSurfaceEnabledAtom,
 	studioSurfaceEnabledAtom,
 	terminalSurfaceEnabledAtom,
 	voiceSurfaceEnabledAtom,
@@ -74,7 +74,6 @@ import {
 	toggleMemorySurfaceAtom,
 	togglePdfReviewSurfaceAtom,
 	togglePluginsSurfaceAtom,
-	togglePulseSurfaceAtom,
 	toggleStudioSurfaceAtom,
 	toggleTerminalSurfaceAtom,
 	toggleVoiceSurfaceAtom,
@@ -140,7 +139,6 @@ export function CommandPalette({ open, onOpenChange, agents, onForkSession }: Co
 	const automationsEnabled = useAtomValue(automationsEnabledAtom)
 	const toggleAutomations = useSetAtom(toggleAutomationsAtom)
 	const browserPanelEnabled = useAtomValue(browserPanelEnabledAtom)
-	const pulseSurfaceEnabled = useAtomValue(pulseSurfaceEnabledAtom)
 	const memorySurfaceEnabled = useAtomValue(memorySurfaceEnabledAtom)
 	const terminalSurfaceEnabled = useAtomValue(terminalSurfaceEnabledAtom)
 	const editorSurfaceEnabled = useAtomValue(editorSurfaceEnabledAtom)
@@ -152,7 +150,6 @@ export function CommandPalette({ open, onOpenChange, agents, onForkSession }: Co
 	const ch5pmSurfaceEnabled = useAtomValue(ch5pmSurfaceEnabledAtom)
 	const pdfReviewSurfaceEnabled = useAtomValue(pdfReviewSurfaceEnabledAtom)
 	const toggleBrowserPanel = useSetAtom(toggleBrowserPanelAtom)
-	const togglePulseSurface = useSetAtom(togglePulseSurfaceAtom)
 	const toggleMemorySurface = useSetAtom(toggleMemorySurfaceAtom)
 	const togglePluginsSurface = useSetAtom(togglePluginsSurfaceAtom)
 	const toggleCrmSurface = useSetAtom(toggleCrmSurfaceAtom)
@@ -229,7 +226,6 @@ export function CommandPalette({ open, onOpenChange, agents, onForkSession }: Co
 			},
 			flags: {
 				browserPanelEnabled,
-				pulse: pulseSurfaceEnabled,
 				memory: memorySurfaceEnabled,
 				terminal: terminalSurfaceEnabled,
 				editor: editorSurfaceEnabled,
@@ -246,7 +242,6 @@ export function CommandPalette({ open, onOpenChange, agents, onForkSession }: Co
 	}, [
 		activeAgent,
 		browserPanelEnabled,
-		pulseSurfaceEnabled,
 		memorySurfaceEnabled,
 		terminalSurfaceEnabled,
 		editorSurfaceEnabled,
@@ -313,6 +308,19 @@ export function CommandPalette({ open, onOpenChange, agents, onForkSession }: Co
 		await window.elf?.plugins.setEnabled("firefly.built-in.surface.bridges", !bridgesPluginEnabled)
 		await queryClient.invalidateQueries({ queryKey: ["firefly-plugin"] })
 	}, [bridgesPluginEnabled, queryClient])
+
+	// Pulse is a catalog-served plugin: its enable/disable flows through
+	// the host plugin lifecycle, not a renderer feature-flag atom.
+	const pulsePluginEntry = pluginList?.plugins.find(
+		(plugin) => plugin.pluginId === "firefly.built-in.surface.pulse",
+	)
+	const pulsePluginEnabled = pulsePluginEntry
+		? pulsePluginEntry.status !== "disabled" && pulsePluginEntry.status !== "quarantined"
+		: false
+	const togglePulsePlugin = useCallback(async () => {
+		await window.elf?.plugins.setEnabled("firefly.built-in.surface.pulse", !pulsePluginEnabled)
+		await queryClient.invalidateQueries({ queryKey: ["firefly-plugin"] })
+	}, [pulsePluginEnabled, queryClient])
 
 	const catalogSurfaceTabs = useCatalogSurfaceTabs(activeAgent)
 	const availableSurfaceTabs = useMemo(
@@ -566,13 +574,13 @@ export function CommandPalette({ open, onOpenChange, agents, onForkSession }: Co
 					<CommandItem
 						keywords={["pulse", "surface", "heartbeat", "telemetry"]}
 						onSelect={() => {
-							togglePulseSurface()
+							void togglePulsePlugin()
 							onOpenChange(false)
 						}}
 					>
-						<SparklesIcon />
-						<span>{pulseSurfaceEnabled ? "Disable Pulse Surface" : "Enable Pulse Surface"}</span>
-						{pulseSurfaceEnabled && <CheckIcon className="ml-auto h-4 w-4" />}
+						<ActivityIcon />
+						<span>{pulsePluginEnabled ? "Disable Pulse Surface" : "Enable Pulse Surface"}</span>
+						{pulsePluginEnabled && <CheckIcon className="ml-auto h-4 w-4" />}
 					</CommandItem>
 					<CommandItem
 						keywords={["memory", "surface", "context"]}

@@ -1,4 +1,4 @@
-import { ActivityIcon, DatabaseIcon, FileTextIcon, GlobeIcon, MicIcon, MonitorPlayIcon, PlugIcon, RectangleEllipsisIcon, SquarePenIcon, TerminalSquareIcon, UsersIcon, WandSparklesIcon, type LucideIcon } from "lucide-react"
+import { DatabaseIcon, FileTextIcon, GlobeIcon, MicIcon, MonitorPlayIcon, PlugIcon, RectangleEllipsisIcon, SquarePenIcon, TerminalSquareIcon, UsersIcon, WandSparklesIcon, type LucideIcon } from "lucide-react"
 
 import type { ReactNode } from "react"
 
@@ -13,7 +13,6 @@ import { StudioPanel } from "./components/side-panel/studio-panel"
 import { VoicePanel } from "./components/side-panel/voice-panel"
 import { EditorPanel } from "./components/side-panel/editor-panel"
 import { V2PluginsPanel } from "./components/side-panel/v2-plugins-panel"
-import { PulsePanel } from "./components/side-panel/pulse-panel"
 import { TerminalPanel } from "./components/side-panel/terminal-panel"
 import type { Agent, FireflySurfaceTarget } from "./lib/types"
 import type { FireflySurfaceLane } from "../shared/firefly-surface-ids"
@@ -99,27 +98,8 @@ export const FIREFLY_SURFACE_REGISTRY: FireflySurfaceDef[] = [
 	},
 	// `notes` is served from the plugin catalog (firefly.built-in.surface.notes,
 	// apps/desktop/plugins/notes) — first migrated surface. Do not re-add a row.
-	{
-		id: "pulse",
-		manifestId: "firefly.built-in.side-panel.pulse",
-		title: "Pulse",
-		icon: ActivityIcon,
-		formFactor: "side-panel-tab",
-		lane: "utility",
-		enabledFlag: {
-			key: "pulse",
-		},
-		defaultOn: false,
-		availability: (ctx) =>
-			ctx.flags.pulse
-				? { available: true }
-				: { available: false, reason: "Pulse surface is disabled in feature flags" },
-		commandIds: ["surface.pulse.open", "surface.pulse.toggle"],
-		persistenceKey: "side-panel.pulse",
-		telemetryNamespace: "firefly.surface.pulse",
-		target: { kind: "side-panel", tab: "pulse" },
-		spawn: (ctx) => <PulsePanel agent={ctx.agent} />,
-	},
+	// `pulse` is served from the plugin catalog (firefly.built-in.surface.pulse,
+	// apps/desktop/plugins/pulse) — do not re-add a row here.
 	// `artifacts` is served from the plugin catalog (firefly.built-in.surface.artifacts,
 	// apps/desktop/plugins/artifacts) — do not re-add a row here.
 	{
@@ -393,7 +373,7 @@ import { FIREFLY_SURFACE_IDS, type FireflySurfaceId } from "../shared/firefly-su
  * they are served from the plugin catalog (host plugin lifecycle owns
  * their enable/disable). First migrated surface: notes.
  */
-export const CATALOG_SERVED_SURFACE_IDS: readonly FireflySurfaceId[] = ["notes", "review", "files", "artifacts", "bridges"]
+export const CATALOG_SERVED_SURFACE_IDS: readonly FireflySurfaceId[] = ["notes", "review", "files", "artifacts", "bridges", "pulse"]
 
 export const FIREFLY_SURFACE_DEFAULT_ON = Object.fromEntries(
 	FIREFLY_SURFACE_REGISTRY.map((surface) => [surface.id, surface.defaultOn]),

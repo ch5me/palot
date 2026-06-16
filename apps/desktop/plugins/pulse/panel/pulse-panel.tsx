@@ -11,9 +11,9 @@ import {
 	WrenchIcon,
 	ZapIcon,
 } from "lucide-react"
-import { sessionMetricsFamily } from "../../atoms/derived/session-metrics"
-import { automationsAtom } from "../../atoms/automations"
-import type { Agent } from "../../lib/types"
+import { sessionMetricsFamily } from "@/atoms/derived/session-metrics"
+import { automationsAtom } from "@/atoms/automations"
+import type { Agent } from "@/lib/types"
 
 interface PulsePanelProps {
 	agent: Agent
@@ -139,3 +139,5 @@ export function PulsePanel({ agent, className }: PulsePanelProps) {
 		</div>
 	)
 }
+
+export default PulsePanel

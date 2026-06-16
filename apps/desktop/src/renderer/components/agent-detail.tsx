@@ -37,7 +37,6 @@ import {
 	oracleSurfaceEnabledAtom,
 	pluginsSurfaceEnabledAtom,
 	pdfReviewSurfaceEnabledAtom,
-	pulseSurfaceEnabledAtom,
 	studioSurfaceEnabledAtom,
 	terminalSurfaceEnabledAtom,
 	voiceSurfaceEnabledAtom,
@@ -310,7 +309,6 @@ export function AgentDetail({
 	}, [isEditingTitle])
 
 	const browserPanelEnabled = useAtomValue(browserPanelEnabledAtom)
-	const pulseSurfaceEnabled = useAtomValue(pulseSurfaceEnabledAtom)
 	const memorySurfaceEnabled = useAtomValue(memorySurfaceEnabledAtom)
 	const terminalSurfaceEnabled = useAtomValue(terminalSurfaceEnabledAtom)
 	const editorSurfaceEnabled = useAtomValue(editorSurfaceEnabledAtom)
@@ -330,7 +328,6 @@ export function AgentDetail({
 			diffStats,
 			flags: {
 				browserPanelEnabled,
-				pulse: pulseSurfaceEnabled,
 				memory: memorySurfaceEnabled,
 				terminal: terminalSurfaceEnabled,
 				editor: editorSurfaceEnabled,
@@ -351,7 +348,6 @@ export function AgentDetail({
 		catalogSurfaceTabs,
 		diffStats,
 		browserPanelEnabled,
-		pulseSurfaceEnabled,
 		memorySurfaceEnabled,
 		terminalSurfaceEnabled,
 		editorSurfaceEnabled,

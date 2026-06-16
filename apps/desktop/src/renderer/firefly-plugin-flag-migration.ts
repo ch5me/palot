@@ -43,6 +43,10 @@ export const SURFACE_FLAG_MIGRATIONS: readonly SurfaceFlagMigration[] = [
 		pluginId: "firefly.built-in.surface.bridges",
 		legacyStorageKey: "elf:bridgesSurfaceEnabled",
 	},
+	{
+		pluginId: "firefly.built-in.surface.pulse",
+		legacyStorageKey: "elf:pulseSurfaceEnabled",
+	},
 ]
 
 const MARKER_PREFIX = "elf:plugin-flag-migrated:"

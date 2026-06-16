@@ -633,6 +633,63 @@ export function registerBridgesHostHandlers(deps?: Partial<BridgesHostDeps>): vo
 }
 
 // ---------------------------------------------------------------------------
+// Pulse surface host handlers (firefly.built-in.surface.pulse)
+// ---------------------------------------------------------------------------
+
+export interface PulseHostDeps {
+	openSidePanel: (tab: "pulse") => Promise<void>
+	getSidePanelState: () => SidePanelStateSnapshot
+	setPluginEnabled: (pluginId: string, enabled: boolean) => { enabled: boolean }
+}
+
+const PULSE_PLUGIN_ID = "firefly.built-in.surface.pulse"
+
+export function registerPulseHostHandlers(deps?: Partial<PulseHostDeps>): void {
+	const openSidePanel =
+		deps?.openSidePanel ??
+		(async (tab: "pulse") => {
+			const { broadcastOpenSidePanel } = await import("../palot-browser-ipc")
+			await broadcastOpenSidePanel(tab)
+		})
+	const getSidePanelState = deps?.getSidePanelState ?? defaultGetSidePanelState
+	const setEnabled =
+		deps?.setPluginEnabled ??
+		((pluginId: string, enabled: boolean) => {
+			// eslint-disable-next-line @typescript-eslint/no-var-requires
+			const authority = require("./authority") as typeof import("./authority")
+			return authority.setPluginEnabled(pluginId, enabled)
+		})
+
+	registerHostTool(PULSE_PLUGIN_ID, "plugin.firefly.built-in.surface.pulse.open", async () => {
+		await openSidePanel("pulse")
+		return ok({ opened: true, tab: "pulse", source: "v2-plugin-tool-dispatch" })
+	})
+
+	registerHostTool(PULSE_PLUGIN_ID, "plugin.firefly.built-in.surface.pulse.state", async () => {
+		const sidePanel = getSidePanelState()
+		return ok({
+			tab: "pulse",
+			available: sidePanel.availableTabs.includes("pulse"),
+			open: sidePanel.open,
+			active: sidePanel.open && sidePanel.activeTab === "pulse",
+		})
+	})
+
+	registerHostCommand(PULSE_PLUGIN_ID, "open-pulse", async () => {
+		await openSidePanel("pulse")
+		return ok({ opened: true, tab: "pulse" })
+	})
+
+	registerHostCommand(PULSE_PLUGIN_ID, "toggle-pulse", async () => {
+		const catalog = getPluginCatalog()
+		const state = catalog.capabilityStates[PULSE_PLUGIN_ID]
+		const currentlyEnabled = !(state?.pluginDisabled ?? false)
+		const next = setEnabled(PULSE_PLUGIN_ID, !currentlyEnabled)
+		return ok({ pluginId: PULSE_PLUGIN_ID, enabled: next.enabled })
+	})
+}
+
+// ---------------------------------------------------------------------------
 // DevMux Toolbar host handlers (firefly.built-in.devmux-toolbar)
 //
 // The Node-only work lives in `main/devmux/service.ts` and is reached here
@@ -735,6 +792,7 @@ export function registerBuiltInHostCommands(): void {
 	registerFilesHostHandlers()
 	registerArtifactsHostHandlers()
 	registerBridgesHostHandlers()
+	registerPulseHostHandlers()
 	registerDevmuxHostHandlers()
 	log.info("Registered V2 host command handlers", {
 		commands: Array.from(handlers.keys()),
