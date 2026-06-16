@@ -66,6 +66,7 @@ export const dockZoneFrameStyle: CSSProperties = {
 	minHeight: 0,
 	minWidth: 0,
 	overflow: "hidden",
+	position: "relative",
 	width: "100%",
 }
 

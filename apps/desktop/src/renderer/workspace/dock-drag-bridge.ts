@@ -125,14 +125,19 @@ function readPanelDescriptor(
 }
 
 function hasDockDragData(event: DragEvent | PointerEvent): boolean {
-	return (
-		event instanceof DragEvent &&
-		Array.from(event.dataTransfer?.types ?? []).includes(DOCK_DRAG_MIME)
-	)
+	return event instanceof DragEvent && dataTransferHasDockDrag(event.dataTransfer)
+}
+
+/** True when a DataTransfer carries a cross-zone dock-panel payload. */
+export function dataTransferHasDockDrag(dataTransfer: DataTransfer | null): boolean {
+	return !!dataTransfer && Array.from(dataTransfer.types).includes(DOCK_DRAG_MIME)
 }
 
 function parseDockDragData(event: DragEvent): DockDragDescriptor | null {
-	const raw = event.dataTransfer?.getData(DOCK_DRAG_MIME)
+	return parseDockDragDescriptor(event.dataTransfer?.getData(DOCK_DRAG_MIME) ?? null)
+}
+
+function parseDockDragDescriptor(raw: string | null): DockDragDescriptor | null {
 	if (!raw) {
 		return null
 	}
@@ -151,6 +156,37 @@ function parseDockDragData(event: DragEvent): DockDragDescriptor | null {
 	} catch {
 		return null
 	}
+}
+
+/**
+ * Apply a cross-zone drop from a raw DataTransfer (used by the empty-zone drop
+ * overlay). Dockview's own root drop target refuses panels dragged from another
+ * instance, so an EMPTY zone — which has no group drop target to fall back on —
+ * can't receive a tab. This re-homes the panel exactly like {@link
+ * registerDockDragBridge}'s `onDidDrop`: re-create the same slot here, close the
+ * original in its source zone (the surface host stays mounted), record the move.
+ */
+export function applyCrossZoneDrop(
+	zone: DockZone,
+	api: DockviewApi,
+	apisRef: DockApiRegistry,
+	onMove: DockMoveHandler,
+	dataTransfer: DataTransfer,
+): void {
+	const descriptor = parseDockDragDescriptor(dataTransfer.getData(DOCK_DRAG_MIME))
+	if (!descriptor || descriptor.sourceZone === zone) {
+		return
+	}
+	if (!api.getPanel(descriptor.dockPanelId)) {
+		api.addPanel({
+			id: descriptor.dockPanelId,
+			title: descriptor.title,
+			component: SURFACE_SLOT_COMPONENT,
+			params: { surfaceInstanceId: descriptor.surfaceInstanceId },
+		})
+	}
+	apisRef.current[descriptor.sourceZone]?.getPanel(descriptor.dockPanelId)?.api.close()
+	onMove(descriptor, zone)
 }
 
 function isDockZone(value: unknown): value is DockZone {

@@ -5,15 +5,18 @@ import {
 	type DockviewReadyEvent,
 	type IDockviewPanelProps,
 } from "dockview-react"
-import { type CSSProperties, useCallback, useRef } from "react"
+import { type CSSProperties, useCallback, useRef, useState } from "react"
 import "dockview/dist/styles/dockview.css"
 
 import { useSurfaceRegistry } from "../surface-host/surface-host-provider"
 import { DockviewSurfaceSlot } from "../surface-host/surface-outlet"
 import type { DockPanelRecord, DockZone } from "../surface-host/types"
 import {
+	applyCrossZoneDrop,
 	type DockApiRegistry,
 	type DockDragDescriptor,
+	type DockMoveHandler,
+	dataTransferHasDockDrag,
 	registerDockDragBridge,
 	SURFACE_SLOT_COMPONENT,
 } from "./dock-drag-bridge"
@@ -116,6 +119,8 @@ export function DockShell({
 					<DockZoneSurface
 						zone="right"
 						isDarkMode={isDarkMode}
+						apisRef={zoneApisRef}
+						onMove={handleZoneMove}
 						onReady={(event) => handleZoneReady("right", event)}
 					/>
 				}
@@ -134,6 +139,8 @@ export function DockShell({
 						<DockZoneSurface
 							zone="bottom"
 							isDarkMode={isDarkMode}
+							apisRef={zoneApisRef}
+							onMove={handleZoneMove}
 							onReady={(event) => handleZoneReady("bottom", event)}
 						/>
 					}
@@ -141,6 +148,8 @@ export function DockShell({
 					<DockZoneSurface
 						zone="main"
 						isDarkMode={isDarkMode}
+						apisRef={zoneApisRef}
+						onMove={handleZoneMove}
 						onReady={(event) => handleZoneReady("main", event)}
 					/>
 				</SplitPane>
@@ -153,12 +162,30 @@ export function DockShell({
 function DockZoneSurface({
 	zone,
 	isDarkMode,
+	apisRef,
+	onMove,
 	onReady,
 }: {
 	zone: DockZone
 	isDarkMode: boolean
+	apisRef: DockApiRegistry
+	onMove: DockMoveHandler
 	onReady: (event: DockviewReadyEvent) => void
 }) {
+	const apiRef = useRef<DockviewApi | null>(null)
+	const [isEmpty, setIsEmpty] = useState(true)
+
+	const handleReady = useCallback(
+		(event: DockviewReadyEvent) => {
+			apiRef.current = event.api
+			const sync = () => setIsEmpty(event.api.panels.length === 0)
+			sync()
+			event.api.onDidLayoutChange(sync)
+			onReady(event)
+		},
+		[onReady],
+	)
+
 	return (
 		<div className={getDockThemeClass(isDarkMode)} style={dockZoneFrameStyle}>
 			<DockviewReact
@@ -167,8 +194,34 @@ function DockZoneSurface({
 				noPanelsOverlay="watermark"
 				theme={getDockTheme(isDarkMode)}
 				watermarkComponent={() => <DockEmptyPlaceholder zone={zone} />}
-				onReady={onReady}
+				onReady={handleReady}
 			/>
+			{/* Empty Dockview instances reject panels dragged from another instance
+			    (Dockview's root drop target checks viewId), so an empty zone can't
+			    catch a cross-zone tab via the normal bridge. This transparent overlay
+			    accepts the bridge's drag payload directly and re-homes the panel. */}
+			{isEmpty ? (
+				<div
+					style={emptyZoneDropOverlayStyle}
+					onDragOver={(event) => {
+						if (!dataTransferHasDockDrag(event.dataTransfer)) {
+							return
+						}
+						event.preventDefault()
+						event.dataTransfer.dropEffect = "move"
+					}}
+					onDrop={(event) => {
+						if (!dataTransferHasDockDrag(event.dataTransfer)) {
+							return
+						}
+						event.preventDefault()
+						const api = apiRef.current
+						if (api) {
+							applyCrossZoneDrop(zone, api, apisRef, onMove, event.dataTransfer)
+						}
+					}}
+				/>
+			) : null}
 		</div>
 	)
 }
@@ -246,4 +299,13 @@ const dockShellRootStyle: CSSProperties = {
 	minHeight: 0,
 	minWidth: 0,
 	overflow: "hidden",
+}
+
+// Transparent full-area drop catcher for an EMPTY zone. Sits above Dockview's
+// watermark (z-index 1) so cross-zone drags land here; removed once the zone has
+// a panel (Dockview's own group drop target then handles drops).
+const emptyZoneDropOverlayStyle: CSSProperties = {
+	inset: 0,
+	position: "absolute",
+	zIndex: 5,
 }
