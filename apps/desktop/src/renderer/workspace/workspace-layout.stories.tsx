@@ -45,11 +45,11 @@ import type { Meta, StoryObj } from "@storybook/react-vite"
 import { SplitPane } from "@ch5me/workspace"
 import { WS_TOKENS } from "@ch5me/workspace/theme"
 
-// NOTE: @ch5me/workspace@0.1.4 ships only `dist/`, but its "./theme/css" export
-// points to the unpublished "./src/theme/tokens.css" — importing it breaks the
-// Storybook production build (rollup can't resolve it). The app itself never uses
-// that export; it bridges the --ws-* tokens via this local stylesheet, scoped to
-// `.workspace-shell`. Mirror the app and import the same file here.
+// Bridge the --ws-* tokens via the app's own stylesheet (scoped to
+// `.workspace-shell`) so this story's dockview chrome themes exactly like the
+// real app, rather than via `@ch5me/workspace/theme/css`. (That package export
+// was unresolvable before @ch5me/workspace@0.1.5 — its `files` omitted the
+// stylesheet — which broke the Storybook production build through this story.)
 import "../styles/workspace.css"
 import "dockview/dist/styles/dockview.css"
 
