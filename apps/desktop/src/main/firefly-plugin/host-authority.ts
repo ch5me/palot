@@ -60,9 +60,34 @@ import { projectBridgeToolDefinitions } from "../../shared/firefly-plugin/bridge
 import { broadcastCatalogChanged } from "./catalog-broadcast"
 import { applyEnabledToSupervisor } from "./supervisor-apply"
 import { getBootedPluginWorkerSupervisor } from "./supervisor-boot"
+import { createPluginStorageService, type IPluginStorageService } from "./plugin-storage-service"
+import {
+	createCloudHostRpcClient,
+	resolveCloudHostConfig,
+	CloudHostNotConfiguredError,
+	type CloudHostRpcClient,
+} from "./cloud-host-rpc-client"
+import { ensureDb } from "../automation/database"
 import { createLogger } from "../logger"
 
 const log = createLogger("firefly-plugin-host-authority")
+
+// ---------------------------------------------------------------------------
+// Plugin storage service (P3e) — host-owned durable KV + secrets, one instance.
+//
+// Reachable from the host; the worker storage-request RPC channel
+// (extension-host-protocol.ts) and an IPC surface are the remaining last-mile,
+// gated on a live node-worker plugin (none ship in P3).
+// ---------------------------------------------------------------------------
+
+let storageServicePromise: Promise<IPluginStorageService> | null = null
+
+export function getPluginStorageService(): Promise<IPluginStorageService> {
+	if (!storageServicePromise) {
+		storageServicePromise = ensureDb().then((db) => createPluginStorageService({ db }))
+	}
+	return storageServicePromise
+}
 
 // ---------------------------------------------------------------------------
 // ElectronHostAuthority — delegates to existing authority.ts/dispatch.ts
@@ -329,110 +354,127 @@ export class ElectronHostAuthority implements HostAuthority {
 // ---------------------------------------------------------------------------
 
 /**
- * Stub implementation for the firefly-cloud-backed web build host authority.
+ * firefly-cloud-backed host authority for the web build (§2.4, Phase 3).
  *
- * The web build does not have a local Electron main process; instead it talks to
- * firefly-cloud over HTTP/WebSocket RPC (§2.4, Phase 3). Until that remote host
- * is implemented, every method throws a descriptive error so the missing
- * implementation is immediately visible rather than silently no-op'd.
+ * The web build has no local Electron main process; mutating / RPC operations
+ * resolve remotely over HTTP/WS against firefly-cloud (`CloudHostRpcClient`).
  *
- * Do NOT catch these errors as "expected" — they are a fail-fast signal that
- * the caller is running in a web build context before the cloud host is ready.
+ * CROSS-REPO: the firefly-cloud server that answers these RPCs lives in the
+ * `firefly-cloud` repo and cannot land here. Until it exists and
+ * `FIREFLY_CLOUD_URL` is set, every async method fails fast with
+ * `CloudHostNotConfiguredError` (named precondition, no silent fallback).
+ *
+ * Synchronous projection reads (catalog / describe / list*) cannot be fulfilled
+ * by a remote call; in the web build they are served from a projection cache
+ * hydrated from firefly-cloud. That cache is not built yet, so they fail fast
+ * with a typed error naming the missing precondition — never a silent empty
+ * projection that would hide the gap.
  */
 export class CloudHostAuthority implements HostAuthority {
-	private static notImplemented(method: string): never {
-		throw new Error(`HostAuthority: ${method} — not implemented in web yet`)
+	private readonly rpc: CloudHostRpcClient
+
+	constructor(rpc?: CloudHostRpcClient) {
+		this.rpc = rpc ?? createCloudHostRpcClient({ config: resolveCloudHostConfig() })
+	}
+
+	/** Sync projection reads need a hydrated local cache (not built yet). */
+	private projectionsUnavailable(method: string): never {
+		throw new CloudHostNotConfiguredError(
+			`a hydrated projection cache for "${method}" (web projection cache is a Phase 3 firefly-cloud feature)`,
+		)
 	}
 
 	catalog(): HostPluginListResult {
-		return CloudHostAuthority.notImplemented("catalog")
+		return this.projectionsUnavailable("catalog")
 	}
 
 	describe(_pluginId: string): HostPluginDescribeResult {
-		return CloudHostAuthority.notImplemented("describe")
+		return this.projectionsUnavailable("describe")
 	}
 
 	state(_pluginId: string): HostPluginStateResult {
-		return CloudHostAuthority.notImplemented("state")
+		return this.projectionsUnavailable("state")
 	}
 
 	listTools(): HostPluginToolsResult {
-		return CloudHostAuthority.notImplemented("listTools")
+		return this.projectionsUnavailable("listTools")
 	}
 
 	listPanels(): HostPluginFamilyResult {
-		return CloudHostAuthority.notImplemented("listPanels")
+		return this.projectionsUnavailable("listPanels")
 	}
 
 	listNavSidebars(): HostPluginFamilyResult {
-		return CloudHostAuthority.notImplemented("listNavSidebars")
+		return this.projectionsUnavailable("listNavSidebars")
 	}
 
 	listWidgets(): HostPluginFamilyResult {
-		return CloudHostAuthority.notImplemented("listWidgets")
+		return this.projectionsUnavailable("listWidgets")
 	}
 
 	listCommands(): HostPluginFamilyResult {
-		return CloudHostAuthority.notImplemented("listCommands")
+		return this.projectionsUnavailable("listCommands")
 	}
 
 	listThemes(): HostPluginFamilyResult {
-		return CloudHostAuthority.notImplemented("listThemes")
+		return this.projectionsUnavailable("listThemes")
 	}
 
 	refresh(): HostPluginRefreshResult {
-		return CloudHostAuthority.notImplemented("refresh")
+		return this.projectionsUnavailable("refresh")
 	}
 
 	async invoke(
-		_pluginId: string,
-		_commandId: string,
-		_args: Record<string, unknown>,
+		pluginId: string,
+		commandId: string,
+		args: Record<string, unknown>,
 	): Promise<HostToolDispatchEnvelope> {
-		return CloudHostAuthority.notImplemented("invoke")
+		return this.rpc.call<HostToolDispatchEnvelope>("invoke", { pluginId, commandId, args })
 	}
 
 	async invokeTool(
-		_pluginId: string,
-		_toolId: string,
-		_args: Record<string, unknown>,
-		_sessionId: string | null,
+		pluginId: string,
+		toolId: string,
+		args: Record<string, unknown>,
+		sessionId: string | null,
 	): Promise<HostToolDispatchEnvelope> {
-		return CloudHostAuthority.notImplemented("invokeTool")
+		return this.rpc.call<HostToolDispatchEnvelope>("invokeTool", { pluginId, toolId, args, sessionId })
 	}
 
 	setEnabled(_pluginId: string, _enabled: boolean): HostPluginSetEnabledResult {
-		return CloudHostAuthority.notImplemented("setEnabled")
+		// Lifecycle writes are remote+async in the web build; the sync interface
+		// shape cannot express a remote round-trip, so fail fast naming the gap.
+		return this.projectionsUnavailable("setEnabled")
 	}
 
 	reportPanelCrash(_pluginId: string, _message: string): HostPluginPanelCrashResult {
-		return CloudHostAuthority.notImplemented("reportPanelCrash")
+		return this.projectionsUnavailable("reportPanelCrash")
 	}
 
 	releaseQuarantine(_pluginId: string, _note: string): HostPluginReleaseQuarantineResult {
-		return CloudHostAuthority.notImplemented("releaseQuarantine")
+		return this.projectionsUnavailable("releaseQuarantine")
 	}
 
-	async gallerySearch(_options: MarketplaceSearchOptions): Promise<MarketplaceSearchResult> {
-		return CloudHostAuthority.notImplemented("gallerySearch")
+	async gallerySearch(options: MarketplaceSearchOptions): Promise<MarketplaceSearchResult> {
+		return this.rpc.call<MarketplaceSearchResult>("gallerySearch", { options })
 	}
 
-	async installExtension(_input: MarketplaceInstallInput): Promise<MarketplaceInstallResult> {
-		return CloudHostAuthority.notImplemented("installExtension")
+	async installExtension(input: MarketplaceInstallInput): Promise<MarketplaceInstallResult> {
+		return this.rpc.call<MarketplaceInstallResult>("installExtension", { input })
 	}
 
 	async listInstalledExtensions(): Promise<{ extensions: MarketplaceInstalledEntry[] }> {
-		return CloudHostAuthority.notImplemented("listInstalledExtensions")
+		return this.rpc.call<{ extensions: MarketplaceInstalledEntry[] }>("listInstalledExtensions", {})
 	}
 
-	async uninstallExtension(_installationId: string): Promise<{ ok: true }> {
-		return CloudHostAuthority.notImplemented("uninstallExtension")
+	async uninstallExtension(installationId: string): Promise<{ ok: true }> {
+		return this.rpc.call<{ ok: true }>("uninstallExtension", { installationId })
 	}
 
 	async applyTheme(
-		_installationId: string,
-		_themeId: string,
+		installationId: string,
+		themeId: string,
 	): Promise<{ ok: true; appTokens?: Record<string, string>; kind?: "light" | "dark" | "high-contrast" }> {
-		return CloudHostAuthority.notImplemented("applyTheme")
+		return this.rpc.call("applyTheme", { installationId, themeId })
 	}
 }

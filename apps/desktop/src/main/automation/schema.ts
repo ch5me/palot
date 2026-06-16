@@ -98,6 +98,74 @@ export const extensionInstallations = sqliteTable(
 	],
 )
 
+// ---------------------------------------------------------------------------
+// P3 — capability grants (§7.1) + plugin storage
+// ---------------------------------------------------------------------------
+
+/**
+ * ExtensionCapabilityGrant (§7.1) — the durable per-scope grant record that
+ * backs per-call capability decisions (P3d). Deny-by-default: a token with no
+ * `granted` row is not granted. The dispatch path resolves the active grants
+ * for a (pluginId, scope) and threads them into the capability broker.
+ *
+ * `scope` uses the dispatch vocabulary (session | project | app); the design
+ * doc's "workspace" maps to "project". `scopeId` is the concrete scope key
+ * (session id / project id / "app"); null means "any scope of this kind".
+ */
+export const extensionCapabilityGrants = sqliteTable(
+	"extension_capability_grants",
+	{
+		/** `${pluginId}:${scope}:${scopeId ?? "*"}:${capability}` */
+		id: text("id").primaryKey(),
+		pluginId: text("plugin_id").notNull(),
+		/** "session" | "project" | "app" */
+		scope: text("scope").notNull(),
+		scopeId: text("scope_id"),
+		capability: text("capability").notNull(),
+		/** "granted" | "denied" | "prompt-required" */
+		grantState: text("grant_state").notNull(),
+		/** "builtin-policy" | "user" | "admin-policy" */
+		grantedBy: text("granted_by").notNull(),
+		reason: text("reason").notNull().default(""),
+		createdAt: int("created_at").notNull(),
+		expiresAt: int("expires_at"),
+	},
+	(table) => [
+		index("idx_ext_grants_plugin").on(table.pluginId),
+		index("idx_ext_grants_plugin_scope").on(table.pluginId, table.scope),
+	],
+)
+
+/**
+ * PluginStorageEntry — host-owned durable key-value backing for the plugin
+ * storage API (P3e). The host is the sole source of truth (plugin worker
+ * memory is cache only). Secret values are encrypted at rest via Electron
+ * `safeStorage` and flagged with `isSecret`; their `value` column holds a
+ * base64 ciphertext blob, never plaintext.
+ *
+ * `scope` is one of the locked storage scopes (session | project | app |
+ * global-profile). `scopeId` is the resolved per-scope id (session id /
+ * project id / "app" / profile id).
+ */
+export const pluginStorageEntries = sqliteTable(
+	"plugin_storage_entries",
+	{
+		/** `${pluginId}:${scope}:${scopeId}:${key}` */
+		id: text("id").primaryKey(),
+		pluginId: text("plugin_id").notNull(),
+		scope: text("scope").notNull(),
+		scopeId: text("scope_id").notNull(),
+		key: text("key").notNull(),
+		/** JSON-encoded value; base64 ciphertext when isSecret. */
+		value: text("value").notNull(),
+		isSecret: int("is_secret", { mode: "boolean" }).notNull().default(false),
+		updatedAt: int("updated_at").notNull(),
+	},
+	(table) => [
+		index("idx_plugin_storage_plugin_scope").on(table.pluginId, table.scope, table.scopeId),
+	],
+)
+
 export const automationRuns = sqliteTable(
 	"automation_runs",
 	{

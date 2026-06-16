@@ -1,6 +1,7 @@
 import { describe, expect, test } from "bun:test"
 
 import {
+	_resetGrantResolverForTests,
 	_resetHostCommandsForTests,
 	invokePluginCommand,
 	listKnownCommands,
@@ -10,6 +11,7 @@ import { getPluginCatalog } from "./authority"
 
 function reset() {
 	_resetHostCommandsForTests()
+	_resetGrantResolverForTests()
 }
 
 describe("V2 plugin command dispatch", () => {
@@ -38,14 +40,27 @@ describe("V2 plugin command dispatch", () => {
 		expect(envelope.data).toEqual({ opened: true, tab: "review", source: "v2-plugin-dispatch" })
 	})
 
-	test("third-party acme-notebook-open completes through the SAME code path", async () => {
+	test("third-party acme-notebook-open is denied without grants (deny-by-default, P3d)", async () => {
 		reset()
 		registerBuiltInHostCommands()
+		// signed-third-party with no persisted grant: the default resolver grants
+		// it nothing, so its declared capabilities are denied.
 		const envelope = await invokePluginCommand({
 			pluginId: "acme.acme-notebook",
 			commandId: "acme-notebook-open",
 			args: {},
 		})
+		expect(envelope.status).toBe("denied")
+		expect(envelope.errorCode).toBe("permission_denied")
+	})
+
+	test("third-party acme-notebook-open completes once its capabilities are granted", async () => {
+		reset()
+		registerBuiltInHostCommands()
+		const envelope = await invokePluginCommand(
+			{ pluginId: "acme.acme-notebook", commandId: "acme-notebook-open", args: {} },
+			{ grantedTokens: ["host:command.register", "host:widget.register"], sessionScope: "session" },
+		)
 		expect(envelope.status).toBe("completed")
 		expect(envelope.pluginId).toBe("acme.acme-notebook")
 		expect(envelope.data).toMatchObject({ notebookId: "acme-default", opened: true })

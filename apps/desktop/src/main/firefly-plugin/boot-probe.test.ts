@@ -107,11 +107,16 @@ describe("firefly-plugin boot probe", () => {
 	})
 
 	it("round-trips a third-party command through the dispatcher (V2 invoke path)", async () => {
-		const result = await invokePluginCommand({
-			pluginId: "acme.acme-notebook",
-			commandId: "acme-notebook-open",
-			args: {},
-		})
+		// Post-P3d third-party is deny-by-default: dispatch with the consented
+		// grants the command declares (host:command.register + host:widget.register).
+		const result = await invokePluginCommand(
+			{
+				pluginId: "acme.acme-notebook",
+				commandId: "acme-notebook-open",
+				args: {},
+			},
+			{ grantedTokens: ["host:command.register", "host:widget.register"], sessionScope: "session" },
+		)
 		log("boot probe third-party envelope", result)
 		expect(result.status).toBe("completed")
 		expect(result.pluginId).toBe("acme.acme-notebook")

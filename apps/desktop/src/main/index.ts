@@ -25,6 +25,7 @@ import { startEnvResolution } from "./shell-env"
 import { createTray, destroyTray } from "./tray"
 import { initAutoUpdater, stopAutoUpdater } from "./updater"
 import { registerBuiltInHostCommands } from "./firefly-plugin/dispatch"
+import { installPluginGrantResolver } from "./firefly-plugin/grant-store"
 import {
 	bootPluginWorkerSupervisor,
 	disposePluginWorkerSupervisor,
@@ -330,6 +331,12 @@ if (!gotLock) {
 		registerBuiltInHostCommands()
 		registerFireflyPluginIpc()
 		bootPluginWorkerSupervisor()
+		// Layer persisted user/admin capability grants onto the built-in policy
+		// resolver. On failure we keep the secure deny-by-default resolver
+		// (fail loud, never silently mask — CH5 #9).
+		installPluginGrantResolver().catch((err) =>
+			log.warn("Plugin grant resolver wiring failed; deny-by-default in effect", err),
+		)
 		// Dev-only: watch plugin roots and hot-reload on edit (no app restart).
 		// Packaged builds get a no-op (the executor/watcher require disk roots).
 		bootDevPluginWatcher({ isPackaged: app.isPackaged })

@@ -1,7 +1,9 @@
 import { z } from "zod"
 
-import { decideCapabilityAll } from "./capability-broker"
-import { describePlugin, getPluginCatalog } from "./authority"
+import { BUILT_IN_DEFAULT_CAPABILITIES, decideCapabilityAll, lookupCapability } from "./capability-broker"
+import { getPluginCatalog } from "./authority"
+import type { PluginDescriptor } from "../../shared/firefly-plugin/descriptor"
+import type { CommandContribution, TrustTier } from "../../shared/firefly-plugin/manifest"
 import { createLogger } from "../logger"
 
 const log = createLogger("firefly-plugin/dispatch")
@@ -16,6 +18,65 @@ export interface PluginInvokeInput {
 export interface PluginInvokeContext {
 	grantedTokens: string[]
 	sessionScope: "session" | "project" | "app"
+}
+
+// ---------------------------------------------------------------------------
+// Capability grant resolution (P3d)
+//
+// The granted-token set is no longer a hardcoded baseline. It is resolved per
+// invocation from a pluggable resolver: built-in plugins get their declared
+// non-critical capabilities by policy; everything else is deny-by-default and
+// must have explicit persisted grants. The app installs a DB-backed resolver at
+// boot (`setGrantResolver`); tests use the hermetic default (no DB).
+// ---------------------------------------------------------------------------
+
+export interface GrantResolverInput {
+	readonly pluginId: string
+	readonly trust: TrustTier
+	readonly declaredCapabilities: readonly string[]
+	readonly sessionScope: "session" | "project" | "app"
+}
+
+export type GrantResolver = (input: GrantResolverInput) => Promise<readonly string[]> | readonly string[]
+
+/**
+ * Hermetic default: built-in plugins are host-owned, so their declared
+ * non-critical capabilities are policy-granted (critical still needs explicit
+ * consent). Non-built-in plugins get NOTHING by default — deny-by-default until
+ * an explicit grant exists (the DB resolver layers those in at runtime).
+ */
+export function defaultGrantResolver(input: GrantResolverInput): string[] {
+	if (input.trust !== "built-in") return []
+	const declaredNonCritical = input.declaredCapabilities.filter(
+		(token) => lookupCapability(token)?.risk !== "critical",
+	)
+	return [...new Set<string>([...BUILT_IN_DEFAULT_CAPABILITIES, ...declaredNonCritical])]
+}
+
+let grantResolver: GrantResolver = defaultGrantResolver
+
+/** Install a grant resolver (e.g. DB-backed, layering persisted user grants). */
+export function setGrantResolver(resolver: GrantResolver): void {
+	grantResolver = resolver
+}
+
+export function _resetGrantResolverForTests(): void {
+	grantResolver = defaultGrantResolver
+}
+
+async function resolveContext(
+	descriptor: PluginDescriptor,
+	explicit: PluginInvokeContext | undefined,
+): Promise<PluginInvokeContext> {
+	if (explicit) return explicit
+	const sessionScope = "session"
+	const grantedTokens = await grantResolver({
+		pluginId: descriptor.normalizedId,
+		trust: descriptor.trust,
+		declaredCapabilities: descriptor.capabilities,
+		sessionScope,
+	})
+	return { grantedTokens: [...grantedTokens], sessionScope }
 }
 
 export type HostCommandResult =
@@ -50,16 +111,16 @@ export function _resetHostCommandsForTests(): void {
 	handlers.clear()
 }
 
-function findManifestCommand(pluginId: string, commandId: string) {
+function findManifestCommand(
+	pluginId: string,
+	commandId: string,
+): { descriptor: PluginDescriptor; command: CommandContribution } | null {
 	const catalog = getPluginCatalog()
 	const descriptor = catalog.descriptors.find((d) => d.normalizedId === pluginId)
 	if (!descriptor) return null
-	return descriptor.commands.find((c) => c.id === commandId) ?? null
-}
-
-function trustFromCatalog(pluginId: string): "built-in" | "local-dev" | "signed-third-party" | "unsigned-third-party" {
-	const described = describePlugin(pluginId)
-	return described.decision.granted ? "built-in" : "signed-third-party"
+	const command = descriptor.commands.find((c) => c.id === commandId)
+	if (!command) return null
+	return { descriptor, command }
 }
 
 function ok<T>(data: T): HostCommandResult {
@@ -81,24 +142,10 @@ export interface ToolDispatchEnvelope {
 
 export async function invokePluginCommand(
 	input: PluginInvokeInput,
-	context: PluginInvokeContext = {
-		grantedTokens: [
-			"host:command.register",
-			"host:tool.register",
-			"host:panel.register",
-			"host:widget.register",
-			"host:theme.register",
-			"host:ui.read",
-			"host:bridge.session-read",
-			"host:bridge.ui-state-read",
-			"host:bridge.ui-state-write",
-			"host:theme.preview",
-		],
-		sessionScope: "session",
-	},
+	context?: PluginInvokeContext,
 ): Promise<ToolDispatchEnvelope> {
-	const command = findManifestCommand(input.pluginId, input.commandId)
-	if (!command) {
+	const found = findManifestCommand(input.pluginId, input.commandId)
+	if (!found) {
 		return {
 			status: "unavailable",
 			pluginId: input.pluginId,
@@ -107,13 +154,14 @@ export async function invokePluginCommand(
 			errorMessage: "Unknown command",
 		}
 	}
-	const trust = trustFromCatalog(input.pluginId)
+	const { descriptor, command } = found
+	const resolved = await resolveContext(descriptor, context)
 	const broker = decideCapabilityAll({
 		pluginId: input.pluginId,
-		trust,
+		trust: descriptor.trust,
 		tokens: command.requires,
-		sessionScope: context.sessionScope,
-		grantedTokens: context.grantedTokens,
+		sessionScope: resolved.sessionScope,
+		grantedTokens: resolved.grantedTokens,
 	})
 	if (!broker.granted) {
 		return {
@@ -198,20 +246,7 @@ export interface PluginToolInvokeInput {
  */
 export async function invokePluginTool(
 	input: PluginToolInvokeInput,
-	context: PluginInvokeContext = {
-		grantedTokens: [
-			"host:command.register",
-			"host:tool.register",
-			"host:panel.register",
-			"host:widget.register",
-			"host:theme.register",
-			"host:ui.read",
-			"host:bridge.session-read",
-			"host:bridge.ui-state-read",
-			"host:bridge.ui-state-write",
-		],
-		sessionScope: "session",
-	},
+	context?: PluginInvokeContext,
 ): Promise<ToolDispatchEnvelope> {
 	const catalog = getPluginCatalog()
 	const descriptor = catalog.descriptors.find((d) => d.normalizedId === input.pluginId)
@@ -237,12 +272,13 @@ export async function invokePluginTool(
 				: "Plugin is disabled by the host",
 		}
 	}
+	const resolved = await resolveContext(descriptor, context)
 	const broker = decideCapabilityAll({
 		pluginId: input.pluginId,
 		trust: descriptor.trust,
 		tokens: tool.requires,
-		sessionScope: context.sessionScope,
-		grantedTokens: context.grantedTokens,
+		sessionScope: resolved.sessionScope,
+		grantedTokens: resolved.grantedTokens,
 	})
 	if (!broker.granted) {
 		return {

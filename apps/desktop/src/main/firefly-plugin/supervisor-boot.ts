@@ -28,8 +28,10 @@ import {
 	createPluginWorkerSupervisor,
 	type PluginWorkerSupervisor,
 	type QuarantineStore,
+	type SpawnPluginWorker,
 } from "./worker-supervisor"
 import { createWorkerThreadSpawner } from "./worker-thread-spawner"
+import { createUtilityProcessSpawner } from "./utility-process-spawner"
 
 const log = createLogger("firefly-plugin/supervisor-boot")
 
@@ -130,12 +132,22 @@ export function bootPluginWorkerSupervisor(options: SupervisorBootOptions = {}):
 		roots: [...roots],
 	})
 
+	// Transport selection per §2.3: a plugin whose runtime location resolves to
+	// `electron-utility` (node-worker on the electron build) runs in a real
+	// Electron utilityProcess; everything else (web-worker dev, tests) uses the
+	// worker_threads transport. Resolution comes from the descriptor's
+	// runtime-location matrix (P3a). Default to worker_threads — never assume
+	// utility for an unknown/unsupported location.
+	const workerThreadSpawner = createWorkerThreadSpawner({ maxOldGenerationSizeMb: DEFAULT_WORKER_HEAP_MB })
+	const utilityProcessSpawner = createUtilityProcessSpawner({ maxOldGenerationSizeMb: DEFAULT_WORKER_HEAP_MB })
+	const selectSpawner: SpawnPluginWorker = (input) => {
+		const descriptor = catalog.descriptors.find((d) => d.normalizedId === input.pluginId)
+		const location = descriptor?.runtimeResolution.supported ? descriptor.runtimeResolution.location : null
+		return location === "electron-utility" ? utilityProcessSpawner(input) : workerThreadSpawner(input)
+	}
+
 	const supervisor = createPluginWorkerSupervisor({
-		spawnWorker:
-			options.spawnWorker ??
-			createWorkerThreadSpawner({
-				maxOldGenerationSizeMb: DEFAULT_WORKER_HEAP_MB,
-			}),
+		spawnWorker: options.spawnWorker ?? selectSpawner,
 		quarantineStore: lifecycleQuarantineStore(),
 		onTransition: (summary, decision) => {
 			if (decision.action === "none") return
