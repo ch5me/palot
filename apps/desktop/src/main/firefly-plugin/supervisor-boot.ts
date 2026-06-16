@@ -32,6 +32,7 @@ import {
 } from "./worker-supervisor"
 import { createWorkerThreadSpawner } from "./worker-thread-spawner"
 import { createUtilityProcessSpawner } from "./utility-process-spawner"
+import { createBootWorkerRequestHandler } from "./worker-request-handler"
 
 const log = createLogger("firefly-plugin/supervisor-boot")
 
@@ -111,6 +112,8 @@ export interface SupervisorBootOptions {
 	readonly roots?: readonly string[]
 	/** Override the worker spawner (tests inject fixture workers). */
 	readonly spawnWorker?: Parameters<typeof createPluginWorkerSupervisor>[0]["spawnWorker"]
+	/** Override the worker storage/capability request router (tests). */
+	readonly onWorkerRequest?: Parameters<typeof createPluginWorkerSupervisor>[0]["onWorkerRequest"]
 }
 
 let booted: SupervisorBootResult | null = null
@@ -149,6 +152,9 @@ export function bootPluginWorkerSupervisor(options: SupervisorBootOptions = {}):
 	const supervisor = createPluginWorkerSupervisor({
 		spawnWorker: options.spawnWorker ?? selectSpawner,
 		quarantineStore: lifecycleQuarantineStore(),
+		// Route worker storage/capability requests to the DB-backed services
+		// (lazily resolved). Tests inject their own via options.spawnWorker paths.
+		onWorkerRequest: options.onWorkerRequest ?? createBootWorkerRequestHandler(),
 		onTransition: (summary, decision) => {
 			if (decision.action === "none") return
 			log.info("Plugin worker transition", {

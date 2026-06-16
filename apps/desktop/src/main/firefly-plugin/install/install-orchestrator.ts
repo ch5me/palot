@@ -43,8 +43,40 @@ import {
 	type RegistryVersionMetadata,
 	type FetchFn,
 } from "../registry/open-vsx-client"
+import { derivePackageTrust } from "./signature-verify"
+import { computeInstallConsentPlan, consentPlanToGrantRecords } from "../install-consent"
+import type { GrantStore, GrantScope } from "../grant-store"
+import type { TrustTier } from "../../../shared/firefly-plugin/manifest"
 
 const log = createLogger("firefly-plugin/install-orchestrator")
+
+/**
+ * Persist install-time capability grants (P3d/§10): auto-grant low-risk by trust
+ * tier, leave medium/high/critical as `prompt-required` until the user consents.
+ * No-op when the extension declares no capabilities (e.g. data-only themes).
+ * Idempotent on the grant id. Returns the records written.
+ */
+export async function persistInstallGrants(deps: {
+	grantStore: GrantStore
+	pluginId: string
+	capabilities: readonly string[]
+	trust: TrustTier
+	scope?: GrantScope
+	scopeId?: string | null
+	consentedCapabilities?: readonly string[]
+}): Promise<ReturnType<typeof consentPlanToGrantRecords>> {
+	if (deps.capabilities.length === 0) return []
+	const plan = computeInstallConsentPlan({ capabilities: deps.capabilities, trust: deps.trust })
+	const records = consentPlanToGrantRecords({
+		plan,
+		pluginId: deps.pluginId,
+		scope: deps.scope ?? "app",
+		scopeId: deps.scopeId ?? null,
+		consentedCapabilities: deps.consentedCapabilities,
+	})
+	await deps.grantStore.upsertMany(records)
+	return records
+}
 
 // ---------------------------------------------------------------------------
 // Public types
@@ -172,6 +204,11 @@ export interface InstallExtensionOptions {
 	openVsxBaseUrl?: string
 	/** Injectable store functions (for tests). Defaults to real extension-store. */
 	store?: ExtensionStoreFns
+	/**
+	 * Grant store for persisting install-time capability grants (P3d). When
+	 * omitted, grant persistence is skipped (data-only theme installs need none).
+	 */
+	grantStore?: GrantStore
 }
 
 /**
@@ -298,6 +335,23 @@ export async function installExtension(
 			})),
 		)
 
+		// 5b. Derive trust from signature verification (§10). The publisher-key
+		// registry is not wired yet, so signature/publicKey are null → the
+		// derivation yields unsigned-third-party. When the registry lands, resolve
+		// the DetachedSignature + publisher key and pass them here — the trust
+		// tier then upgrades to signed-third-party automatically, no other change.
+		const trust = derivePackageTrust({
+			source: registrySource,
+			signature: null,
+			publicKeyPem: null,
+			data: Buffer.alloc(0), // unused while signature is null
+		})
+		// A marketplace source can never yield "built-in" trust; fail loud if the
+		// derivation contract ever changes rather than silently coercing.
+		if (trust.trustTier === "built-in") {
+			throw new Error(`derivePackageTrust returned built-in trust for marketplace source ${registrySource}`)
+		}
+
 		const pkg = await store.upsertExtensionPackage({
 			id: unpacked.contentSha256,
 			externalId: conversionResult.externalId,
@@ -308,7 +362,7 @@ export async function installExtension(
 			registrySource,
 			vsixPath: input.kind === "local-vsix" ? vsixPath : null,
 			unpackedPath: unpacked.unpackedPath,
-			signatureState: "unsigned",
+			signatureState: trust.signatureState,
 			scanState: "clean",
 			themesJson,
 		})
@@ -317,9 +371,22 @@ export async function installExtension(
 		const installation = await store.createExtensionInstallation({
 			packageId: pkg.id,
 			lifecycleState: "installed",
-			trustTier: "unsigned-third-party",
+			trustTier: trust.trustTier,
 			scope: "app",
 		})
+
+		// 6b. Persist install-time capability grants (P3d). Themes declare no
+		// capabilities → no-op; capability-bearing code extensions (future install
+		// path) auto-grant low-risk + record medium/high as prompt-required.
+		if (options.grantStore) {
+			const capabilities = (contributes?.capabilities as string[] | undefined) ?? []
+			await persistInstallGrants({
+				grantStore: options.grantStore,
+				pluginId: conversionResult.externalId,
+				capabilities,
+				trust: trust.trustTier,
+			})
+		}
 
 		log.info("Extension installed", {
 			packageId: pkg.id,

@@ -258,6 +258,40 @@ describe("plugin worker supervisor — decision wiring (fake spawner)", () => {
 		expect(supervisor.getSummary("acme.weird")?.state).toBe("degraded")
 	})
 
+	test("routes a worker storage-request to onWorkerRequest and posts the reply back", async () => {
+		const posted: unknown[] = []
+		const bus: { emit?: (m: unknown) => void } = {}
+		const handle: PluginWorkerHandle = {
+			postMessage: (m) => posted.push(m),
+			terminate: () => undefined,
+			onMessage: (l) => {
+				bus.emit = l
+			},
+			onExit: () => undefined,
+			onError: () => undefined,
+		}
+		const supervisor = track(
+			createPluginWorkerSupervisor({
+				spawnWorker: () => handle,
+				onWorkerRequest: async ({ message }) => {
+					if (message.type === "storage-request" && message.request.op === "get") {
+						return { type: "storage-response", requestId: message.requestId, response: { ok: true, value: "v" } }
+					}
+					return null
+				},
+				...FAST_POLICIES,
+			}),
+		)
+		supervisor.register({ pluginId: "acme.storage", entryPath: "fake" })
+		supervisor.activate("acme.storage")
+		bus.emit?.({ type: "ready" })
+		bus.emit?.({ type: "storage-request", requestId: "r1", request: { op: "get", scope: "app", key: "k" } })
+		await new Promise((r) => setTimeout(r, 5))
+		expect(posted).toContainEqual({ type: "storage-response", requestId: "r1", response: { ok: true, value: "v" } })
+		// lifecycle still healthy — a request is not a protocol violation
+		expect(supervisor.getSummary("acme.storage")?.state).toBe("active")
+	})
+
 	test("per-plugin quarantineOnCrashCount overrides the default threshold", async () => {
 		const { spawn, spawned } = fakeSpawner()
 		const { store, records } = memoryQuarantineStore()

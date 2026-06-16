@@ -19,8 +19,13 @@
  * and quarantined without affecting the host or any sibling plugin.
  */
 
-import { z } from "zod"
-
+import {
+	parseWorkerToHostMessage,
+	workerLifecycleMessageSchema,
+	type HostToWorkerMessage,
+	type WorkerLifecycleMessage,
+	type WorkerToHostMessage,
+} from "../../shared/firefly-plugin/extension-host-protocol"
 import {
 	applySupervisionEvent,
 	computeNextRestartDelayMs,
@@ -50,17 +55,12 @@ const log = createLogger("firefly-plugin/worker-supervisor")
 // Worker transport contract
 // ---------------------------------------------------------------------------
 
-/** Messages a plugin worker may send the supervisor. Zod-gated; anything
- *  else is a protocol violation that degrades the worker (fail loud). */
-export const pluginWorkerMessageSchema = z.discriminatedUnion("type", [
-	z.object({ type: z.literal("ready") }),
-	z.object({ type: z.literal("heartbeat") }),
-	z.object({
-		type: z.literal("fatal"),
-		message: z.string().max(2000),
-	}),
-])
-export type PluginWorkerMessage = z.infer<typeof pluginWorkerMessageSchema>
+/** Lifecycle messages a plugin worker may send the supervisor. Re-exported
+ *  from the extension-host protocol so there is one definition (S10). Anything
+ *  outside the full worker→host protocol is a violation that degrades the
+ *  worker (fail loud). */
+export const pluginWorkerMessageSchema = workerLifecycleMessageSchema
+export type PluginWorkerMessage = WorkerLifecycleMessage
 
 export interface PluginWorkerHandle {
 	postMessage(message: unknown): void
@@ -115,6 +115,16 @@ export interface PluginWorkerSupervisorOptions {
 	readonly now?: () => number
 	readonly random01?: () => number
 	readonly onTransition?: (summary: PluginSupervisionSummary, decision: SupervisionDecision) => void
+	/**
+	 * Services non-lifecycle worker→host messages (storage / capability /
+	 * invoke-result) per the extension-host protocol. Returns the message to
+	 * post back to the worker, or null for fire-and-forget. Keeps the supervisor
+	 * generic: the concrete routing (storage service, grant store) is injected.
+	 */
+	readonly onWorkerRequest?: (input: {
+		pluginId: string
+		message: WorkerToHostMessage
+	}) => Promise<HostToWorkerMessage | null> | HostToWorkerMessage | null
 }
 
 interface SupervisedPlugin {
@@ -249,6 +259,25 @@ export function createPluginWorkerSupervisor(
 		}
 	}
 
+	function handleWorkerRequest(
+		entry: SupervisedPlugin,
+		worker: PluginWorkerHandle,
+		message: WorkerToHostMessage,
+	): void {
+		const handler = options.onWorkerRequest
+		if (!handler) return
+		void Promise.resolve(handler({ pluginId: entry.state.pluginId, message }))
+			.then((response) => {
+				if (response) worker.postMessage(response)
+			})
+			.catch((err) => {
+				log.warn("worker request handler failed", {
+					pluginId: entry.state.pluginId,
+					error: err instanceof Error ? err.message : String(err),
+				})
+			})
+	}
+
 	function spawn(entry: SupervisedPlugin): void {
 		if (disposed) return
 		clearRestartTimer(entry)
@@ -274,16 +303,17 @@ export function createPluginWorkerSupervisor(
 
 		worker.onMessage((raw) => {
 			if (entry.generation !== generation) return
-			const parsed = pluginWorkerMessageSchema.safeParse(raw)
-			if (!parsed.success) {
+			const parsed = parseWorkerToHostMessage(raw)
+			if (!parsed.ok) {
 				apply(entry, {
 					kind: "healthDegraded",
 					pluginId,
-					message: `protocol violation: ${parsed.error.issues[0]?.message ?? "invalid worker message"}`,
+					message: `protocol violation: ${parsed.reason}`,
 				})
 				return
 			}
-			switch (parsed.data.type) {
+			const message = parsed.message
+			switch (message.type) {
 				case "ready":
 					apply(entry, { kind: "activationSucceeded", pluginId })
 					return
@@ -291,7 +321,12 @@ export function createPluginWorkerSupervisor(
 					apply(entry, { kind: "heartbeat", pluginId })
 					return
 				case "fatal":
-					apply(entry, { kind: "workerCrashed", pluginId, exitCode: null, message: parsed.data.message })
+					apply(entry, { kind: "workerCrashed", pluginId, exitCode: null, message: message.message })
+					return
+				case "storage-request":
+				case "capability-request":
+				case "invoke-result":
+					handleWorkerRequest(entry, worker, message)
 					return
 			}
 		})
