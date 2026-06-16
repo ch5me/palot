@@ -16,6 +16,8 @@ import {
 	CheckIcon,
 	CopyIcon,
 	ExternalLinkIcon,
+	PanelBottomIcon,
+	PanelRightIcon,
 	PencilIcon,
 	TerminalIcon,
 } from "lucide-react"
@@ -377,12 +379,6 @@ export function AgentDetail({
 	}, [docTabs, setAvailableDocumentPanelTabs])
 
 	useEffect(() => {
-		if (documentPanelOpen && docTabs.length === 0) {
-			closeDocumentPanel()
-		}
-	}, [closeDocumentPanel, docTabs.length, documentPanelOpen])
-
-	useEffect(() => {
 		void syncPalotUiStateSnapshot({
 			sidePanel: {
 				open: sidePanelOpen && utilityTabs.length > 0,
@@ -435,19 +431,14 @@ export function AgentDetail({
 				onRename={onRename}
 				projectSlug={projectSlug}
 				sidePanelOpen={sidePanelOpen}
-				sidePanelActiveTab={sidePanelActiveTab}
 				hasAvailableSidePanel={utilityTabs.length > 0}
 				onToggleSidePanel={() => {
 					if (utilityTabs.length === 0) return
 					setSidePanelOpen((prev) => !prev)
 				}}
-				documentPanelOpen={docPanelVisible}
-				documentTab={activeDocTab}
+				documentPanelOpen={documentPanelOpen}
 				hasAvailableDocument={docTabs.length > 0}
-				onToggleDocumentPanel={() => {
-					if (docTabs.length === 0) return
-					setDocumentPanelOpen(!documentPanelOpen)
-				}}
+				onToggleDocumentPanel={() => setDocumentPanelOpen(!documentPanelOpen)}
 			/>,
 		)
 
@@ -464,10 +455,7 @@ export function AgentDetail({
 		setAppBarContent,
 		sidePanelOpen,
 		setSidePanelOpen,
-		sidePanelActiveTab,
 		utilityTabs,
-		docPanelVisible,
-		activeDocTab,
 		docTabs,
 		documentPanelOpen,
 		setDocumentPanelOpen,
@@ -632,7 +620,7 @@ export function AgentDetail({
 				isDarkMode={isDarkMode}
 				rightZoneOpen={sidePanelOpen && utilityTabs.length > 0}
 				onRightZoneOpenChange={setSidePanelOpen}
-				bottomZoneOpen={docPanelVisible}
+				bottomZoneOpen={documentPanelOpen}
 				onBottomZoneOpenChange={setDocumentPanelOpen}
 				onZoneApiReady={handleZoneApiReady}
 			/>
@@ -652,11 +640,9 @@ function SessionAppBarContent({
 	onRename,
 	projectSlug,
 	sidePanelOpen,
-	sidePanelActiveTab,
 	hasAvailableSidePanel,
 	onToggleSidePanel,
 	documentPanelOpen,
-	documentTab,
 	hasAvailableDocument,
 	onToggleDocumentPanel,
 }: {
@@ -671,11 +657,9 @@ function SessionAppBarContent({
 	onRename?: (agent: Agent, title: string) => Promise<void>
 	projectSlug?: string
 	sidePanelOpen: boolean
-	sidePanelActiveTab: string
 	hasAvailableSidePanel: boolean
 	onToggleSidePanel: () => void
 	documentPanelOpen: boolean
-	documentTab: SidePanelTabDef | null
 	hasAvailableDocument: boolean
 	onToggleDocumentPanel: () => void
 }) {
@@ -777,26 +761,7 @@ function SessionAppBarContent({
 				) : null}
 				<WorktreeActions agent={agent} />
 				<SessionMetricsBar sessionId={agent.sessionId} />
-				<button
-					type="button"
-					onClick={onToggleDocumentPanel}
-					disabled={!hasAvailableDocument}
-					aria-pressed={documentPanelOpen}
-					title={
-						hasAvailableDocument
-							? documentPanelOpen
-								? "Hide bottom dock"
-								: "Show bottom dock"
-							: "No document surfaces available"
-					}
-					className={`rounded-full border px-2 py-1 text-xs transition-colors disabled:cursor-not-allowed disabled:opacity-50 ${
-						documentPanelOpen
-							? "border-primary/50 bg-primary/10 text-foreground"
-							: "border-border/70 text-muted-foreground hover:text-foreground"
-					}`}
-				>
-					{documentPanelOpen && documentTab ? `Doc · ${documentTab.id}` : "Doc"}
-				</button>
+				<div className="mx-1 h-5 w-px shrink-0 bg-border/60" aria-hidden />
 				<button
 					type="button"
 					onClick={onToggleSidePanel}
@@ -805,17 +770,38 @@ function SessionAppBarContent({
 					title={
 						hasAvailableSidePanel
 							? sidePanelOpen
-								? "Hide right dock (⇧⌘D)"
-								: "Show right dock (⇧⌘D)"
-							: "No utility surfaces available"
+								? "Hide right panel (⇧⌘D)"
+								: "Show right panel (⇧⌘D)"
+							: "No right-panel surfaces available"
 					}
-					className={`rounded-full border px-2 py-1 text-xs transition-colors disabled:cursor-not-allowed disabled:opacity-50 ${
+					className={`inline-flex items-center gap-1.5 rounded-md border px-2 py-1 text-xs font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-40 ${
 						sidePanelOpen
-							? "border-primary/50 bg-primary/10 text-foreground"
+							? "border-primary/60 bg-primary/15 text-foreground"
 							: "border-border/70 text-muted-foreground hover:text-foreground"
 					}`}
 				>
-					{sidePanelOpen ? `Utility · ${sidePanelActiveTab}` : "Utility"}
+					<PanelRightIcon className="size-3.5" />
+					Right
+				</button>
+				<button
+					type="button"
+					onClick={onToggleDocumentPanel}
+					aria-pressed={documentPanelOpen}
+					title={
+						documentPanelOpen
+							? "Hide bottom panel"
+							: hasAvailableDocument
+								? "Show bottom panel"
+								: "Show bottom panel (empty — drag tabs here)"
+					}
+					className={`inline-flex items-center gap-1.5 rounded-md border px-2 py-1 text-xs font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-40 ${
+						documentPanelOpen
+							? "border-primary/60 bg-primary/15 text-foreground"
+							: "border-border/70 text-muted-foreground hover:text-foreground"
+					}`}
+				>
+					<PanelBottomIcon className="size-3.5" />
+					Bottom
 				</button>
 				<div className="flex items-center gap-1 text-xs text-muted-foreground">
 					<TerminalIcon className="size-3.5" />

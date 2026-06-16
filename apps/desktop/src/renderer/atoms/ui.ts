@@ -184,7 +184,10 @@ export const setAvailableDocumentPanelTabsAtom = atom(
 	null,
 	(get, set, tabs: DocumentPanelTabId[]) => {
 		if (tabs.length === 0) {
-			set(setDocumentPanelOpenAtom, false)
+			// No document surfaces. Do NOT force the panel closed: the bottom dock is
+			// a manually-toggleable drag target (open empty → "drag tabs here"), and
+			// forcing false here would slam it shut whenever the surface list
+			// recomputes. It defaults closed via the documentPanelOpen preference.
 			return
 		}
 
