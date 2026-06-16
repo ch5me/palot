@@ -645,7 +645,14 @@ export function AgentDetail({
 	}, [chatInstanceId, agent.sessionId, utilityTabs, docTabs])
 
 	if (workspaceDockEnabled) {
-		return <DockShell seedPanels={dockSeedPanels} isDarkMode={isDarkMode} />
+		// Full-height flex wrapper so DockShell's `flex: 1` root actually fills the
+		// pane (mirrors the legacy branch's h-full wrappers). Without a flex parent
+		// with definite height the dock collapses and the chat zone starves to 0px.
+		return (
+			<div className="flex h-full min-h-0 min-w-0 overflow-hidden">
+				<DockShell seedPanels={dockSeedPanels} isDarkMode={isDarkMode} />
+			</div>
+		)
 	}
 
 	return (
