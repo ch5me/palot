@@ -9,8 +9,15 @@ const require = createRequire(import.meta.url)
 
 // Storybook for @ch5me/elf-ui — the base-ui (`@base-ui/react`) component library
 // backported from the design system. Web-only; no react-native shims needed.
+//
+// Also scans apps/desktop workspace stories (dock-shell, surface-host regression
+// tests) that need dockview-react and the surface-host registry. Those modules
+// are resolved from the hoisted root node_modules without adding extra deps here.
 const config: StorybookConfig = {
-	stories: ["../src/**/*.stories.@(ts|tsx|mdx)"],
+	stories: [
+		"../src/**/*.stories.@(ts|tsx|mdx)",
+		"../../apps/desktop/src/renderer/**/*.stories.@(ts|tsx|mdx)",
+	],
 	addons: [
 		getAbsolutePath("@storybook/addon-docs"),
 		getAbsolutePath("@storybook/addon-links"),
