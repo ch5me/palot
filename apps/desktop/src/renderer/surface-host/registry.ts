@@ -1,6 +1,7 @@
 import type { ReactNode } from "react"
 import type { SurfaceController } from "./controller"
 import { passiveController } from "./controllers/passive-controller"
+import { enforce, getRetentionPolicy } from "./eviction"
 import type { ReversePortalTransport } from "./transport-reverse-portal"
 import type { DockPanelRecord, DockZone, SurfaceInstance, SurfaceVisibility } from "./types"
 
@@ -53,10 +54,17 @@ export class SurfaceRegistry {
 	 * Get an existing surface by stable identity, or create it once from `factory`.
 	 * Idempotent: a second call for a live instanceId is a no-op that returns the
 	 * existing instance (StrictMode double-invoke safe).
+	 *
+	 * Clears `hiddenAt` when re-attaching an existing surface via getOrCreate
+	 * (surface is being re-used, not evicted).
 	 */
 	getOrCreate(instanceId: string, factory: SurfaceFactory): SurfaceInstance {
 		const existing = this.records.get(instanceId)
-		if (existing) return existing.instance
+		if (existing) {
+			// Clear hiddenAt: the caller has expressed intent to re-use this surface.
+			existing.instance.hiddenAt = undefined
+			return existing.instance
+		}
 
 		const instance: SurfaceInstance = {
 			instanceId,
@@ -86,6 +94,8 @@ export class SurfaceRegistry {
 		record.instance.retainCount += 1
 		record.instance.visibility = "visible"
 		record.instance.lastFocusedAt = Date.now()
+		// Surface is being re-attached — clear any pending eviction timer.
+		record.instance.hiddenAt = undefined
 		this.transport.attach(instanceId, el)
 		record.controller.onAttach(el)
 		record.controller.onVisible()
@@ -95,8 +105,11 @@ export class SurfaceRegistry {
 	/**
 	 * Detach the visible slot from a surface. DETACH, never destroy: the host
 	 * stays mounted in the hidden layer and all surface state survives.
+	 *
+	 * When retainCount drops to 0, records `hiddenAt` using the injected clock so
+	 * the eviction sweep can enforce `destroyAfterHiddenMs` policies.
 	 */
-	detachSlot(instanceId: string): void {
+	detachSlot(instanceId: string, clock: () => number = Date.now): void {
 		const record = this.records.get(instanceId)
 		if (!record) return
 		record.slotEl = null
@@ -104,7 +117,24 @@ export class SurfaceRegistry {
 		record.instance.visibility = record.instance.retainCount > 0 ? "visible" : "detached"
 		this.transport.detach(instanceId)
 		record.controller.onDetach()
-		if (record.instance.visibility === "detached") record.controller.onHidden()
+		if (record.instance.visibility === "detached") {
+			record.controller.onHidden()
+			// Mark the timestamp at which this surface became fully unattached.
+			// The eviction sweep uses this to enforce destroyAfterHiddenMs.
+			record.instance.hiddenAt = clock()
+			// Opportunistic eviction: run a sweep immediately so short-timeout
+			// test surfaces are evicted on the next tick rather than waiting for
+			// the periodic interval.
+			enforce({
+				instances: this.instances,
+				policyFor: (id) => {
+					const r = this.records.get(id)
+					return getRetentionPolicy(r?.instance.type ?? "")
+				},
+				evict: (id) => this.evict(id),
+				now: clock(),
+			})
+		}
 		this.notify()
 	}
 
@@ -161,6 +191,44 @@ export class SurfaceRegistry {
 		this.records.delete(instanceId)
 		this.instanceOrder = Array.from(this.records.keys())
 		this.notify()
+	}
+
+	/**
+	 * Run one eviction sweep with a controlled `now` value. Primarily for tests;
+	 * the periodic sweep calls this internally.
+	 *
+	 * @param now - Timestamp in ms (injectable for deterministic tests).
+	 * @param clock - Optional clock used for hiddenAt stamps inside enforce context.
+	 */
+	runEvictionSweep(now: number): void {
+		enforce({
+			instances: this.instances,
+			policyFor: (id) => {
+				const record = this.records.get(id)
+				return getRetentionPolicy(record?.instance.type ?? "")
+			},
+			evict: (id) => this.evict(id),
+			now,
+		})
+	}
+
+	/**
+	 * Start a periodic eviction sweep. Returns a cleanup function that stops the interval.
+	 *
+	 * The sweep also runs opportunistically inside `detachSlot` when retainCount
+	 * hits 0 — so very short test timeouts don't need to wait for the full interval.
+	 *
+	 * @param intervalMs - How often to run the sweep (default: 60 000 ms / 1 min).
+	 * @param clock - Injectable clock for tests (default: `Date.now`).
+	 */
+	startEvictionSweep(intervalMs = 60_000, clock: () => number = Date.now): () => void {
+		const handle = setInterval(() => {
+			this.runEvictionSweep(clock())
+		}, intervalMs)
+
+		return () => {
+			clearInterval(handle)
+		}
 	}
 
 	/** Look up a live surface instance. */

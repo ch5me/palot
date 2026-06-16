@@ -43,6 +43,13 @@ export interface SurfaceInstance {
 	retainCount: number
 	visibility: SurfaceVisibility
 	lastFocusedAt?: number
+	/**
+	 * Timestamp (ms, injected clock) at which the surface became detached/hidden
+	 * with retainCount === 0. Set by detachSlot when the retain count drops to zero;
+	 * cleared by attachSlot / getOrCreate when the surface is re-attached. Used by
+	 * the eviction sweep to enforce destroyAfterHiddenMs policies.
+	 */
+	hiddenAt?: number
 	/** Semantic scroll position, restored on attach. */
 	scroll?: ScrollAnchor
 	/** Opaque per-surface focus target identifier. */
