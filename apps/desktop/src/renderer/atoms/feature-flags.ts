@@ -96,7 +96,6 @@ export const toggleLoomAcmeComponentsAtom = atom(null, (get, set) => {
 export const fireflySurfaceDefaults = {
 	plugins: true,
 	crm: true,
-	studio: true,
 	ch5pm: false,
 	pdfReview: false,
 } as const
@@ -109,7 +108,7 @@ export type FireflySurfaceFlagKey = keyof typeof fireflySurfaceDefaults
 // `voiceSurfaceEnabledAtom` deleted — voice is catalog-served (firefly.built-in.surface.voice).
 export const pluginsSurfaceEnabledAtom = atomWithStorage<boolean>("elf:pluginsSurfaceEnabled", true)
 export const crmSurfaceEnabledAtom = atomWithStorage<boolean>("elf:crmSurfaceEnabled", true)
-export const studioSurfaceEnabledAtom = atomWithStorage<boolean>("elf:studioSurfaceEnabled", true)
+// `studioSurfaceEnabledAtom` deleted — studio is catalog-served (firefly.built-in.surface.studio).
 // `oracleSurfaceEnabledAtom` deleted — oracle is catalog-served (firefly.built-in.surface.oracle).
 export const ch5pmSurfaceEnabledAtom = atomWithStorage<boolean>("elf:ch5pmSurfaceEnabled", false)
 export const pdfReviewSurfaceEnabledAtom = atomWithStorage<boolean>("elf:pdfReviewSurfaceEnabled", false)
@@ -117,7 +116,6 @@ export const pdfReviewSurfaceEnabledAtom = atomWithStorage<boolean>("elf:pdfRevi
 export const fireflySurfaceFlagAtoms: Record<FireflySurfaceFlagKey, typeof pluginsSurfaceEnabledAtom> = {
 	plugins: pluginsSurfaceEnabledAtom,
 	crm: crmSurfaceEnabledAtom,
-	studio: studioSurfaceEnabledAtom,
 	ch5pm: ch5pmSurfaceEnabledAtom,
 	pdfReview: pdfReviewSurfaceEnabledAtom,
 }
@@ -125,7 +123,6 @@ export const fireflySurfaceFlagAtoms: Record<FireflySurfaceFlagKey, typeof plugi
 export const fireflySurfaceLabels: Record<FireflySurfaceFlagKey, string> = {
 	plugins: "Plugins",
 	crm: "Contacts / CRM",
-	studio: "Studio / Office",
 	ch5pm: "CH5PM Dashboard",
 	pdfReview: "PDF Review",
 }
@@ -141,9 +138,7 @@ export const toggleCrmSurfaceAtom = atom(null, (get, set) => {
 	set(crmSurfaceEnabledAtom, !get(crmSurfaceEnabledAtom))
 })
 
-export const toggleStudioSurfaceAtom = atom(null, (get, set) => {
-	set(studioSurfaceEnabledAtom, !get(studioSurfaceEnabledAtom))
-})
+// `toggleStudioSurfaceAtom` deleted — studio is catalog-served; toggle via window.elf.plugins.setEnabled.
 
 // `toggleVoiceSurfaceAtom` deleted — voice is catalog-served; toggle via window.elf.plugins.setEnabled.
 // `toggleOracleSurfaceAtom` deleted — oracle is catalog-served; toggle via window.elf.plugins.setEnabled.

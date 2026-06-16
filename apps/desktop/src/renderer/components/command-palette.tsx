@@ -62,7 +62,7 @@ import {
 	crmSurfaceEnabledAtom,
 	pluginsSurfaceEnabledAtom,
 	pdfReviewSurfaceEnabledAtom,
-	studioSurfaceEnabledAtom,
+	// studioSurfaceEnabledAtom removed — studio is catalog-served (firefly.built-in.surface.studio).
 	// voiceSurfaceEnabledAtom removed — voice is catalog-served (firefly.built-in.surface.voice).
 	toggleAutomationsAtom,
 	// toggleBrowserPanelAtom removed — browser is catalog-served; toggle via window.elf.plugins.setEnabled.
@@ -71,7 +71,7 @@ import {
 	toggleCrmSurfaceAtom,
 	togglePdfReviewSurfaceAtom,
 	togglePluginsSurfaceAtom,
-	toggleStudioSurfaceAtom,
+	// toggleStudioSurfaceAtom removed — studio is catalog-served; toggle via window.elf.plugins.setEnabled.
 	// toggleVoiceSurfaceAtom removed — voice is catalog-served; toggle via window.elf.plugins.setEnabled.
 } from "../atoms/feature-flags"
 import { getFireflySurfaceTabs, type FireflySurfaceContext } from "../firefly-surface-registry"
@@ -138,15 +138,15 @@ export function CommandPalette({ open, onOpenChange, agents, onForkSession }: Co
 	// terminalSurfaceEnabled removed — terminal is catalog-served (firefly.built-in.surface.terminal).
 	// claudeSurfaceEnabled removed — claude is catalog-served (firefly.built-in.surface.claude).
 	// voiceSurfaceEnabled removed — voice is catalog-served (firefly.built-in.surface.voice).
+	// studioSurfaceEnabled removed — studio is catalog-served (firefly.built-in.surface.studio).
 	const pluginsSurfaceEnabled = useAtomValue(pluginsSurfaceEnabledAtom)
 	const crmSurfaceEnabled = useAtomValue(crmSurfaceEnabledAtom)
-	const studioSurfaceEnabled = useAtomValue(studioSurfaceEnabledAtom)
 	const ch5pmSurfaceEnabled = useAtomValue(ch5pmSurfaceEnabledAtom)
 	const pdfReviewSurfaceEnabled = useAtomValue(pdfReviewSurfaceEnabledAtom)
 	// toggleBrowserPanel removed — browser is catalog-served; toggle via browserPluginEnabled + window.elf.plugins.setEnabled.
 	const togglePluginsSurface = useSetAtom(togglePluginsSurfaceAtom)
 	const toggleCrmSurface = useSetAtom(toggleCrmSurfaceAtom)
-	const toggleStudioSurface = useSetAtom(toggleStudioSurfaceAtom)
+	// toggleStudioSurface removed — studio is catalog-served; toggle via studioPluginEnabled + window.elf.plugins.setEnabled.
 	// toggleVoiceSurface removed — voice is catalog-served; toggle via voicePluginEnabled + window.elf.plugins.setEnabled.
 	const toggleCh5PmSurface = useSetAtom(toggleCh5PmSurfaceAtom)
 	const togglePdfReviewSurface = useSetAtom(togglePdfReviewSurfaceAtom)
@@ -218,7 +218,6 @@ export function CommandPalette({ open, onOpenChange, agents, onForkSession }: Co
 			flags: {
 				plugins: pluginsSurfaceEnabled,
 				crm: crmSurfaceEnabled,
-				studio: studioSurfaceEnabled,
 				ch5pm: ch5pmSurfaceEnabled,
 				pdfReview: pdfReviewSurfaceEnabled,
 			},
@@ -228,7 +227,6 @@ export function CommandPalette({ open, onOpenChange, agents, onForkSession }: Co
 		activeAgent,
 		pluginsSurfaceEnabled,
 		crmSurfaceEnabled,
-		studioSurfaceEnabled,
 		ch5pmSurfaceEnabled,
 		pdfReviewSurfaceEnabled,
 	])
@@ -378,6 +376,19 @@ export function CommandPalette({ open, onOpenChange, agents, onForkSession }: Co
 		await window.elf?.plugins.setEnabled("firefly.built-in.surface.voice", !voicePluginEnabled)
 		await queryClient.invalidateQueries({ queryKey: ["firefly-plugin"] })
 	}, [voicePluginEnabled, queryClient])
+
+	// Studio is a catalog-served plugin: its enable/disable flows through
+	// the host plugin lifecycle, not a renderer feature-flag atom.
+	const studioPluginEntry = pluginList?.plugins.find(
+		(plugin) => plugin.pluginId === "firefly.built-in.surface.studio",
+	)
+	const studioPluginEnabled = studioPluginEntry
+		? studioPluginEntry.status !== "disabled" && studioPluginEntry.status !== "quarantined"
+		: true
+	const toggleStudioPlugin = useCallback(async () => {
+		await window.elf?.plugins.setEnabled("firefly.built-in.surface.studio", !studioPluginEnabled)
+		await queryClient.invalidateQueries({ queryKey: ["firefly-plugin"] })
+	}, [studioPluginEnabled, queryClient])
 
 	const catalogSurfaceTabs = useCatalogSurfaceTabs(activeAgent)
 	const availableSurfaceTabs = useMemo(
@@ -717,14 +728,14 @@ export function CommandPalette({ open, onOpenChange, agents, onForkSession }: Co
 					</CommandItem>
 					<CommandItem
 						keywords={["studio", "office", "documents", "preview"]}
-						onSelect={() => {
-							toggleStudioSurface()
+						onSelect={async () => {
+							await toggleStudioPlugin()
 							onOpenChange(false)
 						}}
 					>
 						<MonitorPlayIcon />
-						<span>{studioSurfaceEnabled ? "Disable Studio / Office Surface" : "Enable Studio / Office Surface"}</span>
-						{studioSurfaceEnabled && <CheckIcon className="ml-auto h-4 w-4" />}
+						<span>{studioPluginEnabled ? "Disable Studio / Office Surface" : "Enable Studio / Office Surface"}</span>
+						{studioPluginEnabled && <CheckIcon className="ml-auto h-4 w-4" />}
 					</CommandItem>
 					<CommandItem
 						keywords={["voice", "speech", "microphone", "audio"]}

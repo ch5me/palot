@@ -34,9 +34,9 @@ import {
 	// oracleSurfaceEnabledAtom removed — oracle is catalog-served (firefly.built-in.surface.oracle).
 	// voiceSurfaceEnabledAtom removed — voice is catalog-served (firefly.built-in.surface.voice).
 	// browserPanelEnabledAtom removed — browser is catalog-served (firefly.built-in.surface.browser).
+	// studioSurfaceEnabledAtom removed — studio is catalog-served (firefly.built-in.surface.studio).
 	pluginsSurfaceEnabledAtom,
 	pdfReviewSurfaceEnabledAtom,
-	studioSurfaceEnabledAtom,
 	workspaceDockEnabledAtom,
 } from "../atoms/feature-flags"
 import { useColorScheme } from "../hooks/use-theme"
@@ -310,9 +310,9 @@ export function AgentDetail({
 	// claudeSurfaceEnabled removed — claude is catalog-served (firefly.built-in.surface.claude).
 	// oracleSurfaceEnabled removed — oracle is catalog-served (firefly.built-in.surface.oracle).
 	// voiceSurfaceEnabled removed — voice is catalog-served (firefly.built-in.surface.voice).
+	// studioSurfaceEnabled removed — studio is catalog-served (firefly.built-in.surface.studio).
 	const pluginsSurfaceEnabled = useAtomValue(pluginsSurfaceEnabledAtom)
 	const crmSurfaceEnabled = useAtomValue(crmSurfaceEnabledAtom)
-	const studioSurfaceEnabled = useAtomValue(studioSurfaceEnabledAtom)
 	const ch5pmSurfaceEnabled = useAtomValue(ch5pmSurfaceEnabledAtom)
 	const pdfReviewSurfaceEnabled = useAtomValue(pdfReviewSurfaceEnabledAtom)
 
@@ -324,7 +324,6 @@ export function AgentDetail({
 			flags: {
 				plugins: pluginsSurfaceEnabled,
 				crm: crmSurfaceEnabled,
-				studio: studioSurfaceEnabled,
 				ch5pm: ch5pmSurfaceEnabled,
 				pdfReview: pdfReviewSurfaceEnabled,
 			},
@@ -337,7 +336,6 @@ export function AgentDetail({
 		diffStats,
 		pluginsSurfaceEnabled,
 		crmSurfaceEnabled,
-		studioSurfaceEnabled,
 		ch5pmSurfaceEnabled,
 		pdfReviewSurfaceEnabled,
 		chatTurns.length,

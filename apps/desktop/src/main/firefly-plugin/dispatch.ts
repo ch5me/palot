@@ -1150,6 +1150,63 @@ export function registerBrowserHostHandlers(deps?: Partial<BrowserHostDeps>): vo
 	})
 }
 
+// ---------------------------------------------------------------------------
+// Studio / Office surface host handlers (firefly.built-in.surface.studio)
+// ---------------------------------------------------------------------------
+
+export interface StudioHostDeps {
+	openSidePanel: (tab: "studio") => Promise<void>
+	getSidePanelState: () => SidePanelStateSnapshot
+	setPluginEnabled: (pluginId: string, enabled: boolean) => { enabled: boolean }
+}
+
+const STUDIO_PLUGIN_ID = "firefly.built-in.surface.studio"
+
+export function registerStudioHostHandlers(deps?: Partial<StudioHostDeps>): void {
+	const openSidePanel =
+		deps?.openSidePanel ??
+		(async (tab: "studio") => {
+			const { broadcastOpenSidePanel } = await import("../palot-browser-ipc")
+			await broadcastOpenSidePanel(tab)
+		})
+	const getSidePanelState = deps?.getSidePanelState ?? defaultGetSidePanelState
+	const setEnabled =
+		deps?.setPluginEnabled ??
+		((pluginId: string, enabled: boolean) => {
+			// eslint-disable-next-line @typescript-eslint/no-var-requires
+			const authority = require("./authority") as typeof import("./authority")
+			return authority.setPluginEnabled(pluginId, enabled)
+		})
+
+	registerHostTool(STUDIO_PLUGIN_ID, "plugin.firefly.built-in.surface.studio.open", async () => {
+		await openSidePanel("studio")
+		return ok({ opened: true, tab: "studio", source: "v2-plugin-tool-dispatch" })
+	})
+
+	registerHostTool(STUDIO_PLUGIN_ID, "plugin.firefly.built-in.surface.studio.state", async () => {
+		const sidePanel = getSidePanelState()
+		return ok({
+			tab: "studio",
+			available: sidePanel.availableTabs.includes("studio"),
+			open: sidePanel.open,
+			active: sidePanel.open && sidePanel.activeTab === "studio",
+		})
+	})
+
+	registerHostCommand(STUDIO_PLUGIN_ID, "open-studio", async () => {
+		await openSidePanel("studio")
+		return ok({ opened: true, tab: "studio" })
+	})
+
+	registerHostCommand(STUDIO_PLUGIN_ID, "toggle-studio", async () => {
+		const catalog = getPluginCatalog()
+		const state = catalog.capabilityStates[STUDIO_PLUGIN_ID]
+		const currentlyEnabled = !(state?.pluginDisabled ?? false)
+		const next = setEnabled(STUDIO_PLUGIN_ID, !currentlyEnabled)
+		return ok({ pluginId: STUDIO_PLUGIN_ID, enabled: next.enabled })
+	})
+}
+
 export function registerDevmuxHostHandlers(): void {
 	// UI commands (renderer-invoked via firefly-plugin:invoke).
 	registerHostCommand(DEVMUX_TOOLBAR_PLUGIN_ID, "devmux-list", ({ args }) => devmuxList(args))
@@ -1199,6 +1256,7 @@ export function registerBuiltInHostCommands(): void {
 	registerClaudeHostHandlers()
 	registerOracleHostHandlers()
 	registerVoiceHostHandlers()
+	registerStudioHostHandlers()
 	registerDevmuxHostHandlers()
 	log.info("Registered V2 host command handlers", {
 		commands: Array.from(handlers.keys()),

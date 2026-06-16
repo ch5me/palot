@@ -8,16 +8,16 @@ import {
 	MonitorPlayIcon,
 	RefreshCwIcon,
 } from "lucide-react"
-import { useFileSearch } from "../../hooks/use-file-search"
-import { detectLanguage } from "../../lib/language"
-import type { Agent } from "../../lib/types"
+import { useFileSearch } from "../../../src/renderer/hooks/use-file-search"
+import { detectLanguage } from "../../../src/renderer/lib/language"
+import type { Agent } from "../../../src/renderer/lib/types"
 import {
 	convertOfficeToPdf,
 	fetchFilePreview,
 	readTextFile,
 	type FilePreview,
 	type OfficeConversionResult,
-} from "../../services/backend"
+} from "../../../src/renderer/services/backend"
 
 interface StudioPanelProps {
 	agent: Agent
@@ -204,3 +204,5 @@ export function StudioPanel({ agent, className }: StudioPanelProps) {
 		</div>
 	)
 }
+
+export default StudioPanel

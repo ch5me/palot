@@ -80,6 +80,10 @@ import {
 	voicePluginManifest,
 	VOICE_PLUGIN_ID,
 } from "../../../plugins/voice/manifest"
+import {
+	studioPluginManifest,
+	STUDIO_PLUGIN_ID,
+} from "../../../plugins/studio/manifest"
 import { BUILT_IN_DEFAULT_CAPABILITIES } from "../../shared/firefly-plugin/capabilities"
 import { type PluginDescriptor } from "../../shared/firefly-plugin/descriptor"
 import {
@@ -142,6 +146,7 @@ const BUILT_IN_MANIFESTS: readonly PluginManifest[] = [
 	voicePluginManifest,
 	acmeComponentsExemplarManifest,
 	devmuxToolbarManifest,
+	studioPluginManifest,
 ]
 
 /**
@@ -502,4 +507,5 @@ export const KNOWN_PLUGIN_IDS = {
 	acmeComponents: ACME_COMPONENTS_PLUGIN_ID,
 	devmuxToolbar: DEVMUX_TOOLBAR_PLUGIN_ID,
 	voice: VOICE_PLUGIN_ID,
+	studio: STUDIO_PLUGIN_ID,
 } as const

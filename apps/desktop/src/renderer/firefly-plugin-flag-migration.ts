@@ -75,6 +75,10 @@ export const SURFACE_FLAG_MIGRATIONS: readonly SurfaceFlagMigration[] = [
 		pluginId: "firefly.built-in.surface.voice",
 		legacyStorageKey: "elf:voiceSurfaceEnabled",
 	},
+	{
+		pluginId: "firefly.built-in.surface.studio",
+		legacyStorageKey: "elf:studioSurfaceEnabled",
+	},
 ]
 
 const MARKER_PREFIX = "elf:plugin-flag-migrated:"

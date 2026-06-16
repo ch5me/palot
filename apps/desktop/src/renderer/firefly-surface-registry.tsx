@@ -9,7 +9,8 @@ import { Ch5PmDashboardPanel } from "./ch5pm-dashboard/panel"
 // apps/desktop/plugins/claude) — do not re-add a row or import here.
 import { CrmPanel } from "./components/side-panel/crm-panel"
 import { PdfReviewPanel } from "./components/side-panel/pdf-review-panel"
-import { StudioPanel } from "./components/side-panel/studio-panel"
+// `studio` is served from the plugin catalog (firefly.built-in.surface.studio,
+// apps/desktop/plugins/studio) — do not re-add a row or import here.
 // `voice` is served from the plugin catalog (firefly.built-in.surface.voice,
 // apps/desktop/plugins/voice) — do not re-add an import or row here.
 import { V2PluginsPanel } from "./components/side-panel/v2-plugins-panel"
@@ -129,27 +130,8 @@ export const FIREFLY_SURFACE_REGISTRY: FireflySurfaceDef[] = [
 		target: { kind: "side-panel", tab: "crm" },
 		spawn: (ctx) => <CrmPanel agent={ctx.agent} />,
 	},
-	{
-		id: "studio",
-		manifestId: "firefly.built-in.side-panel.studio",
-		title: "Studio / Office",
-		icon: MonitorPlayIcon,
-		formFactor: "side-panel-tab",
-		lane: "document",
-		enabledFlag: {
-			key: "studio",
-		},
-		defaultOn: true,
-		availability: (ctx) =>
-			ctx.flags.studio
-				? { available: true }
-				: { available: false, reason: "Studio surface is disabled in feature flags" },
-		commandIds: ["surface.studio.open", "surface.studio.toggle"],
-		persistenceKey: "side-panel.studio",
-		telemetryNamespace: "firefly.surface.studio",
-		target: { kind: "side-panel", tab: "studio" },
-		spawn: (ctx) => <StudioPanel agent={ctx.agent} />,
-	},
+	// `studio` is served from the plugin catalog (firefly.built-in.surface.studio,
+	// apps/desktop/plugins/studio) — do not re-add a row here.
 	// `voice` is served from the plugin catalog (firefly.built-in.surface.voice,
 	// apps/desktop/plugins/voice) — do not re-add a row here.
 	// oracle — served from catalog (firefly.built-in.surface.oracle) — do not re-add
@@ -219,7 +201,7 @@ import { FIREFLY_SURFACE_IDS, type FireflySurfaceId } from "../shared/firefly-su
  * they are served from the plugin catalog (host plugin lifecycle owns
  * their enable/disable). First migrated surface: notes.
  */
-export const CATALOG_SERVED_SURFACE_IDS: readonly FireflySurfaceId[] = ["browser", "notes", "review", "files", "artifacts", "bridges", "pulse", "memory", "editor", "terminal", "claude", "oracle", "voice"]
+export const CATALOG_SERVED_SURFACE_IDS: readonly FireflySurfaceId[] = ["browser", "notes", "review", "files", "artifacts", "bridges", "pulse", "memory", "editor", "terminal", "claude", "oracle", "voice", "studio"]
 
 export const FIREFLY_SURFACE_DEFAULT_ON = Object.fromEntries(
 	FIREFLY_SURFACE_REGISTRY.map((surface) => [surface.id, surface.defaultOn]),
