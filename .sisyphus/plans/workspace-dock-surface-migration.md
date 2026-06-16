@@ -21,6 +21,29 @@ Remaining (gated on dock runtime proof before the irreversible cutover):
 - The 5 regression tests (§Phase Persistence).
 - Orphaned `shared/firefly-plugin/memory-surface-manifest.ts` shim (+ its standalone test) — delete in Cleanup (no longer in `BUILT_IN_MANIFESTS`).
 
+## Runtime verification — web smoke (2026-06-16, PROVEN)
+
+Verified in the running web build (devmux web :20883) with `elf:workspaceDockEnabled=true`. Commits added since: dock full-height fix (`d96786806`), in-renderer web catalog bridge (`64c24190a`).
+
+- **Dock renders end-to-end.** Chat fills the main zone at full height; the right zone shows the migrated surfaces as real Dockview tabs (Changes, Browser, Notes, Pulse, Artifacts, Memory, Files, Terminal, Editor, Bridges, CRM, Voice, Oracle, Claude, CH5PM…). Catalog built with 21 plugins.
+- **Tab switching works** — selecting Changes/Files renders their content; panel crashes are caught by `PluginPanelBoundary` ("Restart surface"), not blank zones.
+- **Web parity restored** — the `elf.plugins bridge is not exposed` error is gone after the in-renderer catalog bridge; `V2PluginsPanel` no longer crashes the web route.
+
+### Known follow-ups (NOT migration regressions)
+- **(D) Terminal panel renders `undefined` in the WEB build** ("Element type is invalid … TerminalContent"). Root cause is PRE-EXISTING: `terminal-panel.tsx` imports `Terminal*` from `@ch5me/agent-ui-web` — byte-identical to the pre-migration file (`git show 344496bc7:…/side-panel/terminal-panel.tsx`). The export resolves to `undefined` only in the web bundle; Electron is unaffected (imports unchanged, terminal worked there). The dock merely now *exposes* terminal in web. Fix belongs in `@ch5me/agent-ui-web`/web bundling, not this migration. Caught gracefully by the boundary.
+- **(E) Document-lane surfaces (studio, pdf-review).** Migrated as `formFactor: "side-panel-tab"` so they appear as utility tabs. `catalogPanelToTabDescriptor` returns `null` for non-side-panel-tab (`firefly-plugin-surface-merge.ts:82`), so true main-pane/document projection isn't wired in the catalog merge. **Product decision needed:** keep a separate document lane (bottom dock zone) — which needs the merge to project main-pane surfaces into `docTabs` — or treat studio/pdf-review as ordinary dock tabs. Bottom zone is currently empty.
+
+## Cutover — GATED on Chris + Electron runtime check (NOT done)
+
+The dock is proven in web; the only web-only issues are the pre-existing agent-ui-web quirk. Electron has the `elf.plugins` bridge and a working terminal, so the dock should work there — but flipping the entire app's default UX is irreversible and unverified in Electron, so it is held for review.
+
+Recipe when approved (verify in Electron first — `bun run dev:electron-local`, toggle the flag, click through surfaces):
+1. Resolve (E): decide doc-lane handling; wire main-pane projection if keeping it.
+2. Reframe host-only `plugins` off `FIREFLY_SURFACE_REGISTRY` (host surface source independent of the registry), then DELETE `firefly-surface-registry.tsx` + `getFireflySurfaceTabs` consumers + the now-dead `mergeSurfaceTabs` legacy branch.
+3. Delete the temp `workspaceDockEnabledAtom` and the legacy SplitPane branch in `agent-detail.tsx`; make the dock the sole path.
+4. Delete the orphaned `memory-surface-manifest.ts` shim + test.
+5. Then: resource-specific controllers (Monaco/PTY/iframe) + eviction enforcement + the 5 regression tests.
+
 ## Thesis
 
 Palot today renders surfaces through two coupled legacy systems: a ~450-line hardcoded `FIREFLY_SURFACE_REGISTRY` gated by 17 renderer feature-flag atoms, laid out by nested `SplitPane`s in `agent-detail.tsx` / `sidebar-layout.tsx`. We converge the entire app onto a Dockview-based workspace shell **and** migrate all 17 side-panel surfaces to the V2 plugin catalog in one campaign, because the two efforts share a single seam: **the V2 plugin panel components ARE the "surfaces", they get mounted once into an app-owned Surface Host Registry, and a Dockview panel is just a lightweight SLOT that attaches to an already-mounted host.** Dockview owns layout/chrome/drag/serialization only; the app owns heavy content lifetime keyed by stable identity. Each per-surface slice does four things at once — (i) author manifest + move panel to the plugin catalog (notes recipe), (ii) register a SurfaceController with stable identity + retention policy, (iii) render it through a `SurfaceOutlet` slot in the dock shell, (iv) delete its feature-flag atom + its `FIREFLY_SURFACE_REGISTRY` row and migrate the flag value to plugin-enabled state. At the end: no `*SurfaceEnabledAtom`, no `FIREFLY_SURFACE_REGISTRY`, no `SplitPane` app layout. No legacy remains.
