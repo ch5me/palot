@@ -13,7 +13,8 @@
  */
 
 import { useQuery } from "@tanstack/react-query"
-import { buildPluginCatalog } from "../../main/firefly-plugin/catalog"
+import { buildPluginCatalog, summarizeProjection } from "../../main/firefly-plugin/catalog"
+import { isElectron } from "../services/backend"
 
 export interface FireflyPluginEntry {
 	pluginId: string
@@ -194,7 +195,7 @@ export interface FireflyPluginInvokeResult {
 	data?: unknown
 }
 
-function getBridge(): {
+type PluginBridge = {
 	list: () => Promise<FireflyPluginListResult>
 	panels: () => Promise<FireflyPluginPanelsResult>
 	describe: (pluginId: string) => Promise<unknown>
@@ -208,11 +209,143 @@ function getBridge(): {
 	setEnabled: (pluginId: string, enabled: boolean) => Promise<FireflyPluginLifecycleSnapshot>
 	releaseQuarantine: (pluginId: string, note: string) => Promise<FireflyPluginLifecycleSnapshot>
 	onChanged: (cb: (p: { appVersion: string; pluginCount: number }) => void) => () => void
-} {
+}
+
+/**
+ * In-renderer catalog bridge for the web build (no Electron preload).
+ * Uses the same pure `buildPluginCatalog` the renderer already calls for
+ * tools and components — no server route needed.
+ * Mutation methods (invoke/setEnabled/releaseQuarantine) throw fail-fast
+ * because they have no web equivalent. onChanged returns a no-op unsubscribe
+ * because the web catalog is static.
+ */
+function buildWebCatalogBridge(): PluginBridge {
+	const catalog = buildPluginCatalog({ appVersion: "0.11.0" })
+	const summaries = summarizeProjection(catalog)
+
+	return {
+		list: () =>
+			Promise.resolve({
+				appVersion: catalog.appVersion,
+				plugins: catalog.entries.map((entry) => ({
+					pluginId: entry.pluginId,
+					displayName: entry.displayName,
+					version: entry.version,
+					trust: entry.trust,
+					status: entry.status,
+					manifestRevision: entry.manifestRevision,
+					appVersion: entry.appVersion,
+					requiredCapabilities: [...entry.requiredCapabilities],
+					defaultGrantedCapabilities: [...entry.defaultGrantedCapabilities],
+					statusDetail: entry.statusDetail,
+					source: entry.source,
+				})),
+				summaries: summaries.map((s) => ({
+					pluginId: s.pluginId,
+					panelCount: s.panelCount,
+					widgetCount: s.widgetCount,
+					commandCount: s.commandCount,
+					themeCount: s.themeCount,
+					toolCount: s.toolCount,
+					componentCount: s.componentCount,
+				})),
+			}),
+
+		panels: () =>
+			Promise.resolve({
+				appVersion: catalog.appVersion,
+				// ProjectedSidePanel → FireflyPluginPanelItem (the IPC-serialized mirror):
+				// same data minus the host-only family/contract fields. The Electron path
+				// gets this shape via IPC structured-clone; here we surface the projection
+				// directly under the same bridge contract.
+				items: catalog.projections.panels as unknown as FireflyPluginPanelItem[],
+			}),
+
+		capabilities: (pluginId: string) => {
+			const state = catalog.capabilityStates[pluginId]
+			if (!state) {
+				return Promise.reject(new Error(`capabilities: plugin "${pluginId}" not found in web catalog`))
+			}
+			return Promise.resolve({
+				state: {
+					trust: state.trust,
+					sessionScope: state.sessionScope,
+					grantedTokens: [...state.grantedTokens],
+					loading: state.loading,
+					pluginDisabled: state.pluginDisabled,
+					pluginQuarantined: state.pluginQuarantined,
+					pluginError: state.pluginError ?? null,
+				},
+				decision: {
+					pluginId,
+					token: "",
+					granted: !state.pluginDisabled && !state.pluginQuarantined,
+					reason: "web catalog — no live broker",
+					reasonCode: "granted-builtin-baseline",
+					risk: "low" as const,
+					knownToHost: true,
+					grantedTokens: [...state.grantedTokens],
+				},
+			})
+		},
+
+		describe: (pluginId: string) => {
+			const entry = catalog.entries.find((e) => e.pluginId === pluginId)
+			return Promise.resolve(entry ?? null)
+		},
+
+		widgets: () =>
+			Promise.resolve({ appVersion: catalog.appVersion, items: [...catalog.projections.widgets] }),
+
+		commands: () =>
+			Promise.resolve({ appVersion: catalog.appVersion, items: [...catalog.projections.commands] }),
+
+		themes: () =>
+			Promise.resolve({ appVersion: catalog.appVersion, items: [...catalog.projections.themes] }),
+
+		refresh: () =>
+			Promise.resolve({ appVersion: catalog.appVersion, pluginCount: catalog.descriptors.length }),
+
+		tools: (pluginId?: string) => {
+			const descriptors = pluginId
+				? catalog.descriptors.filter((d) => d.normalizedId === pluginId)
+				: catalog.descriptors
+			return Promise.resolve({
+				appVersion: catalog.appVersion,
+				tools: descriptors.flatMap((descriptor) =>
+					descriptor.tools.map((tool) => ({
+						pluginId: descriptor.normalizedId,
+						id: tool.id,
+						title: tool.title,
+						description: tool.description,
+						scope: tool.scope,
+						requires: [...tool.requires],
+						timeoutMs: tool.timeoutMs ?? descriptor.derived.defaultToolTimeoutMs,
+						preview: tool.preview ?? false,
+					})),
+				),
+			})
+		},
+
+		invoke: (_input: FireflyPluginInvokeInput) =>
+			Promise.reject(new Error("invoke is not supported in the web build")),
+
+		setEnabled: (_pluginId: string, _enabled: boolean) =>
+			Promise.reject(new Error("setEnabled is not supported in the web build")),
+
+		releaseQuarantine: (_pluginId: string, _note: string) =>
+			Promise.reject(new Error("releaseQuarantine is not supported in the web build")),
+
+		onChanged: (_cb: (p: { appVersion: string; pluginCount: number }) => void) => () => {},
+	}
+}
+
+function getBridge(): PluginBridge {
+	if (!isElectron) return buildWebCatalogBridge()
 	if (typeof window === "undefined") {
 		throw new Error("useFireflyPlugins is only available in the renderer")
 	}
-	const w = window as unknown as { elf?: { plugins?: ReturnType<typeof getBridge> } }
+	const w = window as unknown as { elf?: { plugins?: PluginBridge } }
 	if (!w.elf?.plugins) {
 		throw new Error("elf.plugins bridge is not exposed in the preload script")
 	}

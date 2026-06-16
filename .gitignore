@@ -56,3 +56,7 @@ storybook-static/
 # Nested package .turbo dirs (all cache, nothing tracked)
 apps/**/.turbo/
 packages/**/.turbo/
+
+# Transient agent isolation worktrees (harness-created; a stray nested biome.json
+# in one breaks `biome check .`). Never tracked; ignored so tooling skips them.
+.claude/worktrees/

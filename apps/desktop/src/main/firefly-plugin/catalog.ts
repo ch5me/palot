@@ -29,16 +29,79 @@ import {
 	ACME_NOTEBOOK_PLUGIN_ID,
 } from "../../shared/firefly-plugin/acme-notebook-exemplar"
 import {
+	browserPluginManifest,
+	BROWSER_PLUGIN_ID,
+} from "../../../plugins/browser/manifest"
+import {
 	notesPluginManifest,
 	NOTES_PLUGIN_ID,
 } from "../../../plugins/notes/manifest"
 import {
+	reviewPluginManifest,
+	REVIEW_PLUGIN_ID,
+} from "../../../plugins/review/manifest"
+import {
 	devmuxToolbarManifest,
 	DEVMUX_TOOLBAR_PLUGIN_ID,
 } from "../../../plugins/devmux-toolbar/manifest"
+import {
+	filesPluginManifest,
+	FILES_PLUGIN_ID,
+} from "../../../plugins/files/manifest"
+import {
+	artifactsPluginManifest,
+	ARTIFACTS_PLUGIN_ID,
+} from "../../../plugins/artifacts/manifest"
+import {
+	bridgesPluginManifest,
+	BRIDGES_PLUGIN_ID,
+} from "../../../plugins/bridges/manifest"
+import {
+	pulsePluginManifest,
+	PULSE_PLUGIN_ID,
+} from "../../../plugins/pulse/manifest"
+import {
+	editorPluginManifest,
+	EDITOR_PLUGIN_ID,
+} from "../../../plugins/editor/manifest"
+import {
+	terminalPluginManifest,
+	TERMINAL_PLUGIN_ID,
+} from "../../../plugins/terminal/manifest"
+import {
+	claudePluginManifest,
+	CLAUDE_PLUGIN_ID,
+} from "../../../plugins/claude/manifest"
+import {
+	oraclePluginManifest,
+	ORACLE_PLUGIN_ID,
+} from "../../../plugins/oracle/manifest"
+import {
+	voicePluginManifest,
+	VOICE_PLUGIN_ID,
+} from "../../../plugins/voice/manifest"
+import {
+	studioPluginManifest,
+	STUDIO_PLUGIN_ID,
+} from "../../../plugins/studio/manifest"
+import {
+	ch5pmPluginManifest,
+	CH5PM_PLUGIN_ID,
+} from "../../../plugins/ch5pm/manifest"
+import {
+	pdfReviewPluginManifest,
+	PDF_REVIEW_PLUGIN_ID,
+} from "../../../plugins/pdf-review/manifest"
+import {
+	crmPluginManifest,
+	CRM_PLUGIN_ID,
+} from "../../../plugins/crm/manifest"
 import { BUILT_IN_DEFAULT_CAPABILITIES } from "../../shared/firefly-plugin/capabilities"
 import { type PluginDescriptor } from "../../shared/firefly-plugin/descriptor"
-import { memorySurfaceManifest, MEMORY_SURFACE_PLUGIN_ID } from "../../shared/firefly-plugin/memory-surface-manifest"
+import {
+	memoryPluginManifest,
+	MEMORY_PLUGIN_ID,
+} from "../../../plugins/memory/manifest"
 import {
 	defaultCapabilityState,
 	projectCommandsFromCatalog,
@@ -79,11 +142,26 @@ const log = createLogger("firefly-plugin-catalog")
  */
 const BUILT_IN_MANIFESTS: readonly PluginManifest[] = [
 	palotBridgeManifest,
-	memorySurfaceManifest,
+	memoryPluginManifest,
 	acmeNotebookManifest,
+	browserPluginManifest,
 	notesPluginManifest,
+	reviewPluginManifest,
+	filesPluginManifest,
+	artifactsPluginManifest,
+	bridgesPluginManifest,
+	pulsePluginManifest,
+	editorPluginManifest,
+	terminalPluginManifest,
+	claudePluginManifest,
+	oraclePluginManifest,
+	voicePluginManifest,
 	acmeComponentsExemplarManifest,
 	devmuxToolbarManifest,
+	studioPluginManifest,
+	ch5pmPluginManifest,
+	pdfReviewPluginManifest,
+	crmPluginManifest,
 ]
 
 /**
@@ -428,9 +506,24 @@ function defaultCapabilityStateForId(pluginId: string): CapabilityStateShape {
  */
 export const KNOWN_PLUGIN_IDS = {
 	palotBridge: PALOT_BRIDGE_PLUGIN_ID,
-	memorySurface: MEMORY_SURFACE_PLUGIN_ID,
+	memorySurface: MEMORY_PLUGIN_ID,
 	acmeNotebook: ACME_NOTEBOOK_PLUGIN_ID,
+	browser: BROWSER_PLUGIN_ID,
 	notes: NOTES_PLUGIN_ID,
+	review: REVIEW_PLUGIN_ID,
+	files: FILES_PLUGIN_ID,
+	artifacts: ARTIFACTS_PLUGIN_ID,
+	bridges: BRIDGES_PLUGIN_ID,
+	pulse: PULSE_PLUGIN_ID,
+	editor: EDITOR_PLUGIN_ID,
+	terminal: TERMINAL_PLUGIN_ID,
+	claude: CLAUDE_PLUGIN_ID,
+	oracle: ORACLE_PLUGIN_ID,
 	acmeComponents: ACME_COMPONENTS_PLUGIN_ID,
 	devmuxToolbar: DEVMUX_TOOLBAR_PLUGIN_ID,
+	voice: VOICE_PLUGIN_ID,
+	studio: STUDIO_PLUGIN_ID,
+	ch5pm: CH5PM_PLUGIN_ID,
+	pdfReview: PDF_REVIEW_PLUGIN_ID,
+	crm: CRM_PLUGIN_ID,
 } as const

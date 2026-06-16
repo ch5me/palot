@@ -405,6 +405,633 @@ export function registerNotesHostHandlers(deps?: Partial<NotesHostDeps>): void {
 }
 
 // ---------------------------------------------------------------------------
+// Review surface host handlers (firefly.built-in.surface.review)
+// ---------------------------------------------------------------------------
+
+export interface ReviewHostDeps {
+	openSidePanel: (tab: "review") => Promise<void>
+	getSidePanelState: () => SidePanelStateSnapshot
+	setPluginEnabled: (pluginId: string, enabled: boolean) => { enabled: boolean }
+}
+
+const REVIEW_PLUGIN_ID = "firefly.built-in.surface.review"
+
+export function registerReviewHostHandlers(deps?: Partial<ReviewHostDeps>): void {
+	const openSidePanel =
+		deps?.openSidePanel ??
+		(async (tab: "review") => {
+			const { broadcastOpenSidePanel } = await import("../palot-browser-ipc")
+			await broadcastOpenSidePanel(tab)
+		})
+	const getSidePanelState = deps?.getSidePanelState ?? defaultGetSidePanelState
+	const setEnabled =
+		deps?.setPluginEnabled ??
+		((pluginId: string, enabled: boolean) => {
+			// eslint-disable-next-line @typescript-eslint/no-var-requires
+			const authority = require("./authority") as typeof import("./authority")
+			return authority.setPluginEnabled(pluginId, enabled)
+		})
+
+	registerHostTool(REVIEW_PLUGIN_ID, "plugin.firefly.built-in.surface.review.open", async () => {
+		await openSidePanel("review")
+		return ok({ opened: true, tab: "review", source: "v2-plugin-tool-dispatch" })
+	})
+
+	registerHostTool(REVIEW_PLUGIN_ID, "plugin.firefly.built-in.surface.review.state", async () => {
+		const sidePanel = getSidePanelState()
+		return ok({
+			tab: "review",
+			available: sidePanel.availableTabs.includes("review"),
+			open: sidePanel.open,
+			active: sidePanel.open && sidePanel.activeTab === "review",
+		})
+	})
+
+	registerHostCommand(REVIEW_PLUGIN_ID, "open-review", async () => {
+		await openSidePanel("review")
+		return ok({ opened: true, tab: "review" })
+	})
+
+	registerHostCommand(REVIEW_PLUGIN_ID, "toggle-review", async () => {
+		const catalog = getPluginCatalog()
+		const state = catalog.capabilityStates[REVIEW_PLUGIN_ID]
+		const currentlyEnabled = !(state?.pluginDisabled ?? false)
+		const next = setEnabled(REVIEW_PLUGIN_ID, !currentlyEnabled)
+		return ok({ pluginId: REVIEW_PLUGIN_ID, enabled: next.enabled })
+	})
+}
+
+// ---------------------------------------------------------------------------
+// Files surface host handlers (firefly.built-in.surface.files)
+// ---------------------------------------------------------------------------
+
+export interface FilesHostDeps {
+	openSidePanel: (tab: "files") => Promise<void>
+	getSidePanelState: () => SidePanelStateSnapshot
+	setPluginEnabled: (pluginId: string, enabled: boolean) => { enabled: boolean }
+}
+
+const FILES_PLUGIN_ID = "firefly.built-in.surface.files"
+
+export function registerFilesHostHandlers(deps?: Partial<FilesHostDeps>): void {
+	const openSidePanel =
+		deps?.openSidePanel ??
+		(async (tab: "files") => {
+			const { broadcastOpenSidePanel } = await import("../palot-browser-ipc")
+			await broadcastOpenSidePanel(tab)
+		})
+	const getSidePanelState = deps?.getSidePanelState ?? defaultGetSidePanelState
+	const setEnabled =
+		deps?.setPluginEnabled ??
+		((pluginId: string, enabled: boolean) => {
+			// eslint-disable-next-line @typescript-eslint/no-var-requires
+			const authority = require("./authority") as typeof import("./authority")
+			return authority.setPluginEnabled(pluginId, enabled)
+		})
+
+	registerHostTool(FILES_PLUGIN_ID, "plugin.firefly.built-in.surface.files.open", async () => {
+		await openSidePanel("files")
+		return ok({ opened: true, tab: "files", source: "v2-plugin-tool-dispatch" })
+	})
+
+	registerHostTool(FILES_PLUGIN_ID, "plugin.firefly.built-in.surface.files.state", async () => {
+		const sidePanel = getSidePanelState()
+		return ok({
+			tab: "files",
+			available: sidePanel.availableTabs.includes("files"),
+			open: sidePanel.open,
+			active: sidePanel.open && sidePanel.activeTab === "files",
+		})
+	})
+
+	registerHostCommand(FILES_PLUGIN_ID, "open-files", async () => {
+		await openSidePanel("files")
+		return ok({ opened: true, tab: "files" })
+	})
+
+	registerHostCommand(FILES_PLUGIN_ID, "toggle-files", async () => {
+		const catalog = getPluginCatalog()
+		const state = catalog.capabilityStates[FILES_PLUGIN_ID]
+		const currentlyEnabled = !(state?.pluginDisabled ?? false)
+		const next = setEnabled(FILES_PLUGIN_ID, !currentlyEnabled)
+		return ok({ pluginId: FILES_PLUGIN_ID, enabled: next.enabled })
+	})
+}
+
+// ---------------------------------------------------------------------------
+// Artifacts surface host handlers (firefly.built-in.surface.artifacts)
+// ---------------------------------------------------------------------------
+
+export interface ArtifactsHostDeps {
+	openSidePanel: (tab: "artifacts") => Promise<void>
+	getSidePanelState: () => SidePanelStateSnapshot
+	setPluginEnabled: (pluginId: string, enabled: boolean) => { enabled: boolean }
+}
+
+const ARTIFACTS_PLUGIN_ID = "firefly.built-in.surface.artifacts"
+
+export function registerArtifactsHostHandlers(deps?: Partial<ArtifactsHostDeps>): void {
+	const openSidePanel =
+		deps?.openSidePanel ??
+		(async (tab: "artifacts") => {
+			const { broadcastOpenSidePanel } = await import("../palot-browser-ipc")
+			await broadcastOpenSidePanel(tab)
+		})
+	const getSidePanelState = deps?.getSidePanelState ?? defaultGetSidePanelState
+	const setEnabled =
+		deps?.setPluginEnabled ??
+		((pluginId: string, enabled: boolean) => {
+			// eslint-disable-next-line @typescript-eslint/no-var-requires
+			const authority = require("./authority") as typeof import("./authority")
+			return authority.setPluginEnabled(pluginId, enabled)
+		})
+
+	registerHostTool(ARTIFACTS_PLUGIN_ID, "plugin.firefly.built-in.surface.artifacts.open", async () => {
+		await openSidePanel("artifacts")
+		return ok({ opened: true, tab: "artifacts", source: "v2-plugin-tool-dispatch" })
+	})
+
+	registerHostTool(ARTIFACTS_PLUGIN_ID, "plugin.firefly.built-in.surface.artifacts.state", async () => {
+		const sidePanel = getSidePanelState()
+		return ok({
+			tab: "artifacts",
+			available: sidePanel.availableTabs.includes("artifacts"),
+			open: sidePanel.open,
+			active: sidePanel.open && sidePanel.activeTab === "artifacts",
+		})
+	})
+
+	registerHostCommand(ARTIFACTS_PLUGIN_ID, "open-artifacts", async () => {
+		await openSidePanel("artifacts")
+		return ok({ opened: true, tab: "artifacts" })
+	})
+
+	registerHostCommand(ARTIFACTS_PLUGIN_ID, "toggle-artifacts", async () => {
+		const catalog = getPluginCatalog()
+		const state = catalog.capabilityStates[ARTIFACTS_PLUGIN_ID]
+		const currentlyEnabled = !(state?.pluginDisabled ?? false)
+		const next = setEnabled(ARTIFACTS_PLUGIN_ID, !currentlyEnabled)
+		return ok({ pluginId: ARTIFACTS_PLUGIN_ID, enabled: next.enabled })
+	})
+}
+
+// ---------------------------------------------------------------------------
+// Bridges surface host handlers (firefly.built-in.surface.bridges)
+// ---------------------------------------------------------------------------
+
+export interface BridgesHostDeps {
+	openSidePanel: (tab: "bridges") => Promise<void>
+	getSidePanelState: () => SidePanelStateSnapshot
+	setPluginEnabled: (pluginId: string, enabled: boolean) => { enabled: boolean }
+}
+
+const BRIDGES_PLUGIN_ID = "firefly.built-in.surface.bridges"
+
+export function registerBridgesHostHandlers(deps?: Partial<BridgesHostDeps>): void {
+	const openSidePanel =
+		deps?.openSidePanel ??
+		(async (tab: "bridges") => {
+			const { broadcastOpenSidePanel } = await import("../palot-browser-ipc")
+			await broadcastOpenSidePanel(tab)
+		})
+	const getSidePanelState = deps?.getSidePanelState ?? defaultGetSidePanelState
+	const setEnabled =
+		deps?.setPluginEnabled ??
+		((pluginId: string, enabled: boolean) => {
+			// eslint-disable-next-line @typescript-eslint/no-var-requires
+			const authority = require("./authority") as typeof import("./authority")
+			return authority.setPluginEnabled(pluginId, enabled)
+		})
+
+	registerHostTool(BRIDGES_PLUGIN_ID, "plugin.firefly.built-in.surface.bridges.open", async () => {
+		await openSidePanel("bridges")
+		return ok({ opened: true, tab: "bridges", source: "v2-plugin-tool-dispatch" })
+	})
+
+	registerHostTool(BRIDGES_PLUGIN_ID, "plugin.firefly.built-in.surface.bridges.state", async () => {
+		const sidePanel = getSidePanelState()
+		return ok({
+			tab: "bridges",
+			available: sidePanel.availableTabs.includes("bridges"),
+			open: sidePanel.open,
+			active: sidePanel.open && sidePanel.activeTab === "bridges",
+		})
+	})
+
+	registerHostCommand(BRIDGES_PLUGIN_ID, "open-bridges", async () => {
+		await openSidePanel("bridges")
+		return ok({ opened: true, tab: "bridges" })
+	})
+
+	registerHostCommand(BRIDGES_PLUGIN_ID, "toggle-bridges", async () => {
+		const catalog = getPluginCatalog()
+		const state = catalog.capabilityStates[BRIDGES_PLUGIN_ID]
+		const currentlyEnabled = !(state?.pluginDisabled ?? false)
+		const next = setEnabled(BRIDGES_PLUGIN_ID, !currentlyEnabled)
+		return ok({ pluginId: BRIDGES_PLUGIN_ID, enabled: next.enabled })
+	})
+}
+
+// ---------------------------------------------------------------------------
+// Pulse surface host handlers (firefly.built-in.surface.pulse)
+// ---------------------------------------------------------------------------
+
+export interface PulseHostDeps {
+	openSidePanel: (tab: "pulse") => Promise<void>
+	getSidePanelState: () => SidePanelStateSnapshot
+	setPluginEnabled: (pluginId: string, enabled: boolean) => { enabled: boolean }
+}
+
+const PULSE_PLUGIN_ID = "firefly.built-in.surface.pulse"
+
+export function registerPulseHostHandlers(deps?: Partial<PulseHostDeps>): void {
+	const openSidePanel =
+		deps?.openSidePanel ??
+		(async (tab: "pulse") => {
+			const { broadcastOpenSidePanel } = await import("../palot-browser-ipc")
+			await broadcastOpenSidePanel(tab)
+		})
+	const getSidePanelState = deps?.getSidePanelState ?? defaultGetSidePanelState
+	const setEnabled =
+		deps?.setPluginEnabled ??
+		((pluginId: string, enabled: boolean) => {
+			// eslint-disable-next-line @typescript-eslint/no-var-requires
+			const authority = require("./authority") as typeof import("./authority")
+			return authority.setPluginEnabled(pluginId, enabled)
+		})
+
+	registerHostTool(PULSE_PLUGIN_ID, "plugin.firefly.built-in.surface.pulse.open", async () => {
+		await openSidePanel("pulse")
+		return ok({ opened: true, tab: "pulse", source: "v2-plugin-tool-dispatch" })
+	})
+
+	registerHostTool(PULSE_PLUGIN_ID, "plugin.firefly.built-in.surface.pulse.state", async () => {
+		const sidePanel = getSidePanelState()
+		return ok({
+			tab: "pulse",
+			available: sidePanel.availableTabs.includes("pulse"),
+			open: sidePanel.open,
+			active: sidePanel.open && sidePanel.activeTab === "pulse",
+		})
+	})
+
+	registerHostCommand(PULSE_PLUGIN_ID, "open-pulse", async () => {
+		await openSidePanel("pulse")
+		return ok({ opened: true, tab: "pulse" })
+	})
+
+	registerHostCommand(PULSE_PLUGIN_ID, "toggle-pulse", async () => {
+		const catalog = getPluginCatalog()
+		const state = catalog.capabilityStates[PULSE_PLUGIN_ID]
+		const currentlyEnabled = !(state?.pluginDisabled ?? false)
+		const next = setEnabled(PULSE_PLUGIN_ID, !currentlyEnabled)
+		return ok({ pluginId: PULSE_PLUGIN_ID, enabled: next.enabled })
+	})
+}
+
+// ---------------------------------------------------------------------------
+// Memory surface host handlers (firefly.built-in.surface.memory)
+// ---------------------------------------------------------------------------
+
+export interface MemoryHostDeps {
+	openSidePanel: (tab: "memory") => Promise<void>
+	getSidePanelState: () => SidePanelStateSnapshot
+	setPluginEnabled: (pluginId: string, enabled: boolean) => { enabled: boolean }
+}
+
+const MEMORY_PLUGIN_ID = "firefly.built-in.surface.memory"
+
+export function registerMemoryHostHandlers(deps?: Partial<MemoryHostDeps>): void {
+	const openSidePanel =
+		deps?.openSidePanel ??
+		(async (tab: "memory") => {
+			const { broadcastOpenSidePanel } = await import("../palot-browser-ipc")
+			await broadcastOpenSidePanel(tab)
+		})
+	const getSidePanelState = deps?.getSidePanelState ?? defaultGetSidePanelState
+	const setEnabled =
+		deps?.setPluginEnabled ??
+		((pluginId: string, enabled: boolean) => {
+			// eslint-disable-next-line @typescript-eslint/no-var-requires
+			const authority = require("./authority") as typeof import("./authority")
+			return authority.setPluginEnabled(pluginId, enabled)
+		})
+
+	registerHostTool(MEMORY_PLUGIN_ID, "plugin.firefly.built-in.surface.memory.open", async () => {
+		await openSidePanel("memory")
+		return ok({ opened: true, tab: "memory", source: "v2-plugin-tool-dispatch" })
+	})
+
+	registerHostTool(MEMORY_PLUGIN_ID, "plugin.firefly.built-in.surface.memory.state", async () => {
+		const sidePanel = getSidePanelState()
+		return ok({
+			tab: "memory",
+			available: sidePanel.availableTabs.includes("memory"),
+			open: sidePanel.open,
+			active: sidePanel.open && sidePanel.activeTab === "memory",
+		})
+	})
+
+	registerHostCommand(MEMORY_PLUGIN_ID, "open-memory", async () => {
+		await openSidePanel("memory")
+		return ok({ opened: true, tab: "memory" })
+	})
+
+	registerHostCommand(MEMORY_PLUGIN_ID, "toggle-memory", async () => {
+		const catalog = getPluginCatalog()
+		const state = catalog.capabilityStates[MEMORY_PLUGIN_ID]
+		const currentlyEnabled = !(state?.pluginDisabled ?? false)
+		const next = setEnabled(MEMORY_PLUGIN_ID, !currentlyEnabled)
+		return ok({ pluginId: MEMORY_PLUGIN_ID, enabled: next.enabled })
+	})
+}
+
+// ---------------------------------------------------------------------------
+// Editor surface host handlers (firefly.built-in.surface.editor)
+// ---------------------------------------------------------------------------
+
+export interface EditorHostDeps {
+	openSidePanel: (tab: "editor") => Promise<void>
+	getSidePanelState: () => SidePanelStateSnapshot
+	setPluginEnabled: (pluginId: string, enabled: boolean) => { enabled: boolean }
+}
+
+const EDITOR_PLUGIN_ID = "firefly.built-in.surface.editor"
+
+export function registerEditorHostHandlers(deps?: Partial<EditorHostDeps>): void {
+	const openSidePanel =
+		deps?.openSidePanel ??
+		(async (tab: "editor") => {
+			const { broadcastOpenSidePanel } = await import("../palot-browser-ipc")
+			await broadcastOpenSidePanel(tab)
+		})
+	const getSidePanelState = deps?.getSidePanelState ?? defaultGetSidePanelState
+	const setEnabled =
+		deps?.setPluginEnabled ??
+		((pluginId: string, enabled: boolean) => {
+			// eslint-disable-next-line @typescript-eslint/no-var-requires
+			const authority = require("./authority") as typeof import("./authority")
+			return authority.setPluginEnabled(pluginId, enabled)
+		})
+
+	registerHostTool(EDITOR_PLUGIN_ID, "plugin.firefly.built-in.surface.editor.open", async () => {
+		await openSidePanel("editor")
+		return ok({ opened: true, tab: "editor", source: "v2-plugin-tool-dispatch" })
+	})
+
+	registerHostTool(EDITOR_PLUGIN_ID, "plugin.firefly.built-in.surface.editor.state", async () => {
+		const sidePanel = getSidePanelState()
+		return ok({
+			tab: "editor",
+			available: sidePanel.availableTabs.includes("editor"),
+			open: sidePanel.open,
+			active: sidePanel.open && sidePanel.activeTab === "editor",
+		})
+	})
+
+	registerHostCommand(EDITOR_PLUGIN_ID, "open-editor", async () => {
+		await openSidePanel("editor")
+		return ok({ opened: true, tab: "editor" })
+	})
+
+	registerHostCommand(EDITOR_PLUGIN_ID, "toggle-editor", async () => {
+		const catalog = getPluginCatalog()
+		const state = catalog.capabilityStates[EDITOR_PLUGIN_ID]
+		const currentlyEnabled = !(state?.pluginDisabled ?? false)
+		const next = setEnabled(EDITOR_PLUGIN_ID, !currentlyEnabled)
+		return ok({ pluginId: EDITOR_PLUGIN_ID, enabled: next.enabled })
+	})
+}
+
+// ---------------------------------------------------------------------------
+// Terminal surface host handlers (firefly.built-in.surface.terminal)
+// ---------------------------------------------------------------------------
+
+export interface TerminalHostDeps {
+	openSidePanel: (tab: "terminal") => Promise<void>
+	getSidePanelState: () => SidePanelStateSnapshot
+	setPluginEnabled: (pluginId: string, enabled: boolean) => { enabled: boolean }
+}
+
+const TERMINAL_PLUGIN_ID = "firefly.built-in.surface.terminal"
+
+export function registerTerminalHostHandlers(deps?: Partial<TerminalHostDeps>): void {
+	const openSidePanel =
+		deps?.openSidePanel ??
+		(async (tab: "terminal") => {
+			const { broadcastOpenSidePanel } = await import("../palot-browser-ipc")
+			await broadcastOpenSidePanel(tab)
+		})
+	const getSidePanelState = deps?.getSidePanelState ?? defaultGetSidePanelState
+	const setEnabled =
+		deps?.setPluginEnabled ??
+		((pluginId: string, enabled: boolean) => {
+			// eslint-disable-next-line @typescript-eslint/no-var-requires
+			const authority = require("./authority") as typeof import("./authority")
+			return authority.setPluginEnabled(pluginId, enabled)
+		})
+
+	registerHostTool(TERMINAL_PLUGIN_ID, "plugin.firefly.built-in.surface.terminal.open", async () => {
+		await openSidePanel("terminal")
+		return ok({ opened: true, tab: "terminal", source: "v2-plugin-tool-dispatch" })
+	})
+
+	registerHostTool(TERMINAL_PLUGIN_ID, "plugin.firefly.built-in.surface.terminal.state", async () => {
+		const sidePanel = getSidePanelState()
+		return ok({
+			tab: "terminal",
+			available: sidePanel.availableTabs.includes("terminal"),
+			open: sidePanel.open,
+			active: sidePanel.open && sidePanel.activeTab === "terminal",
+		})
+	})
+
+	registerHostCommand(TERMINAL_PLUGIN_ID, "open-terminal", async () => {
+		await openSidePanel("terminal")
+		return ok({ opened: true, tab: "terminal" })
+	})
+
+	registerHostCommand(TERMINAL_PLUGIN_ID, "toggle-terminal", async () => {
+		const catalog = getPluginCatalog()
+		const state = catalog.capabilityStates[TERMINAL_PLUGIN_ID]
+		const currentlyEnabled = !(state?.pluginDisabled ?? false)
+		const next = setEnabled(TERMINAL_PLUGIN_ID, !currentlyEnabled)
+		return ok({ pluginId: TERMINAL_PLUGIN_ID, enabled: next.enabled })
+	})
+}
+
+// ---------------------------------------------------------------------------
+// Claude Code surface host handlers (firefly.built-in.surface.claude)
+// ---------------------------------------------------------------------------
+
+export interface ClaudeHostDeps {
+	openSidePanel: (tab: "claude") => Promise<void>
+	getSidePanelState: () => SidePanelStateSnapshot
+	setPluginEnabled: (pluginId: string, enabled: boolean) => { enabled: boolean }
+}
+
+const CLAUDE_PLUGIN_ID = "firefly.built-in.surface.claude"
+
+export function registerClaudeHostHandlers(deps?: Partial<ClaudeHostDeps>): void {
+	const openSidePanel =
+		deps?.openSidePanel ??
+		(async (tab: "claude") => {
+			const { broadcastOpenSidePanel } = await import("../palot-browser-ipc")
+			await broadcastOpenSidePanel(tab)
+		})
+	const getSidePanelState = deps?.getSidePanelState ?? defaultGetSidePanelState
+	const setEnabled =
+		deps?.setPluginEnabled ??
+		((pluginId: string, enabled: boolean) => {
+			// eslint-disable-next-line @typescript-eslint/no-var-requires
+			const authority = require("./authority") as typeof import("./authority")
+			return authority.setPluginEnabled(pluginId, enabled)
+		})
+
+	registerHostTool(CLAUDE_PLUGIN_ID, "plugin.firefly.built-in.surface.claude.open", async () => {
+		await openSidePanel("claude")
+		return ok({ opened: true, tab: "claude", source: "v2-plugin-tool-dispatch" })
+	})
+
+	registerHostTool(CLAUDE_PLUGIN_ID, "plugin.firefly.built-in.surface.claude.state", async () => {
+		const sidePanel = getSidePanelState()
+		return ok({
+			tab: "claude",
+			available: sidePanel.availableTabs.includes("claude"),
+			open: sidePanel.open,
+			active: sidePanel.open && sidePanel.activeTab === "claude",
+		})
+	})
+
+	registerHostCommand(CLAUDE_PLUGIN_ID, "open-claude", async () => {
+		await openSidePanel("claude")
+		return ok({ opened: true, tab: "claude" })
+	})
+
+	registerHostCommand(CLAUDE_PLUGIN_ID, "toggle-claude", async () => {
+		const catalog = getPluginCatalog()
+		const state = catalog.capabilityStates[CLAUDE_PLUGIN_ID]
+		const currentlyEnabled = !(state?.pluginDisabled ?? false)
+		const next = setEnabled(CLAUDE_PLUGIN_ID, !currentlyEnabled)
+		return ok({ pluginId: CLAUDE_PLUGIN_ID, enabled: next.enabled })
+	})
+}
+
+// ---------------------------------------------------------------------------
+// Oracle Roster surface host handlers (firefly.built-in.surface.oracle)
+// ---------------------------------------------------------------------------
+
+export interface OracleHostDeps {
+	openSidePanel: (tab: "oracle") => Promise<void>
+	getSidePanelState: () => SidePanelStateSnapshot
+	setPluginEnabled: (pluginId: string, enabled: boolean) => { enabled: boolean }
+}
+
+const ORACLE_PLUGIN_ID = "firefly.built-in.surface.oracle"
+
+export function registerOracleHostHandlers(deps?: Partial<OracleHostDeps>): void {
+	const openSidePanel =
+		deps?.openSidePanel ??
+		(async (tab: "oracle") => {
+			const { broadcastOpenSidePanel } = await import("../palot-browser-ipc")
+			await broadcastOpenSidePanel(tab)
+		})
+	const getSidePanelState = deps?.getSidePanelState ?? defaultGetSidePanelState
+	const setEnabled =
+		deps?.setPluginEnabled ??
+		((pluginId: string, enabled: boolean) => {
+			// eslint-disable-next-line @typescript-eslint/no-var-requires
+			const authority = require("./authority") as typeof import("./authority")
+			return authority.setPluginEnabled(pluginId, enabled)
+		})
+
+	registerHostTool(ORACLE_PLUGIN_ID, "plugin.firefly.built-in.surface.oracle.open", async () => {
+		await openSidePanel("oracle")
+		return ok({ opened: true, tab: "oracle", source: "v2-plugin-tool-dispatch" })
+	})
+
+	registerHostTool(ORACLE_PLUGIN_ID, "plugin.firefly.built-in.surface.oracle.state", async () => {
+		const sidePanel = getSidePanelState()
+		return ok({
+			tab: "oracle",
+			available: sidePanel.availableTabs.includes("oracle"),
+			open: sidePanel.open,
+			active: sidePanel.open && sidePanel.activeTab === "oracle",
+		})
+	})
+
+	registerHostCommand(ORACLE_PLUGIN_ID, "open-oracle", async () => {
+		await openSidePanel("oracle")
+		return ok({ opened: true, tab: "oracle" })
+	})
+
+	registerHostCommand(ORACLE_PLUGIN_ID, "toggle-oracle", async () => {
+		const catalog = getPluginCatalog()
+		const state = catalog.capabilityStates[ORACLE_PLUGIN_ID]
+		const currentlyEnabled = !(state?.pluginDisabled ?? false)
+		const next = setEnabled(ORACLE_PLUGIN_ID, !currentlyEnabled)
+		return ok({ pluginId: ORACLE_PLUGIN_ID, enabled: next.enabled })
+	})
+}
+
+// ---------------------------------------------------------------------------
+// Voice surface host handlers (firefly.built-in.surface.voice)
+// ---------------------------------------------------------------------------
+
+export interface VoiceHostDeps {
+	openSidePanel: (tab: "voice") => Promise<void>
+	getSidePanelState: () => SidePanelStateSnapshot
+	setPluginEnabled: (pluginId: string, enabled: boolean) => { enabled: boolean }
+}
+
+const VOICE_PLUGIN_ID = "firefly.built-in.surface.voice"
+
+export function registerVoiceHostHandlers(deps?: Partial<VoiceHostDeps>): void {
+	const openSidePanel =
+		deps?.openSidePanel ??
+		(async (tab: "voice") => {
+			const { broadcastOpenSidePanel } = await import("../palot-browser-ipc")
+			await broadcastOpenSidePanel(tab)
+		})
+	const getSidePanelState = deps?.getSidePanelState ?? defaultGetSidePanelState
+	const setEnabled =
+		deps?.setPluginEnabled ??
+		((pluginId: string, enabled: boolean) => {
+			// eslint-disable-next-line @typescript-eslint/no-var-requires
+			const authority = require("./authority") as typeof import("./authority")
+			return authority.setPluginEnabled(pluginId, enabled)
+		})
+
+	registerHostTool(VOICE_PLUGIN_ID, "plugin.firefly.built-in.surface.voice.open", async () => {
+		await openSidePanel("voice")
+		return ok({ opened: true, tab: "voice", source: "v2-plugin-tool-dispatch" })
+	})
+
+	registerHostTool(VOICE_PLUGIN_ID, "plugin.firefly.built-in.surface.voice.state", async () => {
+		const sidePanel = getSidePanelState()
+		return ok({
+			tab: "voice",
+			available: sidePanel.availableTabs.includes("voice"),
+			open: sidePanel.open,
+			active: sidePanel.open && sidePanel.activeTab === "voice",
+		})
+	})
+
+	registerHostCommand(VOICE_PLUGIN_ID, "open-voice", async () => {
+		await openSidePanel("voice")
+		return ok({ opened: true, tab: "voice" })
+	})
+
+	registerHostCommand(VOICE_PLUGIN_ID, "toggle-voice", async () => {
+		const catalog = getPluginCatalog()
+		const state = catalog.capabilityStates[VOICE_PLUGIN_ID]
+		const currentlyEnabled = !(state?.pluginDisabled ?? false)
+		const next = setEnabled(VOICE_PLUGIN_ID, !currentlyEnabled)
+		return ok({ pluginId: VOICE_PLUGIN_ID, enabled: next.enabled })
+	})
+}
+
+// ---------------------------------------------------------------------------
 // DevMux Toolbar host handlers (firefly.built-in.devmux-toolbar)
 //
 // The Node-only work lives in `main/devmux/service.ts` and is reached here
@@ -466,6 +1093,291 @@ async function devmuxLaunch(args: unknown): Promise<HostCommandResult> {
 	}
 }
 
+// ---------------------------------------------------------------------------
+// Browser surface host handlers (firefly.built-in.surface.browser)
+// ---------------------------------------------------------------------------
+
+export interface BrowserHostDeps {
+	openSidePanel: (tab: "browser") => Promise<void>
+	getSidePanelState: () => SidePanelStateSnapshot
+	setPluginEnabled: (pluginId: string, enabled: boolean) => { enabled: boolean }
+}
+
+const BROWSER_PLUGIN_ID = "firefly.built-in.surface.browser"
+
+export function registerBrowserHostHandlers(deps?: Partial<BrowserHostDeps>): void {
+	const openSidePanel =
+		deps?.openSidePanel ??
+		(async (tab: "browser") => {
+			const { broadcastOpenSidePanel } = await import("../palot-browser-ipc")
+			await broadcastOpenSidePanel(tab)
+		})
+	const getSidePanelState = deps?.getSidePanelState ?? defaultGetSidePanelState
+	const setEnabled =
+		deps?.setPluginEnabled ??
+		((pluginId: string, enabled: boolean) => {
+			// eslint-disable-next-line @typescript-eslint/no-var-requires
+			const authority = require("./authority") as typeof import("./authority")
+			return authority.setPluginEnabled(pluginId, enabled)
+		})
+
+	registerHostTool(BROWSER_PLUGIN_ID, "plugin.firefly.built-in.surface.browser.open", async () => {
+		await openSidePanel("browser")
+		return ok({ opened: true, tab: "browser", source: "v2-plugin-tool-dispatch" })
+	})
+
+	registerHostTool(BROWSER_PLUGIN_ID, "plugin.firefly.built-in.surface.browser.state", async () => {
+		const sidePanel = getSidePanelState()
+		return ok({
+			tab: "browser",
+			available: sidePanel.availableTabs.includes("browser"),
+			open: sidePanel.open,
+			active: sidePanel.open && sidePanel.activeTab === "browser",
+		})
+	})
+
+	registerHostCommand(BROWSER_PLUGIN_ID, "open-browser", async () => {
+		await openSidePanel("browser")
+		return ok({ opened: true, tab: "browser" })
+	})
+
+	registerHostCommand(BROWSER_PLUGIN_ID, "toggle-browser", async () => {
+		const catalog = getPluginCatalog()
+		const state = catalog.capabilityStates[BROWSER_PLUGIN_ID]
+		const currentlyEnabled = !(state?.pluginDisabled ?? false)
+		const next = setEnabled(BROWSER_PLUGIN_ID, !currentlyEnabled)
+		return ok({ pluginId: BROWSER_PLUGIN_ID, enabled: next.enabled })
+	})
+}
+
+// ---------------------------------------------------------------------------
+// Studio / Office surface host handlers (firefly.built-in.surface.studio)
+// ---------------------------------------------------------------------------
+
+export interface StudioHostDeps {
+	openSidePanel: (tab: "studio") => Promise<void>
+	getSidePanelState: () => SidePanelStateSnapshot
+	setPluginEnabled: (pluginId: string, enabled: boolean) => { enabled: boolean }
+}
+
+const STUDIO_PLUGIN_ID = "firefly.built-in.surface.studio"
+
+export function registerStudioHostHandlers(deps?: Partial<StudioHostDeps>): void {
+	const openSidePanel =
+		deps?.openSidePanel ??
+		(async (tab: "studio") => {
+			const { broadcastOpenSidePanel } = await import("../palot-browser-ipc")
+			await broadcastOpenSidePanel(tab)
+		})
+	const getSidePanelState = deps?.getSidePanelState ?? defaultGetSidePanelState
+	const setEnabled =
+		deps?.setPluginEnabled ??
+		((pluginId: string, enabled: boolean) => {
+			// eslint-disable-next-line @typescript-eslint/no-var-requires
+			const authority = require("./authority") as typeof import("./authority")
+			return authority.setPluginEnabled(pluginId, enabled)
+		})
+
+	registerHostTool(STUDIO_PLUGIN_ID, "plugin.firefly.built-in.surface.studio.open", async () => {
+		await openSidePanel("studio")
+		return ok({ opened: true, tab: "studio", source: "v2-plugin-tool-dispatch" })
+	})
+
+	registerHostTool(STUDIO_PLUGIN_ID, "plugin.firefly.built-in.surface.studio.state", async () => {
+		const sidePanel = getSidePanelState()
+		return ok({
+			tab: "studio",
+			available: sidePanel.availableTabs.includes("studio"),
+			open: sidePanel.open,
+			active: sidePanel.open && sidePanel.activeTab === "studio",
+		})
+	})
+
+	registerHostCommand(STUDIO_PLUGIN_ID, "open-studio", async () => {
+		await openSidePanel("studio")
+		return ok({ opened: true, tab: "studio" })
+	})
+
+	registerHostCommand(STUDIO_PLUGIN_ID, "toggle-studio", async () => {
+		const catalog = getPluginCatalog()
+		const state = catalog.capabilityStates[STUDIO_PLUGIN_ID]
+		const currentlyEnabled = !(state?.pluginDisabled ?? false)
+		const next = setEnabled(STUDIO_PLUGIN_ID, !currentlyEnabled)
+		return ok({ pluginId: STUDIO_PLUGIN_ID, enabled: next.enabled })
+	})
+}
+
+// ---------------------------------------------------------------------------
+// CH5PM Dashboard surface host handlers (firefly.built-in.surface.ch5pm)
+// ---------------------------------------------------------------------------
+
+export interface Ch5pmHostDeps {
+	openSidePanel: (tab: "ch5pm") => Promise<void>
+	getSidePanelState: () => SidePanelStateSnapshot
+	setPluginEnabled: (pluginId: string, enabled: boolean) => { enabled: boolean }
+}
+
+const CH5PM_PLUGIN_ID = "firefly.built-in.surface.ch5pm"
+
+export function registerCh5pmHostHandlers(deps?: Partial<Ch5pmHostDeps>): void {
+	const openSidePanel =
+		deps?.openSidePanel ??
+		(async (tab: "ch5pm") => {
+			const { broadcastOpenSidePanel } = await import("../palot-browser-ipc")
+			await broadcastOpenSidePanel(tab)
+		})
+	const getSidePanelState = deps?.getSidePanelState ?? defaultGetSidePanelState
+	const setEnabled =
+		deps?.setPluginEnabled ??
+		((pluginId: string, enabled: boolean) => {
+			// eslint-disable-next-line @typescript-eslint/no-var-requires
+			const authority = require("./authority") as typeof import("./authority")
+			return authority.setPluginEnabled(pluginId, enabled)
+		})
+
+	registerHostTool(CH5PM_PLUGIN_ID, "plugin.firefly.built-in.surface.ch5pm.open", async () => {
+		await openSidePanel("ch5pm")
+		return ok({ opened: true, tab: "ch5pm", source: "v2-plugin-tool-dispatch" })
+	})
+
+	registerHostTool(CH5PM_PLUGIN_ID, "plugin.firefly.built-in.surface.ch5pm.state", async () => {
+		const sidePanel = getSidePanelState()
+		return ok({
+			tab: "ch5pm",
+			available: sidePanel.availableTabs.includes("ch5pm"),
+			open: sidePanel.open,
+			active: sidePanel.open && sidePanel.activeTab === "ch5pm",
+		})
+	})
+
+	registerHostCommand(CH5PM_PLUGIN_ID, "open-ch5pm", async () => {
+		await openSidePanel("ch5pm")
+		return ok({ opened: true, tab: "ch5pm" })
+	})
+
+	registerHostCommand(CH5PM_PLUGIN_ID, "toggle-ch5pm", async () => {
+		const catalog = getPluginCatalog()
+		const state = catalog.capabilityStates[CH5PM_PLUGIN_ID]
+		const currentlyEnabled = !(state?.pluginDisabled ?? false)
+		const next = setEnabled(CH5PM_PLUGIN_ID, !currentlyEnabled)
+		return ok({ pluginId: CH5PM_PLUGIN_ID, enabled: next.enabled })
+	})
+}
+
+// ---------------------------------------------------------------------------
+// PDF Review surface host handlers (firefly.built-in.surface.pdf-review)
+// ---------------------------------------------------------------------------
+
+export interface PdfReviewHostDeps {
+	openSidePanel: (tab: "pdf-review") => Promise<void>
+	getSidePanelState: () => SidePanelStateSnapshot
+	setPluginEnabled: (pluginId: string, enabled: boolean) => { enabled: boolean }
+}
+
+const PDF_REVIEW_PLUGIN_ID = "firefly.built-in.surface.pdf-review"
+
+export function registerPdfReviewHostHandlers(deps?: Partial<PdfReviewHostDeps>): void {
+	const openSidePanel =
+		deps?.openSidePanel ??
+		(async (tab: "pdf-review") => {
+			const { broadcastOpenSidePanel } = await import("../palot-browser-ipc")
+			await broadcastOpenSidePanel(tab)
+		})
+	const getSidePanelState = deps?.getSidePanelState ?? defaultGetSidePanelState
+	const setEnabled =
+		deps?.setPluginEnabled ??
+		((pluginId: string, enabled: boolean) => {
+			// eslint-disable-next-line @typescript-eslint/no-var-requires
+			const authority = require("./authority") as typeof import("./authority")
+			return authority.setPluginEnabled(pluginId, enabled)
+		})
+
+	registerHostTool(PDF_REVIEW_PLUGIN_ID, "plugin.firefly.built-in.surface.pdf-review.open", async () => {
+		await openSidePanel("pdf-review")
+		return ok({ opened: true, tab: "pdf-review", source: "v2-plugin-tool-dispatch" })
+	})
+
+	registerHostTool(PDF_REVIEW_PLUGIN_ID, "plugin.firefly.built-in.surface.pdf-review.state", async () => {
+		const sidePanel = getSidePanelState()
+		return ok({
+			tab: "pdf-review",
+			available: sidePanel.availableTabs.includes("pdf-review"),
+			open: sidePanel.open,
+			active: sidePanel.open && sidePanel.activeTab === "pdf-review",
+		})
+	})
+
+	registerHostCommand(PDF_REVIEW_PLUGIN_ID, "open-pdf-review", async () => {
+		await openSidePanel("pdf-review")
+		return ok({ opened: true, tab: "pdf-review" })
+	})
+
+	registerHostCommand(PDF_REVIEW_PLUGIN_ID, "toggle-pdf-review", async () => {
+		const catalog = getPluginCatalog()
+		const state = catalog.capabilityStates[PDF_REVIEW_PLUGIN_ID]
+		const currentlyEnabled = !(state?.pluginDisabled ?? false)
+		const next = setEnabled(PDF_REVIEW_PLUGIN_ID, !currentlyEnabled)
+		return ok({ pluginId: PDF_REVIEW_PLUGIN_ID, enabled: next.enabled })
+	})
+}
+
+// ---------------------------------------------------------------------------
+// CRM surface host handlers (firefly.built-in.surface.crm)
+// ---------------------------------------------------------------------------
+
+export interface CrmHostDeps {
+	openSidePanel: (tab: "crm") => Promise<void>
+	getSidePanelState: () => SidePanelStateSnapshot
+	setPluginEnabled: (pluginId: string, enabled: boolean) => { enabled: boolean }
+}
+
+const CRM_PLUGIN_ID = "firefly.built-in.surface.crm"
+
+export function registerCrmHostHandlers(deps?: Partial<CrmHostDeps>): void {
+	const openSidePanel =
+		deps?.openSidePanel ??
+		(async (tab: "crm") => {
+			const { broadcastOpenSidePanel } = await import("../palot-browser-ipc")
+			await broadcastOpenSidePanel(tab)
+		})
+	const getSidePanelState = deps?.getSidePanelState ?? defaultGetSidePanelState
+	const setEnabled =
+		deps?.setPluginEnabled ??
+		((pluginId: string, enabled: boolean) => {
+			// eslint-disable-next-line @typescript-eslint/no-var-requires
+			const authority = require("./authority") as typeof import("./authority")
+			return authority.setPluginEnabled(pluginId, enabled)
+		})
+
+	registerHostTool(CRM_PLUGIN_ID, "plugin.firefly.built-in.surface.crm.open", async () => {
+		await openSidePanel("crm")
+		return ok({ opened: true, tab: "crm", source: "v2-plugin-tool-dispatch" })
+	})
+
+	registerHostTool(CRM_PLUGIN_ID, "plugin.firefly.built-in.surface.crm.state", async () => {
+		const sidePanel = getSidePanelState()
+		return ok({
+			tab: "crm",
+			available: sidePanel.availableTabs.includes("crm"),
+			open: sidePanel.open,
+			active: sidePanel.open && sidePanel.activeTab === "crm",
+		})
+	})
+
+	registerHostCommand(CRM_PLUGIN_ID, "open-crm", async () => {
+		await openSidePanel("crm")
+		return ok({ opened: true, tab: "crm" })
+	})
+
+	registerHostCommand(CRM_PLUGIN_ID, "toggle-crm", async () => {
+		const catalog = getPluginCatalog()
+		const state = catalog.capabilityStates[CRM_PLUGIN_ID]
+		const currentlyEnabled = !(state?.pluginDisabled ?? false)
+		const next = setEnabled(CRM_PLUGIN_ID, !currentlyEnabled)
+		return ok({ pluginId: CRM_PLUGIN_ID, enabled: next.enabled })
+	})
+}
+
 export function registerDevmuxHostHandlers(): void {
 	// UI commands (renderer-invoked via firefly-plugin:invoke).
 	registerHostCommand(DEVMUX_TOOLBAR_PLUGIN_ID, "devmux-list", ({ args }) => devmuxList(args))
@@ -502,7 +1414,23 @@ export function registerBuiltInHostCommands(): void {
 	registerHostCommand("firefly.built-in.palot-bridge", "palot-ui-state", invokePalotUiState)
 	registerHostCommand("acme.acme-notebook", "acme-notebook-open", invokeAcmeNotebookOpen)
 	registerHostCommand("acme.acme-notebook", "acme-notebook-clear", invokeAcmeNotebookClear)
+	registerBrowserHostHandlers()
 	registerNotesHostHandlers()
+	registerReviewHostHandlers()
+	registerFilesHostHandlers()
+	registerArtifactsHostHandlers()
+	registerBridgesHostHandlers()
+	registerPulseHostHandlers()
+	registerMemoryHostHandlers()
+	registerEditorHostHandlers()
+	registerTerminalHostHandlers()
+	registerClaudeHostHandlers()
+	registerOracleHostHandlers()
+	registerVoiceHostHandlers()
+	registerStudioHostHandlers()
+	registerCh5pmHostHandlers()
+	registerPdfReviewHostHandlers()
+	registerCrmHostHandlers()
 	registerDevmuxHostHandlers()
 	log.info("Registered V2 host command handlers", {
 		commands: Array.from(handlers.keys()),

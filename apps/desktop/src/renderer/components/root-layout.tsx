@@ -20,6 +20,8 @@ import { useServerSettingsSync } from "../hooks/use-servers"
 import { useSystemAccentColor } from "../hooks/use-system-accent-color"
 import { useThemeEffect } from "../hooks/use-theme"
 import { useWaitingIndicator } from "../hooks/use-waiting-indicator"
+import { HiddenSurfaceHostLayer } from "../surface-host/host-layer"
+import { SurfaceHostProvider } from "../surface-host/surface-host-provider"
 import { AppBarProvider } from "./app-bar-context"
 import { CommandPalette } from "./command-palette"
 import { OnboardingOverlay } from "./onboarding/onboarding-overlay"
@@ -182,24 +184,28 @@ export function RootLayout() {
 	const contentReady = phase === "ready" || phase === "loading-sessions" || phase === "error"
 
 	return (
-		<TooltipProvider>
-			<AppBarProvider>
-				<SidebarSlotProvider>
-					<div
-						className={`transition-opacity duration-300 ${contentReady ? "opacity-100" : "opacity-0"}`}
-					>
-						<Outlet />
-						<CommandPalette
-							open={commandPaletteOpen}
-							onOpenChange={setCommandPaletteOpen}
-							agents={agents}
-							onForkSession={activeAgent ? handleForkSession : undefined}
-						/>
-						<Toaster position="bottom-right" />
-					</div>
-					<StartupOverlay />
-				</SidebarSlotProvider>
-			</AppBarProvider>
-		</TooltipProvider>
+		<SurfaceHostProvider>
+			<TooltipProvider>
+				<AppBarProvider>
+					<SidebarSlotProvider>
+						<div
+							className={`transition-opacity duration-300 ${contentReady ? "opacity-100" : "opacity-0"}`}
+						>
+							<Outlet />
+							<CommandPalette
+								open={commandPaletteOpen}
+								onOpenChange={setCommandPaletteOpen}
+								agents={agents}
+								onForkSession={activeAgent ? handleForkSession : undefined}
+							/>
+							<Toaster position="bottom-right" />
+						</div>
+						<StartupOverlay />
+					</SidebarSlotProvider>
+				</AppBarProvider>
+			</TooltipProvider>
+			{/* Long-lived hidden hosts for all surfaces — persist regardless of dock on/off. */}
+			<HiddenSurfaceHostLayer />
+		</SurfaceHostProvider>
 	)
 }

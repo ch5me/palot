@@ -19,7 +19,7 @@ export {
 export * from "./hot-reload"
 export * from "./runtime-supervision"
 export * from "./palot-bridge-manifest"
-export * from "./memory-surface-manifest"
+// memory-surface-manifest removed — memory surface is a full plugin at plugins/memory/; shim deleted 2026-06-16.
 export * from "./api-versioning"
 export * from "./bridge-projection"
 export * from "./component-zod"

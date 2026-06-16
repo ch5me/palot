@@ -22,7 +22,7 @@ import { Component, lazy, Suspense, useMemo, type ComponentType, type ErrorInfo,
  * sandbox policy task).
  */
 
-import { BookTextIcon, PlugIcon, type LucideIcon } from "lucide-react"
+import { ActivityIcon, BookTextIcon, BoxesIcon, DatabaseIcon, FileDiffIcon, FilesIcon, FileTextIcon, GlobeIcon, MicIcon, MonitorPlayIcon, PlugIcon, RectangleEllipsisIcon, Share2Icon, SquarePenIcon, TerminalSquareIcon, UsersIcon, WandSparklesIcon, type LucideIcon } from "lucide-react"
 import { Button } from "@ch5me/ch5-ui-web"
 import { useQuery, useQueryClient } from "@tanstack/react-query"
 import type { ProjectedSidePanel } from "../shared/firefly-plugin/renderer-projection"
@@ -31,6 +31,7 @@ import {
 	catalogPanelToTabDescriptor,
 	type CatalogSurfaceTabDescriptor,
 } from "./firefly-plugin-surface-merge"
+import { fireflyPluginBridge } from "./hooks/use-firefly-plugins"
 import { createLogger } from "./lib/logger"
 import type { Agent } from "./lib/types"
 
@@ -48,12 +49,43 @@ export interface PluginPanelProps {
 export const PLUGIN_PANEL_COMPONENTS: Readonly<
 	Record<string, LazyExoticComponent<ComponentType<PluginPanelProps>>>
 > = {
+	"firefly.built-in.surface.browser.browser": lazy(() => import("../../plugins/browser/panel/browser-panel")),
 	"firefly.built-in.surface.notes.notes": lazy(() => import("../../plugins/notes/panel/notes-panel")),
+	"firefly.built-in.surface.review.review": lazy(() => import("../../plugins/review/panel/review-panel")),
+	"firefly.built-in.surface.files.files": lazy(() => import("../../plugins/files/panel/files-panel")),
+	"firefly.built-in.surface.artifacts.artifacts": lazy(() => import("../../plugins/artifacts/panel/artifacts-panel")),
+	"firefly.built-in.surface.bridges.bridges": lazy(() => import("../../plugins/bridges/panel/bridges-panel")),
+	"firefly.built-in.surface.pulse.pulse": lazy(() => import("../../plugins/pulse/panel/pulse-panel")),
+	"firefly.built-in.surface.memory.memory": lazy(() => import("../../plugins/memory/panel/memory-panel")),
+	"firefly.built-in.surface.editor.editor": lazy(() => import("../../plugins/editor/panel/editor-panel")),
+	"firefly.built-in.surface.terminal.terminal": lazy(() => import("../../plugins/terminal/panel/terminal-panel")),
+	"firefly.built-in.surface.claude.claude": lazy(() => import("../../plugins/claude/panel/claude-panel")),
+	"firefly.built-in.surface.oracle.oracle": lazy(() => import("../../plugins/oracle/panel/oracle-panel")),
+	"firefly.built-in.surface.voice.voice": lazy(() => import("../../plugins/voice/panel/voice-panel")),
+	"firefly.built-in.surface.studio.studio": lazy(() => import("../../plugins/studio/panel/studio-panel")),
+	"firefly.built-in.surface.ch5pm.ch5pm": lazy(() => import("../../plugins/ch5pm/panel/ch5pm-panel")),
+	"firefly.built-in.surface.pdf-review.pdf-review": lazy(() => import("../../plugins/pdf-review/panel/pdf-review-panel")),
+	"firefly.built-in.surface.crm.crm": lazy(() => import("../../plugins/crm/panel/crm-panel")),
 }
 
 /** Manifest icon-name → Lucide component. Extend per migrated surface. */
 const PANEL_ICONS: Readonly<Record<string, LucideIcon>> = {
+	"activity": ActivityIcon,
+	"globe": GlobeIcon,
 	"book-text": BookTextIcon,
+	"boxes": BoxesIcon,
+	"database": DatabaseIcon,
+	"file-diff": FileDiffIcon,
+	"files": FilesIcon,
+	"share-2": Share2Icon,
+	"square-pen": SquarePenIcon,
+	"terminal-square": TerminalSquareIcon,
+	"rectangle-ellipsis": RectangleEllipsisIcon,
+	"wand-sparkles": WandSparklesIcon,
+	"mic": MicIcon,
+	"monitor-play": MonitorPlayIcon,
+	"file-text": FileTextIcon,
+	"users": UsersIcon,
 }
 
 function panelIcon(iconName: string | null): LucideIcon {
@@ -152,9 +184,13 @@ export class PluginPanelBoundary extends Component<
 // ---------------------------------------------------------------------------
 
 async function fetchCatalogPanels(): Promise<ProjectedSidePanel[]> {
-	if (typeof window === "undefined" || !window.elf?.plugins) return []
-	const result = await window.elf.plugins.panels()
-	return result.items as ProjectedSidePanel[]
+	if (typeof window === "undefined") return []
+	const result = await fireflyPluginBridge().panels()
+	// FireflyPluginPanelItem is the IPC-serialized mirror of ProjectedSidePanel —
+	// identical runtime data minus the host-only `family`/`contract` fields (unused
+	// downstream). The bridge interface types items as the IPC shape; cross-cast to
+	// the projection shape the consumers expect.
+	return result.items as unknown as ProjectedSidePanel[]
 }
 
 export function buildCatalogSurfaceTab(
@@ -223,8 +259,8 @@ export function useCatalogSurfaceTabs(agent: Agent | null): FireflySidePanelTab[
 	})
 
 	useEffect(() => {
-		if (typeof window === "undefined" || !window.elf?.plugins) return
-		return window.elf.plugins.onChanged(() => {
+		if (typeof window === "undefined") return
+		return fireflyPluginBridge().onChanged(() => {
 			void queryClient.invalidateQueries({ queryKey: ["firefly-plugin"] })
 		})
 	}, [queryClient])

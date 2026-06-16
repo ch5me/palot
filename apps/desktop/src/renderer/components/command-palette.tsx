@@ -11,6 +11,7 @@ import {
 import { useNavigate, useParams } from "@tanstack/react-router"
 import { useAtom, useAtomValue, useSetAtom } from "jotai"
 import {
+	ActivityIcon,
 	BlocksIcon,
 	BotIcon,
 	BookTextIcon,
@@ -34,6 +35,7 @@ import {
 	PlugIcon,
 	RectangleEllipsisIcon,
 	Share2Icon,
+	SquarePenIcon,
 	TerminalSquareIcon,
 	UsersIcon,
 	MoonIcon,
@@ -54,36 +56,23 @@ import { invokePluginCommand, useFireflyPlugins } from "../hooks/use-firefly-plu
 import { useQueryClient } from "@tanstack/react-query"
 import {
 	automationsEnabledAtom,
-	browserPanelEnabledAtom,
-	bridgesSurfaceEnabledAtom,
-	ch5pmSurfaceEnabledAtom,
-	claudeSurfaceEnabledAtom,
-	crmSurfaceEnabledAtom,
-	editorSurfaceEnabledAtom,
-	filesSurfaceEnabledAtom,
-	memorySurfaceEnabledAtom,
+	// browserPanelEnabledAtom removed — browser is catalog-served (firefly.built-in.surface.browser).
+	// ch5pmSurfaceEnabledAtom removed — ch5pm is catalog-served (firefly.built-in.surface.ch5pm).
+	// claudeSurfaceEnabledAtom removed — claude is catalog-served (firefly.built-in.surface.claude).
+	// crmSurfaceEnabledAtom removed — crm is catalog-served (firefly.built-in.surface.crm).
 	pluginsSurfaceEnabledAtom,
-	pdfReviewSurfaceEnabledAtom,
-	pulseSurfaceEnabledAtom,
-	reviewSurfaceEnabledAtom,
-	studioSurfaceEnabledAtom,
-	terminalSurfaceEnabledAtom,
-	voiceSurfaceEnabledAtom,
+	// pdfReviewSurfaceEnabledAtom removed — pdf-review is catalog-served (firefly.built-in.surface.pdf-review).
+	// studioSurfaceEnabledAtom removed — studio is catalog-served (firefly.built-in.surface.studio).
+	// voiceSurfaceEnabledAtom removed — voice is catalog-served (firefly.built-in.surface.voice).
 	toggleAutomationsAtom,
-	toggleBridgesSurfaceAtom,
-	toggleBrowserPanelAtom,
-	toggleCh5PmSurfaceAtom,
-	toggleClaudeSurfaceAtom,
-	toggleCrmSurfaceAtom,
-	toggleFilesSurfaceAtom,
-	toggleMemorySurfaceAtom,
-	togglePdfReviewSurfaceAtom,
+	// toggleBrowserPanelAtom removed — browser is catalog-served; toggle via window.elf.plugins.setEnabled.
+	// toggleCh5PmSurfaceAtom removed — ch5pm is catalog-served; toggle via window.elf.plugins.setEnabled.
+	// toggleClaudeSurfaceAtom removed — claude is catalog-served; toggle via window.elf.plugins.setEnabled.
+	// toggleCrmSurfaceAtom removed — crm is catalog-served; toggle via window.elf.plugins.setEnabled.
+	// togglePdfReviewSurfaceAtom removed — pdf-review is catalog-served; toggle via window.elf.plugins.setEnabled.
 	togglePluginsSurfaceAtom,
-	togglePulseSurfaceAtom,
-	toggleReviewSurfaceAtom,
-	toggleStudioSurfaceAtom,
-	toggleTerminalSurfaceAtom,
-	toggleVoiceSurfaceAtom,
+	// toggleStudioSurfaceAtom removed — studio is catalog-served; toggle via window.elf.plugins.setEnabled.
+	// toggleVoiceSurfaceAtom removed — voice is catalog-served; toggle via window.elf.plugins.setEnabled.
 } from "../atoms/feature-flags"
 import { getFireflySurfaceTabs, type FireflySurfaceContext } from "../firefly-surface-registry"
 import { mergeSurfaceTabs } from "../firefly-plugin-surface-merge"
@@ -145,35 +134,22 @@ export function CommandPalette({ open, onOpenChange, agents, onForkSession }: Co
 	const toggleDevSurface = useSetAtom(toggleDevSurfaceAtom)
 	const automationsEnabled = useAtomValue(automationsEnabledAtom)
 	const toggleAutomations = useSetAtom(toggleAutomationsAtom)
-	const browserPanelEnabled = useAtomValue(browserPanelEnabledAtom)
-	const reviewSurfaceEnabled = useAtomValue(reviewSurfaceEnabledAtom)
-	const pulseSurfaceEnabled = useAtomValue(pulseSurfaceEnabledAtom)
-	const memorySurfaceEnabled = useAtomValue(memorySurfaceEnabledAtom)
-	const filesSurfaceEnabled = useAtomValue(filesSurfaceEnabledAtom)
-	const terminalSurfaceEnabled = useAtomValue(terminalSurfaceEnabledAtom)
-	const editorSurfaceEnabled = useAtomValue(editorSurfaceEnabledAtom)
+	// browserPanelEnabled removed — browser is catalog-served (firefly.built-in.surface.browser).
+	// terminalSurfaceEnabled removed — terminal is catalog-served (firefly.built-in.surface.terminal).
+	// claudeSurfaceEnabled removed — claude is catalog-served (firefly.built-in.surface.claude).
+	// voiceSurfaceEnabled removed — voice is catalog-served (firefly.built-in.surface.voice).
+	// studioSurfaceEnabled removed — studio is catalog-served (firefly.built-in.surface.studio).
+	// ch5pmSurfaceEnabled removed — ch5pm is catalog-served (firefly.built-in.surface.ch5pm).
 	const pluginsSurfaceEnabled = useAtomValue(pluginsSurfaceEnabledAtom)
-	const bridgesSurfaceEnabled = useAtomValue(bridgesSurfaceEnabledAtom)
-	const crmSurfaceEnabled = useAtomValue(crmSurfaceEnabledAtom)
-	const studioSurfaceEnabled = useAtomValue(studioSurfaceEnabledAtom)
-	const voiceSurfaceEnabled = useAtomValue(voiceSurfaceEnabledAtom)
-	const claudeSurfaceEnabled = useAtomValue(claudeSurfaceEnabledAtom)
-	const ch5pmSurfaceEnabled = useAtomValue(ch5pmSurfaceEnabledAtom)
-	const pdfReviewSurfaceEnabled = useAtomValue(pdfReviewSurfaceEnabledAtom)
-	const toggleBrowserPanel = useSetAtom(toggleBrowserPanelAtom)
-	const toggleReviewSurface = useSetAtom(toggleReviewSurfaceAtom)
-	const togglePulseSurface = useSetAtom(togglePulseSurfaceAtom)
-	const toggleMemorySurface = useSetAtom(toggleMemorySurfaceAtom)
-	const toggleFilesSurface = useSetAtom(toggleFilesSurfaceAtom)
+	// crmSurfaceEnabled removed — crm is catalog-served (firefly.built-in.surface.crm).
+	// pdfReviewSurfaceEnabled removed — pdf-review is catalog-served (firefly.built-in.surface.pdf-review).
+	// toggleBrowserPanel removed — browser is catalog-served; toggle via browserPluginEnabled + window.elf.plugins.setEnabled.
 	const togglePluginsSurface = useSetAtom(togglePluginsSurfaceAtom)
-	const toggleBridgesSurface = useSetAtom(toggleBridgesSurfaceAtom)
-	const toggleCrmSurface = useSetAtom(toggleCrmSurfaceAtom)
-	const toggleStudioSurface = useSetAtom(toggleStudioSurfaceAtom)
-	const toggleVoiceSurface = useSetAtom(toggleVoiceSurfaceAtom)
-	const toggleClaudeSurface = useSetAtom(toggleClaudeSurfaceAtom)
-	const toggleCh5PmSurface = useSetAtom(toggleCh5PmSurfaceAtom)
-	const togglePdfReviewSurface = useSetAtom(togglePdfReviewSurfaceAtom)
-	const toggleTerminalSurface = useSetAtom(toggleTerminalSurfaceAtom)
+	// toggleCrmSurface removed — crm is catalog-served; toggle via crmPluginEnabled + window.elf.plugins.setEnabled.
+	// toggleStudioSurface removed — studio is catalog-served; toggle via studioPluginEnabled + window.elf.plugins.setEnabled.
+	// toggleVoiceSurface removed — voice is catalog-served; toggle via voicePluginEnabled + window.elf.plugins.setEnabled.
+	// toggleCh5PmSurface removed — ch5pm is catalog-served; toggle via ch5pmPluginEnabled + window.elf.plugins.setEnabled.
+	// togglePdfReviewSurface removed — pdf-review is catalog-served; toggle via pdfReviewPluginEnabled + window.elf.plugins.setEnabled.
 	const navSidebarActiveTab = useAtomValue(navSidebarActiveTabAtom)
 	const openSidePanelTab = useSetAtom(openSidePanelTabAtom)
 	const [sidePanelOpen, setSidePanelOpen] = useAtom(sidePanelOpenAtom)
@@ -240,48 +216,36 @@ export function CommandPalette({ open, onOpenChange, agents, onForkSession }: Co
 				fileCount: 1,
 			},
 			flags: {
-				browserPanelEnabled,
-				review: reviewSurfaceEnabled,
-				pulse: pulseSurfaceEnabled,
-				memory: memorySurfaceEnabled,
-				files: filesSurfaceEnabled,
-				terminal: terminalSurfaceEnabled,
-				editor: editorSurfaceEnabled,
 				plugins: pluginsSurfaceEnabled,
-				bridges: bridgesSurfaceEnabled,
-				crm: crmSurfaceEnabled,
-				studio: studioSurfaceEnabled,
-				voice: voiceSurfaceEnabled,
-				claude: claudeSurfaceEnabled,
-				ch5pm: ch5pmSurfaceEnabled,
-				pdfReview: pdfReviewSurfaceEnabled,
+				// crm removed — crm is catalog-served (firefly.built-in.surface.crm).
+				// ch5pm removed — ch5pm is catalog-served (firefly.built-in.surface.ch5pm).
+				// pdfReview removed — pdf-review is catalog-served (firefly.built-in.surface.pdf-review).
 			},
 			chatTurnCount: 1,
 		}
 	}, [
 		activeAgent,
-		browserPanelEnabled,
-		reviewSurfaceEnabled,
-		pulseSurfaceEnabled,
-		memorySurfaceEnabled,
-		filesSurfaceEnabled,
-		terminalSurfaceEnabled,
-		editorSurfaceEnabled,
 		pluginsSurfaceEnabled,
-		bridgesSurfaceEnabled,
-		crmSurfaceEnabled,
-		studioSurfaceEnabled,
-			voiceSurfaceEnabled,
-			claudeSurfaceEnabled,
-			ch5pmSurfaceEnabled,
-			pdfReviewSurfaceEnabled,
-		])
+	])
 
 
-	// Notes is a catalog-served plugin: its enable/disable flows through
+	// Browser is a catalog-served plugin: its enable/disable flows through
 	// the host plugin lifecycle, not a renderer feature-flag atom.
 	const queryClient = useQueryClient()
 	const { data: pluginList } = useFireflyPlugins()
+	const browserPluginEntry = pluginList?.plugins.find(
+		(plugin) => plugin.pluginId === "firefly.built-in.surface.browser",
+	)
+	const browserPluginEnabled = browserPluginEntry
+		? browserPluginEntry.status !== "disabled" && browserPluginEntry.status !== "quarantined"
+		: true
+	const toggleBrowserPlugin = useCallback(async () => {
+		await window.elf?.plugins.setEnabled("firefly.built-in.surface.browser", !browserPluginEnabled)
+		await queryClient.invalidateQueries({ queryKey: ["firefly-plugin"] })
+	}, [browserPluginEnabled, queryClient])
+
+	// Notes is a catalog-served plugin: its enable/disable flows through
+	// the host plugin lifecycle, not a renderer feature-flag atom.
 	const notesPluginEntry = pluginList?.plugins.find(
 		(plugin) => plugin.pluginId === "firefly.built-in.surface.notes",
 	)
@@ -292,6 +256,175 @@ export function CommandPalette({ open, onOpenChange, agents, onForkSession }: Co
 		await window.elf?.plugins.setEnabled("firefly.built-in.surface.notes", !notesPluginEnabled)
 		await queryClient.invalidateQueries({ queryKey: ["firefly-plugin"] })
 	}, [notesPluginEnabled, queryClient])
+
+	// Review is a catalog-served plugin: its enable/disable flows through
+	// the host plugin lifecycle, not a renderer feature-flag atom.
+	const reviewPluginEntry = pluginList?.plugins.find(
+		(plugin) => plugin.pluginId === "firefly.built-in.surface.review",
+	)
+	const reviewPluginEnabled = reviewPluginEntry
+		? reviewPluginEntry.status !== "disabled" && reviewPluginEntry.status !== "quarantined"
+		: true
+	const toggleReviewPlugin = useCallback(async () => {
+		await window.elf?.plugins.setEnabled("firefly.built-in.surface.review", !reviewPluginEnabled)
+		await queryClient.invalidateQueries({ queryKey: ["firefly-plugin"] })
+	}, [reviewPluginEnabled, queryClient])
+
+	// Files is a catalog-served plugin: its enable/disable flows through
+	// the host plugin lifecycle, not a renderer feature-flag atom.
+	const filesPluginEntry = pluginList?.plugins.find(
+		(plugin) => plugin.pluginId === "firefly.built-in.surface.files",
+	)
+	const filesPluginEnabled = filesPluginEntry
+		? filesPluginEntry.status !== "disabled" && filesPluginEntry.status !== "quarantined"
+		: true
+	const toggleFilesPlugin = useCallback(async () => {
+		await window.elf?.plugins.setEnabled("firefly.built-in.surface.files", !filesPluginEnabled)
+		await queryClient.invalidateQueries({ queryKey: ["firefly-plugin"] })
+	}, [filesPluginEnabled, queryClient])
+
+	// Bridges is a catalog-served plugin: its enable/disable flows through
+	// the host plugin lifecycle, not a renderer feature-flag atom.
+	const bridgesPluginEntry = pluginList?.plugins.find(
+		(plugin) => plugin.pluginId === "firefly.built-in.surface.bridges",
+	)
+	const bridgesPluginEnabled = bridgesPluginEntry
+		? bridgesPluginEntry.status !== "disabled" && bridgesPluginEntry.status !== "quarantined"
+		: true
+	const toggleBridgesPlugin = useCallback(async () => {
+		await window.elf?.plugins.setEnabled("firefly.built-in.surface.bridges", !bridgesPluginEnabled)
+		await queryClient.invalidateQueries({ queryKey: ["firefly-plugin"] })
+	}, [bridgesPluginEnabled, queryClient])
+
+	// Pulse is a catalog-served plugin: its enable/disable flows through
+	// the host plugin lifecycle, not a renderer feature-flag atom.
+	const pulsePluginEntry = pluginList?.plugins.find(
+		(plugin) => plugin.pluginId === "firefly.built-in.surface.pulse",
+	)
+	const pulsePluginEnabled = pulsePluginEntry
+		? pulsePluginEntry.status !== "disabled" && pulsePluginEntry.status !== "quarantined"
+		: false
+	const togglePulsePlugin = useCallback(async () => {
+		await window.elf?.plugins.setEnabled("firefly.built-in.surface.pulse", !pulsePluginEnabled)
+		await queryClient.invalidateQueries({ queryKey: ["firefly-plugin"] })
+	}, [pulsePluginEnabled, queryClient])
+
+	// Memory is a catalog-served plugin: its enable/disable flows through
+	// the host plugin lifecycle, not a renderer feature-flag atom.
+	const memoryPluginEntry = pluginList?.plugins.find(
+		(plugin) => plugin.pluginId === "firefly.built-in.surface.memory",
+	)
+	const memoryPluginEnabled = memoryPluginEntry
+		? memoryPluginEntry.status !== "disabled" && memoryPluginEntry.status !== "quarantined"
+		: false
+	const toggleMemoryPlugin = useCallback(async () => {
+		await window.elf?.plugins.setEnabled("firefly.built-in.surface.memory", !memoryPluginEnabled)
+		await queryClient.invalidateQueries({ queryKey: ["firefly-plugin"] })
+	}, [memoryPluginEnabled, queryClient])
+
+	// Editor is a catalog-served plugin: its enable/disable flows through
+	// the host plugin lifecycle, not a renderer feature-flag atom.
+	const editorPluginEntry = pluginList?.plugins.find(
+		(plugin) => plugin.pluginId === "firefly.built-in.surface.editor",
+	)
+	const editorPluginEnabled = editorPluginEntry
+		? editorPluginEntry.status !== "disabled" && editorPluginEntry.status !== "quarantined"
+		: true
+	const toggleEditorPlugin = useCallback(async () => {
+		await window.elf?.plugins.setEnabled("firefly.built-in.surface.editor", !editorPluginEnabled)
+		await queryClient.invalidateQueries({ queryKey: ["firefly-plugin"] })
+	}, [editorPluginEnabled, queryClient])
+
+	// Terminal is a catalog-served plugin: its enable/disable flows through
+	// the host plugin lifecycle, not a renderer feature-flag atom.
+	const terminalPluginEntry = pluginList?.plugins.find(
+		(plugin) => plugin.pluginId === "firefly.built-in.surface.terminal",
+	)
+	const terminalPluginEnabled = terminalPluginEntry
+		? terminalPluginEntry.status !== "disabled" && terminalPluginEntry.status !== "quarantined"
+		: true
+	const toggleTerminalPlugin = useCallback(async () => {
+		await window.elf?.plugins.setEnabled("firefly.built-in.surface.terminal", !terminalPluginEnabled)
+		await queryClient.invalidateQueries({ queryKey: ["firefly-plugin"] })
+	}, [terminalPluginEnabled, queryClient])
+
+	// Claude Code is a catalog-served plugin: its enable/disable flows through
+	// the host plugin lifecycle, not a renderer feature-flag atom.
+	const claudePluginEntry = pluginList?.plugins.find(
+		(plugin) => plugin.pluginId === "firefly.built-in.surface.claude",
+	)
+	const claudePluginEnabled = claudePluginEntry
+		? claudePluginEntry.status !== "disabled" && claudePluginEntry.status !== "quarantined"
+		: true
+	const toggleClaudePlugin = useCallback(async () => {
+		await window.elf?.plugins.setEnabled("firefly.built-in.surface.claude", !claudePluginEnabled)
+		await queryClient.invalidateQueries({ queryKey: ["firefly-plugin"] })
+	}, [claudePluginEnabled, queryClient])
+
+	// Voice is a catalog-served plugin: its enable/disable flows through
+	// the host plugin lifecycle, not a renderer feature-flag atom.
+	const voicePluginEntry = pluginList?.plugins.find(
+		(plugin) => plugin.pluginId === "firefly.built-in.surface.voice",
+	)
+	const voicePluginEnabled = voicePluginEntry
+		? voicePluginEntry.status !== "disabled" && voicePluginEntry.status !== "quarantined"
+		: true
+	const toggleVoicePlugin = useCallback(async () => {
+		await window.elf?.plugins.setEnabled("firefly.built-in.surface.voice", !voicePluginEnabled)
+		await queryClient.invalidateQueries({ queryKey: ["firefly-plugin"] })
+	}, [voicePluginEnabled, queryClient])
+
+	// CH5PM Dashboard is a catalog-served plugin: its enable/disable flows through
+	// the host plugin lifecycle, not a renderer feature-flag atom.
+	const ch5pmPluginEntry = pluginList?.plugins.find(
+		(plugin) => plugin.pluginId === "firefly.built-in.surface.ch5pm",
+	)
+	const ch5pmPluginEnabled = ch5pmPluginEntry
+		? ch5pmPluginEntry.status !== "disabled" && ch5pmPluginEntry.status !== "quarantined"
+		: false
+	const toggleCh5pmPlugin = useCallback(async () => {
+		await window.elf?.plugins.setEnabled("firefly.built-in.surface.ch5pm", !ch5pmPluginEnabled)
+		await queryClient.invalidateQueries({ queryKey: ["firefly-plugin"] })
+	}, [ch5pmPluginEnabled, queryClient])
+
+	// Studio is a catalog-served plugin: its enable/disable flows through
+	// the host plugin lifecycle, not a renderer feature-flag atom.
+	const studioPluginEntry = pluginList?.plugins.find(
+		(plugin) => plugin.pluginId === "firefly.built-in.surface.studio",
+	)
+	const studioPluginEnabled = studioPluginEntry
+		? studioPluginEntry.status !== "disabled" && studioPluginEntry.status !== "quarantined"
+		: true
+	const toggleStudioPlugin = useCallback(async () => {
+		await window.elf?.plugins.setEnabled("firefly.built-in.surface.studio", !studioPluginEnabled)
+		await queryClient.invalidateQueries({ queryKey: ["firefly-plugin"] })
+	}, [studioPluginEnabled, queryClient])
+
+	// PDF Review is a catalog-served plugin: its enable/disable flows through
+	// the host plugin lifecycle, not a renderer feature-flag atom.
+	const pdfReviewPluginEntry = pluginList?.plugins.find(
+		(plugin) => plugin.pluginId === "firefly.built-in.surface.pdf-review",
+	)
+	const pdfReviewPluginEnabled = pdfReviewPluginEntry
+		? pdfReviewPluginEntry.status !== "disabled" && pdfReviewPluginEntry.status !== "quarantined"
+		: false
+	const togglePdfReviewPlugin = useCallback(async () => {
+		await window.elf?.plugins.setEnabled("firefly.built-in.surface.pdf-review", !pdfReviewPluginEnabled)
+		await queryClient.invalidateQueries({ queryKey: ["firefly-plugin"] })
+	}, [pdfReviewPluginEnabled, queryClient])
+
+	// CRM is a catalog-served plugin: its enable/disable flows through
+	// the host plugin lifecycle, not a renderer feature-flag atom.
+	const crmPluginEntry = pluginList?.plugins.find(
+		(plugin) => plugin.pluginId === "firefly.built-in.surface.crm",
+	)
+	const crmPluginEnabled = crmPluginEntry
+		? crmPluginEntry.status !== "disabled" && crmPluginEntry.status !== "quarantined"
+		: true
+	const toggleCrmPlugin = useCallback(async () => {
+		await window.elf?.plugins.setEnabled("firefly.built-in.surface.crm", !crmPluginEnabled)
+		await queryClient.invalidateQueries({ queryKey: ["firefly-plugin"] })
+	}, [crmPluginEnabled, queryClient])
 
 	const catalogSurfaceTabs = useCatalogSurfaceTabs(activeAgent)
 	const availableSurfaceTabs = useMemo(
@@ -500,15 +633,15 @@ export function CommandPalette({ open, onOpenChange, agents, onForkSession }: Co
 						{automationsEnabled && <CheckIcon className="ml-auto h-4 w-4" />}
 					</CommandItem>
 					<CommandItem
-						keywords={["review", "changes", "diff", "side panel"]}
+						keywords={["review", "changes", "diff", "side panel", "plugin"]}
 						onSelect={() => {
-							toggleReviewSurface()
+							void toggleReviewPlugin()
 							onOpenChange(false)
 						}}
 					>
 						<FileDiffIcon />
-						<span>{reviewSurfaceEnabled ? "Disable Changes Surface" : "Enable Changes Surface"}</span>
-						{reviewSurfaceEnabled && <CheckIcon className="ml-auto h-4 w-4" />}
+						<span>{reviewPluginEnabled ? "Disable Changes Surface" : "Enable Changes Surface"}</span>
+						{reviewPluginEnabled && <CheckIcon className="ml-auto h-4 w-4" />}
 					</CommandItem>
 				<CommandItem
 					keywords={["nav sidebar", "folio", "palot", "sidebar tabs"]}
@@ -522,14 +655,13 @@ export function CommandPalette({ open, onOpenChange, agents, onForkSession }: Co
 				<CommandItem
 					keywords={["browser", "web", "webview", "inline browser", "panel"]}
 					onSelect={() => {
-						toggleBrowserPanel()
+						void toggleBrowserPlugin()
 						onOpenChange(false)
 					}}
 				>
-
 						{availableSurfaceTabs.find((surface) => surface.id === "browser")?.icon ?? <MonitorIcon />}
-						<span>{browserPanelEnabled ? "Disable Browser Panel" : "Enable Browser Panel"}</span>
-						{browserPanelEnabled && <CheckIcon className="ml-auto h-4 w-4" />}
+						<span>{browserPluginEnabled ? "Disable Browser Panel" : "Enable Browser Panel"}</span>
+						{browserPluginEnabled && <CheckIcon className="ml-auto h-4 w-4" />}
 					</CommandItem>
 					<CommandItem
 						keywords={["notes", "surface", "side panel", "plugin"]}
@@ -545,46 +677,57 @@ export function CommandPalette({ open, onOpenChange, agents, onForkSession }: Co
 					<CommandItem
 						keywords={["pulse", "surface", "heartbeat", "telemetry"]}
 						onSelect={() => {
-							togglePulseSurface()
+							void togglePulsePlugin()
 							onOpenChange(false)
 						}}
 					>
-						<SparklesIcon />
-						<span>{pulseSurfaceEnabled ? "Disable Pulse Surface" : "Enable Pulse Surface"}</span>
-						{pulseSurfaceEnabled && <CheckIcon className="ml-auto h-4 w-4" />}
+						<ActivityIcon />
+						<span>{pulsePluginEnabled ? "Disable Pulse Surface" : "Enable Pulse Surface"}</span>
+						{pulsePluginEnabled && <CheckIcon className="ml-auto h-4 w-4" />}
 					</CommandItem>
 					<CommandItem
 						keywords={["memory", "surface", "context"]}
 						onSelect={() => {
-							toggleMemorySurface()
+							void toggleMemoryPlugin()
 							onOpenChange(false)
 						}}
 					>
 						<DatabaseIcon />
-						<span>{memorySurfaceEnabled ? "Disable Memory Surface" : "Enable Memory Surface"}</span>
-						{memorySurfaceEnabled && <CheckIcon className="ml-auto h-4 w-4" />}
+						<span>{memoryPluginEnabled ? "Disable Memory Surface" : "Enable Memory Surface"}</span>
+						{memoryPluginEnabled && <CheckIcon className="ml-auto h-4 w-4" />}
 					</CommandItem>
 					<CommandItem
 						keywords={["files", "surface", "review", "project files"]}
 						onSelect={() => {
-							toggleFilesSurface()
+							void toggleFilesPlugin()
 							onOpenChange(false)
 						}}
 					>
 						<FilesIcon />
-						<span>{filesSurfaceEnabled ? "Disable Files Surface" : "Enable Files Surface"}</span>
-						{filesSurfaceEnabled && <CheckIcon className="ml-auto h-4 w-4" />}
+						<span>{filesPluginEnabled ? "Disable Files Surface" : "Enable Files Surface"}</span>
+						{filesPluginEnabled && <CheckIcon className="ml-auto h-4 w-4" />}
 					</CommandItem>
 					<CommandItem
 						keywords={["terminal", "shell", "pty", "attach"]}
 						onSelect={() => {
-							toggleTerminalSurface()
+							void toggleTerminalPlugin()
 							onOpenChange(false)
 						}}
 					>
 						<TerminalSquareIcon />
-						<span>{terminalSurfaceEnabled ? "Disable Terminal Surface" : "Enable Terminal Surface"}</span>
-						{terminalSurfaceEnabled && <CheckIcon className="ml-auto h-4 w-4" />}
+						<span>{terminalPluginEnabled ? "Disable Terminal Surface" : "Enable Terminal Surface"}</span>
+						{terminalPluginEnabled && <CheckIcon className="ml-auto h-4 w-4" />}
+					</CommandItem>
+					<CommandItem
+						keywords={["editor", "monaco", "code", "file", "text"]}
+						onSelect={() => {
+							void toggleEditorPlugin()
+							onOpenChange(false)
+						}}
+					>
+						<SquarePenIcon />
+						<span>{editorPluginEnabled ? "Disable Editor Surface" : "Enable Editor Surface"}</span>
+						{editorPluginEnabled && <CheckIcon className="ml-auto h-4 w-4" />}
 					</CommandItem>
 					<CommandItem
 						keywords={["plugins", "skills", "mcp", "integrations"]}
@@ -600,79 +743,79 @@ export function CommandPalette({ open, onOpenChange, agents, onForkSession }: Co
 					<CommandItem
 						keywords={["bridges", "connectors", "integrations", "hub"]}
 						onSelect={() => {
-							toggleBridgesSurface()
+							void toggleBridgesPlugin()
 							onOpenChange(false)
 						}}
 					>
 						<Share2Icon />
-						<span>{bridgesSurfaceEnabled ? "Disable Bridges Surface" : "Enable Bridges Surface"}</span>
-						{bridgesSurfaceEnabled && <CheckIcon className="ml-auto h-4 w-4" />}
+						<span>{bridgesPluginEnabled ? "Disable Bridges Surface" : "Enable Bridges Surface"}</span>
+						{bridgesPluginEnabled && <CheckIcon className="ml-auto h-4 w-4" />}
 					</CommandItem>
 					<CommandItem
 						keywords={["crm", "contacts", "people", "relationships"]}
-						onSelect={() => {
-							toggleCrmSurface()
+						onSelect={async () => {
+							await toggleCrmPlugin()
 							onOpenChange(false)
 						}}
 					>
 						<UsersIcon />
-						<span>{crmSurfaceEnabled ? "Disable Contacts / CRM Surface" : "Enable Contacts / CRM Surface"}</span>
-						{crmSurfaceEnabled && <CheckIcon className="ml-auto h-4 w-4" />}
+						<span>{crmPluginEnabled ? "Disable Contacts / CRM Surface" : "Enable Contacts / CRM Surface"}</span>
+						{crmPluginEnabled && <CheckIcon className="ml-auto h-4 w-4" />}
 					</CommandItem>
 					<CommandItem
 						keywords={["studio", "office", "documents", "preview"]}
-						onSelect={() => {
-							toggleStudioSurface()
+						onSelect={async () => {
+							await toggleStudioPlugin()
 							onOpenChange(false)
 						}}
 					>
 						<MonitorPlayIcon />
-						<span>{studioSurfaceEnabled ? "Disable Studio / Office Surface" : "Enable Studio / Office Surface"}</span>
-						{studioSurfaceEnabled && <CheckIcon className="ml-auto h-4 w-4" />}
+						<span>{studioPluginEnabled ? "Disable Studio / Office Surface" : "Enable Studio / Office Surface"}</span>
+						{studioPluginEnabled && <CheckIcon className="ml-auto h-4 w-4" />}
 					</CommandItem>
 					<CommandItem
 						keywords={["voice", "speech", "microphone", "audio"]}
-						onSelect={() => {
-							toggleVoiceSurface()
+						onSelect={async () => {
+							await toggleVoicePlugin()
 							onOpenChange(false)
 						}}
 					>
 						<MicIcon />
-						<span>{voiceSurfaceEnabled ? "Disable Voice Surface" : "Enable Voice Surface"}</span>
-						{voiceSurfaceEnabled && <CheckIcon className="ml-auto h-4 w-4" />}
+						<span>{voicePluginEnabled ? "Disable Voice Surface" : "Enable Voice Surface"}</span>
+						{voicePluginEnabled && <CheckIcon className="ml-auto h-4 w-4" />}
 					</CommandItem>
 					<CommandItem
 						keywords={["claude", "claude code", "migration", "compatibility"]}
-						onSelect={() => {
-							toggleClaudeSurface()
+						onSelect={async () => {
+							await toggleClaudePlugin()
 							onOpenChange(false)
 						}}
 					>
 						<RectangleEllipsisIcon />
-						<span>{claudeSurfaceEnabled ? "Disable Claude Code Surface" : "Enable Claude Code Surface"}</span>
-						{claudeSurfaceEnabled && <CheckIcon className="ml-auto h-4 w-4" />}
+						<span>{claudePluginEnabled ? "Disable Claude Code Surface" : "Enable Claude Code Surface"}</span>
+						{claudePluginEnabled && <CheckIcon className="ml-auto h-4 w-4" />}
 					</CommandItem>
 					<CommandItem
 						keywords={["ch5pm", "dashboard", "plane", "operator"]}
-						onSelect={() => {
-							toggleCh5PmSurface()
+						onSelect={async () => {
+							await toggleCh5pmPlugin()
 							onOpenChange(false)
 						}}
 					>
 						<MonitorPlayIcon />
-						<span>{ch5pmSurfaceEnabled ? "Disable CH5PM Dashboard" : "Enable CH5PM Dashboard"}</span>
-						{ch5pmSurfaceEnabled && <CheckIcon className="ml-auto h-4 w-4" />}
+						<span>{ch5pmPluginEnabled ? "Disable CH5PM Dashboard" : "Enable CH5PM Dashboard"}</span>
+						{ch5pmPluginEnabled && <CheckIcon className="ml-auto h-4 w-4" />}
 					</CommandItem>
 					<CommandItem
 						keywords={["pdf", "document", "reader", "annotations", "citations"]}
-						onSelect={() => {
-							togglePdfReviewSurface()
+						onSelect={async () => {
+							await togglePdfReviewPlugin()
 							onOpenChange(false)
 						}}
 					>
 						<FileTextIcon />
-						<span>{pdfReviewSurfaceEnabled ? "Disable PDF Review Surface" : "Enable PDF Review Surface"}</span>
-						{pdfReviewSurfaceEnabled && <CheckIcon className="ml-auto h-4 w-4" />}
+						<span>{pdfReviewPluginEnabled ? "Disable PDF Review Surface" : "Enable PDF Review Surface"}</span>
+						{pdfReviewPluginEnabled && <CheckIcon className="ml-auto h-4 w-4" />}
 					</CommandItem>
 				</CommandGroup>
 				{hasSession && availableSurfaceTabs.length > 0 && (

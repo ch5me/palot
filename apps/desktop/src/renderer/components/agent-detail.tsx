@@ -10,41 +10,37 @@ import {
 	TooltipContent,
 	TooltipTrigger,
 } from "@ch5me/ch5-ui-web"
-import { SplitPane } from "@ch5me/workspace"
-import { useNavigate, useParams } from "@tanstack/react-router"
+import { useParams } from "@tanstack/react-router"
 import { useAtom, useAtomValue, useSetAtom } from "jotai"
 import {
-	ArrowLeftIcon,
 	CheckIcon,
 	CopyIcon,
 	ExternalLinkIcon,
-	FileTextIcon,
 	PanelRightCloseIcon,
 	PanelRightOpenIcon,
 	PencilIcon,
 	TerminalIcon,
 } from "lucide-react"
-import { useCallback, useEffect, useMemo, useRef, useState } from "react"
-import { createHtmlPortalNode, InPortal, OutPortal, type HtmlPortalNode } from "react-reverse-portal"
+import { type ComponentProps, useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore, type ReactNode } from "react"
+import type { DockviewApi } from "dockview-react"
 import type { OpenInTarget } from "../../preload/api"
 import {
-	browserPanelEnabledAtom,
-	bridgesSurfaceEnabledAtom,
-	ch5pmSurfaceEnabledAtom,
-	claudeSurfaceEnabledAtom,
-	crmSurfaceEnabledAtom,
-	editorSurfaceEnabledAtom,
-	filesSurfaceEnabledAtom,
-	memorySurfaceEnabledAtom,
-	oracleSurfaceEnabledAtom,
+	// ch5pmSurfaceEnabledAtom removed — ch5pm is catalog-served (firefly.built-in.surface.ch5pm).
+	// claudeSurfaceEnabledAtom removed — claude is catalog-served (firefly.built-in.surface.claude).
+	// crmSurfaceEnabledAtom removed — crm is catalog-served (firefly.built-in.surface.crm).
+	// oracleSurfaceEnabledAtom removed — oracle is catalog-served (firefly.built-in.surface.oracle).
+	// voiceSurfaceEnabledAtom removed — voice is catalog-served (firefly.built-in.surface.voice).
+	// browserPanelEnabledAtom removed — browser is catalog-served (firefly.built-in.surface.browser).
+	// studioSurfaceEnabledAtom removed — studio is catalog-served (firefly.built-in.surface.studio).
 	pluginsSurfaceEnabledAtom,
-	pdfReviewSurfaceEnabledAtom,
-	pulseSurfaceEnabledAtom,
-	reviewSurfaceEnabledAtom,
-	studioSurfaceEnabledAtom,
-	terminalSurfaceEnabledAtom,
-	voiceSurfaceEnabledAtom,
+	// pdfReviewSurfaceEnabledAtom removed — pdf-review is catalog-served (firefly.built-in.surface.pdf-review).
+	// workspaceDockEnabledAtom removed — dock is now the sole session UI (Cleanup phase).
 } from "../atoms/feature-flags"
+import { useColorScheme } from "../hooks/use-theme"
+import { loadDockLayout, saveDockLayout } from "../surface-host/persistence"
+import { useSurfaceRegistry } from "../surface-host/surface-host-provider"
+import { DockShell, type DockSeedPanel } from "../workspace/dock-shell"
+import { surfacePropBridge, useSurfaceProps } from "../workspace/surface-prop-bridge"
 import {
 	getFireflySurfaceTabs,
 	type FireflySurfaceContext,
@@ -57,6 +53,7 @@ import {
 	documentPanelActiveTabAtom,
 	documentPanelOpenAtom,
 	isDocumentPanelTab,
+	paneRoutingStateAtom,
 	reviewPanelSettingsAtom,
 	setAvailableDocumentPanelTabsAtom,
 	sessionDiffStatsFamily,
@@ -88,19 +85,10 @@ import {
 } from "../services/backend"
 import { useSetAppBarContent } from "./app-bar-context"
 import { ChatView } from "./chat"
-import { SessionSidePanel } from "./side-panel/session-side-panel"
 import type { SidePanelTabDef } from "./side-panel/side-panel-tabs"
 import { SessionMetricsBar } from "./session-metrics-bar"
 import { WorktreeActions } from "./worktree-actions"
 
-const DEFAULT_SIDE_PANEL_WIDTH = 392
-const EXPANDED_SIDE_PANEL_WIDTH = 760
-const MIN_SIDE_PANEL_WIDTH = 280
-const MAX_SIDE_PANEL_WIDTH = 760
-const MAX_EXPANDED_SIDE_PANEL_WIDTH = 1120
-const DEFAULT_DOC_PANEL_WIDTH = 520
-const MIN_DOC_PANEL_WIDTH = 360
-const MAX_DOC_PANEL_WIDTH = 960
 
 interface AgentDetailProps {
 	agent: Agent
@@ -141,29 +129,49 @@ interface AgentDetailProps {
 	onDeletePart?: (sessionId: string, messageId: string, partId: string) => Promise<void>
 }
 
-function DocumentPaneShell({
-	agent,
-	tab,
-	portalNode,
-}: {
-	agent: Agent
-	tab: SidePanelTabDef
-	portalNode: HtmlPortalNode
-}) {
-	return (
-		<div className="flex h-full min-h-0 min-w-0 flex-col bg-background">
-			<div className="border-b border-border px-4 py-3">
-				<div className="flex items-center gap-2 text-sm font-medium text-foreground">
-					<FileTextIcon className="size-4 text-muted-foreground" aria-hidden="true" />
-					<span>{tab.title}</span>
-				</div>
-				<div className="mt-1 text-xs text-muted-foreground">Document lane for {agent.project}</div>
-			</div>
-			<div className="min-h-0 min-w-0 flex-1 overflow-hidden">
-				<OutPortal node={portalNode} />
-			</div>
-		</div>
-	)
+// ============================================================
+// Workspace dock surfaces
+//
+// Each surface is mounted ONCE into the hidden host layer by stable identity.
+// Live props flow through the surfacePropBridge (the host layer renders in a
+// different React subtree than AgentDetail, so closure props would freeze).
+// ============================================================
+
+type ChatSurfaceProps = ComponentProps<typeof ChatView>
+
+/** Live ChatView surface: reads the latest chat props published for its identity. */
+function ChatSurface({ instanceId }: { instanceId: string }) {
+	const props = useSurfaceProps<ChatSurfaceProps>(instanceId)
+	if (!props) return null
+	return <ChatView {...props} />
+}
+
+/**
+ * Generic tab surface: re-renders when the published render closure changes.
+ *
+ * `SidePanelTabDef.render()` is a pre-bound closure that captures the latest
+ * FireflySurfaceContext. AgentDetail republishes it via the surfacePropBridge
+ * every render (whenever agent/flags change a new `render` fn is produced by
+ * the `useMemo` that builds surfaceTabs). TabSurface calls it to render fresh
+ * content without remounting the host.
+ *
+ * NOTE: Jotai store and React Query client are at app root (above the hidden
+ * host layer) so atom reads and query hooks inside panels work normally.
+ * The `agent` object and feature-flag booleans reach panels via this closure.
+ */
+function TabSurface({ instanceId }: { instanceId: string }) {
+	const renderFn = useSurfaceProps<() => ReactNode>(instanceId)
+	if (!renderFn) return null
+	return <>{renderFn()}</>
+}
+
+/** Resolve the active dark/light mode for theming the dock. */
+function useIsDarkMode(): boolean {
+	const scheme = useColorScheme()
+	if (scheme === "system") {
+		return typeof window !== "undefined" && window.matchMedia("(prefers-color-scheme: dark)").matches
+	}
+	return scheme === "dark"
 }
 
 export function AgentDetail({
@@ -177,7 +185,7 @@ export function AgentDetail({
 	onRejectQuestion,
 	onSendMessage,
 	onRename,
-	parentSessionName,
+	// parentSessionName — accepted for API compatibility; not rendered (dock-native chat panel handles it internally).
 	isConnected,
 	providers,
 	config,
@@ -195,7 +203,6 @@ export function AgentDetail({
 	onForkFromTurn,
 	onDeletePart,
 }: AgentDetailProps) {
-	const navigate = useNavigate()
 	const { projectSlug } = useParams({ strict: false }) as { projectSlug?: string }
 	const setAppBarContent = useSetAppBarContent()
 
@@ -213,7 +220,7 @@ export function AgentDetail({
 	const setSidePanelActiveTab = useSetAtom(setSidePanelActiveTabAtom)
 	const setAvailableSidePanelTabs = useSetAtom(setAvailableSidePanelTabsAtom)
 	const setAvailableDocumentPanelTabs = useSetAtom(setAvailableDocumentPanelTabsAtom)
-	const [reviewSettings, setReviewSettings] = useAtom(reviewPanelSettingsAtom)
+	const [, setReviewSettings] = useAtom(reviewPanelSettingsAtom)
 
 	const prevSessionIdRef = useRef(agent.sessionId)
 	const diffStats = useAtomValue(sessionDiffStatsFamily(agent.sessionId))
@@ -262,22 +269,16 @@ export function AgentDetail({
 		}
 	}, [isEditingTitle])
 
-	const browserPanelEnabled = useAtomValue(browserPanelEnabledAtom)
-	const reviewSurfaceEnabled = useAtomValue(reviewSurfaceEnabledAtom)
-	const pulseSurfaceEnabled = useAtomValue(pulseSurfaceEnabledAtom)
-	const memorySurfaceEnabled = useAtomValue(memorySurfaceEnabledAtom)
-	const filesSurfaceEnabled = useAtomValue(filesSurfaceEnabledAtom)
-	const terminalSurfaceEnabled = useAtomValue(terminalSurfaceEnabledAtom)
-	const editorSurfaceEnabled = useAtomValue(editorSurfaceEnabledAtom)
+	// browserPanelEnabled removed — browser is catalog-served (firefly.built-in.surface.browser).
+	// terminalSurfaceEnabled removed — terminal is catalog-served (firefly.built-in.surface.terminal).
+	// claudeSurfaceEnabled removed — claude is catalog-served (firefly.built-in.surface.claude).
+	// oracleSurfaceEnabled removed — oracle is catalog-served (firefly.built-in.surface.oracle).
+	// voiceSurfaceEnabled removed — voice is catalog-served (firefly.built-in.surface.voice).
+	// studioSurfaceEnabled removed — studio is catalog-served (firefly.built-in.surface.studio).
 	const pluginsSurfaceEnabled = useAtomValue(pluginsSurfaceEnabledAtom)
-	const bridgesSurfaceEnabled = useAtomValue(bridgesSurfaceEnabledAtom)
-	const crmSurfaceEnabled = useAtomValue(crmSurfaceEnabledAtom)
-	const studioSurfaceEnabled = useAtomValue(studioSurfaceEnabledAtom)
-	const voiceSurfaceEnabled = useAtomValue(voiceSurfaceEnabledAtom)
-	const oracleSurfaceEnabled = useAtomValue(oracleSurfaceEnabledAtom)
-	const claudeSurfaceEnabled = useAtomValue(claudeSurfaceEnabledAtom)
-	const ch5pmSurfaceEnabled = useAtomValue(ch5pmSurfaceEnabledAtom)
-	const pdfReviewSurfaceEnabled = useAtomValue(pdfReviewSurfaceEnabledAtom)
+	// crmSurfaceEnabled removed — crm is catalog-served (firefly.built-in.surface.crm).
+	// ch5pmSurfaceEnabled removed — ch5pm is catalog-served (firefly.built-in.surface.ch5pm).
+	// pdfReviewSurfaceEnabled removed — pdf-review is catalog-served (firefly.built-in.surface.pdf-review).
 
 	const catalogSurfaceTabs = useCatalogSurfaceTabs(agent)
 	const surfaceTabs: SidePanelTabDef[] = useMemo(() => {
@@ -285,22 +286,7 @@ export function AgentDetail({
 			agent,
 			diffStats,
 			flags: {
-				browserPanelEnabled,
-				review: reviewSurfaceEnabled,
-				pulse: pulseSurfaceEnabled,
-				memory: memorySurfaceEnabled,
-				files: filesSurfaceEnabled,
-				terminal: terminalSurfaceEnabled,
-				editor: editorSurfaceEnabled,
 				plugins: pluginsSurfaceEnabled,
-				bridges: bridgesSurfaceEnabled,
-				crm: crmSurfaceEnabled,
-				studio: studioSurfaceEnabled,
-				voice: voiceSurfaceEnabled,
-				oracle: oracleSurfaceEnabled,
-				claude: claudeSurfaceEnabled,
-				ch5pm: ch5pmSurfaceEnabled,
-				pdfReview: pdfReviewSurfaceEnabled,
 			},
 			chatTurnCount: chatTurns.length,
 		}
@@ -309,22 +295,7 @@ export function AgentDetail({
 		agent,
 		catalogSurfaceTabs,
 		diffStats,
-		browserPanelEnabled,
-		reviewSurfaceEnabled,
-		pulseSurfaceEnabled,
-		memorySurfaceEnabled,
-		filesSurfaceEnabled,
-		terminalSurfaceEnabled,
-		editorSurfaceEnabled,
 		pluginsSurfaceEnabled,
-		bridgesSurfaceEnabled,
-		crmSurfaceEnabled,
-		studioSurfaceEnabled,
-		voiceSurfaceEnabled,
-		oracleSurfaceEnabled,
-		claudeSurfaceEnabled,
-		ch5pmSurfaceEnabled,
-		pdfReviewSurfaceEnabled,
 		chatTurns.length,
 	])
 
@@ -398,14 +369,6 @@ export function AgentDetail({
 	// Doc lane restores from explicit snapshot state, then falls back to first
 	// available doc surface when the remembered tab disappears.
 	const docPanelVisible = documentPanelOpen && activeDocTab !== null
-
-	const docPortalNodesRef = useRef<Partial<Record<SidePanelTabDef["id"], HtmlPortalNode>>>({})
-	for (const tab of docTabs) {
-		if (!docPortalNodesRef.current[tab.id]) {
-			docPortalNodesRef.current[tab.id] = createHtmlPortalNode()
-		}
-	}
-	const docPanelNode = activeDocTab ? docPortalNodesRef.current[activeDocTab.id] ?? null : null
 
 	useEffect(() => {
 		setAvailableSidePanelTabs(utilityTabs.map((tab) => tab.id))
@@ -504,110 +467,162 @@ export function AgentDetail({
 		activeDocTab,
 	])
 
-	const chatContent = (
-		<>
-			{agent.parentId ? (
-				<button
-					type="button"
-					onClick={() =>
-						navigate({
-							to: "/project/$projectSlug/session/$sessionId",
-							params: {
-								projectSlug: projectSlug ?? agent.projectSlug,
-								sessionId: agent.parentId!,
-							},
-						})
-					}
-					className="flex items-center gap-1.5 border-b border-border bg-muted/30 px-4 py-1.5 text-xs text-muted-foreground transition-colors hover:bg-muted/50 hover:text-foreground"
-				>
-					<ArrowLeftIcon className="size-3" />
-					<span>
-						Back to <span className="font-medium text-foreground">{parentSessionName || "parent session"}</span>
-					</span>
-				</button>
-			) : null}
+	const chatViewProps: ComponentProps<typeof ChatView> = {
+		turns: chatTurns,
+		loading: chatLoading ?? false,
+		loadingEarlier: chatLoadingEarlier ?? false,
+		hasEarlierMessages: chatHasEarlier ?? false,
+		onLoadEarlier,
+		agent,
+		isConnected: isConnected ?? false,
+		onSendMessage,
+		onStop,
+		providers,
+		config,
+		vcs,
+		openCodeAgents,
+		onApprove,
+		onDeny,
+		onReplyQuestion,
+		onRejectQuestion,
+		canUndo,
+		canRedo,
+		onUndo,
+		onRedo,
+		isReverted,
+		onRevertToMessage,
+		onForkFromTurn,
+		onDeletePart,
+		sidePanelOpen,
+	}
 
-			<div className="min-h-0 flex-1">
-				<ChatView
-					turns={chatTurns}
-					loading={chatLoading ?? false}
-					loadingEarlier={chatLoadingEarlier ?? false}
-					hasEarlierMessages={chatHasEarlier ?? false}
-					onLoadEarlier={onLoadEarlier}
-					agent={agent}
-					isConnected={isConnected ?? false}
-					onSendMessage={onSendMessage}
-					onStop={onStop}
-					providers={providers}
-					config={config}
-					vcs={vcs}
-					openCodeAgents={openCodeAgents}
-					onApprove={onApprove}
-					onDeny={onDeny}
-					onReplyQuestion={onReplyQuestion}
-					onRejectQuestion={onRejectQuestion}
-					canUndo={canUndo}
-					canRedo={canRedo}
-					onUndo={onUndo}
-					onRedo={onRedo}
-					isReverted={isReverted}
-					onRevertToMessage={onRevertToMessage}
-					onForkFromTurn={onForkFromTurn}
-					onDeletePart={onDeletePart}
-					sidePanelOpen={sidePanelOpen}
-				/>
-			</div>
-		</>
+	// ========== Workspace dock (sole session UI — legacy SplitPane removed in Cleanup) ==========
+	const isDarkMode = useIsDarkMode()
+	const registry = useSurfaceRegistry()
+	const chatInstanceId = `chat:${agent.sessionId}:view-main`
+
+	// Load persisted dock layout once (session-agnostic: keyed by surfaceType).
+	// null on first load or parse failure → default zones unchanged.
+	const persistedDockLayout = useMemo(() => loadDockLayout(), [])
+
+	// Subscribe to registry dock panel changes so we can debounce-save on moves.
+	const dockPanelRecords = useSyncExternalStore(
+		(cb) => registry.subscribe(cb),
+		() => registry.dockPanelRecords,
 	)
 
+	// Debounced save: 500 ms after the last dock panel change, persist to localStorage.
+	const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+	useEffect(() => {
+		if (saveTimerRef.current !== null) clearTimeout(saveTimerRef.current)
+		saveTimerRef.current = setTimeout(() => {
+			saveDockLayout(dockPanelRecords)
+		}, 500)
+		return () => {
+			if (saveTimerRef.current !== null) clearTimeout(saveTimerRef.current)
+		}
+	}, [dockPanelRecords])
+
+	// Capture each zone's DockviewApi so we can imperatively focus panels on routing changes.
+	const zoneApisRef = useRef<Partial<Record<string, DockviewApi>>>({})
+	const handleZoneApiReady = useCallback((zone: string, api: DockviewApi) => {
+		zoneApisRef.current[zone] = api
+	}, [])
+
+	// Focus the correct dock panel whenever the routing atoms change (e.g. plugin→surface handoff).
+	// Uses paneRoutingState (tab + focusToken) so re-requesting the same tab still triggers a focus.
+	const paneRoutingState = useAtomValue(paneRoutingStateAtom)
+	useEffect(() => {
+		const { sidePanel, documentPanel } = paneRoutingState
+		if (sidePanel) {
+			const panelId = `${sidePanel.tab}:${agent.sessionId}`
+			zoneApisRef.current["right"]?.getPanel(panelId)?.focus()
+		}
+		if (documentPanel) {
+			const panelId = `${documentPanel.tab}:${agent.sessionId}`
+			zoneApisRef.current["bottom"]?.getPanel(panelId)?.focus()
+		}
+	}, [paneRoutingState, agent.sessionId])
+
+	// Register chat surface once per session identity (idempotent).
+	useEffect(() => {
+		registry.getOrCreate(chatInstanceId, {
+			type: "chat",
+			title: "Chat",
+			render: () => <ChatSurface instanceId={chatInstanceId} />,
+		})
+	}, [registry, chatInstanceId])
+
+	// Register each utility/document tab surface once per session+tab identity.
+	// `getOrCreate` is idempotent — safe to call every render when the set changes.
+	useEffect(() => {
+		for (const tab of utilityTabs) {
+			const instanceId = `${tab.id}:${agent.sessionId}`
+			registry.getOrCreate(instanceId, {
+				type: tab.id,
+				title: tab.title,
+				render: () => <TabSurface instanceId={instanceId} />,
+			})
+		}
+		for (const tab of docTabs) {
+			const instanceId = `${tab.id}:${agent.sessionId}`
+			registry.getOrCreate(instanceId, {
+				type: tab.id,
+				title: tab.title,
+				render: () => <TabSurface instanceId={instanceId} />,
+			})
+		}
+	}, [registry, agent.sessionId, utilityTabs, docTabs])
+
+	// Publish live props every render so once-mounted hosts stay current.
+	// Chat: full ChatView props object. Tabs: the freshly-bound render() closure
+	// (produced by the surfaceTabs useMemo; captures latest agent/flags/ctx).
+	useEffect(() => {
+		surfacePropBridge.publish(chatInstanceId, chatViewProps)
+		for (const tab of utilityTabs) {
+			surfacePropBridge.publish(`${tab.id}:${agent.sessionId}`, tab.render)
+		}
+		for (const tab of docTabs) {
+			surfacePropBridge.publish(`${tab.id}:${agent.sessionId}`, tab.render)
+		}
+	})
+
+	const dockSeedPanels = useMemo<DockSeedPanel[]>(() => {
+		const byType = persistedDockLayout?.byType
+		const panels: DockSeedPanel[] = [
+			{
+				instanceId: chatInstanceId,
+				surfaceType: "chat",
+				title: "Chat",
+				zone: byType?.["chat"] ?? "main",
+			},
+		]
+		for (const tab of utilityTabs) {
+			panels.push({
+				instanceId: `${tab.id}:${agent.sessionId}`,
+				surfaceType: tab.id,
+				title: tab.title,
+				zone: byType?.[tab.id] ?? "right",
+			})
+		}
+		for (const tab of docTabs) {
+			panels.push({
+				instanceId: `${tab.id}:${agent.sessionId}`,
+				surfaceType: tab.id,
+				title: tab.title,
+				zone: byType?.[tab.id] ?? "bottom",
+			})
+		}
+		return panels
+	}, [chatInstanceId, agent.sessionId, utilityTabs, docTabs, persistedDockLayout])
+
+	// Full-height flex wrapper so DockShell's `flex: 1` root actually fills the
+	// pane. Without a flex parent with definite height the dock collapses and the
+	// chat zone starves to 0px.
 	return (
-		<>
-			{docTabs.map((tab) => {
-				const portalNode = docPortalNodesRef.current[tab.id]
-				if (!portalNode) return null
-				return (
-					<InPortal key={tab.id} node={portalNode}>
-						{tab.render()}
-					</InPortal>
-				)
-			})}
-			<SplitPane
-				key={reviewSettings.expanded ? "side-panel-expanded" : "side-panel-default"}
-				side="right"
-				open={sidePanelOpen}
-				onOpenChange={setSidePanelOpen}
-				defaultPanelWidth={reviewSettings.expanded ? EXPANDED_SIDE_PANEL_WIDTH : DEFAULT_SIDE_PANEL_WIDTH}
-				minPanelWidth={MIN_SIDE_PANEL_WIDTH}
-				maxPanelWidth={reviewSettings.expanded ? MAX_EXPANDED_SIDE_PANEL_WIDTH : MAX_SIDE_PANEL_WIDTH}
-				handleAriaLabel="Resize utility panel"
-				panel={
-					<div className="min-h-0 h-full min-w-0 overflow-hidden">
-						<SessionSidePanel agent={agent} tabs={utilityTabs} />
-					</div>
-				}
-			>
-				<SplitPane
-					side="right"
-					open={docPanelVisible}
-					onOpenChange={setDocumentPanelOpen}
-					defaultPanelWidth={DEFAULT_DOC_PANEL_WIDTH}
-					minPanelWidth={MIN_DOC_PANEL_WIDTH}
-					maxPanelWidth={MAX_DOC_PANEL_WIDTH}
-					handleAriaLabel="Resize document pane"
-					panel={
-						activeDocTab && docPanelNode ? (
-							<DocumentPaneShell agent={agent} tab={activeDocTab} portalNode={docPanelNode} />
-						) : (
-							<div className="flex h-full items-center justify-center bg-background px-6 text-center text-sm text-muted-foreground">
-								Open Studio or PDF Review to use document lane.
-							</div>
-						)
-					}
-				>
-					<div className="flex h-full min-h-0 min-w-0 flex-col overflow-hidden">{chatContent}</div>
-				</SplitPane>
-			</SplitPane>
-		</>
+		<div className="flex h-full min-h-0 min-w-0 overflow-hidden">
+			<DockShell seedPanels={dockSeedPanels} isDarkMode={isDarkMode} onZoneApiReady={handleZoneApiReady} />
+		</div>
 	)
 }
 
