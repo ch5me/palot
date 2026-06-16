@@ -352,6 +352,12 @@ const themeContributionSchema = z
 			.object({
 				source: z.enum(["vscode-theme", "open-vsx"]),
 				externalId: z.string().min(1).max(200),
+				/** Published version of the source extension (e.g. "1.2.3"). */
+				version: z.string().max(80).optional(),
+				/** Path inside the VSIX / unpacked package to the theme JSON file. */
+				themePath: z.string().max(400).optional(),
+				/** SHA-256 hex digest of the theme JSON content. */
+				contentSha256: z.string().length(64).regex(/^[0-9a-f]{64}$/u).optional(),
 				provenance: z.string().max(400).optional(),
 			})
 			.strict()
