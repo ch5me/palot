@@ -114,22 +114,32 @@ NO git add/commit/push rule — one rogue agent pushed P4 to main.
   together with a concurrent session's nav-sidebar+folio work (entangled in shared
   files; integrated to preserve both — tree green, 803 firefly-plugin tests pass).
 
+- **P1 FINISH: DONE** (`fc4bf8118`). Real Drizzle migration (extension_packages +
+  extension_installations) + extension-store CRUD; install-orchestrator (Open VSX /
+  local .vsix → verify+unpack → convert → records) with 3 end-to-end tests (happy /
+  idempotent / integrity-fail); marketplace IPC (search/install/list/uninstall/apply)
+  on HostAuthority + preload; marketplace-panel UI (browse + install + apply). Themes
+  are installable end-to-end. 843 tests pass.
+- **P2 Monaco wiring: DONE** (`debfb6a00`). Language/grammar/snippet/icon-theme
+  registration entry points; TextMate WASM pipeline left behind a typed boundary
+  (only monaco-editor installed).
+
 ## Remaining
 
 In-repo:
-- **P1 finish**: DB-backed install/package records (app DB = Drizzle/libsql in
-  `automation/`, needs a migration) + marketplace IPC channels + **marketplace UI**
-  (search Open VSX → install theme → apply). Needs a UX decision (the browse/install
-  surface), so it wants Chris's direction, not solo invention.
+- **P1 polish**: applied-theme **CSS-var injection into the renderer theme engine**
+  (apply records the theme id but doesn't yet push tokens to the DOM) — the last
+  mile to make an installed theme visibly change the app. Small but needs the
+  existing theme-apply renderer path.
 - **P3** runtime hosts: extension-host RPC, node/web-worker, capability grants,
   storage API + wire CloudHostAuthority to firefly-cloud RPC. Large, architecture-heavy.
+- TextMate grammar runtime (needs vscode-textmate/oniguruma deps + caller wiring).
+- Trust: full signing/consent atop the sha256 verify already in package-store.
 - **P4 review** (design-fit of the landed classifier/importer).
-- Monaco TextMate grammar registration (stubbed in P2 — needs vscode-textmate layer).
-- Trust: full signing (publisher keys) atop the sha256 verify already in package-store.
 
 Cross-repo (CANNOT land from palot):
-- **firefly-cloud hosted gallery + publish API** — the remote half of the
-  marketplace lives in the firefly-cloud repo.
+- **firefly-cloud hosted gallery + publish API** — the remote half lives in the
+  firefly-cloud repo.
 
 ## Plan
 
