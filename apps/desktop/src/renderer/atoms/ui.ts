@@ -48,7 +48,11 @@ export interface PaneRoutingState {
 	documentPanel: DocumentPanelRoute | null
 }
 
-export const sidePanelOpenAtom = atomWithStorage<boolean>("elf:side-panel-open", true)
+// `:v2` retires the stale `false` values the old force-close behavior persisted
+// whenever utility surfaces were briefly empty during load — those would stick
+// the right dock collapsed. Bumping the key resets everyone to open-by-default;
+// the user's own toggle then persists under the new key.
+export const sidePanelOpenAtom = atomWithStorage<boolean>("elf:side-panel-open:v2", true)
 
 export type DocumentPanelTabId = LastDocumentPanelTabId
 export type UtilitySidePanelTabId = LastUtilitySidePanelTabId

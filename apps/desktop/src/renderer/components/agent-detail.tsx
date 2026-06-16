@@ -16,8 +16,6 @@ import {
 	CheckIcon,
 	CopyIcon,
 	ExternalLinkIcon,
-	PanelRightCloseIcon,
-	PanelRightOpenIcon,
 	PencilIcon,
 	TerminalIcon,
 } from "lucide-react"
@@ -746,34 +744,6 @@ function SessionAppBarContent({
 				className="ml-auto flex items-center gap-2"
 				style={{ WebkitAppRegion: "no-drag" } as React.CSSProperties}
 			>
-				<Tooltip>
-					<TooltipTrigger
-						render={
-							<Button
-								variant="ghost"
-								size="icon"
-								className="size-7"
-								onClick={onToggleSidePanel}
-								disabled={!hasAvailableSidePanel}
-								aria-label={sidePanelOpen ? "Close side panel" : "Open side panel"}
-								title={sidePanelOpen ? "Close side panel" : "Open side panel"}
-							/>
-						}
-					>
-						{sidePanelOpen ? (
-							<PanelRightCloseIcon className="size-3.5" />
-						) : (
-							<PanelRightOpenIcon className="size-3.5" />
-						)}
-					</TooltipTrigger>
-					<TooltipContent>
-						{hasAvailableSidePanel ? (
-							<>{sidePanelOpen ? "Close" : "Open"} utility panel (&#8679;&#8984;D)</>
-						) : (
-							"No utility surfaces available"
-						)}
-					</TooltipContent>
-				</Tooltip>
 				<Tooltip>
 					<TooltipTrigger
 						render={
