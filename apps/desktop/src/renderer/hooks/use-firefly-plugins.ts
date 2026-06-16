@@ -1,7 +1,7 @@
 /**
  * Firefly Plugin System V2 — renderer projection consumer
  *
- * Renders read the V2 plugin catalog from the host through the
+ * Renderers read the V2 plugin catalog from the host through the
  * `elf.plugins.*` IPC channel that main registers. This module
  * wraps the data flow in a tanstack-query query so consumers
  * (operator surface, command palette, future panels) get
@@ -10,6 +10,27 @@
  * Slice 1 keeps the consumer read-only: no mutations, no local
  * capability overrides. The host-owned `capabilityStates` is the
  * single source of truth and lives entirely in main.
+ *
+ * ## Web vs Electron (§2.4 of docs/firefly-plugin-marketplace-design.md)
+ *
+ * The renderer is identical in both builds. What differs is the _bridge_:
+ *
+ * - **Electron**: `getBridge()` returns the `window.elf.plugins` preload
+ *   bridge which calls into `ElectronHostAuthority` in the main process via
+ *   IPC. See `src/main/firefly-plugin/host-authority.ts`.
+ *
+ * - **Web**: `getBridge()` returns a `buildWebCatalogBridge()` result — a
+ *   pure-renderer in-memory bridge that projects the static built-in catalog.
+ *   Mutation methods (invoke / setEnabled / releaseQuarantine) throw
+ *   "not supported in the web build" — mirroring the `CloudHostAuthority`
+ *   stub in `host-authority.ts`. When Phase 3 (firefly-cloud `cloud-host`)
+ *   lands, this bridge will be replaced with an HTTP/WS client backed by the
+ *   `CloudHostAuthority` server implementation.
+ *
+ * The `PluginBridge` type below is the renderer-side projection of the
+ * `HostAuthority` interface (`src/shared/firefly-plugin/host-authority-types.ts`).
+ * It expresses the same contract in async/Promise form since all Electron IPC
+ * paths are inherently async.
  */
 
 import { useQuery } from "@tanstack/react-query"

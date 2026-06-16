@@ -7,30 +7,7 @@ const describeArgsSchema = z.object(pluginDescribeArgsShape)
 const stateArgsSchema = describeArgsSchema
 
 import { createLogger } from "../logger"
-import { broadcastCatalogChanged } from "./catalog-broadcast"
-import { getBootedPluginWorkerSupervisor } from "./supervisor-boot"
-import { applyEnabledToSupervisor } from "./supervisor-apply"
-import {
-	describePlugin,
-	getPluginCapabilities,
-	getPluginCatalog,
-	listPluginCommands,
-	listPluginEntries,
-	listPluginPanels,
-	listPluginProjectionSummaries,
-	listPluginThemes,
-	listPluginWidgets,
-	refreshPluginCatalog,
-	releasePluginQuarantine,
-	reportPluginPanelCrash,
-	setPluginEnabled,
-} from "./authority"
-import {
-	invokePluginCommand,
-	invokePluginTool,
-	listKnownCommands,
-} from "./dispatch"
-import { projectBridgeToolDefinitions } from "../../shared/firefly-plugin/bridge-projection"
+import { ElectronHostAuthority } from "./host-authority"
 
 const log = createLogger("firefly-plugin-ipc")
 
@@ -51,119 +28,45 @@ export const FIREFLY_PLUGIN_IPC_CHANNELS = {
 	releaseQuarantine: "firefly-plugin:release-quarantine",
 } as const
 
-interface FireflyPluginListResult {
-	appVersion: string
-	plugins: ReturnType<typeof listPluginEntries>
-	summaries: ReturnType<typeof listPluginProjectionSummaries>
-	knownCommands: string[]
-}
-
-interface FireflyPluginToolsResult {
-	appVersion: string
-	tools: {
-		pluginId: string
-		id: string
-		title: string
-		description: string
-		scope: "session" | "project" | "app"
-		requires: string[]
-		timeoutMs: number
-		preview: boolean
-	}[]
-}
-
-interface FireflyPluginFamilyResult<T> {
-	appVersion: string
-	items: T[]
-}
-
 export function registerFireflyPluginIpc(): void {
+	const authority = new ElectronHostAuthority()
+
 	ipcMain.handle(FIREFLY_PLUGIN_IPC_CHANNELS.list, () => {
-		const catalog = getPluginCatalog()
-		const result: FireflyPluginListResult = {
-			appVersion: catalog.appVersion,
-			plugins: listPluginEntries(),
-			summaries: listPluginProjectionSummaries(),
-			knownCommands: listKnownCommands(),
-		}
-		return result
+		return authority.catalog()
 	})
 
 	ipcMain.handle(FIREFLY_PLUGIN_IPC_CHANNELS.describe, (_event, rawArgs: unknown) => {
 		const args = describeArgsSchema.parse(coerceArgs(rawArgs))
-		return describePlugin(args.pluginId)
+		return authority.describe(args.pluginId)
 	})
 
 	ipcMain.handle(FIREFLY_PLUGIN_IPC_CHANNELS.state, (_event, rawArgs: unknown) => {
 		const args = stateArgsSchema.parse(coerceArgs(rawArgs))
-		const caps = getPluginCapabilities(args.pluginId)
-		return {
-			found: caps.state.trust !== "built-in" || args.pluginId.length > 0,
-			pluginId: args.pluginId,
-			state: caps.state,
-			decision: caps.decision,
-		}
+		return authority.state(args.pluginId)
 	})
 
 	ipcMain.handle(FIREFLY_PLUGIN_IPC_CHANNELS.tools, () => {
-		const catalog = getPluginCatalog()
-		const tools: FireflyPluginToolsResult["tools"] = []
-		for (const descriptor of catalog.descriptors) {
-			for (const projected of projectBridgeToolDefinitions(descriptor)) {
-				tools.push({
-					pluginId: projected.pluginId,
-					id: projected.id,
-					title: projected.title,
-					description: projected.description,
-					scope: projected.scope,
-					requires: [...projected.requires],
-					timeoutMs: projected.timeoutMs,
-					preview: projected.preview,
-				})
-			}
-		}
-		return { appVersion: catalog.appVersion, tools } satisfies FireflyPluginToolsResult
+		return authority.listTools()
 	})
 
 	ipcMain.handle(FIREFLY_PLUGIN_IPC_CHANNELS.panels, () => {
-		const catalog = getPluginCatalog()
-		return {
-			appVersion: catalog.appVersion,
-			items: [...listPluginPanels()],
-		} satisfies FireflyPluginFamilyResult<unknown>
+		return authority.listPanels()
 	})
 
 	ipcMain.handle(FIREFLY_PLUGIN_IPC_CHANNELS.widgets, () => {
-		const catalog = getPluginCatalog()
-		return {
-			appVersion: catalog.appVersion,
-			items: [...listPluginWidgets()],
-		} satisfies FireflyPluginFamilyResult<unknown>
+		return authority.listWidgets()
 	})
 
 	ipcMain.handle(FIREFLY_PLUGIN_IPC_CHANNELS.commands, () => {
-		const catalog = getPluginCatalog()
-		return {
-			appVersion: catalog.appVersion,
-			items: [...listPluginCommands()],
-		} satisfies FireflyPluginFamilyResult<unknown>
+		return authority.listCommands()
 	})
 
 	ipcMain.handle(FIREFLY_PLUGIN_IPC_CHANNELS.themes, () => {
-		const catalog = getPluginCatalog()
-		return {
-			appVersion: catalog.appVersion,
-			items: [...listPluginThemes()],
-		} satisfies FireflyPluginFamilyResult<unknown>
+		return authority.listThemes()
 	})
 
 	ipcMain.handle(FIREFLY_PLUGIN_IPC_CHANNELS.refresh, () => {
-		const catalog = refreshPluginCatalog()
-		broadcastCatalogChanged()
-		return {
-			appVersion: catalog.appVersion,
-			pluginCount: catalog.descriptors.length,
-		}
+		return authority.refresh()
 	})
 
 	const lifecycleArgsSchema = z.object({
@@ -178,40 +81,17 @@ export function registerFireflyPluginIpc(): void {
 		if (typeof args.enabled !== "boolean") {
 			throw new Error("set-enabled requires { pluginId, enabled }")
 		}
-		// 1. Persist the durable enable/disable + invalidate the catalog overlay.
-		const state = setPluginEnabled(args.pluginId, args.enabled)
-		// 2. Make it take real runtime effect: stop/start the worker. A
-		//    surface-only plugin (no worker entry, no registration) is a safe
-		//    no-op here — the renderer unmount/remount is the whole effect.
-		const supervised = applyEnabledToSupervisor(
-			getBootedPluginWorkerSupervisor(),
-			args.pluginId,
-			args.enabled,
-		)
-		// 3. Tell every renderer the catalog moved so it reprojects (and, for
-		//    surface plugins, tears down / re-mounts the surface instance).
-		broadcastCatalogChanged(`set-enabled:${args.enabled ? "enable" : "disable"}`)
-		log.info("Plugin set-enabled applied", {
-			pluginId: args.pluginId,
-			enabled: args.enabled,
-			supervised: supervised.supervised,
-			workerState: supervised.summary?.state ?? null,
-		})
-		return { pluginId: args.pluginId, ...state }
+		return authority.setEnabled(args.pluginId, args.enabled)
 	})
 
 	ipcMain.handle(FIREFLY_PLUGIN_IPC_CHANNELS.panelCrash, (_event, rawArgs: unknown) => {
 		const args = lifecycleArgsSchema.parse(coerceArgs(rawArgs))
-		const state = reportPluginPanelCrash(args.pluginId, args.message ?? "panel render crash")
-		broadcastCatalogChanged()
-		return { pluginId: args.pluginId, ...state }
+		return authority.reportPanelCrash(args.pluginId, args.message ?? "panel render crash")
 	})
 
 	ipcMain.handle(FIREFLY_PLUGIN_IPC_CHANNELS.releaseQuarantine, (_event, rawArgs: unknown) => {
 		const args = lifecycleArgsSchema.parse(coerceArgs(rawArgs))
-		const state = releasePluginQuarantine(args.pluginId, args.note ?? "operator release")
-		broadcastCatalogChanged()
-		return { pluginId: args.pluginId, ...state }
+		return authority.releaseQuarantine(args.pluginId, args.note ?? "operator release")
 	})
 
 	ipcMain.handle(
@@ -227,7 +107,7 @@ export function registerFireflyPluginIpc(): void {
 				string,
 				unknown
 			>
-			return invokePluginCommand({ pluginId, commandId, args })
+			return authority.invoke(pluginId, commandId, args)
 		},
 	)
 
@@ -245,7 +125,7 @@ export function registerFireflyPluginIpc(): void {
 				unknown
 			>
 			const sessionId = typeof obj.sessionId === "string" ? obj.sessionId : null
-			return invokePluginTool({ pluginId, toolId, args, sessionId })
+			return authority.invokeTool(pluginId, toolId, args, sessionId)
 		},
 	)
 
