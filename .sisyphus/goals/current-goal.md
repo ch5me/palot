@@ -103,14 +103,28 @@ migration, HostAuthority seam.
 Swarm lesson (codify): workflow spec agents must get an explicit
 NO git add/commit/push rule — one rogue agent pushed P4 to main.
 
+- **P1 theme-import core: DONE** (`d4a92afdb`). vscode-theme-import converter (§9
+  color map, 47 tests), content-addressed package-store w/ sha256 verify-before-
+  extract (16 tests), read-only Open VSX v3 client behind RegistryClient (23 tests);
+  themes contribution gained import provenance. 771 tests pass.
+
 ## Remaining
 
-- Cross-cutting: identity `namespace.name` migration (aliases); `HostAuthority` seam.
-- P1 local: DB schema/stores, VSIX download+verify+unpack, Open VSX client +
-  registry adapters, theme converter, marketplace UI + IPC. (Remote half →
-  firefly-cloud repo.)
-- P2 data families + Monaco projection. P3 runtime hosts. P4 review.
-- Trust derived from verification (signing).
+In-repo:
+- **P1 finish**: DB-backed install/package records (app DB = Drizzle/libsql in
+  `automation/`, needs a migration) + marketplace IPC channels + marketplace UI
+  (search Open VSX → install theme → apply). Wires the landed converter/store/client
+  into a usable surface.
+- **P2** data families (snippets/languages/grammars/iconThemes) + Monaco projection.
+- **P3** runtime hosts: extension-host RPC, node/web-worker, capability grants,
+  storage API. + wire CloudHostAuthority to firefly-cloud RPC.
+- **P4 review** (design-fit of the landed classifier/importer).
+- Trust: full signing (publisher keys) on top of the sha256 verify already in
+  package-store.
+
+Cross-repo (CANNOT land from palot):
+- **firefly-cloud hosted gallery + publish API** — the remote half of the
+  marketplace lives in the firefly-cloud repo.
 
 ## Plan
 
