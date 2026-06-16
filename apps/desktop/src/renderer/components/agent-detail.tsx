@@ -22,6 +22,7 @@ import {
 	TerminalIcon,
 } from "lucide-react"
 import { type ComponentProps, useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react"
+import type { DockviewApi } from "dockview-react"
 import type { OpenInTarget } from "../../preload/api"
 import {
 	// ch5pmSurfaceEnabledAtom removed — ch5pm is catalog-served (firefly.built-in.surface.ch5pm).
@@ -51,6 +52,7 @@ import {
 	documentPanelActiveTabAtom,
 	documentPanelOpenAtom,
 	isDocumentPanelTab,
+	paneRoutingStateAtom,
 	reviewPanelSettingsAtom,
 	setAvailableDocumentPanelTabsAtom,
 	sessionDiffStatsFamily,
@@ -498,6 +500,27 @@ export function AgentDetail({
 	const registry = useSurfaceRegistry()
 	const chatInstanceId = `chat:${agent.sessionId}:view-main`
 
+	// Capture each zone's DockviewApi so we can imperatively focus panels on routing changes.
+	const zoneApisRef = useRef<Partial<Record<string, DockviewApi>>>({})
+	const handleZoneApiReady = useCallback((zone: string, api: DockviewApi) => {
+		zoneApisRef.current[zone] = api
+	}, [])
+
+	// Focus the correct dock panel whenever the routing atoms change (e.g. plugin→surface handoff).
+	// Uses paneRoutingState (tab + focusToken) so re-requesting the same tab still triggers a focus.
+	const paneRoutingState = useAtomValue(paneRoutingStateAtom)
+	useEffect(() => {
+		const { sidePanel, documentPanel } = paneRoutingState
+		if (sidePanel) {
+			const panelId = `${sidePanel.tab}:${agent.sessionId}`
+			zoneApisRef.current["right"]?.getPanel(panelId)?.focus()
+		}
+		if (documentPanel) {
+			const panelId = `${documentPanel.tab}:${agent.sessionId}`
+			zoneApisRef.current["bottom"]?.getPanel(panelId)?.focus()
+		}
+	}, [paneRoutingState, agent.sessionId])
+
 	// Register chat surface once per session identity (idempotent).
 	useEffect(() => {
 		registry.getOrCreate(chatInstanceId, {
@@ -569,7 +592,7 @@ export function AgentDetail({
 	// chat zone starves to 0px.
 	return (
 		<div className="flex h-full min-h-0 min-w-0 overflow-hidden">
-			<DockShell seedPanels={dockSeedPanels} isDarkMode={isDarkMode} />
+			<DockShell seedPanels={dockSeedPanels} isDarkMode={isDarkMode} onZoneApiReady={handleZoneApiReady} />
 		</div>
 	)
 }
