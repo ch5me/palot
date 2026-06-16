@@ -681,7 +681,7 @@ function SessionAppBarContent({
 	}, [agent.projectSlug, agent.sessionId, projectSlug])
 
 	return (
-		<div className="flex min-w-0 items-center gap-3 px-3">
+		<div className="flex w-full min-w-0 flex-1 items-center gap-3 px-3">
 			<div className="flex min-w-0 items-center gap-3">
 				<div className="min-w-0">
 					{isEditingTitle ? (
