@@ -18,8 +18,6 @@ import {
 	ExternalLinkIcon,
 	PanelBottomIcon,
 	PanelRightIcon,
-	PencilIcon,
-	TerminalIcon,
 } from "lucide-react"
 import { type ComponentProps, useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore, type ReactNode } from "react"
 import type { DockviewApi } from "dockview-react"
@@ -86,7 +84,6 @@ import {
 import { useSetAppBarContent } from "./app-bar-context"
 import { ChatView } from "./chat"
 import type { SidePanelTabDef } from "./side-panel/side-panel-tabs"
-import { SessionMetricsBar } from "./session-metrics-bar"
 import { WorktreeActions } from "./worktree-actions"
 
 
@@ -706,22 +703,17 @@ function SessionAppBarContent({
 							style={{ WebkitAppRegion: "no-drag" } as React.CSSProperties}
 						/>
 					) : (
-						<div className="flex items-center gap-2">
-							<span className="truncate text-sm font-medium text-foreground">{agent.name}</span>
-							{onRename ? (
-								<Button
-									variant="ghost"
-									size="icon"
-									className="size-6"
-									onClick={onStartEditing}
-									style={{ WebkitAppRegion: "no-drag" } as React.CSSProperties}
-								>
-									<PencilIcon className="size-3.5" />
-								</Button>
-							) : null}
-						</div>
+						<button
+							type="button"
+							onClick={onRename ? onStartEditing : undefined}
+							disabled={!onRename}
+							title={onRename ? "Click to rename" : undefined}
+							className="-mx-1 max-w-full truncate rounded px-1 py-0.5 text-left text-sm font-medium text-foreground hover:bg-muted/50 disabled:cursor-default disabled:hover:bg-transparent"
+							style={{ WebkitAppRegion: "no-drag" } as React.CSSProperties}
+						>
+							{agent.name}
+						</button>
 					)}
-					<div className="truncate text-xs text-muted-foreground">{agent.project}</div>
 				</div>
 			</div>
 			<div
@@ -760,8 +752,6 @@ function SessionAppBarContent({
 					</DropdownMenu>
 				) : null}
 				<WorktreeActions agent={agent} />
-				<SessionMetricsBar sessionId={agent.sessionId} />
-				<div className="mx-1 h-5 w-px shrink-0 bg-border/60" aria-hidden />
 				<button
 					type="button"
 					onClick={onToggleSidePanel}
@@ -774,14 +764,13 @@ function SessionAppBarContent({
 								: "Show right panel (⇧⌘D)"
 							: "No right-panel surfaces available"
 					}
-					className={`inline-flex items-center gap-1.5 rounded-md border px-2 py-1 text-xs font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-40 ${
+					className={`flex size-7 items-center justify-center rounded-md border transition-colors disabled:cursor-not-allowed disabled:opacity-40 ${
 						sidePanelOpen
 							? "border-primary/60 bg-primary/15 text-foreground"
 							: "border-border/70 text-muted-foreground hover:text-foreground"
 					}`}
 				>
 					<PanelRightIcon className="size-3.5" />
-					Right
 				</button>
 				<button
 					type="button"
@@ -794,19 +783,14 @@ function SessionAppBarContent({
 								? "Show bottom panel"
 								: "Show bottom panel (empty — drag tabs here)"
 					}
-					className={`inline-flex items-center gap-1.5 rounded-md border px-2 py-1 text-xs font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-40 ${
+					className={`flex size-7 items-center justify-center rounded-md border transition-colors disabled:cursor-not-allowed disabled:opacity-40 ${
 						documentPanelOpen
 							? "border-primary/60 bg-primary/15 text-foreground"
 							: "border-border/70 text-muted-foreground hover:text-foreground"
 					}`}
 				>
 					<PanelBottomIcon className="size-3.5" />
-					Bottom
 				</button>
-				<div className="flex items-center gap-1 text-xs text-muted-foreground">
-					<TerminalIcon className="size-3.5" />
-					<span>{agent.branch}</span>
-				</div>
 			</div>
 		</div>
 	)
