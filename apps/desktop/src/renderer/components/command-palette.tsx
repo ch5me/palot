@@ -60,7 +60,6 @@ import {
 	claudeSurfaceEnabledAtom,
 	crmSurfaceEnabledAtom,
 	editorSurfaceEnabledAtom,
-	memorySurfaceEnabledAtom,
 	pluginsSurfaceEnabledAtom,
 	pdfReviewSurfaceEnabledAtom,
 	studioSurfaceEnabledAtom,
@@ -71,7 +70,6 @@ import {
 	toggleCh5PmSurfaceAtom,
 	toggleClaudeSurfaceAtom,
 	toggleCrmSurfaceAtom,
-	toggleMemorySurfaceAtom,
 	togglePdfReviewSurfaceAtom,
 	togglePluginsSurfaceAtom,
 	toggleStudioSurfaceAtom,
@@ -139,7 +137,6 @@ export function CommandPalette({ open, onOpenChange, agents, onForkSession }: Co
 	const automationsEnabled = useAtomValue(automationsEnabledAtom)
 	const toggleAutomations = useSetAtom(toggleAutomationsAtom)
 	const browserPanelEnabled = useAtomValue(browserPanelEnabledAtom)
-	const memorySurfaceEnabled = useAtomValue(memorySurfaceEnabledAtom)
 	const terminalSurfaceEnabled = useAtomValue(terminalSurfaceEnabledAtom)
 	const editorSurfaceEnabled = useAtomValue(editorSurfaceEnabledAtom)
 	const pluginsSurfaceEnabled = useAtomValue(pluginsSurfaceEnabledAtom)
@@ -150,7 +147,6 @@ export function CommandPalette({ open, onOpenChange, agents, onForkSession }: Co
 	const ch5pmSurfaceEnabled = useAtomValue(ch5pmSurfaceEnabledAtom)
 	const pdfReviewSurfaceEnabled = useAtomValue(pdfReviewSurfaceEnabledAtom)
 	const toggleBrowserPanel = useSetAtom(toggleBrowserPanelAtom)
-	const toggleMemorySurface = useSetAtom(toggleMemorySurfaceAtom)
 	const togglePluginsSurface = useSetAtom(togglePluginsSurfaceAtom)
 	const toggleCrmSurface = useSetAtom(toggleCrmSurfaceAtom)
 	const toggleStudioSurface = useSetAtom(toggleStudioSurfaceAtom)
@@ -226,7 +222,6 @@ export function CommandPalette({ open, onOpenChange, agents, onForkSession }: Co
 			},
 			flags: {
 				browserPanelEnabled,
-				memory: memorySurfaceEnabled,
 				terminal: terminalSurfaceEnabled,
 				editor: editorSurfaceEnabled,
 				plugins: pluginsSurfaceEnabled,
@@ -242,7 +237,6 @@ export function CommandPalette({ open, onOpenChange, agents, onForkSession }: Co
 	}, [
 		activeAgent,
 		browserPanelEnabled,
-		memorySurfaceEnabled,
 		terminalSurfaceEnabled,
 		editorSurfaceEnabled,
 		pluginsSurfaceEnabled,
@@ -321,6 +315,19 @@ export function CommandPalette({ open, onOpenChange, agents, onForkSession }: Co
 		await window.elf?.plugins.setEnabled("firefly.built-in.surface.pulse", !pulsePluginEnabled)
 		await queryClient.invalidateQueries({ queryKey: ["firefly-plugin"] })
 	}, [pulsePluginEnabled, queryClient])
+
+	// Memory is a catalog-served plugin: its enable/disable flows through
+	// the host plugin lifecycle, not a renderer feature-flag atom.
+	const memoryPluginEntry = pluginList?.plugins.find(
+		(plugin) => plugin.pluginId === "firefly.built-in.surface.memory",
+	)
+	const memoryPluginEnabled = memoryPluginEntry
+		? memoryPluginEntry.status !== "disabled" && memoryPluginEntry.status !== "quarantined"
+		: false
+	const toggleMemoryPlugin = useCallback(async () => {
+		await window.elf?.plugins.setEnabled("firefly.built-in.surface.memory", !memoryPluginEnabled)
+		await queryClient.invalidateQueries({ queryKey: ["firefly-plugin"] })
+	}, [memoryPluginEnabled, queryClient])
 
 	const catalogSurfaceTabs = useCatalogSurfaceTabs(activeAgent)
 	const availableSurfaceTabs = useMemo(
@@ -585,13 +592,13 @@ export function CommandPalette({ open, onOpenChange, agents, onForkSession }: Co
 					<CommandItem
 						keywords={["memory", "surface", "context"]}
 						onSelect={() => {
-							toggleMemorySurface()
+							void toggleMemoryPlugin()
 							onOpenChange(false)
 						}}
 					>
 						<DatabaseIcon />
-						<span>{memorySurfaceEnabled ? "Disable Memory Surface" : "Enable Memory Surface"}</span>
-						{memorySurfaceEnabled && <CheckIcon className="ml-auto h-4 w-4" />}
+						<span>{memoryPluginEnabled ? "Disable Memory Surface" : "Enable Memory Surface"}</span>
+						{memoryPluginEnabled && <CheckIcon className="ml-auto h-4 w-4" />}
 					</CommandItem>
 					<CommandItem
 						keywords={["files", "surface", "review", "project files"]}

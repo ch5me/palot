@@ -33,7 +33,6 @@ import {
 	claudeSurfaceEnabledAtom,
 	crmSurfaceEnabledAtom,
 	editorSurfaceEnabledAtom,
-	memorySurfaceEnabledAtom,
 	oracleSurfaceEnabledAtom,
 	pluginsSurfaceEnabledAtom,
 	pdfReviewSurfaceEnabledAtom,
@@ -309,7 +308,6 @@ export function AgentDetail({
 	}, [isEditingTitle])
 
 	const browserPanelEnabled = useAtomValue(browserPanelEnabledAtom)
-	const memorySurfaceEnabled = useAtomValue(memorySurfaceEnabledAtom)
 	const terminalSurfaceEnabled = useAtomValue(terminalSurfaceEnabledAtom)
 	const editorSurfaceEnabled = useAtomValue(editorSurfaceEnabledAtom)
 	const pluginsSurfaceEnabled = useAtomValue(pluginsSurfaceEnabledAtom)
@@ -328,7 +326,6 @@ export function AgentDetail({
 			diffStats,
 			flags: {
 				browserPanelEnabled,
-				memory: memorySurfaceEnabled,
 				terminal: terminalSurfaceEnabled,
 				editor: editorSurfaceEnabled,
 				plugins: pluginsSurfaceEnabled,
@@ -348,7 +345,6 @@ export function AgentDetail({
 		catalogSurfaceTabs,
 		diffStats,
 		browserPanelEnabled,
-		memorySurfaceEnabled,
 		terminalSurfaceEnabled,
 		editorSurfaceEnabled,
 		pluginsSurfaceEnabled,

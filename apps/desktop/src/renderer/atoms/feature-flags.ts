@@ -87,13 +87,12 @@ export const toggleLoomAcmeComponentsAtom = atom(null, (get, set) => {
 	set(loomAcmeComponentsAtom, !get(loomAcmeComponentsAtom))
 })
 
-// NOTE: `notes`, `review`, `files`, `artifacts`, and `bridges` have no feature flags any more — they are
-// catalog-served plugins; their enable/disable state lives in the host
-// plugin lifecycle store. The legacy localStorage values are migrated
-// once by `renderer/firefly-plugin-flag-migration.ts`.
+// NOTE: `notes`, `review`, `files`, `artifacts`, `bridges`, `pulse`, and `memory`
+// have no feature flags any more — they are catalog-served plugins; their
+// enable/disable state lives in the host plugin lifecycle store. The legacy
+// localStorage values are migrated once by `renderer/firefly-plugin-flag-migration.ts`.
 export const fireflySurfaceDefaults = {
 	browserPanelEnabled: true,
-	memory: false,
 	terminal: true,
 	editor: true,
 	plugins: true,
@@ -109,7 +108,6 @@ export const fireflySurfaceDefaults = {
 export type FireflySurfaceFlagKey = keyof typeof fireflySurfaceDefaults
 
 export const browserPanelEnabledAtom = atomWithStorage<boolean>("elf:browserPanelEnabled", true)
-export const memorySurfaceEnabledAtom = atomWithStorage<boolean>("elf:memorySurfaceEnabled", false)
 export const terminalSurfaceEnabledAtom = atomWithStorage<boolean>("elf:terminalSurfaceEnabled", true)
 export const editorSurfaceEnabledAtom = atomWithStorage<boolean>("elf:editorSurfaceEnabled", true)
 export const pluginsSurfaceEnabledAtom = atomWithStorage<boolean>("elf:pluginsSurfaceEnabled", true)
@@ -123,7 +121,6 @@ export const pdfReviewSurfaceEnabledAtom = atomWithStorage<boolean>("elf:pdfRevi
 
 export const fireflySurfaceFlagAtoms: Record<FireflySurfaceFlagKey, typeof browserPanelEnabledAtom> = {
 	browserPanelEnabled: browserPanelEnabledAtom,
-	memory: memorySurfaceEnabledAtom,
 	terminal: terminalSurfaceEnabledAtom,
 	editor: editorSurfaceEnabledAtom,
 	plugins: pluginsSurfaceEnabledAtom,
@@ -138,7 +135,6 @@ export const fireflySurfaceFlagAtoms: Record<FireflySurfaceFlagKey, typeof brows
 
 export const fireflySurfaceLabels: Record<FireflySurfaceFlagKey, string> = {
 	browserPanelEnabled: "Browser",
-	memory: "Memory",
 	terminal: "Terminal",
 	editor: "Editor",
 	plugins: "Plugins",
@@ -153,10 +149,6 @@ export const fireflySurfaceLabels: Record<FireflySurfaceFlagKey, string> = {
 
 export const toggleBrowserPanelAtom = atom(null, (get, set) => {
 	set(browserPanelEnabledAtom, !get(browserPanelEnabledAtom))
-})
-
-export const toggleMemorySurfaceAtom = atom(null, (get, set) => {
-	set(memorySurfaceEnabledAtom, !get(memorySurfaceEnabledAtom))
 })
 
 export const toggleTerminalSurfaceAtom = atom(null, (get, set) => {

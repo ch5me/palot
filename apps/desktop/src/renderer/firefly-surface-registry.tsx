@@ -1,4 +1,4 @@
-import { DatabaseIcon, FileTextIcon, GlobeIcon, MicIcon, MonitorPlayIcon, PlugIcon, RectangleEllipsisIcon, SquarePenIcon, TerminalSquareIcon, UsersIcon, WandSparklesIcon, type LucideIcon } from "lucide-react"
+import { FileTextIcon, GlobeIcon, MicIcon, MonitorPlayIcon, PlugIcon, RectangleEllipsisIcon, SquarePenIcon, TerminalSquareIcon, UsersIcon, WandSparklesIcon, type LucideIcon } from "lucide-react"
 
 import type { ReactNode } from "react"
 
@@ -6,7 +6,6 @@ import { Ch5PmDashboardPanel } from "./ch5pm-dashboard/panel"
 import { BrowserPanel } from "./components/side-panel/browser-panel"
 import { ClaudePanel } from "./components/side-panel/claude-panel"
 import { CrmPanel } from "./components/side-panel/crm-panel"
-import { PluginPanelBoundary } from "./components/side-panel/plugin-panel-boundary"
 import { OraclePanel } from "./components/side-panel/oracle-panel"
 import { PdfReviewPanel } from "./components/side-panel/pdf-review-panel"
 import { StudioPanel } from "./components/side-panel/studio-panel"
@@ -16,12 +15,6 @@ import { V2PluginsPanel } from "./components/side-panel/v2-plugins-panel"
 import { TerminalPanel } from "./components/side-panel/terminal-panel"
 import type { Agent, FireflySurfaceTarget } from "./lib/types"
 import type { FireflySurfaceLane } from "../shared/firefly-surface-ids"
-
-const MemoryPanelHost = (({ className }: { agent: Agent; className?: string }) => (
-	<div className={`flex h-full min-h-0 items-center justify-center px-4 text-center text-xs text-muted-foreground ${className ?? ""}`}>
-		Loading Memory surface...
-	</div>
-))
 
 export type FireflySurfaceFormFactor = "side-panel-tab" | "main-pane"
 
@@ -102,39 +95,8 @@ export const FIREFLY_SURFACE_REGISTRY: FireflySurfaceDef[] = [
 	// apps/desktop/plugins/pulse) — do not re-add a row here.
 	// `artifacts` is served from the plugin catalog (firefly.built-in.surface.artifacts,
 	// apps/desktop/plugins/artifacts) — do not re-add a row here.
-	{
-		id: "memory",
-		manifestId: "firefly.built-in.side-panel.memory",
-		title: "Memory",
-		icon: DatabaseIcon,
-		formFactor: "side-panel-tab",
-		lane: "utility",
-		enabledFlag: {
-			key: "memory",
-		},
-		defaultOn: false,
-		availability: (ctx) =>
-			ctx.flags.memory
-				? { available: true }
-				: { available: false, reason: "Memory surface is disabled in feature flags" },
-		commandIds: ["surface.memory.open", "surface.memory.toggle"],
-		persistenceKey: "side-panel.memory",
-		telemetryNamespace: "firefly.surface.memory",
-		target: { kind: "side-panel", tab: "memory" },
-		spawn: (ctx) => (
-			<PluginPanelBoundary
-				pluginId="firefly.built-in.surface.memory"
-				contributionId="memory"
-				hostComponent={MemoryPanelHost}
-				hostLazyImport={() =>
-					import("./components/side-panel/memory-panel").then((module) => ({
-						default: module.MemoryPanel,
-					}))
-				}
-				agent={ctx.agent}
-			/>
-		),
-	},
+	// `memory` is served from the plugin catalog (firefly.built-in.surface.memory,
+	// apps/desktop/plugins/memory) — do not re-add a row here.
 	// `files` is served from the plugin catalog (firefly.built-in.surface.files,
 	// apps/desktop/plugins/files) — do not re-add a row here.
 	{
@@ -373,7 +335,7 @@ import { FIREFLY_SURFACE_IDS, type FireflySurfaceId } from "../shared/firefly-su
  * they are served from the plugin catalog (host plugin lifecycle owns
  * their enable/disable). First migrated surface: notes.
  */
-export const CATALOG_SERVED_SURFACE_IDS: readonly FireflySurfaceId[] = ["notes", "review", "files", "artifacts", "bridges", "pulse"]
+export const CATALOG_SERVED_SURFACE_IDS: readonly FireflySurfaceId[] = ["notes", "review", "files", "artifacts", "bridges", "pulse", "memory"]
 
 export const FIREFLY_SURFACE_DEFAULT_ON = Object.fromEntries(
 	FIREFLY_SURFACE_REGISTRY.map((surface) => [surface.id, surface.defaultOn]),

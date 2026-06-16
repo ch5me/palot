@@ -8,10 +8,10 @@ import {
 	pinnedFactsAtom,
 	removePinnedFactAtom,
 	type MemoryMode,
-} from "../../atoms/preferences"
-import type { MemoryItem } from "../../services/memory-service"
-import { fetchMemories, addRemoteMemory, removeRemoteMemory } from "../../services/memory-service"
-import type { Agent } from "../../lib/types"
+} from "@/atoms/preferences"
+import type { MemoryItem } from "@/services/memory-service"
+import { fetchMemories, addRemoteMemory, removeRemoteMemory } from "@/services/memory-service"
+import type { Agent } from "@/lib/types"
 
 interface MemoryPanelProps {
 	agent: Agent
@@ -246,3 +246,5 @@ export function MemoryPanel({ agent, className }: MemoryPanelProps) {
 		</div>
 	)
 }
+
+export default MemoryPanel

@@ -690,6 +690,63 @@ export function registerPulseHostHandlers(deps?: Partial<PulseHostDeps>): void {
 }
 
 // ---------------------------------------------------------------------------
+// Memory surface host handlers (firefly.built-in.surface.memory)
+// ---------------------------------------------------------------------------
+
+export interface MemoryHostDeps {
+	openSidePanel: (tab: "memory") => Promise<void>
+	getSidePanelState: () => SidePanelStateSnapshot
+	setPluginEnabled: (pluginId: string, enabled: boolean) => { enabled: boolean }
+}
+
+const MEMORY_PLUGIN_ID = "firefly.built-in.surface.memory"
+
+export function registerMemoryHostHandlers(deps?: Partial<MemoryHostDeps>): void {
+	const openSidePanel =
+		deps?.openSidePanel ??
+		(async (tab: "memory") => {
+			const { broadcastOpenSidePanel } = await import("../palot-browser-ipc")
+			await broadcastOpenSidePanel(tab)
+		})
+	const getSidePanelState = deps?.getSidePanelState ?? defaultGetSidePanelState
+	const setEnabled =
+		deps?.setPluginEnabled ??
+		((pluginId: string, enabled: boolean) => {
+			// eslint-disable-next-line @typescript-eslint/no-var-requires
+			const authority = require("./authority") as typeof import("./authority")
+			return authority.setPluginEnabled(pluginId, enabled)
+		})
+
+	registerHostTool(MEMORY_PLUGIN_ID, "plugin.firefly.built-in.surface.memory.open", async () => {
+		await openSidePanel("memory")
+		return ok({ opened: true, tab: "memory", source: "v2-plugin-tool-dispatch" })
+	})
+
+	registerHostTool(MEMORY_PLUGIN_ID, "plugin.firefly.built-in.surface.memory.state", async () => {
+		const sidePanel = getSidePanelState()
+		return ok({
+			tab: "memory",
+			available: sidePanel.availableTabs.includes("memory"),
+			open: sidePanel.open,
+			active: sidePanel.open && sidePanel.activeTab === "memory",
+		})
+	})
+
+	registerHostCommand(MEMORY_PLUGIN_ID, "open-memory", async () => {
+		await openSidePanel("memory")
+		return ok({ opened: true, tab: "memory" })
+	})
+
+	registerHostCommand(MEMORY_PLUGIN_ID, "toggle-memory", async () => {
+		const catalog = getPluginCatalog()
+		const state = catalog.capabilityStates[MEMORY_PLUGIN_ID]
+		const currentlyEnabled = !(state?.pluginDisabled ?? false)
+		const next = setEnabled(MEMORY_PLUGIN_ID, !currentlyEnabled)
+		return ok({ pluginId: MEMORY_PLUGIN_ID, enabled: next.enabled })
+	})
+}
+
+// ---------------------------------------------------------------------------
 // DevMux Toolbar host handlers (firefly.built-in.devmux-toolbar)
 //
 // The Node-only work lives in `main/devmux/service.ts` and is reached here
@@ -793,6 +850,7 @@ export function registerBuiltInHostCommands(): void {
 	registerArtifactsHostHandlers()
 	registerBridgesHostHandlers()
 	registerPulseHostHandlers()
+	registerMemoryHostHandlers()
 	registerDevmuxHostHandlers()
 	log.info("Registered V2 host command handlers", {
 		commands: Array.from(handlers.keys()),

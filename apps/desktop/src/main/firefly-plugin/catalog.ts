@@ -58,7 +58,10 @@ import {
 } from "../../../plugins/pulse/manifest"
 import { BUILT_IN_DEFAULT_CAPABILITIES } from "../../shared/firefly-plugin/capabilities"
 import { type PluginDescriptor } from "../../shared/firefly-plugin/descriptor"
-import { memorySurfaceManifest, MEMORY_SURFACE_PLUGIN_ID } from "../../shared/firefly-plugin/memory-surface-manifest"
+import {
+	memoryPluginManifest,
+	MEMORY_PLUGIN_ID,
+} from "../../../plugins/memory/manifest"
 import {
 	defaultCapabilityState,
 	projectCommandsFromCatalog,
@@ -99,7 +102,7 @@ const log = createLogger("firefly-plugin-catalog")
  */
 const BUILT_IN_MANIFESTS: readonly PluginManifest[] = [
 	palotBridgeManifest,
-	memorySurfaceManifest,
+	memoryPluginManifest,
 	acmeNotebookManifest,
 	notesPluginManifest,
 	reviewPluginManifest,
@@ -453,7 +456,7 @@ function defaultCapabilityStateForId(pluginId: string): CapabilityStateShape {
  */
 export const KNOWN_PLUGIN_IDS = {
 	palotBridge: PALOT_BRIDGE_PLUGIN_ID,
-	memorySurface: MEMORY_SURFACE_PLUGIN_ID,
+	memorySurface: MEMORY_PLUGIN_ID,
 	acmeNotebook: ACME_NOTEBOOK_PLUGIN_ID,
 	notes: NOTES_PLUGIN_ID,
 	review: REVIEW_PLUGIN_ID,
