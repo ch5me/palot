@@ -124,13 +124,15 @@ NO git add/commit/push rule — one rogue agent pushed P4 to main.
   registration entry points; TextMate WASM pipeline left behind a typed boundary
   (only monaco-editor installed).
 
+- **P1 theme apply-to-DOM: DONE** (`5f151a48c`). VSCODE_COLOR_MAP remapped to the
+  app's real shadcn tokens; converted appTokens flow through install → apply IPC →
+  a runtime imported-theme registry (getTheme/getAvailableThemes) → setTheme →
+  useThemeEffect injects CSS vars. Installing + applying a VS Code theme now visibly
+  retints the app. **P1 theme marketplace is COMPLETE end-to-end.** 883 tests pass.
+
 ## Remaining
 
-In-repo:
-- **P1 polish**: applied-theme **CSS-var injection into the renderer theme engine**
-  (apply records the theme id but doesn't yet push tokens to the DOM) — the last
-  mile to make an installed theme visibly change the app. Small but needs the
-  existing theme-apply renderer path.
+In-repo (each a fresh, deliberate effort — not "finish-up" scope):
 - **P3** runtime hosts: extension-host RPC, node/web-worker, capability grants,
   storage API + wire CloudHostAuthority to firefly-cloud RPC. Large, architecture-heavy.
 - TextMate grammar runtime (needs vscode-textmate/oniguruma deps + caller wiring).
