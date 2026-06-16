@@ -32,6 +32,8 @@ import { useEffect, useRef, useState } from "react"
 import { Button } from "@ch5me/ch5-ui-web"
 import { registerAndActivateImportedTheme } from "../../lib/imported-themes"
 import { useSetTheme } from "../../hooks/use-theme"
+import { buildConsentItems, type ConsentItem } from "../../lib/capability-consent"
+import { CapabilityConsentDialog } from "./capability-consent-dialog"
 
 // ---------------------------------------------------------------------------
 // Bridge helpers (Electron only)
@@ -278,6 +280,21 @@ export function MarketplacePanel({ className }: MarketplacePanelProps) {
 		},
 	})
 
+	// Capability consent gate (P3d). A gallery entry that declares capabilities
+	// (code extensions) opens the consent dialog before install; data-only themes
+	// declare none and install directly. The consent step is deny-by-default.
+	type GalleryItem = { namespace: string; name: string; version: string; displayName: string | null }
+	const [pendingConsent, setPendingConsent] = useState<{ ext: GalleryItem; items: ConsentItem[] } | null>(null)
+
+	function requestInstall(ext: GalleryItem & { requiredCapabilities?: readonly string[] }) {
+		const items = buildConsentItems(ext.requiredCapabilities ?? [])
+		if (items.length > 0) {
+			setPendingConsent({ ext, items })
+			return
+		}
+		installMutation.mutate({ namespace: ext.namespace, name: ext.name, version: ext.version })
+	}
+
 	const uninstallMutation = useMutation({
 		mutationFn: (installationId: string) =>
 			getMarketplaceBridge().uninstall(installationId),
@@ -308,7 +325,7 @@ export function MarketplacePanel({ className }: MarketplacePanelProps) {
 	const installedCount = installed.data?.extensions.length ?? 0
 
 	return (
-		<div className={`flex h-full min-h-0 flex-col bg-background ${className ?? ""}`}>
+		<div className={`relative flex h-full min-h-0 flex-col bg-background ${className ?? ""}`}>
 			{/* Header */}
 			<div className="border-b border-border px-4 py-3">
 				<div className="flex items-center gap-2">
@@ -403,10 +420,11 @@ export function MarketplacePanel({ className }: MarketplacePanelProps) {
 													installed={isInstalled}
 													installing={isInstalling}
 													onInstall={() =>
-														installMutation.mutate({
+														requestInstall({
 															namespace: ext.namespace,
 															name: ext.name,
 															version: ext.version,
+															displayName: ext.displayName,
 														})
 													}
 												/>
@@ -483,6 +501,22 @@ export function MarketplacePanel({ className }: MarketplacePanelProps) {
 					</>
 				)}
 			</div>
+
+			{pendingConsent ? (
+				<CapabilityConsentDialog
+					extensionName={pendingConsent.ext.displayName ?? `${pendingConsent.ext.namespace}.${pendingConsent.ext.name}`}
+					items={pendingConsent.items}
+					onResolve={(approved) => {
+						const ext = pendingConsent.ext
+						setPendingConsent(null)
+						if (approved === null) return
+						// approved capabilities flow to the install grant store as granted/user
+						// once the install IPC threads `consentedCapabilities` (the install
+						// orchestrator's persistInstallGrants already accepts it).
+						installMutation.mutate({ namespace: ext.namespace, name: ext.name, version: ext.version })
+					}}
+				/>
+			) : null}
 		</div>
 	)
 }

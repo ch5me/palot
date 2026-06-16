@@ -618,3 +618,41 @@ live gallery.
 - **Open VSX default-on**: ship with Open VSX enabled for theme/data imports at launch,
   or Firefly-registry-only until curation policy is set?
 - **Built-ins in the gallery**: also published for discovery/parity, or compiled-only?
+
+---
+
+## 16. firefly-cloud RPC contract (CROSS-REPO — implement in `firefly-cloud`)
+
+The palot-side client is **landed** (`cloud-host-rpc-client.ts` + `CloudHostAuthority`,
+Phase 3). The matching **server lives in the `firefly-cloud` repo** and is the remaining
+cross-repo work. This is the exact contract palot's client speaks so firefly-cloud can
+implement it.
+
+**Transport.** `POST {FIREFLY_CLOUD_URL}/firefly-plugin/rpc`, `content-type: application/json`,
+`authorization: Bearer {FIREFLY_CLOUD_TOKEN}` (when configured). Body: `{ "method": string, "params": object }`.
+Response: the method's result as JSON; non-2xx → palot raises `CloudHostRpcError`.
+Missing `FIREFLY_CLOUD_URL` → palot fails fast with `CloudHostNotConfiguredError`
+(no silent fallback).
+
+**RPC methods** (params → result; result shapes are the `host-authority-types.ts` types):
+
+| method | params | result |
+|---|---|---|
+| `invoke` | `{ pluginId, commandId, args }` | `HostToolDispatchEnvelope` |
+| `invokeTool` | `{ pluginId, toolId, args, sessionId }` | `HostToolDispatchEnvelope` |
+| `gallerySearch` | `{ options: MarketplaceSearchOptions }` | `MarketplaceSearchResult` |
+| `installExtension` | `{ input: MarketplaceInstallInput }` | `MarketplaceInstallResult` |
+| `listInstalledExtensions` | `{}` | `{ extensions: MarketplaceInstalledEntry[] }` |
+| `uninstallExtension` | `{ installationId }` | `{ ok: true }` |
+| `applyTheme` | `{ installationId, themeId }` | `{ ok: true, appTokens?, kind? }` |
+
+**Projection reads** (`catalog` / `describe` / `state` / `list*` / `refresh`) are
+**synchronous** in the `HostAuthority` interface and cannot be per-call RPCs. The web build
+serves them from a **projection cache** the renderer hydrates from a firefly-cloud
+`CatalogProjection` snapshot (push on change or fetch-on-connect). Until that cache exists,
+palot's `CloudHostAuthority` sync reads fail fast naming the precondition. firefly-cloud must
+expose a way to fetch/subscribe to the `CatalogProjection`.
+
+**Server-side trust/secret rule (§10).** All trust/secret/fs-bearing operations resolve
+server-side; the broker + signature verification run in firefly-cloud for the web build, same
+contracts as the Electron main process.
