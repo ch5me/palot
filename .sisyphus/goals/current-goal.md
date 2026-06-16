@@ -130,13 +130,45 @@ NO git add/commit/push rule — one rogue agent pushed P4 to main.
   useThemeEffect injects CSS vars. Installing + applying a VS Code theme now visibly
   retints the app. **P1 theme marketplace is COMPLETE end-to-end.** 883 tests pass.
 
+- **P3 native runtime extensions: DONE** (`9b50be1af` contracts + `0cd976385`
+  runtime; desktop tsgo EXIT 0, 899 firefly-plugin + 40 renderer/lib tests pass,
+  lint clean):
+  - **P3a (keystone)** `runtime-location.ts` — single-SoT §2.3 host-kind→location
+    matrix (`resolveRuntimeLocation`, fail-loud on unsupported). Manifest gained an
+    optional `runtime` block; descriptor resolves effective runtime + resolution and
+    infers a back-compat default hostKind so existing built-ins are untouched.
+  - **P3b** `extension-host-protocol.ts` — transport-agnostic host↔worker message
+    contract (lifecycle + activation-grants + storage + capability channels) +
+    `RuntimeTransport` port.
+  - **P3c** `utility-process-spawner.ts` — Electron utilityProcess transport;
+    supervisor-boot selects it per resolved location, else worker_threads. Additive.
+  - **P3d** capability grants + consent: `extension_capability_grants` migration +
+    `grant-store.ts` (deny-by-default resolve) + `install-consent.ts` (risk-tier
+    policy). dispatch's hardcoded over-grant REMOVED → pluggable resolver feeds the
+    broker (built-ins: declared non-critical by policy; third-party: deny-by-default
+    until granted); DB resolver wired at boot. Security behavior change: third-party
+    dispatch now requires grants.
+  - **P3e** plugin storage API: `plugin_storage_entries` migration +
+    `plugin-storage-service.ts` (scoped KV + quota; secrets via safeStorage,
+    fail-loud, never plaintext); exposed via host-authority.
+  - **P3f** `cloud-host-rpc-client.ts` — typed firefly-cloud RPC client (config from
+    FIREFLY_CLOUD_URL, fail-fast `CloudHostNotConfiguredError`); CloudHostAuthority's
+    async methods now issue real RPCs (no more blanket throw-stub).
+  - **Drizzle migrator (boy-scout):** the journal-less per-subdir format is what the
+    workspace beta drizzle-orm uses; verified all 7 tables apply to a fresh DB at
+    runtime. (An earlier "broken migrator" scare was a stale cached
+    drizzle-orm@0.45.2 resolving for /tmp scripts, not the real app path.)
+
 ## Remaining
 
 In-repo (each a fresh, deliberate effort — not "finish-up" scope):
-- **P3** runtime hosts: extension-host RPC, node/web-worker, capability grants,
-  storage API + wire CloudHostAuthority to firefly-cloud RPC. Large, architecture-heavy.
+- **P3 last-mile** (gated on a live capability-bearing / code extension — none ship
+  yet): worker storage/grant RPC routing through the supervisor message loop;
+  install-orchestrator grant persistence + consent UI prompt (themes have no
+  capabilities, so nothing to persist/prompt today). The grant store, consent
+  policy, and deny-by-default enforcement already exist + are tested.
 - TextMate grammar runtime (needs vscode-textmate/oniguruma deps + caller wiring).
-- Trust: full signing/consent atop the sha256 verify already in package-store.
+- Trust: full publisher-key signing/consent atop the sha256 verify in package-store.
 - **P4 review** (design-fit of the landed classifier/importer).
 
 Cross-repo (CANNOT land from palot):

@@ -575,10 +575,19 @@ preview/apply on the existing pipeline; local VSIX import for themes. Themes are
 themes; contribution-family schemas in the native manifest; Monaco registration
 projection.
 
-**Phase 3 — native runtime extensions.** Extension-host RPC protocol; move non-data
-third-party code into `node-worker` (electron-utility / cloud-host) and `web-worker`;
-per-call capability grants through command + tool dispatch; extension storage API
-(global / workspace / secret) abstracted by location.
+**Phase 3 — native runtime extensions. ✅ LANDED** (`9b50be1af` contracts +
+`0cd976385` runtime). Extension-host RPC protocol (`extension-host-protocol.ts`) +
+`RuntimeTransport`; the §2.3 host-kind→location matrix as one SoT
+(`runtime-location.ts`) with a manifest `runtime` block; `node-worker` →
+electron-utility transport (`utility-process-spawner.ts`, selected in
+supervisor-boot); per-call capability grants through dispatch (deny-by-default
+resolver + `grant-store.ts` + `install-consent.ts`, replacing the hardcoded
+over-grant); extension storage API (`plugin-storage-service.ts`: scoped KV + quota +
+safeStorage secrets); `CloudHostAuthority` now a real fail-fast RPC client
+(`cloud-host-rpc-client.ts`). *Last-mile (deferred, gated on a live
+capability-bearing/code extension — none ship yet): worker storage/grant RPC routing
+through the supervisor loop; install-orchestrator grant persistence + consent UI
+(themes carry no capabilities). The firefly-cloud RPC **server** is cross-repo.*
 
 **Phase 4 — constrained VS Code runtime import.** Importer for green-tier
 command/config/language extensions; `vscode.d.ts` as **compile-time** semantic input
