@@ -108,19 +108,24 @@ NO git add/commit/push rule — one rogue agent pushed P4 to main.
   extract (16 tests), read-only Open VSX v3 client behind RegistryClient (23 tests);
   themes contribution gained import provenance. 771 tests pass.
 
+- **P2 data families: DONE** (`854fb43b8`). snippets/languages/grammars/iconThemes
+  contribution schemas + converter (vscode-data-contributions-import) + Monaco
+  projection (TextMate grammar reg stubbed); family-contracts 6->10. Committed
+  together with a concurrent session's nav-sidebar+folio work (entangled in shared
+  files; integrated to preserve both — tree green, 803 firefly-plugin tests pass).
+
 ## Remaining
 
 In-repo:
 - **P1 finish**: DB-backed install/package records (app DB = Drizzle/libsql in
-  `automation/`, needs a migration) + marketplace IPC channels + marketplace UI
-  (search Open VSX → install theme → apply). Wires the landed converter/store/client
-  into a usable surface.
-- **P2** data families (snippets/languages/grammars/iconThemes) + Monaco projection.
+  `automation/`, needs a migration) + marketplace IPC channels + **marketplace UI**
+  (search Open VSX → install theme → apply). Needs a UX decision (the browse/install
+  surface), so it wants Chris's direction, not solo invention.
 - **P3** runtime hosts: extension-host RPC, node/web-worker, capability grants,
-  storage API. + wire CloudHostAuthority to firefly-cloud RPC.
+  storage API + wire CloudHostAuthority to firefly-cloud RPC. Large, architecture-heavy.
 - **P4 review** (design-fit of the landed classifier/importer).
-- Trust: full signing (publisher keys) on top of the sha256 verify already in
-  package-store.
+- Monaco TextMate grammar registration (stubbed in P2 — needs vscode-textmate layer).
+- Trust: full signing (publisher keys) atop the sha256 verify already in package-store.
 
 Cross-repo (CANNOT land from palot):
 - **firefly-cloud hosted gallery + publish API** — the remote half of the
