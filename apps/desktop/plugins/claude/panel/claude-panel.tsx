@@ -1,4 +1,4 @@
-import { fetchProviderDetections, restoreMigrationBackup, isElectron } from "../../services/backend";
+import { fetchProviderDetections, restoreMigrationBackup, isElectron } from "@/services/backend"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { Button } from "@ch5me/ch5-ui-web"
 import {
@@ -17,7 +17,7 @@ import {
 	WorkflowIcon,
 } from "lucide-react"
 import { toast } from "sonner"
-import type { Agent } from "../../lib/types"
+import type { Agent } from "@/lib/types"
 
 interface ClaudePanelProps {
 	agent: Agent
@@ -57,7 +57,7 @@ function getRuntimeAvailable(): boolean {
 	return isElectron
 }
 
-export function ClaudePanel({ agent, className }: ClaudePanelProps) {
+export default function ClaudePanel({ agent, className }: ClaudePanelProps) {
 	const queryClient = useQueryClient()
 	const detection = useClaudeDetection()
 	const restoreMutation = useMutation({

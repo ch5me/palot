@@ -22,7 +22,7 @@ import { Component, lazy, Suspense, useMemo, type ComponentType, type ErrorInfo,
  * sandbox policy task).
  */
 
-import { ActivityIcon, BookTextIcon, BoxesIcon, DatabaseIcon, FileDiffIcon, FilesIcon, PlugIcon, Share2Icon, SquarePenIcon, TerminalSquareIcon, type LucideIcon } from "lucide-react"
+import { ActivityIcon, BookTextIcon, BoxesIcon, DatabaseIcon, FileDiffIcon, FilesIcon, PlugIcon, RectangleEllipsisIcon, Share2Icon, SquarePenIcon, TerminalSquareIcon, type LucideIcon } from "lucide-react"
 import { Button } from "@ch5me/ch5-ui-web"
 import { useQuery, useQueryClient } from "@tanstack/react-query"
 import type { ProjectedSidePanel } from "../shared/firefly-plugin/renderer-projection"
@@ -57,6 +57,7 @@ export const PLUGIN_PANEL_COMPONENTS: Readonly<
 	"firefly.built-in.surface.memory.memory": lazy(() => import("../../plugins/memory/panel/memory-panel")),
 	"firefly.built-in.surface.editor.editor": lazy(() => import("../../plugins/editor/panel/editor-panel")),
 	"firefly.built-in.surface.terminal.terminal": lazy(() => import("../../plugins/terminal/panel/terminal-panel")),
+	"firefly.built-in.surface.claude.claude": lazy(() => import("../../plugins/claude/panel/claude-panel")),
 }
 
 /** Manifest icon-name → Lucide component. Extend per migrated surface. */
@@ -70,6 +71,7 @@ const PANEL_ICONS: Readonly<Record<string, LucideIcon>> = {
 	"share-2": Share2Icon,
 	"square-pen": SquarePenIcon,
 	"terminal-square": TerminalSquareIcon,
+	"rectangle-ellipsis": RectangleEllipsisIcon,
 }
 
 function panelIcon(iconName: string | null): LucideIcon {

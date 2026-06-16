@@ -58,7 +58,7 @@ import {
 	automationsEnabledAtom,
 	browserPanelEnabledAtom,
 	ch5pmSurfaceEnabledAtom,
-	claudeSurfaceEnabledAtom,
+	// claudeSurfaceEnabledAtom removed — claude is catalog-served (firefly.built-in.surface.claude).
 	crmSurfaceEnabledAtom,
 	pluginsSurfaceEnabledAtom,
 	pdfReviewSurfaceEnabledAtom,
@@ -67,7 +67,7 @@ import {
 	toggleAutomationsAtom,
 	toggleBrowserPanelAtom,
 	toggleCh5PmSurfaceAtom,
-	toggleClaudeSurfaceAtom,
+	// toggleClaudeSurfaceAtom removed — claude is catalog-served; toggle via window.elf.plugins.setEnabled.
 	toggleCrmSurfaceAtom,
 	togglePdfReviewSurfaceAtom,
 	togglePluginsSurfaceAtom,
@@ -136,11 +136,11 @@ export function CommandPalette({ open, onOpenChange, agents, onForkSession }: Co
 	const toggleAutomations = useSetAtom(toggleAutomationsAtom)
 	const browserPanelEnabled = useAtomValue(browserPanelEnabledAtom)
 	// terminalSurfaceEnabled removed — terminal is catalog-served (firefly.built-in.surface.terminal).
+	// claudeSurfaceEnabled removed — claude is catalog-served (firefly.built-in.surface.claude).
 	const pluginsSurfaceEnabled = useAtomValue(pluginsSurfaceEnabledAtom)
 	const crmSurfaceEnabled = useAtomValue(crmSurfaceEnabledAtom)
 	const studioSurfaceEnabled = useAtomValue(studioSurfaceEnabledAtom)
 	const voiceSurfaceEnabled = useAtomValue(voiceSurfaceEnabledAtom)
-	const claudeSurfaceEnabled = useAtomValue(claudeSurfaceEnabledAtom)
 	const ch5pmSurfaceEnabled = useAtomValue(ch5pmSurfaceEnabledAtom)
 	const pdfReviewSurfaceEnabled = useAtomValue(pdfReviewSurfaceEnabledAtom)
 	const toggleBrowserPanel = useSetAtom(toggleBrowserPanelAtom)
@@ -148,7 +148,6 @@ export function CommandPalette({ open, onOpenChange, agents, onForkSession }: Co
 	const toggleCrmSurface = useSetAtom(toggleCrmSurfaceAtom)
 	const toggleStudioSurface = useSetAtom(toggleStudioSurfaceAtom)
 	const toggleVoiceSurface = useSetAtom(toggleVoiceSurfaceAtom)
-	const toggleClaudeSurface = useSetAtom(toggleClaudeSurfaceAtom)
 	const toggleCh5PmSurface = useSetAtom(toggleCh5PmSurfaceAtom)
 	const togglePdfReviewSurface = useSetAtom(togglePdfReviewSurfaceAtom)
 	const navSidebarActiveTab = useAtomValue(navSidebarActiveTabAtom)
@@ -222,7 +221,6 @@ export function CommandPalette({ open, onOpenChange, agents, onForkSession }: Co
 				crm: crmSurfaceEnabled,
 				studio: studioSurfaceEnabled,
 				voice: voiceSurfaceEnabled,
-				claude: claudeSurfaceEnabled,
 				ch5pm: ch5pmSurfaceEnabled,
 				pdfReview: pdfReviewSurfaceEnabled,
 			},
@@ -234,11 +232,10 @@ export function CommandPalette({ open, onOpenChange, agents, onForkSession }: Co
 		pluginsSurfaceEnabled,
 		crmSurfaceEnabled,
 		studioSurfaceEnabled,
-			voiceSurfaceEnabled,
-			claudeSurfaceEnabled,
-			ch5pmSurfaceEnabled,
-			pdfReviewSurfaceEnabled,
-		])
+		voiceSurfaceEnabled,
+		ch5pmSurfaceEnabled,
+		pdfReviewSurfaceEnabled,
+	])
 
 
 	// Notes is a catalog-served plugin: its enable/disable flows through
@@ -346,6 +343,19 @@ export function CommandPalette({ open, onOpenChange, agents, onForkSession }: Co
 		await window.elf?.plugins.setEnabled("firefly.built-in.surface.terminal", !terminalPluginEnabled)
 		await queryClient.invalidateQueries({ queryKey: ["firefly-plugin"] })
 	}, [terminalPluginEnabled, queryClient])
+
+	// Claude Code is a catalog-served plugin: its enable/disable flows through
+	// the host plugin lifecycle, not a renderer feature-flag atom.
+	const claudePluginEntry = pluginList?.plugins.find(
+		(plugin) => plugin.pluginId === "firefly.built-in.surface.claude",
+	)
+	const claudePluginEnabled = claudePluginEntry
+		? claudePluginEntry.status !== "disabled" && claudePluginEntry.status !== "quarantined"
+		: true
+	const toggleClaudePlugin = useCallback(async () => {
+		await window.elf?.plugins.setEnabled("firefly.built-in.surface.claude", !claudePluginEnabled)
+		await queryClient.invalidateQueries({ queryKey: ["firefly-plugin"] })
+	}, [claudePluginEnabled, queryClient])
 
 	const catalogSurfaceTabs = useCatalogSurfaceTabs(activeAgent)
 	const availableSurfaceTabs = useMemo(
@@ -708,14 +718,14 @@ export function CommandPalette({ open, onOpenChange, agents, onForkSession }: Co
 					</CommandItem>
 					<CommandItem
 						keywords={["claude", "claude code", "migration", "compatibility"]}
-						onSelect={() => {
-							toggleClaudeSurface()
+						onSelect={async () => {
+							await toggleClaudePlugin()
 							onOpenChange(false)
 						}}
 					>
 						<RectangleEllipsisIcon />
-						<span>{claudeSurfaceEnabled ? "Disable Claude Code Surface" : "Enable Claude Code Surface"}</span>
-						{claudeSurfaceEnabled && <CheckIcon className="ml-auto h-4 w-4" />}
+						<span>{claudePluginEnabled ? "Disable Claude Code Surface" : "Enable Claude Code Surface"}</span>
+						{claudePluginEnabled && <CheckIcon className="ml-auto h-4 w-4" />}
 					</CommandItem>
 					<CommandItem
 						keywords={["ch5pm", "dashboard", "plane", "operator"]}

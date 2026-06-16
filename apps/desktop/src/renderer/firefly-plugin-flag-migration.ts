@@ -59,6 +59,10 @@ export const SURFACE_FLAG_MIGRATIONS: readonly SurfaceFlagMigration[] = [
 		pluginId: "firefly.built-in.surface.terminal",
 		legacyStorageKey: "elf:terminalSurfaceEnabled",
 	},
+	{
+		pluginId: "firefly.built-in.surface.claude",
+		legacyStorageKey: "elf:claudeSurfaceEnabled",
+	},
 ]
 
 const MARKER_PREFIX = "elf:plugin-flag-migrated:"

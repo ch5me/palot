@@ -861,6 +861,63 @@ export function registerTerminalHostHandlers(deps?: Partial<TerminalHostDeps>): 
 }
 
 // ---------------------------------------------------------------------------
+// Claude Code surface host handlers (firefly.built-in.surface.claude)
+// ---------------------------------------------------------------------------
+
+export interface ClaudeHostDeps {
+	openSidePanel: (tab: "claude") => Promise<void>
+	getSidePanelState: () => SidePanelStateSnapshot
+	setPluginEnabled: (pluginId: string, enabled: boolean) => { enabled: boolean }
+}
+
+const CLAUDE_PLUGIN_ID = "firefly.built-in.surface.claude"
+
+export function registerClaudeHostHandlers(deps?: Partial<ClaudeHostDeps>): void {
+	const openSidePanel =
+		deps?.openSidePanel ??
+		(async (tab: "claude") => {
+			const { broadcastOpenSidePanel } = await import("../palot-browser-ipc")
+			await broadcastOpenSidePanel(tab)
+		})
+	const getSidePanelState = deps?.getSidePanelState ?? defaultGetSidePanelState
+	const setEnabled =
+		deps?.setPluginEnabled ??
+		((pluginId: string, enabled: boolean) => {
+			// eslint-disable-next-line @typescript-eslint/no-var-requires
+			const authority = require("./authority") as typeof import("./authority")
+			return authority.setPluginEnabled(pluginId, enabled)
+		})
+
+	registerHostTool(CLAUDE_PLUGIN_ID, "plugin.firefly.built-in.surface.claude.open", async () => {
+		await openSidePanel("claude")
+		return ok({ opened: true, tab: "claude", source: "v2-plugin-tool-dispatch" })
+	})
+
+	registerHostTool(CLAUDE_PLUGIN_ID, "plugin.firefly.built-in.surface.claude.state", async () => {
+		const sidePanel = getSidePanelState()
+		return ok({
+			tab: "claude",
+			available: sidePanel.availableTabs.includes("claude"),
+			open: sidePanel.open,
+			active: sidePanel.open && sidePanel.activeTab === "claude",
+		})
+	})
+
+	registerHostCommand(CLAUDE_PLUGIN_ID, "open-claude", async () => {
+		await openSidePanel("claude")
+		return ok({ opened: true, tab: "claude" })
+	})
+
+	registerHostCommand(CLAUDE_PLUGIN_ID, "toggle-claude", async () => {
+		const catalog = getPluginCatalog()
+		const state = catalog.capabilityStates[CLAUDE_PLUGIN_ID]
+		const currentlyEnabled = !(state?.pluginDisabled ?? false)
+		const next = setEnabled(CLAUDE_PLUGIN_ID, !currentlyEnabled)
+		return ok({ pluginId: CLAUDE_PLUGIN_ID, enabled: next.enabled })
+	})
+}
+
+// ---------------------------------------------------------------------------
 // DevMux Toolbar host handlers (firefly.built-in.devmux-toolbar)
 //
 // The Node-only work lives in `main/devmux/service.ts` and is reached here
@@ -967,6 +1024,7 @@ export function registerBuiltInHostCommands(): void {
 	registerMemoryHostHandlers()
 	registerEditorHostHandlers()
 	registerTerminalHostHandlers()
+	registerClaudeHostHandlers()
 	registerDevmuxHostHandlers()
 	log.info("Registered V2 host command handlers", {
 		commands: Array.from(handlers.keys()),

@@ -1,10 +1,11 @@
-import { FileTextIcon, GlobeIcon, MicIcon, MonitorPlayIcon, PlugIcon, RectangleEllipsisIcon, UsersIcon, WandSparklesIcon, type LucideIcon } from "lucide-react"
+import { FileTextIcon, GlobeIcon, MicIcon, MonitorPlayIcon, PlugIcon, UsersIcon, WandSparklesIcon, type LucideIcon } from "lucide-react"
 
 import type { ReactNode } from "react"
 
 import { Ch5PmDashboardPanel } from "./ch5pm-dashboard/panel"
 import { BrowserPanel } from "./components/side-panel/browser-panel"
-import { ClaudePanel } from "./components/side-panel/claude-panel"
+// `claude` is served from the plugin catalog (firefly.built-in.surface.claude,
+// apps/desktop/plugins/claude) — do not re-add a row or import here.
 import { CrmPanel } from "./components/side-panel/crm-panel"
 import { OraclePanel } from "./components/side-panel/oracle-panel"
 import { PdfReviewPanel } from "./components/side-panel/pdf-review-panel"
@@ -211,27 +212,6 @@ export const FIREFLY_SURFACE_REGISTRY: FireflySurfaceDef[] = [
 		spawn: (ctx) => <OraclePanel agent={ctx.agent} />,
 	},
 	{
-		id: "claude",
-		manifestId: "firefly.built-in.side-panel.claude",
-		title: "Claude Code",
-		icon: RectangleEllipsisIcon,
-		formFactor: "side-panel-tab",
-		lane: "utility",
-		enabledFlag: {
-			key: "claude",
-		},
-		defaultOn: true,
-		availability: (ctx) =>
-			ctx.flags.claude
-				? { available: true }
-				: { available: false, reason: "Claude Code surface is disabled in feature flags" },
-		commandIds: ["surface.claude.open", "surface.claude.toggle"],
-		persistenceKey: "side-panel.claude",
-		telemetryNamespace: "firefly.surface.claude",
-		target: { kind: "side-panel", tab: "claude" },
-		spawn: (ctx) => <ClaudePanel agent={ctx.agent} />,
-	},
-	{
 		id: "ch5pm",
 		manifestId: "firefly.built-in.side-panel.ch5pm",
 		title: "CH5PM Dashboard",
@@ -297,7 +277,7 @@ import { FIREFLY_SURFACE_IDS, type FireflySurfaceId } from "../shared/firefly-su
  * they are served from the plugin catalog (host plugin lifecycle owns
  * their enable/disable). First migrated surface: notes.
  */
-export const CATALOG_SERVED_SURFACE_IDS: readonly FireflySurfaceId[] = ["notes", "review", "files", "artifacts", "bridges", "pulse", "memory", "editor", "terminal"]
+export const CATALOG_SERVED_SURFACE_IDS: readonly FireflySurfaceId[] = ["notes", "review", "files", "artifacts", "bridges", "pulse", "memory", "editor", "terminal", "claude"]
 
 export const FIREFLY_SURFACE_DEFAULT_ON = Object.fromEntries(
 	FIREFLY_SURFACE_REGISTRY.map((surface) => [surface.id, surface.defaultOn]),
