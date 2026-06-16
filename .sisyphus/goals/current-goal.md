@@ -159,21 +159,41 @@ NO git add/commit/push rule — one rogue agent pushed P4 to main.
     runtime. (An earlier "broken migrator" scare was a stale cached
     drizzle-orm@0.45.2 resolving for /tmp scripts, not the real app path.)
 
+## P3 last-mile — DONE (`385526f58` worker-RPC/grants/signing + `0f0d6d9dc` consent UI/RPC contract)
+
+- **L1 worker→host RPC routing: DONE.** Supervisor message loop now parses the full
+  extension-host protocol and routes storage-request/capability-request to an injected
+  handler (`worker-request-handler.ts` → storage service + grant store), posting typed
+  replies. Lifecycle schema unified with the protocol. Tested (handler + supervisor routing).
+- **L2 install-time grant persistence: DONE.** `persistInstallGrants` in the orchestrator
+  (auto-grant low; medium/high/critical → prompt-required; honors consented set). No-op for
+  data-only themes; ready for code-extension install. Tested with a synthetic install.
+- **L5 publisher-key signature trust: DONE.** `signature-verify.ts` (ed25519/rsa-sha256 via
+  node:crypto) + `derivePackageTrust` (present-but-invalid sig → hard integrity_mismatch),
+  wired into the orchestrator. Publisher-key registry not yet plumbed → marketplace installs
+  derive unsigned-third-party today (one-line upgrade when the registry lands). Tested.
+- **L3 capability consent UI: DONE (wired, dormant for themes).** Deny-by-default consent
+  dialog + tested risk-ordering model; marketplace-panel gates install on consent when an
+  entry declares capabilities. Themes declare none → dormant; it is the surface for the
+  future code-extension install path.
+- **L6 firefly-cloud RPC contract: DOCUMENTED** (design §16) for the cross-repo server.
+
 ## Remaining
 
-In-repo (each a fresh, deliberate effort — not "finish-up" scope):
-- **P3 last-mile** (gated on a live capability-bearing / code extension — none ship
-  yet): worker storage/grant RPC routing through the supervisor message loop;
-  install-orchestrator grant persistence + consent UI prompt (themes have no
-  capabilities, so nothing to persist/prompt today). The grant store, consent
-  policy, and deny-by-default enforcement already exist + are tested.
-- TextMate grammar runtime (needs vscode-textmate/oniguruma deps + caller wiring).
-- Trust: full publisher-key signing/consent atop the sha256 verify in package-store.
+In-repo:
+- **TextMate grammar runtime: BLOCKED (environment).** `bun add vscode-textmate
+  vscode-oniguruma` fails because the cross-workspace graph can't resolve
+  `@ch5me/federation-build@workspace:*` (referenced by an external `../ch5-packages/*`
+  member, not by palot). Repairing that foreign workspace is out of scope. Unblock: fix the
+  `@ch5me/federation-build` workspace ref, then add the deps + wire the loader into
+  `renderer/lib/monaco.ts` (the P2 typed grammar boundary is the seam). Also: TextMate
+  tokenization is GUI-verification-only (needs an app launch).
 - **P4 review** (design-fit of the landed classifier/importer).
 
 Cross-repo (CANNOT land from palot):
-- **firefly-cloud hosted gallery + publish API** — the remote half lives in the
-  firefly-cloud repo.
+- **firefly-cloud hosted gallery + publish API + extension-host RPC server** — the remote
+  half lives in the firefly-cloud repo. palot's client + the wire contract are landed +
+  documented (design §16).
 
 ## Plan
 
