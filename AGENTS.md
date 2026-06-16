@@ -200,6 +200,16 @@ Biome v2 cannot parse Tailwind v4 syntax. CSS linting/formatting is disabled. Do
 
 **Do not open pull requests.** When work on a branch is verified and done, merge it directly to `main` and push: `git checkout main && git pull --rebase origin main && git merge <branch> && git push origin main` (refetch+rebase+retry on non-fast-forward). Do not run `gh pr create`. (Chris, 2026-06-16, emphatic.)
 
+### Commit cadence for small UI tweaks -- batch, don't auto-push
+
+When Chris asks for a small UI tweak (a className change, removing a button, realigning something), **do not commit-and-push each one** — that's too aggressive. Instead:
+
+- Make the change and verify it (typecheck/lint + a live check), but **leave it uncommitted** so a series of small tweaks can accumulate.
+- **Commit the batch only when moving on to the next logical task** (a natural boundary), with one coherent message covering the batch.
+- **Never push immediately** for these. Push later — at a larger milestone, or when Chris asks. Holding the push is the default for iterative UI work.
+
+This intentionally overrides the global "commit + push verified work right away" default *for small iterative UI changes in this repo*. Substantial/standalone work (a real fix, a feature, a refactor) still follows the normal commit+push flow. (Chris, 2026-06-16.)
+
 ### Changesets -- versioning workflow
 
 All five workspace packages are **linked** (version together). When making user-facing changes, run `bun changeset` before merging to main.
