@@ -1207,6 +1207,63 @@ export function registerStudioHostHandlers(deps?: Partial<StudioHostDeps>): void
 	})
 }
 
+// ---------------------------------------------------------------------------
+// CH5PM Dashboard surface host handlers (firefly.built-in.surface.ch5pm)
+// ---------------------------------------------------------------------------
+
+export interface Ch5pmHostDeps {
+	openSidePanel: (tab: "ch5pm") => Promise<void>
+	getSidePanelState: () => SidePanelStateSnapshot
+	setPluginEnabled: (pluginId: string, enabled: boolean) => { enabled: boolean }
+}
+
+const CH5PM_PLUGIN_ID = "firefly.built-in.surface.ch5pm"
+
+export function registerCh5pmHostHandlers(deps?: Partial<Ch5pmHostDeps>): void {
+	const openSidePanel =
+		deps?.openSidePanel ??
+		(async (tab: "ch5pm") => {
+			const { broadcastOpenSidePanel } = await import("../palot-browser-ipc")
+			await broadcastOpenSidePanel(tab)
+		})
+	const getSidePanelState = deps?.getSidePanelState ?? defaultGetSidePanelState
+	const setEnabled =
+		deps?.setPluginEnabled ??
+		((pluginId: string, enabled: boolean) => {
+			// eslint-disable-next-line @typescript-eslint/no-var-requires
+			const authority = require("./authority") as typeof import("./authority")
+			return authority.setPluginEnabled(pluginId, enabled)
+		})
+
+	registerHostTool(CH5PM_PLUGIN_ID, "plugin.firefly.built-in.surface.ch5pm.open", async () => {
+		await openSidePanel("ch5pm")
+		return ok({ opened: true, tab: "ch5pm", source: "v2-plugin-tool-dispatch" })
+	})
+
+	registerHostTool(CH5PM_PLUGIN_ID, "plugin.firefly.built-in.surface.ch5pm.state", async () => {
+		const sidePanel = getSidePanelState()
+		return ok({
+			tab: "ch5pm",
+			available: sidePanel.availableTabs.includes("ch5pm"),
+			open: sidePanel.open,
+			active: sidePanel.open && sidePanel.activeTab === "ch5pm",
+		})
+	})
+
+	registerHostCommand(CH5PM_PLUGIN_ID, "open-ch5pm", async () => {
+		await openSidePanel("ch5pm")
+		return ok({ opened: true, tab: "ch5pm" })
+	})
+
+	registerHostCommand(CH5PM_PLUGIN_ID, "toggle-ch5pm", async () => {
+		const catalog = getPluginCatalog()
+		const state = catalog.capabilityStates[CH5PM_PLUGIN_ID]
+		const currentlyEnabled = !(state?.pluginDisabled ?? false)
+		const next = setEnabled(CH5PM_PLUGIN_ID, !currentlyEnabled)
+		return ok({ pluginId: CH5PM_PLUGIN_ID, enabled: next.enabled })
+	})
+}
+
 export function registerDevmuxHostHandlers(): void {
 	// UI commands (renderer-invoked via firefly-plugin:invoke).
 	registerHostCommand(DEVMUX_TOOLBAR_PLUGIN_ID, "devmux-list", ({ args }) => devmuxList(args))
@@ -1257,6 +1314,7 @@ export function registerBuiltInHostCommands(): void {
 	registerOracleHostHandlers()
 	registerVoiceHostHandlers()
 	registerStudioHostHandlers()
+	registerCh5pmHostHandlers()
 	registerDevmuxHostHandlers()
 	log.info("Registered V2 host command handlers", {
 		commands: Array.from(handlers.keys()),

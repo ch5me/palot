@@ -84,6 +84,10 @@ import {
 	studioPluginManifest,
 	STUDIO_PLUGIN_ID,
 } from "../../../plugins/studio/manifest"
+import {
+	ch5pmPluginManifest,
+	CH5PM_PLUGIN_ID,
+} from "../../../plugins/ch5pm/manifest"
 import { BUILT_IN_DEFAULT_CAPABILITIES } from "../../shared/firefly-plugin/capabilities"
 import { type PluginDescriptor } from "../../shared/firefly-plugin/descriptor"
 import {
@@ -147,6 +151,7 @@ const BUILT_IN_MANIFESTS: readonly PluginManifest[] = [
 	acmeComponentsExemplarManifest,
 	devmuxToolbarManifest,
 	studioPluginManifest,
+	ch5pmPluginManifest,
 ]
 
 /**
@@ -508,4 +513,5 @@ export const KNOWN_PLUGIN_IDS = {
 	devmuxToolbar: DEVMUX_TOOLBAR_PLUGIN_ID,
 	voice: VOICE_PLUGIN_ID,
 	studio: STUDIO_PLUGIN_ID,
+	ch5pm: CH5PM_PLUGIN_ID,
 } as const

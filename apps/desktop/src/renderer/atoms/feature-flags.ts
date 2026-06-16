@@ -96,7 +96,6 @@ export const toggleLoomAcmeComponentsAtom = atom(null, (get, set) => {
 export const fireflySurfaceDefaults = {
 	plugins: true,
 	crm: true,
-	ch5pm: false,
 	pdfReview: false,
 } as const
 
@@ -110,20 +109,18 @@ export const pluginsSurfaceEnabledAtom = atomWithStorage<boolean>("elf:pluginsSu
 export const crmSurfaceEnabledAtom = atomWithStorage<boolean>("elf:crmSurfaceEnabled", true)
 // `studioSurfaceEnabledAtom` deleted — studio is catalog-served (firefly.built-in.surface.studio).
 // `oracleSurfaceEnabledAtom` deleted — oracle is catalog-served (firefly.built-in.surface.oracle).
-export const ch5pmSurfaceEnabledAtom = atomWithStorage<boolean>("elf:ch5pmSurfaceEnabled", false)
+// `ch5pmSurfaceEnabledAtom` deleted — ch5pm is catalog-served (firefly.built-in.surface.ch5pm).
 export const pdfReviewSurfaceEnabledAtom = atomWithStorage<boolean>("elf:pdfReviewSurfaceEnabled", false)
 
 export const fireflySurfaceFlagAtoms: Record<FireflySurfaceFlagKey, typeof pluginsSurfaceEnabledAtom> = {
 	plugins: pluginsSurfaceEnabledAtom,
 	crm: crmSurfaceEnabledAtom,
-	ch5pm: ch5pmSurfaceEnabledAtom,
 	pdfReview: pdfReviewSurfaceEnabledAtom,
 }
 
 export const fireflySurfaceLabels: Record<FireflySurfaceFlagKey, string> = {
 	plugins: "Plugins",
 	crm: "Contacts / CRM",
-	ch5pm: "CH5PM Dashboard",
 	pdfReview: "PDF Review",
 }
 
@@ -145,9 +142,7 @@ export const toggleCrmSurfaceAtom = atom(null, (get, set) => {
 
 // `toggleClaudeSurfaceAtom` deleted — claude is catalog-served; toggle via window.elf.plugins.setEnabled.
 
-export const toggleCh5PmSurfaceAtom = atom(null, (get, set) => {
-	set(ch5pmSurfaceEnabledAtom, !get(ch5pmSurfaceEnabledAtom))
-})
+// `toggleCh5PmSurfaceAtom` deleted — ch5pm is catalog-served; toggle via window.elf.plugins.setEnabled.
 
 export const togglePdfReviewSurfaceAtom = atom(null, (get, set) => {
 	set(pdfReviewSurfaceEnabledAtom, !get(pdfReviewSurfaceEnabledAtom))

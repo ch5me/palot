@@ -62,6 +62,7 @@ export const PLUGIN_PANEL_COMPONENTS: Readonly<
 	"firefly.built-in.surface.oracle.oracle": lazy(() => import("../../plugins/oracle/panel/oracle-panel")),
 	"firefly.built-in.surface.voice.voice": lazy(() => import("../../plugins/voice/panel/voice-panel")),
 	"firefly.built-in.surface.studio.studio": lazy(() => import("../../plugins/studio/panel/studio-panel")),
+	"firefly.built-in.surface.ch5pm.ch5pm": lazy(() => import("../../plugins/ch5pm/panel/ch5pm-panel")),
 }
 
 /** Manifest icon-name → Lucide component. Extend per migrated surface. */

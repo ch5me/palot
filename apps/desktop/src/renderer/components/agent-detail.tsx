@@ -28,7 +28,7 @@ import { type ComponentProps, useCallback, useEffect, useMemo, useRef, useState,
 import { createHtmlPortalNode, InPortal, OutPortal, type HtmlPortalNode } from "react-reverse-portal"
 import type { OpenInTarget } from "../../preload/api"
 import {
-	ch5pmSurfaceEnabledAtom,
+	// ch5pmSurfaceEnabledAtom removed — ch5pm is catalog-served (firefly.built-in.surface.ch5pm).
 	// claudeSurfaceEnabledAtom removed — claude is catalog-served (firefly.built-in.surface.claude).
 	crmSurfaceEnabledAtom,
 	// oracleSurfaceEnabledAtom removed — oracle is catalog-served (firefly.built-in.surface.oracle).
@@ -313,7 +313,7 @@ export function AgentDetail({
 	// studioSurfaceEnabled removed — studio is catalog-served (firefly.built-in.surface.studio).
 	const pluginsSurfaceEnabled = useAtomValue(pluginsSurfaceEnabledAtom)
 	const crmSurfaceEnabled = useAtomValue(crmSurfaceEnabledAtom)
-	const ch5pmSurfaceEnabled = useAtomValue(ch5pmSurfaceEnabledAtom)
+	// ch5pmSurfaceEnabled removed — ch5pm is catalog-served (firefly.built-in.surface.ch5pm).
 	const pdfReviewSurfaceEnabled = useAtomValue(pdfReviewSurfaceEnabledAtom)
 
 	const catalogSurfaceTabs = useCatalogSurfaceTabs(agent)
@@ -324,7 +324,6 @@ export function AgentDetail({
 			flags: {
 				plugins: pluginsSurfaceEnabled,
 				crm: crmSurfaceEnabled,
-				ch5pm: ch5pmSurfaceEnabled,
 				pdfReview: pdfReviewSurfaceEnabled,
 			},
 			chatTurnCount: chatTurns.length,
@@ -336,7 +335,6 @@ export function AgentDetail({
 		diffStats,
 		pluginsSurfaceEnabled,
 		crmSurfaceEnabled,
-		ch5pmSurfaceEnabled,
 		pdfReviewSurfaceEnabled,
 		chatTurns.length,
 	])

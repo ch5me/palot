@@ -1,8 +1,9 @@
-import { FileTextIcon, MonitorPlayIcon, PlugIcon, UsersIcon, type LucideIcon } from "lucide-react"
+import { FileTextIcon, PlugIcon, UsersIcon, type LucideIcon } from "lucide-react"
 
 import type { ReactNode } from "react"
 
-import { Ch5PmDashboardPanel } from "./ch5pm-dashboard/panel"
+// `ch5pm` is served from the plugin catalog (firefly.built-in.surface.ch5pm,
+// apps/desktop/plugins/ch5pm) — do not re-add a row or import here.
 // `browser` is served from the plugin catalog (firefly.built-in.surface.browser,
 // apps/desktop/plugins/browser) — do not re-add a row or import here.
 // `claude` is served from the plugin catalog (firefly.built-in.surface.claude,
@@ -135,27 +136,8 @@ export const FIREFLY_SURFACE_REGISTRY: FireflySurfaceDef[] = [
 	// `voice` is served from the plugin catalog (firefly.built-in.surface.voice,
 	// apps/desktop/plugins/voice) — do not re-add a row here.
 	// oracle — served from catalog (firefly.built-in.surface.oracle) — do not re-add
-	{
-		id: "ch5pm",
-		manifestId: "firefly.built-in.side-panel.ch5pm",
-		title: "CH5PM Dashboard",
-		icon: MonitorPlayIcon,
-		formFactor: "side-panel-tab",
-		lane: "utility",
-		enabledFlag: {
-			key: "ch5pm",
-		},
-		defaultOn: false,
-		availability: (ctx) =>
-			ctx.flags.ch5pm
-				? { available: true }
-				: { available: false, reason: "CH5PM dashboard surface is disabled in feature flags" },
-		commandIds: ["surface.ch5pm.open", "surface.ch5pm.toggle"],
-		persistenceKey: "side-panel.ch5pm",
-		telemetryNamespace: "firefly.surface.ch5pm",
-		target: { kind: "side-panel", tab: "ch5pm" },
-		spawn: () => <Ch5PmDashboardPanel />,
-	},
+	// `ch5pm` is served from the plugin catalog (firefly.built-in.surface.ch5pm,
+	// apps/desktop/plugins/ch5pm) — do not re-add a row here.
 	{
 		id: "pdf-review",
 		manifestId: "firefly.built-in.side-panel.pdf-review",
@@ -201,7 +183,7 @@ import { FIREFLY_SURFACE_IDS, type FireflySurfaceId } from "../shared/firefly-su
  * they are served from the plugin catalog (host plugin lifecycle owns
  * their enable/disable). First migrated surface: notes.
  */
-export const CATALOG_SERVED_SURFACE_IDS: readonly FireflySurfaceId[] = ["browser", "notes", "review", "files", "artifacts", "bridges", "pulse", "memory", "editor", "terminal", "claude", "oracle", "voice", "studio"]
+export const CATALOG_SERVED_SURFACE_IDS: readonly FireflySurfaceId[] = ["browser", "notes", "review", "files", "artifacts", "bridges", "pulse", "memory", "editor", "terminal", "claude", "oracle", "voice", "studio", "ch5pm"]
 
 export const FIREFLY_SURFACE_DEFAULT_ON = Object.fromEntries(
 	FIREFLY_SURFACE_REGISTRY.map((surface) => [surface.id, surface.defaultOn]),

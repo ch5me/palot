@@ -57,7 +57,7 @@ import { useQueryClient } from "@tanstack/react-query"
 import {
 	automationsEnabledAtom,
 	// browserPanelEnabledAtom removed — browser is catalog-served (firefly.built-in.surface.browser).
-	ch5pmSurfaceEnabledAtom,
+	// ch5pmSurfaceEnabledAtom removed — ch5pm is catalog-served (firefly.built-in.surface.ch5pm).
 	// claudeSurfaceEnabledAtom removed — claude is catalog-served (firefly.built-in.surface.claude).
 	crmSurfaceEnabledAtom,
 	pluginsSurfaceEnabledAtom,
@@ -66,7 +66,7 @@ import {
 	// voiceSurfaceEnabledAtom removed — voice is catalog-served (firefly.built-in.surface.voice).
 	toggleAutomationsAtom,
 	// toggleBrowserPanelAtom removed — browser is catalog-served; toggle via window.elf.plugins.setEnabled.
-	toggleCh5PmSurfaceAtom,
+	// toggleCh5PmSurfaceAtom removed — ch5pm is catalog-served; toggle via window.elf.plugins.setEnabled.
 	// toggleClaudeSurfaceAtom removed — claude is catalog-served; toggle via window.elf.plugins.setEnabled.
 	toggleCrmSurfaceAtom,
 	togglePdfReviewSurfaceAtom,
@@ -139,16 +139,16 @@ export function CommandPalette({ open, onOpenChange, agents, onForkSession }: Co
 	// claudeSurfaceEnabled removed — claude is catalog-served (firefly.built-in.surface.claude).
 	// voiceSurfaceEnabled removed — voice is catalog-served (firefly.built-in.surface.voice).
 	// studioSurfaceEnabled removed — studio is catalog-served (firefly.built-in.surface.studio).
+	// ch5pmSurfaceEnabled removed — ch5pm is catalog-served (firefly.built-in.surface.ch5pm).
 	const pluginsSurfaceEnabled = useAtomValue(pluginsSurfaceEnabledAtom)
 	const crmSurfaceEnabled = useAtomValue(crmSurfaceEnabledAtom)
-	const ch5pmSurfaceEnabled = useAtomValue(ch5pmSurfaceEnabledAtom)
 	const pdfReviewSurfaceEnabled = useAtomValue(pdfReviewSurfaceEnabledAtom)
 	// toggleBrowserPanel removed — browser is catalog-served; toggle via browserPluginEnabled + window.elf.plugins.setEnabled.
 	const togglePluginsSurface = useSetAtom(togglePluginsSurfaceAtom)
 	const toggleCrmSurface = useSetAtom(toggleCrmSurfaceAtom)
 	// toggleStudioSurface removed — studio is catalog-served; toggle via studioPluginEnabled + window.elf.plugins.setEnabled.
 	// toggleVoiceSurface removed — voice is catalog-served; toggle via voicePluginEnabled + window.elf.plugins.setEnabled.
-	const toggleCh5PmSurface = useSetAtom(toggleCh5PmSurfaceAtom)
+	// toggleCh5PmSurface removed — ch5pm is catalog-served; toggle via ch5pmPluginEnabled + window.elf.plugins.setEnabled.
 	const togglePdfReviewSurface = useSetAtom(togglePdfReviewSurfaceAtom)
 	const navSidebarActiveTab = useAtomValue(navSidebarActiveTabAtom)
 	const openSidePanelTab = useSetAtom(openSidePanelTabAtom)
@@ -218,7 +218,7 @@ export function CommandPalette({ open, onOpenChange, agents, onForkSession }: Co
 			flags: {
 				plugins: pluginsSurfaceEnabled,
 				crm: crmSurfaceEnabled,
-				ch5pm: ch5pmSurfaceEnabled,
+				// ch5pm removed — ch5pm is catalog-served (firefly.built-in.surface.ch5pm).
 				pdfReview: pdfReviewSurfaceEnabled,
 			},
 			chatTurnCount: 1,
@@ -227,7 +227,6 @@ export function CommandPalette({ open, onOpenChange, agents, onForkSession }: Co
 		activeAgent,
 		pluginsSurfaceEnabled,
 		crmSurfaceEnabled,
-		ch5pmSurfaceEnabled,
 		pdfReviewSurfaceEnabled,
 	])
 
@@ -376,6 +375,19 @@ export function CommandPalette({ open, onOpenChange, agents, onForkSession }: Co
 		await window.elf?.plugins.setEnabled("firefly.built-in.surface.voice", !voicePluginEnabled)
 		await queryClient.invalidateQueries({ queryKey: ["firefly-plugin"] })
 	}, [voicePluginEnabled, queryClient])
+
+	// CH5PM Dashboard is a catalog-served plugin: its enable/disable flows through
+	// the host plugin lifecycle, not a renderer feature-flag atom.
+	const ch5pmPluginEntry = pluginList?.plugins.find(
+		(plugin) => plugin.pluginId === "firefly.built-in.surface.ch5pm",
+	)
+	const ch5pmPluginEnabled = ch5pmPluginEntry
+		? ch5pmPluginEntry.status !== "disabled" && ch5pmPluginEntry.status !== "quarantined"
+		: false
+	const toggleCh5pmPlugin = useCallback(async () => {
+		await window.elf?.plugins.setEnabled("firefly.built-in.surface.ch5pm", !ch5pmPluginEnabled)
+		await queryClient.invalidateQueries({ queryKey: ["firefly-plugin"] })
+	}, [ch5pmPluginEnabled, queryClient])
 
 	// Studio is a catalog-served plugin: its enable/disable flows through
 	// the host plugin lifecycle, not a renderer feature-flag atom.
@@ -761,14 +773,14 @@ export function CommandPalette({ open, onOpenChange, agents, onForkSession }: Co
 					</CommandItem>
 					<CommandItem
 						keywords={["ch5pm", "dashboard", "plane", "operator"]}
-						onSelect={() => {
-							toggleCh5PmSurface()
+						onSelect={async () => {
+							await toggleCh5pmPlugin()
 							onOpenChange(false)
 						}}
 					>
 						<MonitorPlayIcon />
-						<span>{ch5pmSurfaceEnabled ? "Disable CH5PM Dashboard" : "Enable CH5PM Dashboard"}</span>
-						{ch5pmSurfaceEnabled && <CheckIcon className="ml-auto h-4 w-4" />}
+						<span>{ch5pmPluginEnabled ? "Disable CH5PM Dashboard" : "Enable CH5PM Dashboard"}</span>
+						{ch5pmPluginEnabled && <CheckIcon className="ml-auto h-4 w-4" />}
 					</CommandItem>
 					<CommandItem
 						keywords={["pdf", "document", "reader", "annotations", "citations"]}
