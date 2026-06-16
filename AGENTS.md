@@ -61,6 +61,7 @@ generic knowledge.
 - Session debugging runbook lives in `docs/session-debugging.md`. Use it when Palette/OpenCode sessions look stuck or DB/UI state disagrees.
 - `bun run debug:sessions -- <session-id>` now compares SQLite history with live active-session presence and `session.status()` truth. Use it first for hidden active sessions, stale recency, and child divergence.
 - Palot/OpenCode plugin/runtime seam is documented in `docs/palot-opencode-plugin-bridge.md`. Read it before changing plugin loading, tool registration, resolver payloads, browser action dispatch, or side-panel UI command bridges.
+- Firefly marketplace, VS Code/Open VSX import, compatibility, install lifecycle, and theme conversion design lives in `docs/firefly-extension-marketplace-v2.md`. Read it before changing plugin marketplace or theme import behavior.
 - For this repo, do not treat unrelated dirty worktrees as an automatic blocker. Assume parallel agents are active, commit your scoped work frequently, and move forward unless a direct file-level conflict makes the current edit unsafe.
 
 ## Temporary Staging Policy (expires at full launch)
