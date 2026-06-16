@@ -26,7 +26,7 @@ palot's renderer GenUI is already partially Loom-shaped (typed registry, allowli
 - `apps/desktop/src/renderer/components/side-panel/side-panel-tabs.tsx` — consume the new hook.
 - `apps/desktop/src/shared/firefly-plugin/palot-bridge-manifest.ts:21–40` — replace `palotSidePanelTabSchema` with a derived `z.enum`.
 - `apps/desktop/src/main/palot-plugin/plugin.js:124–143` — replace `VALID_SIDE_PANEL_TABS` with a JS array imported from a shared file the renderer registry exports. JS reads JSON, so the export path is `apps/desktop/src/renderer/firefly-surface-registry-ids.json` (build-emitted) or a small `apps/desktop/src/shared/firefly-plugin/surface-ids.ts` that both runtimes import.
-- `docs/firefly-surface-playbook.md:25–31` — rewrite the "add a surface" checklist to "add a row to the table".
+- `.agents/skills/firefly-plugins/SKILL.md` — rewrite the "add a surface" checklist to "add a row to the table".
 
 ## Required tools <!-- oc:id=sec_ae -->
 

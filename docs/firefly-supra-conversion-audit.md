@@ -23,7 +23,7 @@ What is not done:
 
 This audit is based on the current Elf repo implementation and docs, especially:
 - `README.md`
-- `docs/firefly-surface-playbook.md`
+- `.agents/skills/firefly-plugins/SKILL.md`
 - `apps/desktop/src/renderer/firefly-surface-registry.tsx`
 - `apps/desktop/src/renderer/atoms/feature-flags.ts`
 - `apps/desktop/src/renderer/atoms/ui.ts`
@@ -59,7 +59,7 @@ Done:
 Evidence:
 - `apps/desktop/src/renderer/firefly-surface-registry.tsx:35`
 - `apps/desktop/src/renderer/firefly-surface-registry.tsx:64`
-- `docs/firefly-surface-playbook.md:18`
+- `.agents/skills/firefly-plugins/SKILL.md`
 
 Assessment:
 - **Done** as infrastructure.
@@ -105,7 +105,7 @@ Evidence:
 - `apps/desktop/src/renderer/atoms/feature-flags.ts:38`
 - `apps/desktop/src/renderer/atoms/feature-flags.ts:42`
 - `apps/desktop/src/renderer/atoms/feature-flags.ts:50`
-- `docs/firefly-surface-playbook.md:31`
+- `.agents/skills/firefly-plugins/SKILL.md`
 
 Assessment:
 - **Done**.
@@ -158,9 +158,7 @@ Done:
 - The playbook clearly states that side-panel proof surfaces come first and optional/unstable surfaces stay flag-gated.
 
 Evidence:
-- `docs/firefly-surface-playbook.md:1`
-- `docs/firefly-surface-playbook.md:12`
-- `docs/firefly-surface-playbook.md:24`
+- `.agents/skills/firefly-plugins/SKILL.md`
 - `README.md:267`
 
 Assessment:
@@ -215,8 +213,7 @@ Evidence:
 - `apps/desktop/src/renderer/firefly-surface-registry.tsx:107`
 - `apps/desktop/src/renderer/components/side-panel/notes-panel.tsx:11`
 - `apps/desktop/src/renderer/components/side-panel/notes-panel.tsx:12`
-- `docs/firefly-surface-playbook.md:51`
-- `docs/firefly-surface-playbook.md:54`
+- `.agents/skills/firefly-plugins/SKILL.md`
 
 Assessment:
 - **Partial**.
@@ -234,7 +231,7 @@ Evidence:
 - `apps/desktop/src/renderer/firefly-surface-registry.tsx:126`
 - `apps/desktop/src/renderer/components/side-panel/pulse-panel.tsx:9`
 - `apps/desktop/src/renderer/components/side-panel/pulse-panel.tsx:32`
-- `docs/firefly-surface-playbook.md:57`
+- `.agents/skills/firefly-plugins/SKILL.md`
 
 Assessment:
 - **Partial**.
@@ -251,7 +248,7 @@ Evidence:
 - `apps/desktop/src/renderer/firefly-surface-registry.tsx:145`
 - `apps/desktop/src/renderer/components/side-panel/memory-panel.tsx:15`
 - `apps/desktop/src/renderer/components/side-panel/memory-panel.tsx:31`
-- `docs/firefly-surface-playbook.md:62`
+- `.agents/skills/firefly-plugins/SKILL.md`
 
 Assessment:
 - **Partial**.
@@ -289,8 +286,7 @@ Not done:
 
 Evidence:
 - `apps/desktop/src/renderer/components/side-panel/notes-panel.tsx:12`
-- `docs/firefly-surface-playbook.md:41`
-- `docs/firefly-surface-playbook.md:54`
+- `.agents/skills/firefly-plugins/SKILL.md`
 
 Assessment:
 - **Not done** beyond shell proof.
@@ -305,7 +301,7 @@ Not done:
 
 Evidence:
 - `apps/desktop/src/renderer/components/side-panel/pulse-panel.tsx:32`
-- `docs/firefly-surface-playbook.md:57`
+- `.agents/skills/firefly-plugins/SKILL.md`
 
 Assessment:
 - **Not done** beyond shell proof.
@@ -320,7 +316,7 @@ Not done:
 
 Evidence:
 - `apps/desktop/src/renderer/components/side-panel/memory-panel.tsx:31`
-- `docs/firefly-surface-playbook.md:64`
+- `.agents/skills/firefly-plugins/SKILL.md`
 
 Assessment:
 - **Not done** beyond shell proof.
@@ -336,7 +332,7 @@ Evidence:
 - `README.md:23`
 - `README.md:31`
 - `README.md:188`
-- `docs/firefly-surface-playbook.md:81`
+- `.agents/skills/firefly-plugins/SKILL.md`
 
 Assessment:
 - **Not done**.
@@ -358,7 +354,7 @@ Evidence:
 - `README.md:127`
 - `README.md:143`
 - `README.md:117`
-- `docs/firefly-surface-playbook.md:44`
+- `.agents/skills/firefly-plugins/SKILL.md`
 
 Assessment:
 - **Not done**.

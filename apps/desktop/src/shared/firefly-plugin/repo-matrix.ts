@@ -198,7 +198,7 @@ export const V2_FILE_MATRIX: readonly FileMatrixEntry[] = [
 		locked: true,
 	},
 	{
-		path: "apps/desktop/src/renderer/components/side-panel/plugins-panel.tsx",
+		path: "apps/desktop/src/renderer/components/side-panel/v2-plugins-panel.tsx",
 		area: "renderer",
 		role: "v2-evidence",
 		v2Module: "operator-surface",

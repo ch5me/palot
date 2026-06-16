@@ -46,7 +46,7 @@ describe("repo-matrix", () => {
 		const grounded = [
 			"apps/desktop/src/main/palot-plugin/plugin.js",
 			"apps/desktop/src/renderer/firefly-surface-registry.tsx",
-			"apps/desktop/src/renderer/components/side-panel/plugins-panel.tsx",
+			"apps/desktop/src/renderer/components/side-panel/v2-plugins-panel.tsx",
 		]
 		for (const p of grounded) {
 			expect(evidencePaths).toContain(p)

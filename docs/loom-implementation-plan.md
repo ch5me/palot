@@ -149,7 +149,7 @@ behavior change. No Loom-shaped API yet.
 - `apps/desktop/src/shared/firefly-plugin/palot-bridge-manifest.ts:21–40`
   and `apps/desktop/src/main/palot-plugin/plugin.js:124–143` — derive
   `palotSidePanelTabSchema` and `VALID_SIDE_PANEL_TABS` from the registry.
-- Update `docs/firefly-surface-playbook.md:25–31` to reflect the
+- Update `.agents/skills/firefly-plugins/SKILL.md` to reflect the
   single-source path.
 
 **Touched files (illustrative; the build prompt is precise):**
@@ -161,7 +161,7 @@ behavior change. No Loom-shaped API yet.
 - `apps/desktop/src/renderer/components/command-palette.tsx`
 - `apps/desktop/src/shared/firefly-plugin/palot-bridge-manifest.ts`
 - `apps/desktop/src/main/palot-plugin/plugin.js`
-- `docs/firefly-surface-playbook.md`
+- `.agents/skills/firefly-plugins/SKILL.md`
 
 **Proof criteria:**
 

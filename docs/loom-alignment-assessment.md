@@ -46,7 +46,7 @@ These should not regress during the migration; they are evidence that the archit
 - **V1 prompts and renderer derive from one source.** `buildGenUiCatalog()` (`genui/registry.ts:78–93`) and the renderer's `resolveGenUiEntry` (`genui/registry.ts:60–67`) both read `ENTRIES`. The catalog cannot drift from the renderer. This is the smallest piece of what Loom calls for ("plugin manifest = component contract"), and it is solid.
 - **Per-tool Zod schemas exist for the bridge.** `apps/desktop/src/shared/palot-bridge-schemas.ts` is a 360-line Zod-validated tool surface: `sidePanelTabSchema` (`:24`), `browserActionErrorCodeSchema` (`:26`), `sessionBindingStatusSchema` (`:52`), `browserLaneHealthSchema` (`:80`), and a discriminated union over `kind` for `browserActionEventSchema` (`:152`). The bridge's tool call/return path is already structurally typed; what is missing is the typed *component* layer and the *event* layer above it.
 - **Capability broker / trust model is real.** `apps/desktop/src/shared/firefly-plugin/capabilities.ts` (`lookupCapability`, `evaluateBrokerRequest`) and `apps/desktop/src/main/firefly-plugin/authority.ts` are Loom-shaped primitives already wired into the projection pipeline. This is the agent authority seam: it just needs to wrap the render/poll/patch loop.
-- **`firefly-surface-registry.tsx` is a V1 Loom prototype in disguise.** It is fully data-driven: 18 entries with `id`, `title`, `icon`, `formFactor`, `enabledFlag.{key,atom}`, `defaultOn`, `availability(ctx)`, `commandIds[]`, `persistenceKey`, `telemetryNamespace`, `target`, `spawn(ctx)`. The projection in `shared/firefly-plugin/renderer-projection.ts:77–97` (`ProjectedSidePanel`) mirrors it field-for-field. The two layers are not yet unified (7 mirror lists of the same 18 ids — see `docs/firefly-surface-playbook.md:25–31` and the audit at the end of this doc) but the shape is correct.
+- **`firefly-surface-registry.tsx` is a V1 Loom prototype in disguise.** It is fully data-driven: 18 entries with `id`, `title`, `icon`, `formFactor`, `enabledFlag.{key,atom}`, `defaultOn`, `availability(ctx)`, `commandIds[]`, `persistenceKey`, `telemetryNamespace`, `target`, `spawn(ctx)`. The projection in `shared/firefly-plugin/renderer-projection.ts:77–97` (`ProjectedSidePanel`) mirrors it field-for-field. The two layers are not yet unified (7 mirror lists of the same 18 ids — see the surface authoring skill at `.agents/skills/firefly-plugins/SKILL.md` and the audit at the end of this doc) but the shape is correct.
 - **The plugin bridge is testable and tool-agnostic.** `apps/desktop/src/main/palot-opencode-plugin-shim.ts:11` validates only module shape (`{id, server}`), and the bridge has its own `createBridgeClient` factory (`plugin.js:152–174`) that takes `fetchImpl` and `env` — already unit-testable without a live OpenCode.
 - **The `palotSidePanelTabSchema` Zod enum is exactly the closed vocabulary Loom wants for the agent-tool surface.** `apps/desktop/src/shared/firefly-plugin/palot-bridge-manifest.ts:21–40` is a 18-variant `z.enum`. The same 18 ids appear in `atoms/ui.ts:25–43`, in `palot-plugin/plugin.js:124–143`, and in the docs playbook.
 
@@ -178,9 +178,9 @@ The same 18 side-panel surface ids appear in:
 | 6 | `apps/desktop/src/shared/firefly-plugin/palot-bridge-manifest.ts` | 21–40 | `palotSidePanelTabSchema` Zod enum |
 | 7 | `apps/desktop/src/main/palot-plugin/plugin.js` | 124–143 | `VALID_SIDE_PANEL_TABS` plain-JS list (validation boundary) |
 
-Plus the docs onboarding ritual: `docs/firefly-surface-playbook.md:25–31` walks through every step of the above.
+Plus the docs onboarding ritual: `.agents/skills/firefly-plugins/SKILL.md` walks through every step of the above.
 
-**Convergence target:** one `SurfaceContribution` table (V2 manifest `panels` family extended with `component: {kind: "host-reconciler", id}`). All 7 lists derive from it. The audit in `docs/firefly-surface-playbook.md` shrinks to "add a manifest entry".
+**Convergence target:** one `SurfaceContribution` table (V2 manifest `panels` family extended with `component: {kind: "host-reconciler", id}`). All 7 lists derive from it. The surface authoring guidance in `.agents/skills/firefly-plugins/SKILL.md` shrinks to "add a manifest entry".
 
 ## Appendix C — extra findings from the recovered architecture map
 
@@ -315,6 +315,6 @@ a hard prerequisite for the wire.
 | Session widget atoms | `apps/desktop/src/renderer/atoms/session-widgets.ts` | 1–~200 |
 | Tool-call dispatcher (hardcoded) | `apps/desktop/src/renderer/components/chat/chat-tool-call.tsx` | 1–1318 (6 switches) |
 | Sidebar section ids (closed) | `apps/desktop/src/renderer/atoms/ui.ts` | 10–43 |
-| Firefly surface playbook (docs) | `docs/firefly-surface-playbook.md` | 1–~120 |
+| Firefly surface authoring skill | `.agents/skills/firefly-plugins/SKILL.md` | full file |
 | GenUI artifact architecture (docs) | `docs/genui-artifact-architecture.md` | 1–465 |
 | Bridge plugin doc | `docs/palot-opencode-plugin-bridge.md` | 1–531 |

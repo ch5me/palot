@@ -96,7 +96,7 @@ Current truth:
 ## Evidence Behind This Checklist <!-- oc:id=sec_af -->
 
 - Shell/proof-surface reality: `docs/firefly-supra-conversion-audit.md`
-- Surface authoring rules: `docs/firefly-surface-playbook.md`
+- Surface authoring rules: `.agents/skills/firefly-plugins/SKILL.md`
 - Standardization closure mismatch: `.sisyphus/notepads/firefly-design-standardization-across-products/problems.md`
 - Notes/pulse/memory/browser audits: `.sisyphus/evidence/firefly-scope-classification-matrix.md`
 - Desktop boot blocker: `.sisyphus/evidence/elf-package-build-hygiene-audit.md`

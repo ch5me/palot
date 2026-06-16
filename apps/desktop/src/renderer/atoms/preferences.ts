@@ -78,45 +78,8 @@ export interface FireflyProfilePreferences {
 }
 
 // ============================================================
-// One-time migration from Zustand persist to Jotai atomWithStorage
+// One-time localStorage format migration
 // ============================================================
-
-function migrateFromZustandPersist(): void {
-	if (typeof localStorage === "undefined") return
-	const oldKey = "elf-preferences"
-	const raw = localStorage.getItem(oldKey)
-	if (!raw) return
-
-	try {
-		const { state } = JSON.parse(raw) // Zustand persist wraps in { state, version }
-		if (state.displayMode)
-			localStorage.setItem("elf:displayMode", JSON.stringify(state.displayMode))
-		if (state.theme) localStorage.setItem("elf:theme", JSON.stringify(state.theme))
-		if (state.colorScheme)
-			localStorage.setItem("elf:colorScheme", JSON.stringify(state.colorScheme))
-		if (state.drafts) localStorage.setItem("elf:drafts", JSON.stringify(state.drafts))
-		if (state.projectModels)
-			localStorage.setItem("elf:projectModels", JSON.stringify(state.projectModels))
-
-		// Remove old key after successful migration
-		localStorage.removeItem(oldKey)
-	} catch {
-		// Ignore malformed data
-	}
-}
-
-// Run migration at module load time (before any atoms are read)
-migrateFromZustandPersist()
-
-// Migrate removed "compact" display mode to "default"
-function migrateDisplayMode(): void {
-	if (typeof localStorage === "undefined") return
-	const raw = localStorage.getItem("elf:displayMode")
-	if (raw === '"compact"') {
-		localStorage.setItem("elf:displayMode", '"default"')
-	}
-}
-migrateDisplayMode()
 
 function migrateFireflySurfacePreferences(): void {
 	if (typeof localStorage === "undefined") return
