@@ -102,6 +102,13 @@ export interface PluginWorkerRegistration {
 	/** Per-plugin crash threshold (descriptor `quarantineOnCrashCount`). */
 	readonly quarantineOnCrashCount?: number
 	readonly restartBackoffMs?: number
+	/**
+	 * Spawn-gate prep (security, §B1). Thread-through: the actual refusal
+	 * logic lands in F3 — B1 accepts + passes these through so callers can
+	 * wire trust data without implementing the gate here.
+	 */
+	readonly trustTier?: string
+	readonly signatureState?: string
 }
 
 export interface PluginWorkerSupervisorOptions {
@@ -125,6 +132,19 @@ export interface PluginWorkerSupervisorOptions {
 		pluginId: string
 		message: WorkerToHostMessage
 	}) => Promise<HostToWorkerMessage | null> | HostToWorkerMessage | null
+	/**
+	 * Resolves the granted-capability snapshot + session scope for a plugin
+	 * just before its `activate` message is sent. Called once per spawn.
+	 * Wire from `grant-store.ts` `resolveGrantedTokens` in production;
+	 * omit in tests that inject their own activate payload or need no grants.
+	 */
+	readonly resolveActivation?: (pluginId: string) => Promise<{
+		grantedCapabilities: string[]
+		sessionScope: "session" | "project" | "app"
+	}> | {
+		grantedCapabilities: string[]
+		sessionScope: "session" | "project" | "app"
+	}
 }
 
 interface SupervisedPlugin {
@@ -301,6 +321,34 @@ export function createPluginWorkerSupervisor(
 		}
 		entry.worker = worker
 
+		// Post the activation message immediately after wiring. The worker's
+		// `activate()` runs, posts `activated` (carrying the registered id table),
+		// and THAT flips lifecycle to `active`. A worker that replies only `ready`
+		// without `activated` within hangTimeoutMs is failed by scanForHangs.
+		void (async () => {
+			try {
+				const resolved = options.resolveActivation
+					? await Promise.resolve(options.resolveActivation(pluginId))
+					: { grantedCapabilities: [], sessionScope: "session" as const }
+				if (entry.generation !== generation) return
+				worker.postMessage({
+					type: "activate",
+					pluginId,
+					grantedCapabilities: resolved.grantedCapabilities,
+					sessionScope: resolved.sessionScope,
+				})
+			} catch (err) {
+				if (entry.generation !== generation) return
+				apply(entry, {
+					kind: "activationFailed",
+					pluginId,
+					failureClass: "load_failure",
+					message: `resolveActivation failed: ${err instanceof Error ? err.message : String(err)}`,
+					exitCode: null,
+				})
+			}
+		})()
+
 		worker.onMessage((raw) => {
 			if (entry.generation !== generation) return
 			const parsed = parseWorkerToHostMessage(raw)
@@ -315,6 +363,18 @@ export function createPluginWorkerSupervisor(
 			const message = parsed.message
 			switch (message.type) {
 				case "ready":
+					// Transport-up only: the worker signals it is connected. Do NOT
+					// flip lifecycle to active — that happens only on `activated`.
+					log.debug("Worker transport up (ready)", { pluginId })
+					return
+				case "activated":
+					// Activation complete: the worker's activate() ran, handlers are
+					// registered. Flip lifecycle to active and seed routing table.
+					log.debug("Worker activated", {
+						pluginId,
+						registeredCommands: message.registeredCommands,
+						registeredTools: message.registeredTools,
+					})
 					apply(entry, { kind: "activationSucceeded", pluginId })
 					return
 				case "heartbeat":

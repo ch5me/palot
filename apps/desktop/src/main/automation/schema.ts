@@ -10,6 +10,7 @@
  */
 
 import { index, int, sqliteTable, text } from "drizzle-orm/sqlite-core"
+import type { SignatureState } from "../firefly-plugin/install/signature-verify"
 
 export const automations = sqliteTable("automations", {
 	id: text("id").primaryKey(),
@@ -55,7 +56,10 @@ export const extensionPackages = sqliteTable(
 		/** Absolute path to the content-addressed unpacked dir. */
 		unpackedPath: text("unpacked_path").notNull(),
 		/** Signature state: "unsigned" | "verified" | "unverified". */
-		signatureState: text("signature_state").notNull().default("unsigned"),
+		signatureState: text("signature_state")
+			.notNull()
+			.$type<SignatureState>()
+			.default("unsigned"),
 		/** Scan state: "pending" | "clean" | "quarantined". */
 		scanState: text("scan_state").notNull().default("pending"),
 		/** Serialized contributes.themes array (JSON string) for theme packages. */

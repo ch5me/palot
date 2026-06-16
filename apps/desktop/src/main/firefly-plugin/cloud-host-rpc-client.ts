@@ -10,6 +10,12 @@
  * repo and CANNOT land from palot. This client is the palot-side half; until the
  * server endpoints exist and `FIREFLY_CLOUD_URL` is configured, calls fail fast
  * with a typed, named error — never a silent fallback (CH5 #9).
+ *
+ * NOTE (D-P2): `fetchProjectionSnapshot` and `subscribeProjection` are the
+ * projection-channel methods. The named method strings ("projectionSnapshot")
+ * are authored in `host-authority.ts CloudHostAuthority` (§6.1 SSOT), which
+ * delegates here as a generic transport. The live push transport (WebSocket
+ * via WsGatewayDO) is wired in D-C5; `subscribeProjection` is the shape-stub.
  */
 
 export class CloudHostNotConfiguredError extends Error {
@@ -55,9 +61,50 @@ type FetchFn = (url: string, init: { method: string; headers: Record<string, str
 	text(): Promise<string>
 }>
 
+/**
+ * Minimal placeholder for the catalog projection snapshot shape.
+ *
+ * TODO(D-P1): replace with the shared `CatalogProjectionSnapshot` type from
+ * `host-authority-types.ts` once D-P1 adds it in Wave 2. This local interface
+ * is intentionally open (`[k: string]: unknown`) so downstream consumers can
+ * extend it without breaking the transport contract.
+ */
+export interface CatalogProjectionSnapshot {
+	readonly revision: number
+	readonly fetchedAt: string
+	readonly [k: string]: unknown
+}
+
 export interface CloudHostRpcClient {
 	call<T>(method: string, params: Record<string, unknown>): Promise<T>
 	readonly configured: boolean
+	/**
+	 * Fetch the current catalog-projection snapshot from firefly-cloud.
+	 * Delegates to `call("projectionSnapshot", { sinceRevision })`.
+	 *
+	 * The method name "projectionSnapshot" is the canonical wire name; it is
+	 * authored in `host-authority.ts CloudHostAuthority` (§6.1 SSOT) and
+	 * reproduced here for the convenience wrapper only.
+	 *
+	 * Throws `CloudHostNotConfiguredError` when `FIREFLY_CLOUD_URL` is absent.
+	 */
+	fetchProjectionSnapshot(sinceRevision?: number): Promise<CatalogProjectionSnapshot>
+	/**
+	 * Subscribe to push-delivered projection snapshots from firefly-cloud.
+	 *
+	 * Returns an unsubscribe function. The subscriber is called with each new
+	 * `CatalogProjectionSnapshot` as the catalog changes server-side.
+	 *
+	 * ⚠ STUB (D-P2): the shape and fail-fast guard are in place; the live
+	 * push transport (WebSocket via WsGatewayDO) is wired in D-C5. Until then,
+	 * the subscriber is registered but never invoked automatically — callers
+	 * must fall back to polling `fetchProjectionSnapshot` for now.
+	 *
+	 * Throws `CloudHostNotConfiguredError` when `FIREFLY_CLOUD_URL` is absent
+	 * (fail-fast: better to surface misconfiguration immediately than silently
+	 * receive no updates).
+	 */
+	subscribeProjection(onSnapshot: (snapshot: CatalogProjectionSnapshot) => void): () => void
 }
 
 /**
@@ -70,7 +117,7 @@ export function createCloudHostRpcClient(deps: {
 }): CloudHostRpcClient {
 	const fetchFn = deps.fetchFn ?? ((globalThis as { fetch?: FetchFn }).fetch as FetchFn | undefined)
 
-	return {
+	const client: CloudHostRpcClient = {
 		configured: deps.config !== null,
 		async call<T>(method: string, params: Record<string, unknown>): Promise<T> {
 			if (!deps.config) {
@@ -91,5 +138,26 @@ export function createCloudHostRpcClient(deps: {
 			}
 			return (await res.json()) as T
 		},
+
+		async fetchProjectionSnapshot(sinceRevision?: number): Promise<CatalogProjectionSnapshot> {
+			const params: Record<string, unknown> = {}
+			if (sinceRevision !== undefined) params.sinceRevision = sinceRevision
+			return client.call<CatalogProjectionSnapshot>("projectionSnapshot", params)
+		},
+
+		subscribeProjection(onSnapshot: (snapshot: CatalogProjectionSnapshot) => void): () => void {
+			if (!deps.config) {
+				throw new CloudHostNotConfiguredError("FIREFLY_CLOUD_URL")
+			}
+			// STUB (D-P2): the subscriber registration shape is in place.
+			// The live push transport (WebSocket via WsGatewayDO) is wired in D-C5.
+			// Until D-C5 lands, callers should poll `fetchProjectionSnapshot` for
+			// updates; the returned unsubscribe fn is a no-op.
+			void onSnapshot // referenced to satisfy the type; live transport wires it in D-C5
+			return () => {
+				// no-op until D-C5 wires the WebSocket push channel
+			}
+		},
 	}
+	return client
 }

@@ -22,6 +22,7 @@ import { eq, desc } from "drizzle-orm"
 import { ensureDb } from "../../automation/database"
 import { extensionPackages, extensionInstallations } from "../../automation/schema"
 import { createLogger } from "../../logger"
+import type { SignatureState } from "../../../shared/firefly-plugin/registry-signature-contract"
 
 const log = createLogger("firefly-plugin/extension-store")
 
@@ -39,7 +40,7 @@ export interface ExtensionPackageRecord {
 	registrySource: string
 	vsixPath: string | null
 	unpackedPath: string
-	signatureState: string
+	signatureState: SignatureState
 	scanState: string
 	themesJson: string | null
 	createdAt: number
@@ -66,7 +67,7 @@ export interface CreateExtensionPackageInput {
 	registrySource: "open-vsx" | "manual-vsix"
 	vsixPath?: string | null
 	unpackedPath: string
-	signatureState?: "unsigned" | "verified" | "unverified"
+	signatureState?: SignatureState
 	scanState?: "pending" | "clean" | "quarantined"
 	themesJson?: string | null
 }

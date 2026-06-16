@@ -91,7 +91,8 @@ export const hostToWorkerMessageSchema = z.discriminatedUnion("type", [
 	/**
 	 * Bring the worker into service. Carries the snapshot of capability tokens
 	 * the host has granted this plugin for this scope, so the worker knows its
-	 * powers up front (P3d). The worker replies with a lifecycle `ready`.
+	 * powers up front (P3d). The worker replies with `activated` (carrying the
+	 * registered command/tool id table) once its `activate()` has run.
 	 */
 	z.object({
 		type: z.literal("activate"),
@@ -134,9 +135,24 @@ export type HostToWorkerMessage = z.infer<typeof hostToWorkerMessageSchema>
 
 export const workerToHostMessageSchema = z.discriminatedUnion("type", [
 	// lifecycle (mirrors workerLifecycleMessageSchema arms)
+	/** Transport-up signal only — does NOT flip lifecycle to active. */
 	z.object({ type: z.literal("ready") }),
 	z.object({ type: z.literal("heartbeat") }),
 	z.object({ type: z.literal("fatal"), message: z.string().max(2000) }),
+
+	/**
+	 * Activation complete. The worker posts this after its `activate()` has
+	 * run and its command/tool handlers are registered. This is the message
+	 * that flips lifecycle to `active` and seeds the dispatch routing table.
+	 * A worker that posts only `ready` and never `activated` within the hang
+	 * timeout is driven to `failed` by the existing `scanForHangs` path.
+	 */
+	z.object({
+		type: z.literal("activated"),
+		pluginId: z.string().min(1).max(200),
+		registeredCommands: z.array(z.string()).default([]),
+		registeredTools: z.array(z.string()).default([]),
+	}),
 
 	// result of an invoke-command / invoke-tool (deferred routing)
 	z.object({

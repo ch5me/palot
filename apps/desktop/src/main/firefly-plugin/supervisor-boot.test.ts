@@ -94,6 +94,11 @@ describe("bootPluginWorkerSupervisor", () => {
 				[
 					'import { parentPort } from "node:worker_threads"',
 					'parentPort.postMessage({ type: "ready" })',
+					'parentPort.on("message", (msg) => {',
+					'  if (msg && msg.type === "activate") {',
+					'    parentPort.postMessage({ type: "activated", pluginId: msg.pluginId, registeredCommands: [], registeredTools: [] })',
+					'  }',
+					'})',
 					'setInterval(() => parentPort.postMessage({ type: "heartbeat" }), 10)',
 				].join("\n"),
 			)
@@ -103,7 +108,8 @@ describe("bootPluginWorkerSupervisor", () => {
 				{ pluginId: NOTES_PLUGIN_ID, entryPath: path.join(pluginDir, "worker.mjs") },
 			])
 
-			// The fixture signals ready → the locked reducer reaches `active`.
+			// The fixture posts ready (transport-up), then handles `activate` and posts
+			// `activated` → the locked reducer reaches `active`.
 			await waitFor(() => {
 				const summary = result.supervisor.getSummary(NOTES_PLUGIN_ID)
 				return summary?.state === "active"

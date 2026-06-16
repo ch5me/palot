@@ -1,6 +1,7 @@
 import { describe, expect, it } from "bun:test"
 
 import {
+	type CatalogProjectionSnapshot,
 	CloudHostNotConfiguredError,
 	CloudHostRpcError,
 	createCloudHostRpcClient,
@@ -53,5 +54,71 @@ describe("createCloudHostRpcClient", () => {
 			fetchFn: async () => ({ ok: false, status: 503, json: async () => ({}), text: async () => "down" }),
 		})
 		await expect(client.call("catalog", {})).rejects.toBeInstanceOf(CloudHostRpcError)
+	})
+})
+
+describe("fetchProjectionSnapshot (D-P2)", () => {
+	it("POSTs method 'projectionSnapshot' with no sinceRevision param when called without args", async () => {
+		const calls: { method: string; params: Record<string, unknown> }[] = []
+		const snapshot: CatalogProjectionSnapshot = { revision: 3, fetchedAt: "2026-06-16T00:00:00Z" }
+		const client = createCloudHostRpcClient({
+			config: { baseUrl: "https://cloud.example", token: "tok" },
+			fetchFn: async (_url, init) => {
+				const body = JSON.parse(init.body) as { method: string; params: Record<string, unknown> }
+				calls.push({ method: body.method, params: body.params })
+				return { ok: true, status: 200, json: async () => snapshot, text: async () => "" }
+			},
+		})
+		const result = await client.fetchProjectionSnapshot()
+		expect(calls).toHaveLength(1)
+		expect(calls[0]?.method).toBe("projectionSnapshot")
+		expect(calls[0]?.params).toEqual({})
+		expect(result).toEqual(snapshot)
+	})
+
+	it("includes sinceRevision in params when provided", async () => {
+		const calls: { method: string; params: Record<string, unknown> }[] = []
+		const snapshot: CatalogProjectionSnapshot = { revision: 7, fetchedAt: "2026-06-16T01:00:00Z" }
+		const client = createCloudHostRpcClient({
+			config: { baseUrl: "https://cloud.example", token: null },
+			fetchFn: async (_url, init) => {
+				const body = JSON.parse(init.body) as { method: string; params: Record<string, unknown> }
+				calls.push({ method: body.method, params: body.params })
+				return { ok: true, status: 200, json: async () => snapshot, text: async () => "" }
+			},
+		})
+		const result = await client.fetchProjectionSnapshot(5)
+		expect(calls[0]?.method).toBe("projectionSnapshot")
+		expect(calls[0]?.params).toEqual({ sinceRevision: 5 })
+		expect(result.revision).toBe(7)
+	})
+
+	it("throws CloudHostNotConfiguredError when unconfigured", async () => {
+		const client = createCloudHostRpcClient({ config: null })
+		await expect(client.fetchProjectionSnapshot()).rejects.toBeInstanceOf(CloudHostNotConfiguredError)
+		await expect(client.fetchProjectionSnapshot(1)).rejects.toBeInstanceOf(CloudHostNotConfiguredError)
+	})
+})
+
+describe("subscribeProjection (D-P2 stub)", () => {
+	it("throws CloudHostNotConfiguredError immediately when unconfigured", () => {
+		const client = createCloudHostRpcClient({ config: null })
+		expect(() => client.subscribeProjection(() => {})).toThrow(CloudHostNotConfiguredError)
+	})
+
+	it("returns an unsubscribe function when configured (stub — no live push yet)", () => {
+		const client = createCloudHostRpcClient({
+			config: { baseUrl: "https://cloud.example", token: null },
+			fetchFn: async () => {
+				throw new Error("should not be called by subscribeProjection")
+			},
+		})
+		const received: CatalogProjectionSnapshot[] = []
+		const unsub = client.subscribeProjection((s) => received.push(s))
+		expect(typeof unsub).toBe("function")
+		// stub: no snapshots delivered automatically (live push transport lands in D-C5)
+		expect(received).toHaveLength(0)
+		// calling unsubscribe must not throw
+		expect(() => unsub()).not.toThrow()
 	})
 })

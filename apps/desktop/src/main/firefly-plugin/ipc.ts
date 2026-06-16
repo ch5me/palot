@@ -38,6 +38,41 @@ export const FIREFLY_PLUGIN_IPC_CHANNELS = {
 	releaseQuarantine: "firefly-plugin:release-quarantine",
 } as const
 
+/** Shared capability-list validator used by both union members of installArgsSchema. */
+const consentedCapabilitiesSchema = z
+	.array(z.string().min(1).max(200))
+	.max(200)
+	.optional()
+
+/**
+ * Exported so unit tests can exercise the schema in isolation without spinning
+ * up Electron IPC handlers.  See: ipc-install-args.test.ts
+ */
+export const installArgsSchema = z.discriminatedUnion("kind", [
+	z.object({
+		kind: z.literal("open-vsx"),
+		namespace: z.string().min(1).max(200),
+		name: z.string().min(1).max(200),
+		version: z.string().max(80).optional(),
+		consentedCapabilities: consentedCapabilitiesSchema,
+	}),
+	z.object({
+		kind: z.literal("local-vsix"),
+		vsixPath: z.string().min(1).max(500),
+		expectedSha256: z.string().length(64).optional(),
+		consentedCapabilities: consentedCapabilitiesSchema,
+	}),
+	z.object({
+		kind: z.literal("firefly"),
+		namespace: z.string().min(1).max(200),
+		name: z.string().min(1).max(200),
+		version: z.string().max(80).optional(),
+		consentedCapabilities: consentedCapabilitiesSchema,
+	}),
+])
+
+export type InstallArgs = z.infer<typeof installArgsSchema>
+
 export function registerFireflyPluginIpc(): void {
 	const authority = new ElectronHostAuthority()
 
@@ -157,20 +192,6 @@ export function registerFireflyPluginIpc(): void {
 		size: z.number().int().positive().max(100).optional(),
 		offset: z.number().int().nonnegative().optional(),
 	})
-
-	const installArgsSchema = z.union([
-		z.object({
-			kind: z.literal("open-vsx"),
-			namespace: z.string().min(1).max(200),
-			name: z.string().min(1).max(200),
-			version: z.string().max(80).optional(),
-		}),
-		z.object({
-			kind: z.literal("local-vsix"),
-			vsixPath: z.string().min(1).max(500),
-			expectedSha256: z.string().length(64).optional(),
-		}),
-	])
 
 	const installationIdSchema = z.object({
 		installationId: z.string().min(1).max(200),

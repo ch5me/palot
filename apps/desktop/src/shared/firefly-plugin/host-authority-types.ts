@@ -158,6 +158,12 @@ export interface MarketplaceSearchEntry {
 	version: string
 	iconUrl: string | null
 	downloadCount: number | null
+	/** Declared capabilities required by this extension (for pre-install consent dialog). */
+	requiredCapabilities?: readonly string[]
+	/** Short hint about the trust tier (e.g. "signed-third-party"). */
+	trustHint?: string
+	/** Short hint about the runtime surface (e.g. "node-worker", "web-worker"). */
+	runtimeHint?: string
 }
 
 export interface MarketplaceSearchResult {
@@ -167,14 +173,16 @@ export interface MarketplaceSearchResult {
 }
 
 export interface MarketplaceInstallInput {
-	kind: "open-vsx" | "local-vsix"
-	// open-vsx fields
+	kind: "open-vsx" | "local-vsix" | "firefly"
+	// open-vsx / firefly fields
 	namespace?: string
 	name?: string
 	version?: string
 	// local-vsix fields
 	vsixPath?: string
 	expectedSha256?: string
+	/** Capabilities the user explicitly consented to during the pre-install dialog. */
+	consentedCapabilities?: readonly string[]
 }
 
 export interface MarketplaceInstalledTheme {

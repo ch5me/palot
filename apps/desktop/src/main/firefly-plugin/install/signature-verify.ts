@@ -23,6 +23,19 @@
 
 import * as crypto from "node:crypto"
 
+// Wire types are shared (no node:crypto) — import from the contract module.
+// Re-export them here for back-compat so existing importers of this file
+// do not need to change their import paths.
+export type {
+	SignatureAlgorithm,
+	SignatureState,
+	DetachedSignature,
+} from "../../../shared/firefly-plugin/registry-signature-contract"
+import type {
+	SignatureState,
+	DetachedSignature,
+} from "../../../shared/firefly-plugin/registry-signature-contract"
+
 // ---------------------------------------------------------------------------
 // Public error type
 // ---------------------------------------------------------------------------
@@ -43,18 +56,8 @@ export class SignatureVerificationError extends Error {
 }
 
 // ---------------------------------------------------------------------------
-// Public types
+// Public types (main-process only)
 // ---------------------------------------------------------------------------
-
-export type SignatureAlgorithm = "ed25519" | "rsa-sha256"
-
-export interface DetachedSignature {
-	algorithm: SignatureAlgorithm
-	/** Base64-encoded raw signature bytes. */
-	signatureB64: string
-	/** Opaque key identifier referencing a publisher public key. */
-	publisherKeyId: string
-}
 
 export interface SignatureVerifyInput {
 	data: Buffer
@@ -62,9 +65,6 @@ export interface SignatureVerifyInput {
 	/** PEM-encoded public key (SPKI or PKCS#8 format). */
 	publicKeyPem: string
 }
-
-/** Matches `extension_packages.signatureState` column values. */
-export type SignatureState = "unsigned" | "verified" | "unverified"
 
 /** Matches `extension_installations.trustTier` column values. */
 export type TrustTier = "built-in" | "local-dev" | "signed-third-party" | "unsigned-third-party"

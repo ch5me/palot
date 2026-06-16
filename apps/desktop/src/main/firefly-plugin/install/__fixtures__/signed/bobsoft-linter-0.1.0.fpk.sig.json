@@ -1,0 +1,12 @@
+{
+  "manifest": {
+    "namespace": "bobsoft",
+    "name": "linter",
+    "version": "0.1.0",
+    "contentSha256": "469bc526386d1669ad809b053db1864a7d259f73a1e026949c9d39465c820a20",
+    "algorithm": "ed25519",
+    "signedAt": "2026-06-16T00:00:00.000Z",
+    "publisherKeyId": "ephemeral-test-key"
+  },
+  "signatureB64": "FHPUwtDYJ/ex+ihYmPON/HnpKB/2KFTftWMrmxUSxWHJVBDdMD/2Ooi9eeZXaDrVJlxh08SEXsfTcnWYOj56Dw=="
+}
