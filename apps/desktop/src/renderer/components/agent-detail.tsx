@@ -81,7 +81,6 @@ import type { ChatTurn } from "../hooks/use-session-chat"
 import type { Agent, FileAttachment, QuestionAnswer } from "../lib/types"
 import {
 	fetchOpenInTargets,
-	fetchPalotUiStateSnapshot,
 	isElectron,
 	openInTarget,
 	subscribeToPalotOpenSidePanel,
@@ -389,6 +388,20 @@ export function AgentDetail({
 		[spawnDockTab, setDocumentPanelOpen, setSidePanelOpen, routeAvailableSurfaceTab],
 	)
 
+	// Right dock visibility follows open-tab presence: reveal the panel when the
+	// first tab appears, collapse it when the last one is closed. Only fires on the
+	// empty↔non-empty transition, so a manually-opened empty panel (toggled on to
+	// reach the spawn toolbar) stays open. A fresh session has no open tabs, so the
+	// panel stays hidden instead of showing a useless empty toolbar.
+	const prevOpenUtilityCountRef = useRef(openUtilityTabs.length)
+	useEffect(() => {
+		const prev = prevOpenUtilityCountRef.current
+		const now = openUtilityTabs.length
+		prevOpenUtilityCountRef.current = now
+		if (prev === 0 && now > 0) setSidePanelOpen(true)
+		else if (prev > 0 && now === 0) setSidePanelOpen(false)
+	}, [openUtilityTabs.length, setSidePanelOpen])
+
 	useEffect(() => {
 		const handleKeyDown = (e: KeyboardEvent) => {
 			if ((e.metaKey || e.ctrlKey) && e.shiftKey) {
@@ -461,20 +474,12 @@ export function AgentDetail({
 		return unsubscribe
 	}, [findAvailableSurfaceTab, handleSpawnTab])
 
-	useEffect(() => {
-		void fetchPalotUiStateSnapshot().then((snapshot) => {
-			if (!snapshot) return
-			const snapshotTabs = [
-				snapshot.sidePanel.open ? snapshot.sidePanel.activeTab : null,
-				snapshot.documentPanel.open ? snapshot.documentPanel.activeTab : null,
-			].filter((tab): tab is SidePanelTabDef["id"] => tab !== null)
-			for (const tab of snapshotTabs) {
-				const targetTab = findAvailableSurfaceTab(tab)
-				if (!targetTab) continue
-				routeAvailableSurfaceTab(targetTab)
-			}
-		})
-	}, [findAvailableSurfaceTab, routeAvailableSurfaceTab])
+	// No panel restore on load. With spawn-on-demand the in-memory open set is the
+	// source of truth and starts empty, so a fresh session shows chat only. Auto-
+	// reopening from the persisted UI snapshot would surface an empty side panel
+	// (open, but with no spawned tab) — exactly the useless empty toolbar we avoid.
+	// The sync-write effect above persists the current (closed) state, correcting
+	// any stale `open: true` left by the previous tab-per-surface model.
 
 	useEffect(() => {
 		setAppBarContent(

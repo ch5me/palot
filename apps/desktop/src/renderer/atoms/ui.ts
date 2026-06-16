@@ -49,11 +49,13 @@ export interface PaneRoutingState {
 	documentPanel: DocumentPanelRoute | null
 }
 
-// `:v2` retires the stale `false` values the old force-close behavior persisted
-// whenever utility surfaces were briefly empty during load — those would stick
-// the right dock collapsed. Bumping the key resets everyone to open-by-default;
-// the user's own toggle then persists under the new key.
-export const sidePanelOpenAtom = atomWithStorage<boolean>("elf:side-panel-open:v2", true)
+// Right (side-panel) dock visibility. NOT persisted and defaults closed: with
+// spawn-on-demand tabs a fresh session has no open tabs, so the panel stays
+// hidden rather than showing an empty toolbar. It auto-opens when a tab is
+// spawned and auto-collapses when the last tab is closed (see agent-detail);
+// the user can still toggle it open manually to reach the spawn toolbar. Kept
+// in-memory so a stale "open" can't resurface the empty panel on next launch.
+export const sidePanelOpenAtom = atom<boolean>(false)
 
 export type DocumentPanelTabId = LastDocumentPanelTabId
 export type UtilitySidePanelTabId = LastUtilitySidePanelTabId
