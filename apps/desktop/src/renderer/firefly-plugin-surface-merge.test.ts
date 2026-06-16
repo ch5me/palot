@@ -17,6 +17,7 @@ function projectedPanel(overrides: Partial<ProjectedSidePanel> = {}): ProjectedS
 		projectedId: "firefly.built-in.surface.notes.notes",
 		title: "Notes",
 		icon: "book-text",
+		workspace: null,
 		formFactor: "side-panel-tab",
 		hostSlot: "side-panel",
 		hostTarget: { kind: "side-panel", slot: "side-panel" },

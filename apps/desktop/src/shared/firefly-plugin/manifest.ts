@@ -229,6 +229,7 @@ const panelContributionSchema = z
 		title: z.string().min(1).max(80),
 		formFactor: z.enum(["side-panel-tab", "main-pane"]),
 		defaultZone: z.string().min(1).max(40),
+		workspace: z.string().min(1).max(64).optional(),
 		icon: z.string().max(64).optional(),
 		defaultOn: z.boolean().default(false),
 		commandIds: z.array(commandIdSchema).max(8).default([]),

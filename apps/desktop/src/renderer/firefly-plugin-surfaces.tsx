@@ -66,6 +66,8 @@ export const PLUGIN_PANEL_COMPONENTS: Readonly<
 	"firefly.built-in.surface.ch5pm.ch5pm": lazy(() => import("../../plugins/ch5pm/panel/ch5pm-panel")),
 	"firefly.built-in.surface.pdf-review.pdf-review": lazy(() => import("../../plugins/pdf-review/panel/pdf-review-panel")),
 	"firefly.built-in.surface.crm.crm": lazy(() => import("../../plugins/crm/panel/crm-panel")),
+	"firefly.folio.folio-library": lazy(() => import("../../plugins/folio/panel/folio-library-panel")),
+	"firefly.folio.folio-collections": lazy(() => import("../../plugins/folio/panel/folio-collections-panel")),
 }
 
 /** Manifest icon-name → Lucide component. Extend per migrated surface. */
@@ -221,6 +223,7 @@ export function buildCatalogSurfaceTab(
 	const Icon = panelIcon(descriptor.iconName)
 	return {
 		id: descriptor.id,
+		workspace: descriptor.workspace,
 		lane: descriptor.lane,
 		label: descriptor.title,
 		icon: <Icon className="size-4" />,

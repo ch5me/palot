@@ -43,14 +43,14 @@ import {
 	getFireflySurfaceTabs,
 	type FireflySurfaceContext,
 } from "../firefly-surface-registry"
-import { mergeSurfaceTabs } from "../firefly-plugin-surface-merge"
+import { isKnownSidePanelTabId, mergeSurfaceTabs } from "../firefly-plugin-surface-merge"
 import { useCatalogSurfaceTabs } from "../firefly-plugin-surfaces"
 import {
 	closeDocumentPanelAtom,
-	type DocumentPanelTabId,
 	documentPanelActiveTabAtom,
 	documentPanelOpenAtom,
 	isDocumentPanelTab,
+	navSidebarActiveTabAtom,
 	paneRoutingStateAtom,
 	reviewPanelSettingsAtom,
 	setAvailableDocumentPanelTabsAtom,
@@ -86,6 +86,15 @@ import { ChatView } from "./chat"
 import type { SidePanelTabDef } from "./side-panel/side-panel-tabs"
 import { WorktreeActions } from "./worktree-actions"
 
+/**
+ * Narrow a (possibly dynamic, workspace-scoped) tab id down to the built-in
+ * utility union. Workspace-scoped plugin pages carry dynamic projectedId ids
+ * that are not part of `UtilitySidePanelTabId`; the legacy union-typed UI-state
+ * atoms only model built-in surfaces, so those dynamic ids are filtered out.
+ */
+function isUtilitySidePanelTabId(tabId: string): tabId is UtilitySidePanelTabId {
+	return isKnownSidePanelTabId(tabId) && !isDocumentPanelTab(tabId)
+}
 
 interface AgentDetailProps {
 	agent: Agent
@@ -300,8 +309,13 @@ export function AgentDetail({
 		() => surfaceTabs.filter((tab) => tab.availability.available),
 		[surfaceTabs],
 	)
+	const activeNavWorkspace = useAtomValue(navSidebarActiveTabAtom)
+	const workspaceSurfaceTabs = useMemo(
+		() => availableSurfaceTabs.filter((tab) => (tab.workspace ?? "built-in") === activeNavWorkspace),
+		[availableSurfaceTabs, activeNavWorkspace],
+	)
 	const findAvailableSurfaceTab = useCallback(
-		(tabId: SidePanelTabDef["id"]): SidePanelTabDef | null =>
+		(tabId: string): SidePanelTabDef | null =>
 			availableSurfaceTabs.find((candidate) => candidate.id === tabId) ?? null,
 		[availableSurfaceTabs],
 	)
@@ -313,7 +327,7 @@ export function AgentDetail({
 				setDocumentPanelOpen(true)
 				return
 			}
-			if (targetTab.lane === "utility" && !isDocumentPanelTab(targetTabId)) {
+			if (targetTab.lane === "utility" && isKnownSidePanelTabId(targetTabId) && !isDocumentPanelTab(targetTabId)) {
 				setSidePanelActiveTab(targetTabId)
 				setSidePanelOpen(true)
 			}
@@ -326,20 +340,12 @@ export function AgentDetail({
 		],
 	)
 	const docTabs = useMemo(
-		() =>
-			availableSurfaceTabs.filter(
-				(tab): tab is SidePanelTabDef & { lane: "document"; id: DocumentPanelTabId } =>
-					tab.lane === "document" && isDocumentPanelTab(tab.id),
-			),
-		[availableSurfaceTabs],
+		() => workspaceSurfaceTabs.filter((tab) => tab.lane === "document" && isDocumentPanelTab(tab.id)),
+		[workspaceSurfaceTabs],
 	)
 	const utilityTabs = useMemo(
-		() =>
-			availableSurfaceTabs.filter(
-				(tab): tab is SidePanelTabDef & { lane: "utility"; id: UtilitySidePanelTabId } =>
-					tab.lane === "utility" && !isDocumentPanelTab(tab.id),
-			),
-		[availableSurfaceTabs],
+		() => workspaceSurfaceTabs.filter((tab) => tab.lane === "utility" && !isDocumentPanelTab(tab.id)),
+		[workspaceSurfaceTabs],
 	)
 
 	useEffect(() => {
@@ -367,28 +373,42 @@ export function AgentDetail({
 	// available doc surface when the remembered tab disappears.
 	const docPanelVisible = documentPanelOpen && activeDocTab !== null
 
-	useEffect(() => {
-		setAvailableSidePanelTabs(utilityTabs.map((tab) => tab.id))
-	}, [setAvailableSidePanelTabs, utilityTabs])
+	// The legacy union-typed UI-state atoms/snapshot only model built-in
+	// (`SidePanelTabId`/`DocumentPanelTabId`) surfaces. Workspace-scoped plugin
+	// pages (dynamic projectedId ids) are owned by the dock, so they are filtered
+	// out here before reaching the union-typed setters.
+	const builtinUtilityTabIds = useMemo(
+		() => utilityTabs.map((tab) => tab.id).filter(isUtilitySidePanelTabId),
+		[utilityTabs],
+	)
+	const builtinDocTabIds = useMemo(
+		() => docTabs.map((tab) => tab.id).filter(isDocumentPanelTab),
+		[docTabs],
+	)
 
 	useEffect(() => {
-		setAvailableDocumentPanelTabs(docTabs.map((tab) => tab.id))
-	}, [docTabs, setAvailableDocumentPanelTabs])
+		setAvailableSidePanelTabs(builtinUtilityTabIds)
+	}, [setAvailableSidePanelTabs, builtinUtilityTabIds])
 
 	useEffect(() => {
+		setAvailableDocumentPanelTabs(builtinDocTabIds)
+	}, [builtinDocTabIds, setAvailableDocumentPanelTabs])
+
+	useEffect(() => {
+		const activeDocTabId = activeDocTab?.id ?? null
 		void syncPalotUiStateSnapshot({
 			sidePanel: {
 				open: sidePanelOpen && utilityTabs.length > 0,
 				activeTab: utilityTabs.length > 0 ? sidePanelActiveTab : null,
-				availableTabs: utilityTabs.map((tab) => tab.id),
+				availableTabs: builtinUtilityTabIds,
 			},
 			documentPanel: {
 				open: docPanelVisible,
-				activeTab: activeDocTab?.id ?? null,
-				availableTabs: docTabs.map((tab) => tab.id),
+				activeTab: activeDocTabId !== null && isDocumentPanelTab(activeDocTabId) ? activeDocTabId : null,
+				availableTabs: builtinDocTabIds,
 			},
 		}).catch(() => undefined)
-	}, [activeDocTab?.id, docPanelVisible, docTabs, sidePanelActiveTab, sidePanelOpen, utilityTabs])
+	}, [activeDocTab?.id, builtinDocTabIds, builtinUtilityTabIds, docPanelVisible, sidePanelActiveTab, sidePanelOpen, utilityTabs])
 
 	useEffect(() => {
 		const unsubscribe = subscribeToPalotOpenSidePanel(({ tab }) => {

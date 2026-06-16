@@ -59,7 +59,8 @@ export interface FireflySurfaceDef {
 }
 
 export interface FireflySidePanelTab {
-	id: FireflySurfaceId
+	id: string
+	workspace?: string | null
 	lane: FireflySurfaceLane
 	label: string
 	icon: ReactNode

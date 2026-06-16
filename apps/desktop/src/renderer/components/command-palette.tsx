@@ -75,7 +75,7 @@ import {
 	// toggleVoiceSurfaceAtom removed — voice is catalog-served; toggle via window.elf.plugins.setEnabled.
 } from "../atoms/feature-flags"
 import { getFireflySurfaceTabs, type FireflySurfaceContext } from "../firefly-surface-registry"
-import { mergeSurfaceTabs } from "../firefly-plugin-surface-merge"
+import { isKnownSidePanelTabId, mergeSurfaceTabs } from "../firefly-plugin-surface-merge"
 import { useCatalogSurfaceTabs } from "../firefly-plugin-surfaces"
 import { isMockModeAtom, toggleMockModeAtom } from "../atoms/mock-mode"
 import { BUILT_IN_NAV_SIDEBAR_TAB_ID, opaqueWindowsAtom } from "../atoms/preferences"
@@ -843,7 +843,9 @@ export function CommandPalette({ open, onOpenChange, agents, onForkSession }: Co
 								<CommandItem
 									key={surface.id}
 									onSelect={() => {
-										openSidePanelTab(surface.id)
+										// Workspace-scoped plugin pages carry dynamic projectedId ids the
+										// legacy union-typed atom does not model; the dock owns their focus.
+										if (isKnownSidePanelTabId(surface.id)) openSidePanelTab(surface.id)
 										onOpenChange(false)
 									}}
 									disabled={!surface.availability.available}

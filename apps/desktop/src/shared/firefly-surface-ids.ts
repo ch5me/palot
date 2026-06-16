@@ -55,8 +55,11 @@ export const FIREFLY_SURFACE_LANE_BY_ID = {
 	"pdf-review": "document",
 } as const satisfies Record<FireflySurfaceId, FireflySurfaceLane>
 
-export function isDocumentSurfaceId(surfaceId: FireflySurfaceId): boolean {
-	return FIREFLY_SURFACE_LANE_BY_ID[surfaceId] === "document"
+const FIREFLY_SURFACE_LANE_LOOKUP: Readonly<Record<string, FireflySurfaceLane>> =
+	FIREFLY_SURFACE_LANE_BY_ID
+
+export function isDocumentSurfaceId(surfaceId: string): boolean {
+	return FIREFLY_SURFACE_LANE_LOOKUP[surfaceId] === "document"
 }
 
 export const DOCUMENT_SURFACE_IDS = FIREFLY_SURFACE_IDS.filter(

@@ -60,7 +60,7 @@ export type UtilitySidePanelTabId = LastUtilitySidePanelTabId
 
 export const DOCUMENT_PANEL_TABS = DOCUMENT_SURFACE_IDS as readonly DocumentPanelTabId[]
 
-export const isDocumentPanelTab = (value: SidePanelTabId): value is DocumentPanelTabId =>
+export const isDocumentPanelTab = (value: string): value is DocumentPanelTabId =>
 	isDocumentSurfaceId(value)
 
 // Utility and document lanes persist independently so restore/fallback stays

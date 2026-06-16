@@ -83,6 +83,7 @@ export interface ProjectedSidePanel {
 	readonly projectedId: string
 	readonly title: string
 	readonly icon: string | null
+	readonly workspace: string | null
 	readonly formFactor: "side-panel-tab" | "main-pane"
 	readonly hostSlot: HostPanelSlot
 	readonly hostTarget: { readonly kind: "side-panel" | "main-pane"; readonly slot: HostPanelSlot }
@@ -449,6 +450,7 @@ export function projectSidePanels(
 			projectedId: getProjectedPanelId(descriptor, panel.id),
 			title: panel.title,
 			icon: panel.icon ?? null,
+			workspace: panel.workspace ?? null,
 			formFactor: panel.formFactor,
 			hostSlot,
 			hostTarget: {

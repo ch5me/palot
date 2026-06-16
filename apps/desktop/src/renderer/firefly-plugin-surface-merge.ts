@@ -54,7 +54,8 @@ export function isKnownSidePanelTabId(value: string): value is SidePanelTabId {
  * tab ids are a later-slice concern, stated openly.
  */
 export interface CatalogSurfaceTabDescriptor {
-	readonly id: SidePanelTabId
+	readonly id: string
+	readonly workspace: string | null
 	readonly lane: FireflySurfaceLane
 	readonly pluginId: string
 	readonly projectedId: string
@@ -80,9 +81,11 @@ export function catalogPanelToTabDescriptor(
 	panel: ProjectedSidePanel,
 ): CatalogSurfaceTabDescriptor | null {
 	if (panel.formFactor !== "side-panel-tab") return null
-	if (!isKnownSidePanelTabId(panel.contributionId)) return null
+	const isWorkspaceScoped = panel.workspace !== null && panel.workspace !== undefined
+	if (!isWorkspaceScoped && !isKnownSidePanelTabId(panel.contributionId)) return null
 	return {
-		id: panel.contributionId,
+		id: isWorkspaceScoped ? panel.projectedId : panel.contributionId,
+		workspace: panel.workspace ?? null,
 		lane: laneForCatalogPanel(panel),
 		pluginId: panel.pluginId,
 		projectedId: panel.projectedId,
@@ -104,11 +107,11 @@ export function catalogPanelToTabDescriptor(
  * `SIDE_PANEL_TAB_ORDER`; ids outside the canonical list keep their
  * relative input order at the end.
  */
-export function mergeSurfaceTabs<T extends { id: SidePanelTabId }>(
+export function mergeSurfaceTabs<T extends { id: string }>(
 	registryTabs: readonly T[],
 	catalogTabs: readonly T[],
 ): T[] {
-	const byId = new Map<SidePanelTabId, T>()
+	const byId = new Map<string, T>()
 	for (const tab of registryTabs) byId.set(tab.id, tab)
 	for (const tab of catalogTabs) byId.set(tab.id, tab)
 

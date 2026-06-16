@@ -40,7 +40,32 @@ export const folioPluginManifest: PluginManifest = {
 	// added to the manifest schema later, mirroring `onPanelOpen`.)
 	activationEvents: [{ kind: "onStartup" }],
 	contributes: {
-		panels: [],
+		panels: [
+			{
+				id: "folio-library",
+				title: "Library",
+				formFactor: "side-panel-tab",
+				defaultZone: "side-panel",
+				workspace: "firefly.folio.folio",
+				icon: "library",
+				defaultOn: true,
+				commandIds: [],
+				availability: { requires: ["host:panel.register"] },
+				render: { mode: "host-reconciler" },
+			},
+			{
+				id: "folio-collections",
+				title: "Collections",
+				formFactor: "side-panel-tab",
+				defaultZone: "side-panel",
+				workspace: "firefly.folio.folio",
+				icon: "boxes",
+				defaultOn: true,
+				commandIds: [],
+				availability: { requires: ["host:panel.register"] },
+				render: { mode: "host-reconciler" },
+			},
+		],
 		navSidebars: [
 			{
 				id: "folio",
@@ -65,7 +90,7 @@ export const folioPluginManifest: PluginManifest = {
 		grammars: [],
 		iconThemes: [],
 	},
-	capabilities: ["host:nav-sidebar.register"],
+	capabilities: ["host:nav-sidebar.register", "host:panel.register"],
 	tags: ["nav-sidebar", "workspace", "folio", "first-party"],
 }
 

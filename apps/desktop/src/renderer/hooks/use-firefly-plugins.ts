@@ -82,6 +82,7 @@ export interface FireflyPluginPanelItem {
 	projectedId: string
 	title: string
 	icon: string | null
+	workspace: string | null
 	formFactor: "side-panel-tab" | "main-pane"
 	hostSlot: "side-panel" | "main-pane"
 	hostTarget: { kind: "side-panel" | "main-pane"; slot: "side-panel" | "main-pane" }
