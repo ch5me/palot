@@ -10,22 +10,18 @@ import {
 	TooltipContent,
 	TooltipTrigger,
 } from "@ch5me/ch5-ui-web"
-import { SplitPane } from "@ch5me/workspace"
-import { useNavigate, useParams } from "@tanstack/react-router"
+import { useParams } from "@tanstack/react-router"
 import { useAtom, useAtomValue, useSetAtom } from "jotai"
 import {
-	ArrowLeftIcon,
 	CheckIcon,
 	CopyIcon,
 	ExternalLinkIcon,
-	FileTextIcon,
 	PanelRightCloseIcon,
 	PanelRightOpenIcon,
 	PencilIcon,
 	TerminalIcon,
 } from "lucide-react"
 import { type ComponentProps, useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react"
-import { createHtmlPortalNode, InPortal, OutPortal, type HtmlPortalNode } from "react-reverse-portal"
 import type { OpenInTarget } from "../../preload/api"
 import {
 	// ch5pmSurfaceEnabledAtom removed — ch5pm is catalog-served (firefly.built-in.surface.ch5pm).
@@ -37,7 +33,7 @@ import {
 	// studioSurfaceEnabledAtom removed — studio is catalog-served (firefly.built-in.surface.studio).
 	pluginsSurfaceEnabledAtom,
 	// pdfReviewSurfaceEnabledAtom removed — pdf-review is catalog-served (firefly.built-in.surface.pdf-review).
-	workspaceDockEnabledAtom,
+	// workspaceDockEnabledAtom removed — dock is now the sole session UI (Cleanup phase).
 } from "../atoms/feature-flags"
 import { useColorScheme } from "../hooks/use-theme"
 import { useSurfaceRegistry } from "../surface-host/surface-host-provider"
@@ -86,19 +82,10 @@ import {
 } from "../services/backend"
 import { useSetAppBarContent } from "./app-bar-context"
 import { ChatView } from "./chat"
-import { SessionSidePanel } from "./side-panel/session-side-panel"
 import type { SidePanelTabDef } from "./side-panel/side-panel-tabs"
 import { SessionMetricsBar } from "./session-metrics-bar"
 import { WorktreeActions } from "./worktree-actions"
 
-const DEFAULT_SIDE_PANEL_WIDTH = 392
-const EXPANDED_SIDE_PANEL_WIDTH = 760
-const MIN_SIDE_PANEL_WIDTH = 280
-const MAX_SIDE_PANEL_WIDTH = 760
-const MAX_EXPANDED_SIDE_PANEL_WIDTH = 1120
-const DEFAULT_DOC_PANEL_WIDTH = 520
-const MIN_DOC_PANEL_WIDTH = 360
-const MAX_DOC_PANEL_WIDTH = 960
 
 interface AgentDetailProps {
 	agent: Agent
@@ -139,33 +126,8 @@ interface AgentDetailProps {
 	onDeletePart?: (sessionId: string, messageId: string, partId: string) => Promise<void>
 }
 
-function DocumentPaneShell({
-	agent,
-	tab,
-	portalNode,
-}: {
-	agent: Agent
-	tab: SidePanelTabDef
-	portalNode: HtmlPortalNode
-}) {
-	return (
-		<div className="flex h-full min-h-0 min-w-0 flex-col bg-background">
-			<div className="border-b border-border px-4 py-3">
-				<div className="flex items-center gap-2 text-sm font-medium text-foreground">
-					<FileTextIcon className="size-4 text-muted-foreground" aria-hidden="true" />
-					<span>{tab.title}</span>
-				</div>
-				<div className="mt-1 text-xs text-muted-foreground">Document lane for {agent.project}</div>
-			</div>
-			<div className="min-h-0 min-w-0 flex-1 overflow-hidden">
-				<OutPortal node={portalNode} />
-			</div>
-		</div>
-	)
-}
-
 // ============================================================
-// Workspace dock surfaces (gated behind workspaceDockEnabledAtom)
+// Workspace dock surfaces
 //
 // Each surface is mounted ONCE into the hidden host layer by stable identity.
 // Live props flow through the surfacePropBridge (the host layer renders in a
@@ -220,7 +182,7 @@ export function AgentDetail({
 	onRejectQuestion,
 	onSendMessage,
 	onRename,
-	parentSessionName,
+	// parentSessionName — accepted for API compatibility; not rendered (dock-native chat panel handles it internally).
 	isConnected,
 	providers,
 	config,
@@ -238,7 +200,6 @@ export function AgentDetail({
 	onForkFromTurn,
 	onDeletePart,
 }: AgentDetailProps) {
-	const navigate = useNavigate()
 	const { projectSlug } = useParams({ strict: false }) as { projectSlug?: string }
 	const setAppBarContent = useSetAppBarContent()
 
@@ -256,7 +217,7 @@ export function AgentDetail({
 	const setSidePanelActiveTab = useSetAtom(setSidePanelActiveTabAtom)
 	const setAvailableSidePanelTabs = useSetAtom(setAvailableSidePanelTabsAtom)
 	const setAvailableDocumentPanelTabs = useSetAtom(setAvailableDocumentPanelTabsAtom)
-	const [reviewSettings, setReviewSettings] = useAtom(reviewPanelSettingsAtom)
+	const [, setReviewSettings] = useAtom(reviewPanelSettingsAtom)
 
 	const prevSessionIdRef = useRef(agent.sessionId)
 	const diffStats = useAtomValue(sessionDiffStatsFamily(agent.sessionId))
@@ -406,14 +367,6 @@ export function AgentDetail({
 	// available doc surface when the remembered tab disappears.
 	const docPanelVisible = documentPanelOpen && activeDocTab !== null
 
-	const docPortalNodesRef = useRef<Partial<Record<SidePanelTabDef["id"], HtmlPortalNode>>>({})
-	for (const tab of docTabs) {
-		if (!docPortalNodesRef.current[tab.id]) {
-			docPortalNodesRef.current[tab.id] = createHtmlPortalNode()
-		}
-	}
-	const docPanelNode = activeDocTab ? docPortalNodesRef.current[activeDocTab.id] ?? null : null
-
 	useEffect(() => {
 		setAvailableSidePanelTabs(utilityTabs.map((tab) => tab.id))
 	}, [setAvailableSidePanelTabs, utilityTabs])
@@ -540,55 +493,23 @@ export function AgentDetail({
 		sidePanelOpen,
 	}
 
-	const chatContent = (
-		<>
-			{agent.parentId ? (
-				<button
-					type="button"
-					onClick={() =>
-						navigate({
-							to: "/project/$projectSlug/session/$sessionId",
-							params: {
-								projectSlug: projectSlug ?? agent.projectSlug,
-								sessionId: agent.parentId!,
-							},
-						})
-					}
-					className="flex items-center gap-1.5 border-b border-border bg-muted/30 px-4 py-1.5 text-xs text-muted-foreground transition-colors hover:bg-muted/50 hover:text-foreground"
-				>
-					<ArrowLeftIcon className="size-3" />
-					<span>
-						Back to <span className="font-medium text-foreground">{parentSessionName || "parent session"}</span>
-					</span>
-				</button>
-			) : null}
-
-			<div className="min-h-0 flex-1">
-				<ChatView {...chatViewProps} />
-			</div>
-		</>
-	)
-
-	// ========== Workspace dock (gated; legacy SplitPane stays default) ==========
-	const workspaceDockEnabled = useAtomValue(workspaceDockEnabledAtom)
+	// ========== Workspace dock (sole session UI — legacy SplitPane removed in Cleanup) ==========
 	const isDarkMode = useIsDarkMode()
 	const registry = useSurfaceRegistry()
 	const chatInstanceId = `chat:${agent.sessionId}:view-main`
 
 	// Register chat surface once per session identity (idempotent).
 	useEffect(() => {
-		if (!workspaceDockEnabled) return
 		registry.getOrCreate(chatInstanceId, {
 			type: "chat",
 			title: "Chat",
 			render: () => <ChatSurface instanceId={chatInstanceId} />,
 		})
-	}, [workspaceDockEnabled, registry, chatInstanceId])
+	}, [registry, chatInstanceId])
 
 	// Register each utility/document tab surface once per session+tab identity.
 	// `getOrCreate` is idempotent — safe to call every render when the set changes.
 	useEffect(() => {
-		if (!workspaceDockEnabled) return
 		for (const tab of utilityTabs) {
 			const instanceId = `${tab.id}:${agent.sessionId}`
 			registry.getOrCreate(instanceId, {
@@ -605,13 +526,12 @@ export function AgentDetail({
 				render: () => <TabSurface instanceId={instanceId} />,
 			})
 		}
-	}, [workspaceDockEnabled, registry, agent.sessionId, utilityTabs, docTabs])
+	}, [registry, agent.sessionId, utilityTabs, docTabs])
 
 	// Publish live props every render so once-mounted hosts stay current.
 	// Chat: full ChatView props object. Tabs: the freshly-bound render() closure
 	// (produced by the surfaceTabs useMemo; captures latest agent/flags/ctx).
 	useEffect(() => {
-		if (!workspaceDockEnabled) return
 		surfacePropBridge.publish(chatInstanceId, chatViewProps)
 		for (const tab of utilityTabs) {
 			surfacePropBridge.publish(`${tab.id}:${agent.sessionId}`, tab.render)
@@ -644,65 +564,13 @@ export function AgentDetail({
 		return panels
 	}, [chatInstanceId, agent.sessionId, utilityTabs, docTabs])
 
-	if (workspaceDockEnabled) {
-		// Full-height flex wrapper so DockShell's `flex: 1` root actually fills the
-		// pane (mirrors the legacy branch's h-full wrappers). Without a flex parent
-		// with definite height the dock collapses and the chat zone starves to 0px.
-		return (
-			<div className="flex h-full min-h-0 min-w-0 overflow-hidden">
-				<DockShell seedPanels={dockSeedPanels} isDarkMode={isDarkMode} />
-			</div>
-		)
-	}
-
+	// Full-height flex wrapper so DockShell's `flex: 1` root actually fills the
+	// pane. Without a flex parent with definite height the dock collapses and the
+	// chat zone starves to 0px.
 	return (
-		<>
-			{docTabs.map((tab) => {
-				const portalNode = docPortalNodesRef.current[tab.id]
-				if (!portalNode) return null
-				return (
-					<InPortal key={tab.id} node={portalNode}>
-						{tab.render()}
-					</InPortal>
-				)
-			})}
-			<SplitPane
-				key={reviewSettings.expanded ? "side-panel-expanded" : "side-panel-default"}
-				side="right"
-				open={sidePanelOpen}
-				onOpenChange={setSidePanelOpen}
-				defaultPanelWidth={reviewSettings.expanded ? EXPANDED_SIDE_PANEL_WIDTH : DEFAULT_SIDE_PANEL_WIDTH}
-				minPanelWidth={MIN_SIDE_PANEL_WIDTH}
-				maxPanelWidth={reviewSettings.expanded ? MAX_EXPANDED_SIDE_PANEL_WIDTH : MAX_SIDE_PANEL_WIDTH}
-				handleAriaLabel="Resize utility panel"
-				panel={
-					<div className="min-h-0 h-full min-w-0 overflow-hidden">
-						<SessionSidePanel agent={agent} tabs={utilityTabs} />
-					</div>
-				}
-			>
-				<SplitPane
-					side="right"
-					open={docPanelVisible}
-					onOpenChange={setDocumentPanelOpen}
-					defaultPanelWidth={DEFAULT_DOC_PANEL_WIDTH}
-					minPanelWidth={MIN_DOC_PANEL_WIDTH}
-					maxPanelWidth={MAX_DOC_PANEL_WIDTH}
-					handleAriaLabel="Resize document pane"
-					panel={
-						activeDocTab && docPanelNode ? (
-							<DocumentPaneShell agent={agent} tab={activeDocTab} portalNode={docPanelNode} />
-						) : (
-							<div className="flex h-full items-center justify-center bg-background px-6 text-center text-sm text-muted-foreground">
-								Open Studio or PDF Review to use document lane.
-							</div>
-						)
-					}
-				>
-					<div className="flex h-full min-h-0 min-w-0 flex-col overflow-hidden">{chatContent}</div>
-				</SplitPane>
-			</SplitPane>
-		</>
+		<div className="flex h-full min-h-0 min-w-0 overflow-hidden">
+			<DockShell seedPanels={dockSeedPanels} isDarkMode={isDarkMode} />
+		</div>
 	)
 }
 

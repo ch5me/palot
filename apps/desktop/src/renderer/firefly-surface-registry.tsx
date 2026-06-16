@@ -145,7 +145,8 @@ import { FIREFLY_SURFACE_IDS, type FireflySurfaceId } from "../shared/firefly-su
 /**
  * Surfaces that are valid side-panel tabs but have NO registry row here:
  * they are served from the plugin catalog (host plugin lifecycle owns
- * their enable/disable). First migrated surface: notes.
+ * their enable/disable). All 16 surfaces migrated (Cleanup phase, 2026-06-16);
+ * only the host-only `plugins` row remains in FIREFLY_SURFACE_REGISTRY.
  */
 export const CATALOG_SERVED_SURFACE_IDS: readonly FireflySurfaceId[] = ["browser", "notes", "review", "files", "artifacts", "bridges", "pulse", "memory", "editor", "terminal", "claude", "oracle", "voice", "studio", "ch5pm", "pdf-review", "crm"]
 
