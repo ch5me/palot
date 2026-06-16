@@ -219,6 +219,7 @@ export interface FireflyPluginInvokeResult {
 type PluginBridge = {
 	list: () => Promise<FireflyPluginListResult>
 	panels: () => Promise<FireflyPluginPanelsResult>
+	navSidebars: () => Promise<{ appVersion: string; items: unknown[] }>
 	describe: (pluginId: string) => Promise<unknown>
 	widgets: () => Promise<{ appVersion: string; items: unknown[] }>
 	commands: () => Promise<{ appVersion: string; items: unknown[] }>
@@ -280,6 +281,12 @@ function buildWebCatalogBridge(): PluginBridge {
 				// gets this shape via IPC structured-clone; here we surface the projection
 				// directly under the same bridge contract.
 				items: catalog.projections.panels as unknown as FireflyPluginPanelItem[],
+			}),
+
+		navSidebars: () =>
+			Promise.resolve({
+				appVersion: catalog.appVersion,
+				items: [...catalog.projections.navSidebars],
 			}),
 
 		capabilities: (pluginId: string) => {

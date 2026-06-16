@@ -81,6 +81,10 @@ export const browserPluginManifest: PluginManifest = {
 		],
 		themes: [],
 		components: [],
+		snippets: [],
+		languages: [],
+		grammars: [],
+		iconThemes: [],
 		tools: [
 			{
 				id: "plugin.firefly.built-in.surface.browser.open",

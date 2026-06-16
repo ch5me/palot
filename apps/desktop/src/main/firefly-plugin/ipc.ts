@@ -17,6 +17,7 @@ export const FIREFLY_PLUGIN_IPC_CHANNELS = {
 	state: "firefly-plugin:state",
 	tools: "firefly-plugin:tools",
 	panels: "firefly-plugin:panels",
+	navSidebars: "firefly-plugin:nav-sidebars",
 	widgets: "firefly-plugin:widgets",
 	commands: "firefly-plugin:commands",
 	themes: "firefly-plugin:themes",
@@ -51,6 +52,10 @@ export function registerFireflyPluginIpc(): void {
 
 	ipcMain.handle(FIREFLY_PLUGIN_IPC_CHANNELS.panels, () => {
 		return authority.listPanels()
+	})
+
+	ipcMain.handle(FIREFLY_PLUGIN_IPC_CHANNELS.navSidebars, () => {
+		return authority.listNavSidebars()
 	})
 
 	ipcMain.handle(FIREFLY_PLUGIN_IPC_CHANNELS.widgets, () => {

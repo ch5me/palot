@@ -96,6 +96,10 @@ import {
 	crmPluginManifest,
 	CRM_PLUGIN_ID,
 } from "../../../plugins/crm/manifest"
+import {
+	folioPluginManifest,
+	FOLIO_PLUGIN_ID,
+} from "../../../plugins/folio/manifest"
 import { BUILT_IN_DEFAULT_CAPABILITIES } from "../../shared/firefly-plugin/capabilities"
 import { type PluginDescriptor } from "../../shared/firefly-plugin/descriptor"
 import {
@@ -106,6 +110,7 @@ import {
 	defaultCapabilityState,
 	projectCommandsFromCatalog,
 	projectComponentsFromCatalog,
+	projectNavSidebarsFromCatalog,
 	projectSidePanelsFromCatalog,
 	projectSessionWidgetsFromCatalog,
 	projectThemesFromCatalog,
@@ -114,6 +119,7 @@ import {
 import {
 	type ProjectedCommand,
 	type ProjectedComponent,
+	type ProjectedNavSidebar,
 	type ProjectedSessionWidget,
 	type ProjectedSidePanel,
 	type ProjectedTheme,
@@ -163,6 +169,7 @@ const BUILT_IN_MANIFESTS: readonly PluginManifest[] = [
 	ch5pmPluginManifest,
 	pdfReviewPluginManifest,
 	crmPluginManifest,
+	folioPluginManifest,
 ]
 
 /**
@@ -236,6 +243,7 @@ export interface PluginCatalog {
 	readonly capabilityStates: Readonly<Record<string, CapabilityStateShape>>
 	readonly projections: {
 		readonly panels: readonly ProjectedSidePanel[]
+		readonly navSidebars: readonly ProjectedNavSidebar[]
 		readonly widgets: readonly ProjectedSessionWidget[]
 		readonly commands: readonly ProjectedCommand[]
 		readonly themes: readonly ProjectedTheme[]
@@ -413,6 +421,10 @@ export function buildPluginCatalog(input: {
 		descriptors,
 		capabilityStates,
 	).items
+	const navSidebars = projectNavSidebarsFromCatalog(
+		descriptors,
+		capabilityStates,
+	).items
 	const widgets = projectSessionWidgetsFromCatalog(
 		descriptors,
 		capabilityStates,
@@ -441,7 +453,7 @@ export function buildPluginCatalog(input: {
 		descriptors,
 		entries,
 		capabilityStates,
-		projections: { panels, widgets, commands, themes, components },
+		projections: { panels, navSidebars, widgets, commands, themes, components },
 	}
 }
 
@@ -565,4 +577,5 @@ export const KNOWN_PLUGIN_IDS = {
 	ch5pm: CH5PM_PLUGIN_ID,
 	pdfReview: PDF_REVIEW_PLUGIN_ID,
 	crm: CRM_PLUGIN_ID,
+	folio: FOLIO_PLUGIN_ID,
 } as const

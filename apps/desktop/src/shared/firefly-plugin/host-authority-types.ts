@@ -171,6 +171,9 @@ export interface HostAuthority {
 	/** All projected panels from the catalog. */
 	listPanels(): HostPluginFamilyResult
 
+	/** All projected nav-sidebar tabs from the catalog. */
+	listNavSidebars(): HostPluginFamilyResult
+
 	/** All projected widgets from the catalog. */
 	listWidgets(): HostPluginFamilyResult
 

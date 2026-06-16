@@ -1451,6 +1451,10 @@ export interface ElfAPI {
 			appVersion: string
 			items: Array<import("../shared/firefly-plugin/renderer-projection").ProjectedSidePanel>
 		}>
+		navSidebars: () => Promise<{
+			appVersion: string
+			items: Array<import("../shared/firefly-plugin/renderer-projection").ProjectedNavSidebar>
+		}>
 		widgets: () => Promise<{ appVersion: string; items: unknown[] }>
 		commands: () => Promise<{ appVersion: string; items: unknown[] }>
 		themes: () => Promise<{ appVersion: string; items: unknown[] }>

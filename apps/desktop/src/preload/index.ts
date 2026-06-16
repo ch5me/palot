@@ -266,6 +266,7 @@ contextBridge.exposeInMainWorld("elf", {
 		capabilities: (pluginId: string) =>
 			ipcRenderer.invoke("firefly-plugin:state", { pluginId }),
 		panels: () => ipcRenderer.invoke("firefly-plugin:panels"),
+		navSidebars: () => ipcRenderer.invoke("firefly-plugin:nav-sidebars"),
 		widgets: () => ipcRenderer.invoke("firefly-plugin:widgets"),
 		commands: () => ipcRenderer.invoke("firefly-plugin:commands"),
 		themes: () => ipcRenderer.invoke("firefly-plugin:themes"),

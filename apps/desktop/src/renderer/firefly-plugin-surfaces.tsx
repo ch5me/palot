@@ -22,7 +22,7 @@ import { Component, lazy, Suspense, useMemo, type ComponentType, type ErrorInfo,
  * sandbox policy task).
  */
 
-import { ActivityIcon, BookTextIcon, BoxesIcon, DatabaseIcon, FileDiffIcon, FilesIcon, FileTextIcon, GlobeIcon, MicIcon, MonitorPlayIcon, PlugIcon, RectangleEllipsisIcon, Share2Icon, SquarePenIcon, TerminalSquareIcon, UsersIcon, WandSparklesIcon, type LucideIcon } from "lucide-react"
+import { ActivityIcon, BookTextIcon, BoxesIcon, DatabaseIcon, FileDiffIcon, FilesIcon, FileTextIcon, GlobeIcon, LibraryIcon, MicIcon, MonitorPlayIcon, PlugIcon, RectangleEllipsisIcon, Share2Icon, SquarePenIcon, TerminalSquareIcon, UsersIcon, WandSparklesIcon, type LucideIcon } from "lucide-react"
 import { Button } from "@ch5me/ch5-ui-web"
 import { useQuery, useQueryClient } from "@tanstack/react-query"
 import type { ProjectedSidePanel } from "../shared/firefly-plugin/renderer-projection"
@@ -86,9 +86,15 @@ const PANEL_ICONS: Readonly<Record<string, LucideIcon>> = {
 	"monitor-play": MonitorPlayIcon,
 	"file-text": FileTextIcon,
 	"users": UsersIcon,
+	"library": LibraryIcon,
 }
 
-function panelIcon(iconName: string | null): LucideIcon {
+/**
+ * Resolve a manifest icon-name string to a Lucide component, shared by
+ * the side-panel and nav-sidebar surface pipelines. Falls back to
+ * `PlugIcon` for an unknown/absent name.
+ */
+export function panelIcon(iconName: string | null): LucideIcon {
 	if (iconName && PANEL_ICONS[iconName]) return PANEL_ICONS[iconName]
 	return PlugIcon
 }

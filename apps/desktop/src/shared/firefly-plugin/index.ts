@@ -25,6 +25,7 @@ export * from "./bridge-projection"
 export * from "./component-zod"
 export {
 	projectSidePanelsFromCatalog,
+	projectNavSidebarsFromCatalog,
 	projectSessionWidgetsFromCatalog,
 	projectCommandsFromCatalog,
 	projectThemesFromCatalog,
@@ -33,6 +34,7 @@ export {
 	defaultCapabilityState,
 	getProjectedCommandId,
 	getProjectedWidgetId,
+	getProjectedNavSidebarId,
 	getProjectedPanelId,
 	getProjectedThemeId,
 	getProjectedComponentId,
@@ -47,6 +49,7 @@ export {
 	type CapabilityStateShape,
 	type ProjectionCollision,
 	type ProjectedComponent,
+	type ProjectedNavSidebar,
 } from "./renderer-projection"
 export * from "./theme-pipeline"
 export * from "./storage-scopes"

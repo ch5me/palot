@@ -50,7 +50,15 @@ export function isLastDocumentPanelTabId(tab: LastSidePanelTabId): tab is LastDo
 	return tab === "studio" || tab === "pdf-review"
 }
 
-export type NavSidebarTabId = "built-in" | "built-in-duplicate"
+/** Canonical id of the built-in "Palot" workspace — host-rendered, always present. */
+export const BUILT_IN_NAV_SIDEBAR_TAB_ID = "built-in"
+
+/**
+ * A nav-sidebar (left-rail) workspace id. `"built-in"` is the host's own
+ * Palot workspace; every other id is a catalog projected-id contributed
+ * by a plugin's `navSidebars` family (e.g. `"firefly.folio.folio"`).
+ */
+export type NavSidebarTabId = string
 
 export interface FireflySurfacePreferences {
 	lastUtilitySidePanelTab: LastUtilitySidePanelTabId
@@ -117,7 +125,14 @@ function migrateFireflySurfacePreferences(): void {
 			// document-lane tab. Default closed; let the user re-open.
 			documentPanelOpen:
 				typeof parsed.documentPanelOpen === "boolean" ? parsed.documentPanelOpen : false,
-			lastNavSidebarTab: parsed.lastNavSidebarTab === "built-in-duplicate" ? "built-in-duplicate" : "built-in",
+			// Legacy "built-in-duplicate" placeholder is gone; map it (and any
+			// missing value) back to the always-present built-in workspace. A
+			// stored catalog tab id that no longer projects is self-healed by
+			// setAvailableNavSidebarTabsAtom at runtime.
+			lastNavSidebarTab:
+				!parsed.lastNavSidebarTab || parsed.lastNavSidebarTab === "built-in-duplicate"
+					? "built-in"
+					: parsed.lastNavSidebarTab,
 		}
 
 		localStorage.setItem(key, JSON.stringify(next))

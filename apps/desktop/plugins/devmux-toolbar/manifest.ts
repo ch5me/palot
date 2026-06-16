@@ -105,6 +105,10 @@ export const devmuxToolbarManifest: PluginManifest = {
 		],
 		themes: [],
 		components: [],
+		snippets: [],
+		languages: [],
+		grammars: [],
+		iconThemes: [],
 		tools: [
 			{
 				id: DEVMUX_TOOL_LIST_ID,

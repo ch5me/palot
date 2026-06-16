@@ -242,6 +242,10 @@ export function listPluginPanels() {
 	return getPluginCatalog().projections.panels
 }
 
+export function listPluginNavSidebars() {
+	return getPluginCatalog().projections.navSidebars
+}
+
 export function listPluginWidgets() {
 	return getPluginCatalog().projections.widgets
 }

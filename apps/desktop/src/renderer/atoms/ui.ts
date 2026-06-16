@@ -31,7 +31,8 @@ export const viewedSessionIdAtom = atom<string | null>(null)
 
 export type SidePanelTabId = LastSidePanelTabId
 
-export const NAV_SIDEBAR_TABS = ["built-in", "built-in-duplicate"] as const satisfies readonly NavSidebarTabId[]
+/** Built-in nav-sidebar tabs that always exist; plugin tabs are merged in at render. */
+export const NAV_SIDEBAR_TABS = ["built-in"] as const satisfies readonly NavSidebarTabId[]
 
 export interface SidePanelRoute {
 	tab: SidePanelTabId

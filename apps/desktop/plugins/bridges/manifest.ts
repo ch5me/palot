@@ -80,6 +80,10 @@ export const bridgesPluginManifest: PluginManifest = {
 		],
 		themes: [],
 		components: [],
+		snippets: [],
+		languages: [],
+		grammars: [],
+		iconThemes: [],
 		tools: [
 			{
 				id: "plugin.firefly.built-in.surface.bridges.open",

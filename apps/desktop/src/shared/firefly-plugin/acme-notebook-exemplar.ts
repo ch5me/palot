@@ -154,6 +154,10 @@ export const acmeNotebookManifest: PluginManifest = {
 			},
 		],
 		components: [],
+		snippets: [],
+		languages: [],
+		grammars: [],
+		iconThemes: [],
 	},
 	capabilities: [
 		"host:bridge.session-read",

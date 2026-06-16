@@ -333,6 +333,63 @@ const commandContributionSchema = z
 	.strict()
 
 /**
+ * Snippet contribution. Data-only; the host registers snippets with the
+ * editor. `language` is the target language id (e.g. "typescript");
+ * `path` is the relative path inside the package to the snippet JSON file.
+ */
+const snippetContributionSchema = z
+	.object({
+		language: z.string().min(1).max(80),
+		path: z.string().min(1).max(400),
+	})
+	.strict()
+
+/**
+ * Language contribution. Data-only metadata about a language: id, file
+ * associations, and optional grammar/config references. The host merges
+ * this into the editor's language registry.
+ */
+const languageContributionSchema = z
+	.object({
+		id: z.string().min(1).max(80),
+		aliases: z.array(z.string().min(1).max(80)).default([]),
+		extensions: z.array(z.string().min(1).max(40)).default([]),
+		filenames: z.array(z.string().min(1).max(120)).default([]),
+		/** Optional path to a language configuration JSON file. */
+		configuration: z.string().min(1).max(400).optional(),
+	})
+	.strict()
+
+/**
+ * Grammar contribution. TextMate grammar that the host loads into Monaco.
+ * `scopeName` is the TextMate scope (e.g. "source.ts");
+ * `path` is the relative path to the grammar file (JSON/PLIST/YAML).
+ * `embeddedLanguages` maps embedded scope names to language ids.
+ */
+const grammarContributionSchema = z
+	.object({
+		/** Target language id. Optional: a grammar may target a scope without a language id. */
+		language: z.string().min(1).max(80).optional(),
+		scopeName: z.string().min(1).max(120),
+		path: z.string().min(1).max(400),
+		embeddedLanguages: z.record(z.string(), z.string()).optional(),
+	})
+	.strict()
+
+/**
+ * Icon theme contribution. Data-only; the host applies the icon theme to
+ * file/folder decorations in the UI. `id` is unique within the plugin;
+ * `label` is the human-readable name; `path` is the icon theme JSON path.
+ */
+const iconThemeContributionSchema = z
+	.object({
+		id: shortIdSchema,
+		label: z.string().min(1).max(80),
+		path: z.string().min(1).max(400),
+	})
+	.strict()
+
+/**
  * Theme contribution. Data-only; the host applies it. `tokens` is a flat
  * CSS custom-property map; `darkTokens` overrides for dark mode. `platforms`
  * is a coarse allow-list (e.g. `["darwin", "linux", "win32"]`).
@@ -556,6 +613,10 @@ export const pluginManifestSchema = z
 				themes: z.array(themeContributionSchema).default([]),
 				tools: z.array(toolContributionSchema).default([]),
 				components: z.array(componentContributionSchema).default([]),
+				snippets: z.array(snippetContributionSchema).default([]),
+				languages: z.array(languageContributionSchema).default([]),
+				grammars: z.array(grammarContributionSchema).default([]),
+				iconThemes: z.array(iconThemeContributionSchema).default([]),
 			})
 			.strict()
 			.default({
@@ -566,6 +627,10 @@ export const pluginManifestSchema = z
 				themes: [],
 				tools: [],
 				components: [],
+				snippets: [],
+				languages: [],
+				grammars: [],
+				iconThemes: [],
 			}),
 
 		capabilities: z.array(capabilityTokenSchema).default([]),
@@ -605,6 +670,7 @@ export const pluginManifestSchema = z
 			themes: new Set<string>(),
 			tools: new Set<string>(),
 			components: new Set<string>(),
+			iconThemes: new Set<string>(),
 		}
 		for (const panel of manifest.contributes.panels) {
 			if (seen.panels.has(panel.id)) {
@@ -675,6 +741,16 @@ export const pluginManifestSchema = z
 				})
 			}
 			seen.components.add(component.id)
+		}
+		for (const iconTheme of manifest.contributes.iconThemes) {
+			if (seen.iconThemes.has(iconTheme.id)) {
+				ctx.addIssue({
+					code: z.ZodIssueCode.custom,
+					path: ["contributes", "iconThemes"],
+					message: `duplicate icon theme id: ${iconTheme.id}`,
+				})
+			}
+			seen.iconThemes.add(iconTheme.id)
 		}
 
 		// Activation references must point at declared ids within the
@@ -762,6 +838,10 @@ export type CommandContribution = z.infer<typeof commandContributionSchema>
 export type ThemeContribution = z.infer<typeof themeContributionSchema>
 export type ToolContribution = z.infer<typeof toolContributionSchema>
 export type ComponentContribution = z.infer<typeof componentContributionSchema>
+export type SnippetContribution = z.infer<typeof snippetContributionSchema>
+export type LanguageContribution = z.infer<typeof languageContributionSchema>
+export type GrammarContribution = z.infer<typeof grammarContributionSchema>
+export type IconThemeContribution = z.infer<typeof iconThemeContributionSchema>
 export type ActivationEvent = z.infer<typeof activationEventSchema>
 export type TrustTier = z.infer<typeof trustTierSchema>
 export type LifecycleHints = z.infer<typeof lifecycleHintsSchema>

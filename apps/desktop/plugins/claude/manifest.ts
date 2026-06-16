@@ -80,6 +80,10 @@ export const claudePluginManifest: PluginManifest = {
 		],
 		themes: [],
 		components: [],
+		snippets: [],
+		languages: [],
+		grammars: [],
+		iconThemes: [],
 		tools: [
 			{
 				id: "plugin.firefly.built-in.surface.claude.open",

@@ -91,6 +91,10 @@ export const acmeComponentsExemplarManifest: PluginManifest = {
 				conflictPolicy: "ask",
 			},
 		],
+		snippets: [],
+		languages: [],
+		grammars: [],
+		iconThemes: [],
 	},
 	capabilities: ["acme:read"],
 	bridge: {

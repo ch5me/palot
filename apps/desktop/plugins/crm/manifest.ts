@@ -80,6 +80,10 @@ export const crmPluginManifest: PluginManifest = {
 		],
 		themes: [],
 		components: [],
+		snippets: [],
+		languages: [],
+		grammars: [],
+		iconThemes: [],
 		tools: [
 			{
 				id: "plugin.firefly.built-in.surface.crm.open",

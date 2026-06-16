@@ -1,6 +1,17 @@
 import { z } from "zod"
 
-export const CONTRIBUTION_FAMILIES = ["panels", "navSidebars", "widgets", "commands", "themes", "components"] as const
+export const CONTRIBUTION_FAMILIES = [
+	"panels",
+	"navSidebars",
+	"widgets",
+	"commands",
+	"themes",
+	"components",
+	"snippets",
+	"languages",
+	"grammars",
+	"iconThemes",
+] as const
 export type ContributionFamily = (typeof CONTRIBUTION_FAMILIES)[number]
 
 export const escapeHatchTransportSchema = z.enum(["iframe", "webview"])
@@ -440,6 +451,174 @@ export const COMPONENT_CONTRACT = contributionFamilyContractSchema.parse({
 	},
 })
 
+export const SNIPPET_CONTRACT = contributionFamilyContractSchema.parse({
+	family: "snippets",
+	hostVocabulary: ["snippet-registry"],
+	placementSurfaces: ["editor-completion"],
+	activationTriggers: ["host-startup-restore"],
+	defaultState: { mode: "default-enabled" },
+	availability: {
+		staticRequiresCapabilities: false,
+		hostEvaluatesLiveAvailability: true,
+		hostOwnsReasonStrings: true,
+	},
+	persistence: {
+		strategy: "host-snippet-registry",
+		hostOwnsStorage: true,
+		pluginMayProvidePersistenceKey: false,
+		scope: "app",
+	},
+	hostRendering: {
+		hostOwnsContainer: true,
+		hostOwnsPlacementVocabulary: true,
+		hostOwnsActivationLifecycle: true,
+		allowedModes: ["data-only"],
+		dataOnly: true,
+		hostMayPreviewWithoutApply: false,
+		hostMayApplyWithoutPluginRuntime: true,
+	},
+	escapeHatch: {
+		policy: "forbidden",
+		allowedTransports: [],
+		requiresExplicitPolicyField: false,
+		hostOwnedSandbox: true,
+	},
+	mutationGuard: {
+		mayDirectlyMutateHostChrome: false,
+		requiresWrapperToolsOrCapabilities: false,
+		notes: [
+			"Snippets are data-only contributions registered with the editor completion engine.",
+			"No plugin runtime required; host registers snippets at startup.",
+		],
+	},
+})
+
+export const LANGUAGE_CONTRACT = contributionFamilyContractSchema.parse({
+	family: "languages",
+	hostVocabulary: ["language-registry"],
+	placementSurfaces: ["editor-language-registry"],
+	activationTriggers: ["host-startup-restore"],
+	defaultState: { mode: "default-enabled" },
+	availability: {
+		staticRequiresCapabilities: false,
+		hostEvaluatesLiveAvailability: true,
+		hostOwnsReasonStrings: true,
+	},
+	persistence: {
+		strategy: "host-language-registry",
+		hostOwnsStorage: true,
+		pluginMayProvidePersistenceKey: false,
+		scope: "app",
+	},
+	hostRendering: {
+		hostOwnsContainer: true,
+		hostOwnsPlacementVocabulary: true,
+		hostOwnsActivationLifecycle: true,
+		allowedModes: ["data-only"],
+		dataOnly: true,
+		hostMayPreviewWithoutApply: false,
+		hostMayApplyWithoutPluginRuntime: true,
+	},
+	escapeHatch: {
+		policy: "forbidden",
+		allowedTransports: [],
+		requiresExplicitPolicyField: false,
+		hostOwnedSandbox: true,
+	},
+	mutationGuard: {
+		mayDirectlyMutateHostChrome: false,
+		requiresWrapperToolsOrCapabilities: false,
+		notes: [
+			"Language contributions are data-only metadata (id, aliases, file globs, config path).",
+			"Host merges language metadata into the editor language registry at startup.",
+		],
+	},
+})
+
+export const GRAMMAR_CONTRACT = contributionFamilyContractSchema.parse({
+	family: "grammars",
+	hostVocabulary: ["grammar-registry", "monaco-tokenizer"],
+	placementSurfaces: ["editor-grammar-registry"],
+	activationTriggers: ["host-startup-restore"],
+	defaultState: { mode: "default-enabled" },
+	availability: {
+		staticRequiresCapabilities: false,
+		hostEvaluatesLiveAvailability: true,
+		hostOwnsReasonStrings: true,
+	},
+	persistence: {
+		strategy: "host-grammar-registry",
+		hostOwnsStorage: true,
+		pluginMayProvidePersistenceKey: false,
+		scope: "app",
+	},
+	hostRendering: {
+		hostOwnsContainer: true,
+		hostOwnsPlacementVocabulary: true,
+		hostOwnsActivationLifecycle: true,
+		allowedModes: ["data-only"],
+		dataOnly: true,
+		hostMayPreviewWithoutApply: false,
+		hostMayApplyWithoutPluginRuntime: true,
+	},
+	escapeHatch: {
+		policy: "forbidden",
+		allowedTransports: [],
+		requiresExplicitPolicyField: false,
+		hostOwnedSandbox: true,
+	},
+	mutationGuard: {
+		mayDirectlyMutateHostChrome: false,
+		requiresWrapperToolsOrCapabilities: false,
+		notes: [
+			"Grammars are data-only TextMate grammar files registered with Monaco.",
+			"The host loads grammar JSON/PLIST and registers it with the Monaco tokenizer.",
+		],
+	},
+})
+
+export const ICON_THEME_CONTRACT = contributionFamilyContractSchema.parse({
+	family: "iconThemes",
+	hostVocabulary: ["icon-theme-catalog", "icon-theme-apply"],
+	placementSurfaces: ["icon-theme-catalog"],
+	activationTriggers: ["host-startup-restore"],
+	defaultState: { mode: "host-selects" },
+	availability: {
+		staticRequiresCapabilities: false,
+		hostEvaluatesLiveAvailability: true,
+		hostOwnsReasonStrings: true,
+	},
+	persistence: {
+		strategy: "host-icon-theme-selection",
+		hostOwnsStorage: true,
+		pluginMayProvidePersistenceKey: false,
+		scope: "app",
+	},
+	hostRendering: {
+		hostOwnsContainer: true,
+		hostOwnsPlacementVocabulary: true,
+		hostOwnsActivationLifecycle: true,
+		allowedModes: ["data-only"],
+		dataOnly: true,
+		hostMayPreviewWithoutApply: true,
+		hostMayApplyWithoutPluginRuntime: true,
+	},
+	escapeHatch: {
+		policy: "forbidden",
+		allowedTransports: [],
+		requiresExplicitPolicyField: false,
+		hostOwnedSandbox: true,
+	},
+	mutationGuard: {
+		mayDirectlyMutateHostChrome: false,
+		requiresWrapperToolsOrCapabilities: false,
+		notes: [
+			"Icon themes are data-only contributions.",
+			"Preview and apply semantics stay host-owned.",
+		],
+	},
+})
+
 export const CONTRIBUTION_FAMILY_CONTRACTS = {
 	panels: PANEL_CONTRACT,
 	navSidebars: NAV_SIDEBAR_CONTRACT,
@@ -447,6 +626,10 @@ export const CONTRIBUTION_FAMILY_CONTRACTS = {
 	commands: COMMAND_CONTRACT,
 	themes: THEME_CONTRACT,
 	components: COMPONENT_CONTRACT,
+	snippets: SNIPPET_CONTRACT,
+	languages: LANGUAGE_CONTRACT,
+	grammars: GRAMMAR_CONTRACT,
+	iconThemes: ICON_THEME_CONTRACT,
 } as const satisfies Readonly<Record<ContributionFamily, ContributionFamilyContract>>
 
 export const ALL_CONTRIBUTION_FAMILY_CONTRACTS = Object.values(CONTRIBUTION_FAMILY_CONTRACTS)

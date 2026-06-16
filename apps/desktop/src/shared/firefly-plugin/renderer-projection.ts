@@ -2,6 +2,7 @@ import type { PluginDescriptor, HostPanelSlot, HostWidgetZone } from "./descript
 import {
 	COMMAND_CONTRACT,
 	COMPONENT_CONTRACT,
+	NAV_SIDEBAR_CONTRACT,
 	PANEL_CONTRACT,
 	THEME_CONTRACT,
 	WIDGET_CONTRACT,
@@ -92,6 +93,25 @@ export interface ProjectedSidePanel {
 	readonly renderMode: "host-reconciler" | "declarative-props" | "iframe"
 	readonly declarativeSchemaRef: string | null
 	readonly iframeSandbox: string | null
+	readonly capabilityGates: readonly RendererCapabilityGate[]
+	readonly availability: RendererAvailability
+	readonly contract: ContributionFamilyContract
+}
+
+export interface ProjectedNavSidebar {
+	readonly family: "navSidebars"
+	readonly pluginId: string
+	readonly contributionId: string
+	readonly projectedId: string
+	readonly title: string
+	readonly icon: string | null
+	readonly order: number
+	readonly defaultOn: boolean
+	readonly commandIds: readonly string[]
+	readonly persistenceKey: string | null
+	readonly telemetryNamespace: string | null
+	readonly renderMode: "host-reconciler" | "declarative-props"
+	readonly declarativeSchemaRef: string | null
 	readonly capabilityGates: readonly RendererCapabilityGate[]
 	readonly availability: RendererAvailability
 	readonly contract: ContributionFamilyContract
@@ -395,6 +415,10 @@ export function getProjectedPanelId(descriptor: PluginDescriptor, panelId: strin
 	return `${descriptor.normalizedId}.${panelId}`
 }
 
+export function getProjectedNavSidebarId(descriptor: PluginDescriptor, navSidebarId: string): string {
+	return `${descriptor.normalizedId}.${navSidebarId}`
+}
+
 export function getProjectedWidgetId(descriptor: PluginDescriptor, widgetId: string): string {
 	return `${descriptor.normalizedId}.${widgetId}`
 }
@@ -441,6 +465,33 @@ export function projectSidePanels(
 			capabilityGates: gates,
 			availability: buildAvailability(state, gates),
 			contract: PANEL_CONTRACT,
+		}
+	})
+}
+
+export function projectNavSidebars(
+	descriptor: PluginDescriptor,
+	state: CapabilityStateShape,
+): readonly ProjectedNavSidebar[] {
+	return descriptor.navSidebars.map((navSidebar) => {
+		const gates = buildCapabilityGates(descriptor, navSidebar.availability.requires, state)
+		return {
+			family: "navSidebars",
+			pluginId: descriptor.normalizedId,
+			contributionId: navSidebar.id,
+			projectedId: getProjectedNavSidebarId(descriptor, navSidebar.id),
+			title: navSidebar.title,
+			icon: navSidebar.icon ?? null,
+			order: navSidebar.order,
+			defaultOn: navSidebar.defaultOn,
+			commandIds: [...navSidebar.commandIds],
+			persistenceKey: navSidebar.persistenceKey ?? null,
+			telemetryNamespace: navSidebar.telemetryNamespace ?? null,
+			renderMode: navSidebar.render.mode,
+			declarativeSchemaRef: navSidebar.render.declarativeSchemaRef ?? null,
+			capabilityGates: gates,
+			availability: buildAvailability(state, gates),
+			contract: NAV_SIDEBAR_CONTRACT,
 		}
 	})
 }
@@ -613,6 +664,20 @@ export function projectSidePanelsFromCatalog(
 	return { items, collisions }
 }
 
+export function projectNavSidebarsFromCatalog(
+	descriptors: readonly PluginDescriptor[],
+	stateByPluginId: Readonly<Record<string, CapabilityStateShape>>,
+): RendererProjectionResult<ProjectedNavSidebar> {
+	const items = descriptors.flatMap((descriptor) =>
+		projectNavSidebars(descriptor, stateByPluginId[descriptor.normalizedId] ?? defaultCapabilityState(descriptor)),
+	)
+	const collisions = buildCollisionMap(
+		"navSidebars",
+		items.map((item) => ({ ...item, projectedId: projectIdForCollision(item.contributionId) })),
+	)
+	return { items, collisions }
+}
+
 export function projectSessionWidgetsFromCatalog(
 	descriptors: readonly PluginDescriptor[],
 	stateByPluginId: Readonly<Record<string, CapabilityStateShape>>,
@@ -690,6 +755,7 @@ export function projectRendererFamiliesFromCatalog(
 ) {
 	return {
 		panels: projectSidePanelsFromCatalog(descriptors, stateByPluginId),
+		navSidebars: projectNavSidebarsFromCatalog(descriptors, stateByPluginId),
 		widgets: projectSessionWidgetsFromCatalog(descriptors, stateByPluginId),
 		commands: projectCommandsFromCatalog(descriptors, stateByPluginId),
 		themes: projectThemesFromCatalog(descriptors, stateByPluginId),

@@ -6,11 +6,11 @@ import { useNavigate } from "@tanstack/react-router"
 import {
 	BlocksIcon,
 	CommandIcon,
-	CopyIcon,
 	PlusIcon,
 	SearchIcon,
 	SettingsIcon,
 	XIcon,
+	type LucideIcon,
 } from "lucide-react"
 import { memo, useEffect, useMemo, useRef, useState } from "react"
 import { activeServerConfigAtom } from "../atoms/connection"
@@ -29,6 +29,8 @@ import {
 	sidebarSectionOpenAtom,
 	type SidebarSectionId,
 } from "../atoms/ui"
+import { BUILT_IN_NAV_SIDEBAR_TAB_ID } from "../atoms/preferences"
+import { useCatalogNavSidebarTabs } from "../firefly-nav-sidebar-surfaces"
 import { appStore } from "../atoms/store"
 import type { Agent, AgentStatus, SidebarProject } from "../lib/types"
 import { loadMoreProjectSessions, loadProjectSessions } from "../services/connection-manager"
@@ -71,32 +73,41 @@ interface AppSidebarContentProps {
 }
 
 interface NavSidebarTabDefinition {
-	id: "built-in" | "built-in-duplicate"
+	id: string
 	label: string
-	icon: typeof BlocksIcon
+	icon: LucideIcon
 	render: (props: AppSidebarContentProps) => React.ReactNode
 }
 
-const NAV_SIDEBAR_TAB_DEFINITIONS: NavSidebarTabDefinition[] = [
-	{
-		id: "built-in",
-		label: "Palot",
-		icon: BlocksIcon,
-		render: (props) => <BuiltInSidebarBody {...props} />,
-	},
-	{
-		id: "built-in-duplicate",
-		label: "Folio",
-		icon: CopyIcon,
-		render: (props) => <BuiltInSidebarBody {...props} />,
-	},
-]
+/**
+ * The built-in "Palot" workspace: host-rendered sessions/projects nav.
+ * Always first; plugin-contributed nav-sidebars (catalog-served) merge
+ * in after it, sorted by manifest order.
+ */
+const BUILT_IN_NAV_TAB: NavSidebarTabDefinition = {
+	id: BUILT_IN_NAV_SIDEBAR_TAB_ID,
+	label: "Palot",
+	icon: BlocksIcon,
+	render: (props) => <BuiltInSidebarBody {...props} />,
+}
 
 export function NavSidebarTabs(props: AppSidebarContentProps) {
 	const activeTab = useAtomValue(navSidebarActiveTabAtom)
 	const setActiveTab = useSetAtom(setNavSidebarActiveTabAtom)
 	const setAvailableTabs = useSetAtom(setAvailableNavSidebarTabsAtom)
-	const tabs = useMemo(() => NAV_SIDEBAR_TAB_DEFINITIONS, [])
+	const catalogNavTabs = useCatalogNavSidebarTabs()
+	const tabs = useMemo<NavSidebarTabDefinition[]>(
+		() => [
+			BUILT_IN_NAV_TAB,
+			...catalogNavTabs.map((tab) => ({
+				id: tab.id,
+				label: tab.label,
+				icon: tab.icon,
+				render: () => tab.renderBody(),
+			})),
+		],
+		[catalogNavTabs],
+	)
 	const currentTab = tabs.find((tab) => tab.id === activeTab) ?? tabs[0]
 
 	useEffect(() => {

@@ -36,6 +36,7 @@ import {
 	getPluginCatalog,
 	listPluginCommands,
 	listPluginEntries,
+	listPluginNavSidebars,
 	listPluginPanels,
 	listPluginProjectionSummaries,
 	listPluginThemes,
@@ -126,6 +127,11 @@ export class ElectronHostAuthority implements HostAuthority {
 	listPanels(): HostPluginFamilyResult {
 		const cat = getPluginCatalog()
 		return { appVersion: cat.appVersion, items: [...listPluginPanels()] }
+	}
+
+	listNavSidebars(): HostPluginFamilyResult {
+		const cat = getPluginCatalog()
+		return { appVersion: cat.appVersion, items: [...listPluginNavSidebars()] }
 	}
 
 	listWidgets(): HostPluginFamilyResult {
@@ -234,6 +240,10 @@ export class CloudHostAuthority implements HostAuthority {
 
 	listPanels(): HostPluginFamilyResult {
 		return CloudHostAuthority.notImplemented("listPanels")
+	}
+
+	listNavSidebars(): HostPluginFamilyResult {
+		return CloudHostAuthority.notImplemented("listNavSidebars")
 	}
 
 	listWidgets(): HostPluginFamilyResult {

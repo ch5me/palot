@@ -19,10 +19,15 @@ import {
 	type CapabilityToken,
 	type CommandContribution,
 	type ComponentContribution,
+	type GrammarContribution,
+	type IconThemeContribution,
+	type LanguageContribution,
 	type LifecycleHints,
+	type NavSidebarContribution,
 	type PanelContribution,
 	type PluginId,
 	type PluginManifest,
+	type SnippetContribution,
 	type ThemeContribution,
 	type ToolContribution,
 	type TrustTier,
@@ -69,11 +74,16 @@ export interface PluginDescriptor {
 	readonly capabilities: readonly CapabilityToken[]
 	readonly activationEvents: readonly ActivationEvent[]
 	readonly panels: readonly PanelContribution[]
+	readonly navSidebars: readonly NavSidebarContribution[]
 	readonly widgets: readonly WidgetContribution[]
 	readonly commands: readonly CommandContribution[]
 	readonly themes: readonly ThemeContribution[]
 	readonly tools: readonly ToolContribution[]
 	readonly components: readonly ComponentContribution[]
+	readonly snippets: readonly SnippetContribution[]
+	readonly languages: readonly LanguageContribution[]
+	readonly grammars: readonly GrammarContribution[]
+	readonly iconThemes: readonly IconThemeContribution[]
 	readonly bridge: BridgeMetadata | null
 	readonly derived: {
 		readonly appVersion: string
@@ -198,11 +208,16 @@ export function derivePluginDescriptor(
 		capabilities: manifest.capabilities,
 		activationEvents: manifest.activationEvents,
 		panels: manifest.contributes.panels,
+		navSidebars: manifest.contributes.navSidebars,
 		widgets: manifest.contributes.widgets,
 		commands: manifest.contributes.commands,
 		themes: manifest.contributes.themes,
 		tools: manifest.contributes.tools,
 		components: manifest.contributes.components,
+		snippets: manifest.contributes.snippets,
+		languages: manifest.contributes.languages,
+		grammars: manifest.contributes.grammars,
+		iconThemes: manifest.contributes.iconThemes,
 		bridge: manifest.bridge ?? null,
 		derived: {
 			appVersion: options.appVersion,

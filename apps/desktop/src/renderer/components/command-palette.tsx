@@ -78,10 +78,11 @@ import { getFireflySurfaceTabs, type FireflySurfaceContext } from "../firefly-su
 import { mergeSurfaceTabs } from "../firefly-plugin-surface-merge"
 import { useCatalogSurfaceTabs } from "../firefly-plugin-surfaces"
 import { isMockModeAtom, toggleMockModeAtom } from "../atoms/mock-mode"
-import { opaqueWindowsAtom } from "../atoms/preferences"
+import { BUILT_IN_NAV_SIDEBAR_TAB_ID, opaqueWindowsAtom } from "../atoms/preferences"
+import { useCatalogNavSidebarTabs } from "../firefly-nav-sidebar-surfaces"
 import { isReactScanAtom, toggleReactScanAtom } from "../atoms/react-scan"
 import { isDevSurfaceAtom, toggleDevSurfaceAtom } from "../atoms/dev-surface"
-import { navSidebarActiveTabAtom, openSidePanelTabAtom, sidePanelOpenAtom } from "../atoms/ui"
+import { navSidebarActiveTabAtom, openSidePanelTabAtom, setNavSidebarActiveTabAtom, sidePanelOpenAtom } from "../atoms/ui"
 import { useSessionRevert } from "../hooks/use-commands"
 import {
 	useAvailableThemes,
@@ -151,6 +152,17 @@ export function CommandPalette({ open, onOpenChange, agents, onForkSession }: Co
 	// toggleCh5PmSurface removed — ch5pm is catalog-served; toggle via ch5pmPluginEnabled + window.elf.plugins.setEnabled.
 	// togglePdfReviewSurface removed — pdf-review is catalog-served; toggle via pdfReviewPluginEnabled + window.elf.plugins.setEnabled.
 	const navSidebarActiveTab = useAtomValue(navSidebarActiveTabAtom)
+	const setNavSidebarActiveTab = useSetAtom(setNavSidebarActiveTabAtom)
+	const catalogNavSidebarTabs = useCatalogNavSidebarTabs()
+	const navSidebarTabs = useMemo(
+		() => [
+			{ id: BUILT_IN_NAV_SIDEBAR_TAB_ID, label: "Palot" },
+			...catalogNavSidebarTabs.map((tab) => ({ id: tab.id, label: tab.label })),
+		],
+		[catalogNavSidebarTabs],
+	)
+	const activeNavSidebarLabel =
+		navSidebarTabs.find((tab) => tab.id === navSidebarActiveTab)?.label ?? "Palot"
 	const openSidePanelTab = useSetAtom(openSidePanelTabAtom)
 	const [sidePanelOpen, setSidePanelOpen] = useAtom(sidePanelOpenAtom)
 	const [reloading, setReloading] = useState(false)
@@ -643,15 +655,20 @@ export function CommandPalette({ open, onOpenChange, agents, onForkSession }: Co
 						<span>{reviewPluginEnabled ? "Disable Changes Surface" : "Enable Changes Surface"}</span>
 						{reviewPluginEnabled && <CheckIcon className="ml-auto h-4 w-4" />}
 					</CommandItem>
-				<CommandItem
-					keywords={["nav sidebar", "folio", "palot", "sidebar tabs"]}
-					onSelect={() => {
-						onOpenChange(false)
-					}}
-				>
-					<BlocksIcon />
-					<span>Nav Sidebar Tab: {navSidebarActiveTab === "built-in" ? "Palot" : "Folio"}</span>
-				</CommandItem>
+				{navSidebarTabs.length > 1 ? (
+					<CommandItem
+						keywords={["nav sidebar", "folio", "palot", "sidebar tabs", "workspace"]}
+						onSelect={() => {
+							const index = navSidebarTabs.findIndex((tab) => tab.id === navSidebarActiveTab)
+							const next = navSidebarTabs[(index + 1) % navSidebarTabs.length]
+							setNavSidebarActiveTab(next.id)
+							onOpenChange(false)
+						}}
+					>
+						<BlocksIcon />
+						<span>Switch Nav Sidebar Workspace (current: {activeNavSidebarLabel})</span>
+					</CommandItem>
+				) : null}
 				<CommandItem
 					keywords={["browser", "web", "webview", "inline browser", "panel"]}
 					onSelect={() => {

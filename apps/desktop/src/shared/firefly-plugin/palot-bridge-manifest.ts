@@ -403,6 +403,10 @@ export const palotBridgeManifest: PluginManifest = {
 			},
 		],
 		components: palotBridgeComponents,
+		snippets: [],
+		languages: [],
+		grammars: [],
+		iconThemes: [],
 	},
 	capabilities: [
 		"host:bridge.session-read",
