@@ -98,7 +98,6 @@ export const fireflySurfaceDefaults = {
 	crm: true,
 	studio: true,
 	voice: true,
-	oracle: true,
 	ch5pm: false,
 	pdfReview: false,
 } as const
@@ -112,7 +111,7 @@ export const pluginsSurfaceEnabledAtom = atomWithStorage<boolean>("elf:pluginsSu
 export const crmSurfaceEnabledAtom = atomWithStorage<boolean>("elf:crmSurfaceEnabled", true)
 export const studioSurfaceEnabledAtom = atomWithStorage<boolean>("elf:studioSurfaceEnabled", true)
 export const voiceSurfaceEnabledAtom = atomWithStorage<boolean>("elf:voiceSurfaceEnabled", true)
-export const oracleSurfaceEnabledAtom = atomWithStorage<boolean>("elf:oracleSurfaceEnabled", true)
+// `oracleSurfaceEnabledAtom` deleted — oracle is catalog-served (firefly.built-in.surface.oracle).
 export const ch5pmSurfaceEnabledAtom = atomWithStorage<boolean>("elf:ch5pmSurfaceEnabled", false)
 export const pdfReviewSurfaceEnabledAtom = atomWithStorage<boolean>("elf:pdfReviewSurfaceEnabled", false)
 
@@ -122,7 +121,6 @@ export const fireflySurfaceFlagAtoms: Record<FireflySurfaceFlagKey, typeof brows
 	crm: crmSurfaceEnabledAtom,
 	studio: studioSurfaceEnabledAtom,
 	voice: voiceSurfaceEnabledAtom,
-	oracle: oracleSurfaceEnabledAtom,
 	ch5pm: ch5pmSurfaceEnabledAtom,
 	pdfReview: pdfReviewSurfaceEnabledAtom,
 }
@@ -133,7 +131,6 @@ export const fireflySurfaceLabels: Record<FireflySurfaceFlagKey, string> = {
 	crm: "Contacts / CRM",
 	studio: "Studio / Office",
 	voice: "Voice",
-	oracle: "Oracle Roster",
 	ch5pm: "CH5PM Dashboard",
 	pdfReview: "PDF Review",
 }
@@ -160,9 +157,7 @@ export const toggleVoiceSurfaceAtom = atom(null, (get, set) => {
 	set(voiceSurfaceEnabledAtom, !get(voiceSurfaceEnabledAtom))
 })
 
-export const toggleOracleSurfaceAtom = atom(null, (get, set) => {
-	set(oracleSurfaceEnabledAtom, !get(oracleSurfaceEnabledAtom))
-})
+// `toggleOracleSurfaceAtom` deleted — oracle is catalog-served; toggle via window.elf.plugins.setEnabled.
 
 // `toggleClaudeSurfaceAtom` deleted — claude is catalog-served; toggle via window.elf.plugins.setEnabled.
 

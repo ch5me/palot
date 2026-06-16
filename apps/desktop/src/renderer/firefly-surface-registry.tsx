@@ -1,4 +1,4 @@
-import { FileTextIcon, GlobeIcon, MicIcon, MonitorPlayIcon, PlugIcon, UsersIcon, WandSparklesIcon, type LucideIcon } from "lucide-react"
+import { FileTextIcon, GlobeIcon, MicIcon, MonitorPlayIcon, PlugIcon, UsersIcon, type LucideIcon } from "lucide-react"
 
 import type { ReactNode } from "react"
 
@@ -7,7 +7,6 @@ import { BrowserPanel } from "./components/side-panel/browser-panel"
 // `claude` is served from the plugin catalog (firefly.built-in.surface.claude,
 // apps/desktop/plugins/claude) — do not re-add a row or import here.
 import { CrmPanel } from "./components/side-panel/crm-panel"
-import { OraclePanel } from "./components/side-panel/oracle-panel"
 import { PdfReviewPanel } from "./components/side-panel/pdf-review-panel"
 import { StudioPanel } from "./components/side-panel/studio-panel"
 import { VoicePanel } from "./components/side-panel/voice-panel"
@@ -190,27 +189,7 @@ export const FIREFLY_SURFACE_REGISTRY: FireflySurfaceDef[] = [
 		target: { kind: "side-panel", tab: "voice" },
 		spawn: (ctx) => <VoicePanel agent={ctx.agent} />,
 	},
-	{
-		id: "oracle",
-		manifestId: "firefly.built-in.side-panel.oracle",
-		title: "Oracle Roster",
-		icon: WandSparklesIcon,
-		formFactor: "side-panel-tab",
-		lane: "utility",
-		enabledFlag: {
-			key: "oracle",
-		},
-		defaultOn: true,
-		availability: (ctx) =>
-			ctx.flags.oracle
-				? { available: true }
-				: { available: false, reason: "Oracle roster surface is disabled in feature flags" },
-		commandIds: ["surface.oracle.open", "surface.oracle.toggle"],
-		persistenceKey: "side-panel.oracle",
-		telemetryNamespace: "firefly.surface.oracle",
-		target: { kind: "side-panel", tab: "oracle" },
-		spawn: (ctx) => <OraclePanel agent={ctx.agent} />,
-	},
+	// oracle — served from catalog (firefly.built-in.surface.oracle) — do not re-add
 	{
 		id: "ch5pm",
 		manifestId: "firefly.built-in.side-panel.ch5pm",
@@ -277,7 +256,7 @@ import { FIREFLY_SURFACE_IDS, type FireflySurfaceId } from "../shared/firefly-su
  * they are served from the plugin catalog (host plugin lifecycle owns
  * their enable/disable). First migrated surface: notes.
  */
-export const CATALOG_SERVED_SURFACE_IDS: readonly FireflySurfaceId[] = ["notes", "review", "files", "artifacts", "bridges", "pulse", "memory", "editor", "terminal", "claude"]
+export const CATALOG_SERVED_SURFACE_IDS: readonly FireflySurfaceId[] = ["notes", "review", "files", "artifacts", "bridges", "pulse", "memory", "editor", "terminal", "claude", "oracle"]
 
 export const FIREFLY_SURFACE_DEFAULT_ON = Object.fromEntries(
 	FIREFLY_SURFACE_REGISTRY.map((surface) => [surface.id, surface.defaultOn]),

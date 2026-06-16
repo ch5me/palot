@@ -918,6 +918,63 @@ export function registerClaudeHostHandlers(deps?: Partial<ClaudeHostDeps>): void
 }
 
 // ---------------------------------------------------------------------------
+// Oracle Roster surface host handlers (firefly.built-in.surface.oracle)
+// ---------------------------------------------------------------------------
+
+export interface OracleHostDeps {
+	openSidePanel: (tab: "oracle") => Promise<void>
+	getSidePanelState: () => SidePanelStateSnapshot
+	setPluginEnabled: (pluginId: string, enabled: boolean) => { enabled: boolean }
+}
+
+const ORACLE_PLUGIN_ID = "firefly.built-in.surface.oracle"
+
+export function registerOracleHostHandlers(deps?: Partial<OracleHostDeps>): void {
+	const openSidePanel =
+		deps?.openSidePanel ??
+		(async (tab: "oracle") => {
+			const { broadcastOpenSidePanel } = await import("../palot-browser-ipc")
+			await broadcastOpenSidePanel(tab)
+		})
+	const getSidePanelState = deps?.getSidePanelState ?? defaultGetSidePanelState
+	const setEnabled =
+		deps?.setPluginEnabled ??
+		((pluginId: string, enabled: boolean) => {
+			// eslint-disable-next-line @typescript-eslint/no-var-requires
+			const authority = require("./authority") as typeof import("./authority")
+			return authority.setPluginEnabled(pluginId, enabled)
+		})
+
+	registerHostTool(ORACLE_PLUGIN_ID, "plugin.firefly.built-in.surface.oracle.open", async () => {
+		await openSidePanel("oracle")
+		return ok({ opened: true, tab: "oracle", source: "v2-plugin-tool-dispatch" })
+	})
+
+	registerHostTool(ORACLE_PLUGIN_ID, "plugin.firefly.built-in.surface.oracle.state", async () => {
+		const sidePanel = getSidePanelState()
+		return ok({
+			tab: "oracle",
+			available: sidePanel.availableTabs.includes("oracle"),
+			open: sidePanel.open,
+			active: sidePanel.open && sidePanel.activeTab === "oracle",
+		})
+	})
+
+	registerHostCommand(ORACLE_PLUGIN_ID, "open-oracle", async () => {
+		await openSidePanel("oracle")
+		return ok({ opened: true, tab: "oracle" })
+	})
+
+	registerHostCommand(ORACLE_PLUGIN_ID, "toggle-oracle", async () => {
+		const catalog = getPluginCatalog()
+		const state = catalog.capabilityStates[ORACLE_PLUGIN_ID]
+		const currentlyEnabled = !(state?.pluginDisabled ?? false)
+		const next = setEnabled(ORACLE_PLUGIN_ID, !currentlyEnabled)
+		return ok({ pluginId: ORACLE_PLUGIN_ID, enabled: next.enabled })
+	})
+}
+
+// ---------------------------------------------------------------------------
 // DevMux Toolbar host handlers (firefly.built-in.devmux-toolbar)
 //
 // The Node-only work lives in `main/devmux/service.ts` and is reached here
@@ -1025,6 +1082,7 @@ export function registerBuiltInHostCommands(): void {
 	registerEditorHostHandlers()
 	registerTerminalHostHandlers()
 	registerClaudeHostHandlers()
+	registerOracleHostHandlers()
 	registerDevmuxHostHandlers()
 	log.info("Registered V2 host command handlers", {
 		commands: Array.from(handlers.keys()),

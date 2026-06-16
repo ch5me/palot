@@ -32,7 +32,7 @@ import {
 	ch5pmSurfaceEnabledAtom,
 	// claudeSurfaceEnabledAtom removed — claude is catalog-served (firefly.built-in.surface.claude).
 	crmSurfaceEnabledAtom,
-	oracleSurfaceEnabledAtom,
+	// oracleSurfaceEnabledAtom removed — oracle is catalog-served (firefly.built-in.surface.oracle).
 	pluginsSurfaceEnabledAtom,
 	pdfReviewSurfaceEnabledAtom,
 	studioSurfaceEnabledAtom,
@@ -308,11 +308,11 @@ export function AgentDetail({
 	const browserPanelEnabled = useAtomValue(browserPanelEnabledAtom)
 	// terminalSurfaceEnabled removed — terminal is catalog-served (firefly.built-in.surface.terminal).
 	// claudeSurfaceEnabled removed — claude is catalog-served (firefly.built-in.surface.claude).
+	// oracleSurfaceEnabled removed — oracle is catalog-served (firefly.built-in.surface.oracle).
 	const pluginsSurfaceEnabled = useAtomValue(pluginsSurfaceEnabledAtom)
 	const crmSurfaceEnabled = useAtomValue(crmSurfaceEnabledAtom)
 	const studioSurfaceEnabled = useAtomValue(studioSurfaceEnabledAtom)
 	const voiceSurfaceEnabled = useAtomValue(voiceSurfaceEnabledAtom)
-	const oracleSurfaceEnabled = useAtomValue(oracleSurfaceEnabledAtom)
 	const ch5pmSurfaceEnabled = useAtomValue(ch5pmSurfaceEnabledAtom)
 	const pdfReviewSurfaceEnabled = useAtomValue(pdfReviewSurfaceEnabledAtom)
 
@@ -327,7 +327,6 @@ export function AgentDetail({
 				crm: crmSurfaceEnabled,
 				studio: studioSurfaceEnabled,
 				voice: voiceSurfaceEnabled,
-				oracle: oracleSurfaceEnabled,
 				ch5pm: ch5pmSurfaceEnabled,
 				pdfReview: pdfReviewSurfaceEnabled,
 			},
@@ -343,7 +342,6 @@ export function AgentDetail({
 		crmSurfaceEnabled,
 		studioSurfaceEnabled,
 		voiceSurfaceEnabled,
-		oracleSurfaceEnabled,
 		ch5pmSurfaceEnabled,
 		pdfReviewSurfaceEnabled,
 		chatTurns.length,

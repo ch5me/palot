@@ -68,6 +68,10 @@ import {
 	claudePluginManifest,
 	CLAUDE_PLUGIN_ID,
 } from "../../../plugins/claude/manifest"
+import {
+	oraclePluginManifest,
+	ORACLE_PLUGIN_ID,
+} from "../../../plugins/oracle/manifest"
 import { BUILT_IN_DEFAULT_CAPABILITIES } from "../../shared/firefly-plugin/capabilities"
 import { type PluginDescriptor } from "../../shared/firefly-plugin/descriptor"
 import {
@@ -125,6 +129,7 @@ const BUILT_IN_MANIFESTS: readonly PluginManifest[] = [
 	editorPluginManifest,
 	terminalPluginManifest,
 	claudePluginManifest,
+	oraclePluginManifest,
 	acmeComponentsExemplarManifest,
 	devmuxToolbarManifest,
 ]
@@ -482,6 +487,7 @@ export const KNOWN_PLUGIN_IDS = {
 	editor: EDITOR_PLUGIN_ID,
 	terminal: TERMINAL_PLUGIN_ID,
 	claude: CLAUDE_PLUGIN_ID,
+	oracle: ORACLE_PLUGIN_ID,
 	acmeComponents: ACME_COMPONENTS_PLUGIN_ID,
 	devmuxToolbar: DEVMUX_TOOLBAR_PLUGIN_ID,
 } as const
