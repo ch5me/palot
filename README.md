@@ -266,7 +266,7 @@ Elf is in early alpha and we welcome contributions! Here's how to get started:
 6. Open a pull request
 
 Please see the [AGENTS.md](AGENTS.md) file for code style conventions, naming patterns, and important architectural notes.
-For Firefly desktop surface work, also see [docs/firefly-surface-playbook.md](docs/firefly-surface-playbook.md).
+For Firefly desktop plugin work (inline widgets, side panels, commands, agent tools, themes), see the **firefly-plugins** skill at `.agents/skills/firefly-plugins/SKILL.md`.
 
 <br>
 

@@ -59,6 +59,21 @@ export const HOST_CAPABILITIES = {
 	"host:theme.preview": { group: "host", verb: "theme.preview", risk: "low" },
 	"host:automation.schedule": { group: "host", verb: "automation.schedule", risk: "medium" },
 	"host:automation.write": { group: "host", verb: "automation.write", risk: "high" },
+	// DevMux dev-service control surface. `read` inspects the project's
+	// devmux config + live service health; `control` starts/stops the
+	// declared services. Modeled as a scoped host power (the `vscode.tasks`
+	// analog) rather than `shell:exec` — the plugin can only act on services
+	// the project already declares, never run arbitrary commands. `control`
+	// is medium (mirrors host:browser.tab-control: it manages a live local
+	// surface) and stays out of NEVER_AUTO_GRANT so built-ins work before the
+	// per-session command-consent UX lands; promote to high + NEVER_AUTO_GRANT
+	// once that UX exists.
+	"host:devmux.read": { group: "host", verb: "devmux.read", risk: "low" },
+	"host:devmux.control": { group: "host", verb: "devmux.control", risk: "medium" },
+	// Open a vetted http(s) URL in the user's system browser (the
+	// `vscode.env.openExternal` analog). Low risk: it cannot read anything,
+	// only hands a URL to the OS default browser.
+	"host:shell.open-external": { group: "host", verb: "shell.open-external", risk: "low" },
 } as const satisfies Record<string, CapabilityClass>
 
 /**
@@ -115,6 +130,9 @@ export const BUILT_IN_DEFAULT_CAPABILITIES: readonly KnownCapabilityToken[] = [
 	"host:bridge.session-read",
 	"host:bridge.ui-state-read",
 	"host:theme.preview",
+	"host:devmux.read",
+	"host:devmux.control",
+	"host:shell.open-external",
 ]
 
 /**

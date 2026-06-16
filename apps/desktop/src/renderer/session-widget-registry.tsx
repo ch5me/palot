@@ -1,7 +1,8 @@
 import type { ReactNode } from "react"
-import { BoxesIcon, CheckSquare2Icon } from "lucide-react"
+import { BoxesIcon, CheckSquare2Icon, ServerIcon } from "lucide-react"
 import { SessionTaskList } from "./components/chat/session-task-list"
 import { GenUiArtifactWidget } from "./components/genui/genui-artifact-widget"
+import { DevmuxToolbarWidget } from "./components/devmux/devmux-toolbar-widget"
 import type { SessionWidgetId, SessionWidgetZoneId } from "./atoms/session-widgets"
 import type { Agent } from "./lib/types"
 
@@ -18,6 +19,13 @@ export interface SessionWidgetDefinition {
 }
 
 export const SESSION_WIDGET_REGISTRY: Record<SessionWidgetId, SessionWidgetDefinition> = {
+	"devmux-toolbar": {
+		id: "devmux-toolbar",
+		title: "DevMux",
+		defaultZoneId: "above-chat",
+		icon: ServerIcon,
+		render: ({ agent }) => <DevmuxToolbarWidget agent={agent} />,
+	},
 	"session-task-list": {
 		id: "session-task-list",
 		title: "Task list",

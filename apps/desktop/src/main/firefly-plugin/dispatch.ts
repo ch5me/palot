@@ -404,6 +404,104 @@ export function registerNotesHostHandlers(deps?: Partial<NotesHostDeps>): void {
 	})
 }
 
+// ---------------------------------------------------------------------------
+// DevMux Toolbar host handlers (firefly.built-in.devmux-toolbar)
+//
+// The Node-only work lives in `main/devmux/service.ts` and is reached here
+// behind the `host:devmux.*` / `host:shell.open-external` capability tokens.
+// Both UI commands and agent tools route to the same service functions; the
+// service is dynamic-imported so its tmux/electron deps never enter the bun
+// test graph that imports this dispatcher.
+// ---------------------------------------------------------------------------
+
+const DEVMUX_TOOLBAR_PLUGIN_ID = "firefly.built-in.devmux-toolbar"
+
+function readStringArg(args: unknown, key: string): string | null {
+	if (args && typeof args === "object" && key in args) {
+		const value = (args as Record<string, unknown>)[key]
+		if (typeof value === "string" && value.length > 0) return value
+	}
+	return null
+}
+
+function devmuxError(cause: unknown): HostCommandResult {
+	const message = cause instanceof Error ? cause.message : String(cause)
+	const code = message.startsWith("no devmux config") ? "devmux_no_config" : "devmux_failed"
+	return err(code, message)
+}
+
+async function devmuxList(args: unknown): Promise<HostCommandResult> {
+	const projectDir = readStringArg(args, "projectDir")
+	if (!projectDir) return err("validation_error", "missing projectDir")
+	try {
+		const service = await import("../devmux/service")
+		return ok(await service.listServices(projectDir))
+	} catch (cause) {
+		return devmuxError(cause)
+	}
+}
+
+async function devmuxStatus(args: unknown): Promise<HostCommandResult> {
+	const projectDir = readStringArg(args, "projectDir")
+	if (!projectDir) return err("validation_error", "missing projectDir")
+	try {
+		const service = await import("../devmux/service")
+		return ok({ services: await service.statusAll(projectDir) })
+	} catch (cause) {
+		return devmuxError(cause)
+	}
+}
+
+async function devmuxLaunch(args: unknown): Promise<HostCommandResult> {
+	const projectDir = readStringArg(args, "projectDir")
+	const serviceName = readStringArg(args, "service")
+	if (!projectDir) return err("validation_error", "missing projectDir")
+	if (!serviceName) return err("validation_error", "missing service")
+	try {
+		const service = await import("../devmux/service")
+		return ok(await service.ensureService(projectDir, serviceName))
+	} catch (cause) {
+		return devmuxError(cause)
+	}
+}
+
+async function devmuxOpenExternal(args: unknown): Promise<HostCommandResult> {
+	const url = readStringArg(args, "url")
+	if (!url) return err("validation_error", "missing url")
+	try {
+		const service = await import("../devmux/service")
+		await service.openExternalUrl(url)
+		return ok({ opened: true, url })
+	} catch (cause) {
+		return devmuxError(cause)
+	}
+}
+
+export function registerDevmuxHostHandlers(): void {
+	// UI commands (renderer-invoked via firefly-plugin:invoke).
+	registerHostCommand(DEVMUX_TOOLBAR_PLUGIN_ID, "devmux-list", ({ args }) => devmuxList(args))
+	registerHostCommand(DEVMUX_TOOLBAR_PLUGIN_ID, "devmux-status", ({ args }) => devmuxStatus(args))
+	registerHostCommand(DEVMUX_TOOLBAR_PLUGIN_ID, "devmux-launch", ({ args }) => devmuxLaunch(args))
+	registerHostCommand(DEVMUX_TOOLBAR_PLUGIN_ID, "devmux-open-external", ({ args }) =>
+		devmuxOpenExternal(args),
+	)
+
+	// Agent tools (OpenCode-invoked via firefly-plugin:invoke-tool).
+	registerHostTool(DEVMUX_TOOLBAR_PLUGIN_ID, "plugin.firefly.built-in.devmux-toolbar.list", ({ args }) =>
+		devmuxList(args),
+	)
+	registerHostTool(
+		DEVMUX_TOOLBAR_PLUGIN_ID,
+		"plugin.firefly.built-in.devmux-toolbar.status",
+		({ args }) => devmuxStatus(args),
+	)
+	registerHostTool(
+		DEVMUX_TOOLBAR_PLUGIN_ID,
+		"plugin.firefly.built-in.devmux-toolbar.ensure",
+		({ args }) => devmuxLaunch(args),
+	)
+}
+
 export function registerBuiltInHostCommands(): void {
 	registerHostCommand(
 		"firefly.built-in.palot-bridge",
@@ -419,6 +517,7 @@ export function registerBuiltInHostCommands(): void {
 	registerHostCommand("acme.acme-notebook", "acme-notebook-open", invokeAcmeNotebookOpen)
 	registerHostCommand("acme.acme-notebook", "acme-notebook-clear", invokeAcmeNotebookClear)
 	registerNotesHostHandlers()
+	registerDevmuxHostHandlers()
 	log.info("Registered V2 host command handlers", {
 		commands: Array.from(handlers.keys()),
 		tools: Array.from(toolHandlers.keys()),

@@ -32,6 +32,10 @@ import {
 	notesPluginManifest,
 	NOTES_PLUGIN_ID,
 } from "../../../plugins/notes/manifest"
+import {
+	devmuxToolbarManifest,
+	DEVMUX_TOOLBAR_PLUGIN_ID,
+} from "../../../plugins/devmux-toolbar/manifest"
 import { BUILT_IN_DEFAULT_CAPABILITIES } from "../../shared/firefly-plugin/capabilities"
 import { type PluginDescriptor } from "../../shared/firefly-plugin/descriptor"
 import { memorySurfaceManifest, MEMORY_SURFACE_PLUGIN_ID } from "../../shared/firefly-plugin/memory-surface-manifest"
@@ -79,6 +83,7 @@ const BUILT_IN_MANIFESTS: readonly PluginManifest[] = [
 	acmeNotebookManifest,
 	notesPluginManifest,
 	acmeComponentsExemplarManifest,
+	devmuxToolbarManifest,
 ]
 
 /**
@@ -427,4 +432,5 @@ export const KNOWN_PLUGIN_IDS = {
 	acmeNotebook: ACME_NOTEBOOK_PLUGIN_ID,
 	notes: NOTES_PLUGIN_ID,
 	acmeComponents: ACME_COMPONENTS_PLUGIN_ID,
+	devmuxToolbar: DEVMUX_TOOLBAR_PLUGIN_ID,
 } as const
