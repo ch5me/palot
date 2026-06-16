@@ -36,8 +36,11 @@ import {
 } from "../atoms/feature-flags"
 import { useColorScheme } from "../hooks/use-theme"
 import { loadDockLayout, saveDockLayout } from "../surface-host/persistence"
+import type { DockZone } from "../surface-host/types"
 import { useSurfaceRegistry } from "../surface-host/surface-host-provider"
 import { DockShell, type DockSeedPanel } from "../workspace/dock-shell"
+import { SURFACE_SLOT_COMPONENT } from "../workspace/dock-drag-bridge"
+import { SideZoneToolbar } from "../workspace/side-zone-toolbar"
 import { surfacePropBridge, useSurfaceProps } from "../workspace/surface-prop-bridge"
 import {
 	getFireflySurfaceTabs,
@@ -46,11 +49,13 @@ import {
 import { isKnownSidePanelTabId, mergeSurfaceTabs } from "../firefly-plugin-surface-merge"
 import { useCatalogSurfaceTabs } from "../firefly-plugin-surfaces"
 import {
+	closeDockTabAtom,
 	closeDocumentPanelAtom,
 	documentPanelActiveTabAtom,
 	documentPanelOpenAtom,
 	isDocumentPanelTab,
 	navSidebarActiveTabAtom,
+	openDockTabsAtom,
 	paneRoutingStateAtom,
 	reviewPanelSettingsAtom,
 	setAvailableDocumentPanelTabsAtom,
@@ -61,6 +66,7 @@ import {
 	setSidePanelActiveTabAtom,
 	sidePanelActiveTabAtom,
 	sidePanelOpenAtom,
+	spawnDockTabAtom,
 	type UtilitySidePanelTabId,
 } from "../atoms/ui"
 import type {
@@ -228,6 +234,12 @@ export function AgentDetail({
 	const setAvailableDocumentPanelTabs = useSetAtom(setAvailableDocumentPanelTabsAtom)
 	const [, setReviewSettings] = useAtom(reviewPanelSettingsAtom)
 
+	// Spawn-on-demand dock tabs: which surface ids currently have a dock panel.
+	const openTabIds = useAtomValue(openDockTabsAtom)
+	const spawnDockTab = useSetAtom(spawnDockTabAtom)
+	const closeDockTab = useSetAtom(closeDockTabAtom)
+	const openTabIdSet = useMemo(() => new Set(openTabIds), [openTabIds])
+
 	const prevSessionIdRef = useRef(agent.sessionId)
 	const diffStats = useAtomValue(sessionDiffStatsFamily(agent.sessionId))
 	useEffect(() => {
@@ -348,6 +360,35 @@ export function AgentDetail({
 		[workspaceSurfaceTabs],
 	)
 
+	// Spawn-on-demand: only tabs in the open set get a dock panel / mounted surface.
+	// `utilityTabs`/`docTabs` stay the full *available* set (toolbar + Cmd+K source).
+	const openUtilityTabs = useMemo(
+		() => utilityTabs.filter((tab) => openTabIdSet.has(tab.id)),
+		[utilityTabs, openTabIdSet],
+	)
+	const openDocTabs = useMemo(
+		() => docTabs.filter((tab) => openTabIdSet.has(tab.id)),
+		[docTabs, openTabIdSet],
+	)
+
+	// Spawn (or focus) a surface's dock tab. Used by the side-panel toolbar; Cmd+K
+	// and programmatic opens route through `openSidePanelTabAtom`, which also spawns.
+	const handleSpawnTab = useCallback(
+		(tab: SidePanelTabDef) => {
+			spawnDockTab(tab.id)
+			if (tab.lane === "document") {
+				setDocumentPanelOpen(true)
+			} else {
+				setSidePanelOpen(true)
+			}
+			// Known ids also set the active-tab atoms so the pane-routing focus effect
+			// brings the panel forward; dynamic (workspace-scoped) ids are activated by
+			// Dockview when the reconciler adds their panel.
+			routeAvailableSurfaceTab(tab)
+		},
+		[spawnDockTab, setDocumentPanelOpen, setSidePanelOpen, routeAvailableSurfaceTab],
+	)
+
 	useEffect(() => {
 		const handleKeyDown = (e: KeyboardEvent) => {
 			if ((e.metaKey || e.ctrlKey) && e.shiftKey) {
@@ -414,10 +455,11 @@ export function AgentDetail({
 		const unsubscribe = subscribeToPalotOpenSidePanel(({ tab }) => {
 			const targetTab = findAvailableSurfaceTab(tab)
 			if (!targetTab) return
-			routeAvailableSurfaceTab(targetTab)
+			// Explicit open request → spawn the tab if it isn't already present.
+			handleSpawnTab(targetTab)
 		})
 		return unsubscribe
-	}, [findAvailableSurfaceTab, routeAvailableSurfaceTab])
+	}, [findAvailableSurfaceTab, handleSpawnTab])
 
 	useEffect(() => {
 		void fetchPalotUiStateSnapshot().then((snapshot) => {
@@ -534,11 +576,35 @@ export function AgentDetail({
 		}
 	}, [dockPanelRecords])
 
-	// Capture each zone's DockviewApi so we can imperatively focus panels on routing changes.
-	const zoneApisRef = useRef<Partial<Record<string, DockviewApi>>>({})
-	const handleZoneApiReady = useCallback((zone: string, api: DockviewApi) => {
-		zoneApisRef.current[zone] = api
-	}, [])
+	// Capture each zone's DockviewApi so we can imperatively focus/seed panels.
+	// `zoneApisRef` is for imperative reads (focus); `readyZones` is state so the
+	// reconcile effect re-runs when a zone's api first becomes available.
+	const zoneApisRef = useRef<Partial<Record<DockZone, DockviewApi>>>({})
+	const [readyZones, setReadyZones] = useState<Partial<Record<DockZone, DockviewApi>>>({})
+	const handleZoneApiReady = useCallback(
+		(zone: DockZone, api: DockviewApi) => {
+			zoneApisRef.current[zone] = api
+			setReadyZones((prev) => (prev[zone] === api ? prev : { ...prev, [zone]: api }))
+
+			// Closing a tab (X) removes it from the open set so it stops being seeded
+			// and its surface is evicted. Disambiguate a true close from a cross-zone
+			// move: a move re-adds the surface in the target zone BEFORE closing the
+			// source panel, so if the same surface still lives in another zone this
+			// removal is a move — leave the open set alone.
+			api.onDidRemovePanel((panel) => {
+				const params = panel.params as { surfaceType?: unknown } | undefined
+				const surfaceType = typeof params?.surfaceType === "string" ? params.surfaceType : null
+				if (surfaceType === null || surfaceType === "chat") return
+				const stillElsewhere = (
+					Object.entries(zoneApisRef.current) as Array<[DockZone, DockviewApi | undefined]>
+				).some(([otherZone, otherApi]) => otherZone !== zone && !!otherApi?.getPanel(panel.id))
+				if (stillElsewhere) return
+				registry.removeDockPanel(panel.id)
+				closeDockTab(surfaceType)
+			})
+		},
+		[registry, closeDockTab],
+	)
 
 	// Focus the correct dock panel whenever the routing atoms change (e.g. plugin→surface handoff).
 	// Uses paneRoutingState (tab + focusToken) so re-requesting the same tab still triggers a focus.
@@ -564,26 +630,45 @@ export function AgentDetail({
 		})
 	}, [registry, chatInstanceId])
 
-	// Register each utility/document tab surface once per session+tab identity.
-	// `getOrCreate` is idempotent — safe to call every render when the set changes.
+	// Reconcile open tabs into the dock: for every tab in the open set whose zone
+	// is ready, mount its surface (idempotent) and add its dock panel if missing.
+	// This is the spawn path — `dockSeedPanels` only seeds chat; every other tab is
+	// added here when it enters the open set (toolbar / Cmd+K) and its zone is live.
+	// Add-only: panel removal is owned by the close handler + cross-zone drag bridge.
 	useEffect(() => {
-		for (const tab of utilityTabs) {
+		const desired: Array<{ tab: SidePanelTabDef; zone: DockZone }> = [
+			...openUtilityTabs.map((tab) => ({
+				tab,
+				zone: ((persistedDockLayout?.byType?.[tab.id] as DockZone | undefined) ?? "right") as DockZone,
+			})),
+			...openDocTabs.map((tab) => ({ tab, zone: "bottom" as DockZone })),
+		]
+		for (const { tab, zone } of desired) {
+			const api = readyZones[zone]
+			if (!api) continue
 			const instanceId = `${tab.id}:${agent.sessionId}`
+			if (api.getPanel(instanceId)) continue
+			// Surface must exist before the slot attaches (attachSlot no-ops otherwise).
 			registry.getOrCreate(instanceId, {
 				type: tab.id,
 				title: tab.title,
 				render: () => <TabSurface instanceId={instanceId} />,
 			})
-		}
-		for (const tab of docTabs) {
-			const instanceId = `${tab.id}:${agent.sessionId}`
-			registry.getOrCreate(instanceId, {
-				type: tab.id,
+			api.addPanel({
+				id: instanceId,
 				title: tab.title,
-				render: () => <TabSurface instanceId={instanceId} />,
+				component: SURFACE_SLOT_COMPONENT,
+				params: { surfaceInstanceId: instanceId, surfaceType: tab.id },
+			})
+			registry.registerDockPanel({
+				dockPanelId: instanceId,
+				zone,
+				surfaceInstanceId: instanceId,
+				surfaceType: tab.id,
+				title: tab.title,
 			})
 		}
-	}, [registry, agent.sessionId, utilityTabs, docTabs])
+	}, [registry, agent.sessionId, openUtilityTabs, openDocTabs, readyZones, persistedDockLayout])
 
 	// Unmount-on-disable (Firefly plugin P0): when a catalog-served surface's
 	// plugin becomes unavailable (disabled/quarantined → `availability.available`
@@ -598,63 +683,49 @@ export function AgentDetail({
 	})
 	useEffect(() => {
 		const currentIds = new Set<string>()
-		for (const tab of utilityTabs) currentIds.add(`${tab.id}:${agent.sessionId}`)
-		for (const tab of docTabs) currentIds.add(`${tab.id}:${agent.sessionId}`)
+		for (const tab of openUtilityTabs) currentIds.add(`${tab.id}:${agent.sessionId}`)
+		for (const tab of openDocTabs) currentIds.add(`${tab.id}:${agent.sessionId}`)
 
 		const prev = servedTabInstanceIdsRef.current
 		// Only diff within the same session; a session switch is not a disable.
 		if (prev.sessionId === agent.sessionId) {
 			for (const instanceId of prev.ids) {
 				if (!currentIds.has(instanceId)) {
-					// Surface's plugin is no longer served → tear it down.
+					// Tab closed or its plugin is no longer served → tear down the surface.
 					registry.evict(instanceId)
 				}
 			}
 		}
 		servedTabInstanceIdsRef.current = { sessionId: agent.sessionId, ids: currentIds }
-	}, [registry, agent.sessionId, utilityTabs, docTabs])
+	}, [registry, agent.sessionId, openUtilityTabs, openDocTabs])
 
 	// Publish live props every render so once-mounted hosts stay current.
 	// Chat: full ChatView props object. Tabs: the freshly-bound render() closure
 	// (produced by the surfaceTabs useMemo; captures latest agent/flags/ctx).
+	// Only open tabs have a mounted surface, so only they need props published.
 	useEffect(() => {
 		surfacePropBridge.publish(chatInstanceId, chatViewProps)
-		for (const tab of utilityTabs) {
+		for (const tab of openUtilityTabs) {
 			surfacePropBridge.publish(`${tab.id}:${agent.sessionId}`, tab.render)
 		}
-		for (const tab of docTabs) {
+		for (const tab of openDocTabs) {
 			surfacePropBridge.publish(`${tab.id}:${agent.sessionId}`, tab.render)
 		}
 	})
 
-	const dockSeedPanels = useMemo<DockSeedPanel[]>(() => {
-		const byType = persistedDockLayout?.byType
-		const panels: DockSeedPanel[] = [
+	// Spawn-on-demand: only chat is seeded. Every side-panel / document tab is
+	// added by the reconcile effect when it enters the open set (toolbar / Cmd+K).
+	const dockSeedPanels = useMemo<DockSeedPanel[]>(
+		() => [
 			{
 				instanceId: chatInstanceId,
 				surfaceType: "chat",
 				title: "Chat",
-				zone: byType?.["chat"] ?? "main",
+				zone: persistedDockLayout?.byType?.["chat"] ?? "main",
 			},
-		]
-		for (const tab of utilityTabs) {
-			panels.push({
-				instanceId: `${tab.id}:${agent.sessionId}`,
-				surfaceType: tab.id,
-				title: tab.title,
-				zone: byType?.[tab.id] ?? "right",
-			})
-		}
-		for (const tab of docTabs) {
-			panels.push({
-				instanceId: `${tab.id}:${agent.sessionId}`,
-				surfaceType: tab.id,
-				title: tab.title,
-				zone: byType?.[tab.id] ?? "bottom",
-			})
-		}
-		return panels
-	}, [chatInstanceId, agent.sessionId, utilityTabs, docTabs, persistedDockLayout])
+		],
+		[chatInstanceId, persistedDockLayout],
+	)
 
 	// Full-height flex wrapper so DockShell's `flex: 1` root actually fills the
 	// pane. Without a flex parent with definite height the dock collapses and the
@@ -668,6 +739,14 @@ export function AgentDetail({
 				onRightZoneOpenChange={setSidePanelOpen}
 				bottomZoneOpen={documentPanelOpen}
 				onBottomZoneOpenChange={setDocumentPanelOpen}
+				rightZoneHeader={
+					<SideZoneToolbar
+						surfaces={utilityTabs}
+						openIds={openTabIdSet}
+						activeId={sidePanelActiveTab}
+						onSpawn={handleSpawnTab}
+					/>
+				}
 				onZoneApiReady={handleZoneApiReady}
 			/>
 		</div>

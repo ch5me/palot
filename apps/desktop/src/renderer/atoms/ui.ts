@@ -140,7 +140,38 @@ export const paneRoutingStateAtom = atom<PaneRoutingState>((get) => ({
 		: null,
 }))
 
+// Spawn-on-demand dock tabs. Surfaces no longer get a dock panel by default;
+// each side-panel/document tab is spawned only when the user opens it (toolbar,
+// Cmd+K, or a programmatic open request). This atom is the source of truth for
+// which surface ids currently have a spawned panel.
+//
+// In-memory + global (mirrors the global active-tab / zone preferences): it
+// resets to empty on app restart so a fresh launch shows chat only, and the set
+// applies to whichever session is being viewed.
+export const openDockTabsAtom = atom<readonly string[]>([])
+
+/** Ensure a surface id has a spawned dock tab. No-op if already open. */
+export const spawnDockTabAtom = atom(null, (get, set, tab: string) => {
+	const open = get(openDockTabsAtom)
+	if (!open.includes(tab)) set(openDockTabsAtom, [...open, tab])
+})
+
+/** Drop a surface id from the open set (its dock panel has been closed). */
+export const closeDockTabAtom = atom(null, (get, set, tab: string) => {
+	const open = get(openDockTabsAtom)
+	if (open.includes(tab)) {
+		set(
+			openDockTabsAtom,
+			open.filter((id) => id !== tab),
+		)
+	}
+})
+
 export const openSidePanelTabAtom = atom(null, (get, set, tab: SidePanelTabId) => {
+	// Spawn-on-demand: opening a tab creates its dock panel if it isn't already
+	// present, then focuses it. The agent-detail dock reconciler observes the open
+	// set and adds the panel; the pane-routing focus effect brings it forward.
+	set(spawnDockTabAtom, tab)
 	if (isDocumentPanelTab(tab)) {
 		set(setDocumentPanelActiveTabAtom, tab)
 		set(documentPanelFocusTokenAtom, get(documentPanelFocusTokenAtom) + 1)

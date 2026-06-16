@@ -5,7 +5,7 @@ import {
 	type DockviewReadyEvent,
 	type IDockviewPanelProps,
 } from "dockview-react"
-import { type CSSProperties, useCallback, useRef, useState } from "react"
+import { type CSSProperties, type ReactNode, useCallback, useRef, useState } from "react"
 import "dockview/dist/styles/dockview.css"
 
 import { useSurfaceRegistry } from "../surface-host/surface-host-provider"
@@ -54,6 +54,11 @@ export interface DockShellProps {
 	bottomZoneOpen?: boolean
 	onBottomZoneOpenChange?: (open: boolean) => void
 	/**
+	 * Pinned above the right (side-panel) zone's Dockview surface. Hosts the spawn
+	 * toolbar so it stays visible even when no side tabs are open.
+	 */
+	rightZoneHeader?: ReactNode
+	/**
 	 * Receives each zone's {@link DockviewApi} as it becomes ready, so a later
 	 * persistence phase can call `toJSON`/`fromJSON` per zone. Called once per zone.
 	 */
@@ -79,6 +84,7 @@ export function DockShell({
 	onRightZoneOpenChange,
 	bottomZoneOpen = true,
 	onBottomZoneOpenChange,
+	rightZoneHeader,
 	onZoneApiReady,
 }: DockShellProps) {
 	const registry = useSurfaceRegistry()
@@ -116,13 +122,18 @@ export function DockShell({
 				collapsePreviewLabel="Release to hide right dock"
 				handleAriaLabel="Resize right dock zone"
 				panel={
-					<DockZoneSurface
-						zone="right"
-						isDarkMode={isDarkMode}
-						apisRef={zoneApisRef}
-						onMove={handleZoneMove}
-						onReady={(event) => handleZoneReady("right", event)}
-					/>
+					<div style={rightZoneWithHeaderStyle}>
+						{rightZoneHeader}
+						<div style={rightZoneBodyStyle}>
+							<DockZoneSurface
+								zone="right"
+								isDarkMode={isDarkMode}
+								apisRef={zoneApisRef}
+								onMove={handleZoneMove}
+								onReady={(event) => handleZoneReady("right", event)}
+							/>
+						</div>
+					</div>
 				}
 			>
 				<SplitPane
@@ -283,7 +294,7 @@ function DockEmptyPlaceholder({ zone }: { zone: DockZone }) {
 		zone === "main"
 			? "Main dock"
 			: zone === "right"
-				? "Drag tabs here for right-side work"
+				? "Open a tab from the toolbar above"
 				: "Drag tabs here for bottom work"
 
 	return (
@@ -299,6 +310,23 @@ const dockShellRootStyle: CSSProperties = {
 	minHeight: 0,
 	minWidth: 0,
 	overflow: "hidden",
+}
+
+// Right zone = optional pinned header (spawn toolbar) stacked above the Dockview
+// surface. The body flexes to fill remaining height so the dock never collapses.
+const rightZoneWithHeaderStyle: CSSProperties = {
+	display: "flex",
+	flexDirection: "column",
+	height: "100%",
+	minHeight: 0,
+	minWidth: 0,
+}
+
+const rightZoneBodyStyle: CSSProperties = {
+	flex: 1,
+	minHeight: 0,
+	minWidth: 0,
+	position: "relative",
 }
 
 // Transparent full-area drop catcher for an EMPTY zone. Sits above Dockview's
