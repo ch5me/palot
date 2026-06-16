@@ -45,6 +45,8 @@ export interface DockShellProps {
 	isDarkMode: boolean
 	/** Whether the right zone is shown. Defaults to open. */
 	rightZoneOpen?: boolean
+	/** Fired when the right zone is collapsed/expanded (toggle or drag-to-collapse). */
+	onRightZoneOpenChange?: (open: boolean) => void
 	/** Whether the bottom zone is shown. Defaults to open. */
 	bottomZoneOpen?: boolean
 	onBottomZoneOpenChange?: (open: boolean) => void
@@ -71,6 +73,7 @@ export function DockShell({
 	seedPanels,
 	isDarkMode,
 	rightZoneOpen = true,
+	onRightZoneOpenChange,
 	bottomZoneOpen = true,
 	onBottomZoneOpenChange,
 	onZoneApiReady,
@@ -102,9 +105,12 @@ export function DockShell({
 			<SplitPane
 				side="right"
 				open={rightZoneOpen}
+				onOpenChange={onRightZoneOpenChange}
 				defaultPanelWidth={RIGHT_ZONE_WIDTH}
 				minPanelWidth={220}
 				maxPanelWidth={520}
+				collapseThreshold={44}
+				collapsePreviewLabel="Release to hide right dock"
 				handleAriaLabel="Resize right dock zone"
 				panel={
 					<DockZoneSurface
@@ -199,6 +205,16 @@ function seedZonePanels(
 			title: seed.title,
 		}
 		registry.registerDockPanel(record)
+	}
+
+	// Protect the main zone: never let its last panel be dragged out, which would
+	// leave the session with no chat/working surface. Mirrors the SplitDockExample.
+	if (zone === "main") {
+		api.onWillDragPanel((event) => {
+			if (event.panel.group.panels.length === 1) {
+				event.nativeEvent.preventDefault()
+			}
+		})
 	}
 }
 

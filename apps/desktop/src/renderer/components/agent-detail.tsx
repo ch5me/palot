@@ -445,6 +445,11 @@ export function AgentDetail({
 				}}
 				documentPanelOpen={docPanelVisible}
 				documentTab={activeDocTab}
+				hasAvailableDocument={docTabs.length > 0}
+				onToggleDocumentPanel={() => {
+					if (docTabs.length === 0) return
+					setDocumentPanelOpen(!documentPanelOpen)
+				}}
 			/>,
 		)
 
@@ -465,6 +470,9 @@ export function AgentDetail({
 		utilityTabs,
 		docPanelVisible,
 		activeDocTab,
+		docTabs,
+		documentPanelOpen,
+		setDocumentPanelOpen,
 	])
 
 	const chatViewProps: ComponentProps<typeof ChatView> = {
@@ -621,7 +629,15 @@ export function AgentDetail({
 	// chat zone starves to 0px.
 	return (
 		<div className="flex h-full min-h-0 min-w-0 overflow-hidden">
-			<DockShell seedPanels={dockSeedPanels} isDarkMode={isDarkMode} onZoneApiReady={handleZoneApiReady} />
+			<DockShell
+				seedPanels={dockSeedPanels}
+				isDarkMode={isDarkMode}
+				rightZoneOpen={sidePanelOpen && utilityTabs.length > 0}
+				onRightZoneOpenChange={setSidePanelOpen}
+				bottomZoneOpen={docPanelVisible}
+				onBottomZoneOpenChange={setDocumentPanelOpen}
+				onZoneApiReady={handleZoneApiReady}
+			/>
 		</div>
 	)
 }
@@ -643,6 +659,8 @@ function SessionAppBarContent({
 	onToggleSidePanel,
 	documentPanelOpen,
 	documentTab,
+	hasAvailableDocument,
+	onToggleDocumentPanel,
 }: {
 	agent: Agent
 	isEditingTitle: boolean
@@ -660,6 +678,8 @@ function SessionAppBarContent({
 	onToggleSidePanel: () => void
 	documentPanelOpen: boolean
 	documentTab: SidePanelTabDef | null
+	hasAvailableDocument: boolean
+	onToggleDocumentPanel: () => void
 }) {
 	const { url } = useServerConnection()
 	const [copied, setCopied] = useState(false)
@@ -787,12 +807,46 @@ function SessionAppBarContent({
 				) : null}
 				<WorktreeActions agent={agent} />
 				<SessionMetricsBar sessionId={agent.sessionId} />
-				<div className="rounded-full border border-border/70 px-2 py-1 text-xs text-muted-foreground">
-					{documentPanelOpen && documentTab ? `Doc · ${documentTab.id}` : "Doc closed"}
-				</div>
-				<div className="rounded-full border border-border/70 px-2 py-1 text-xs text-muted-foreground">
-					{sidePanelOpen ? `Utility · ${sidePanelActiveTab}` : "Utility closed"}
-				</div>
+				<button
+					type="button"
+					onClick={onToggleDocumentPanel}
+					disabled={!hasAvailableDocument}
+					aria-pressed={documentPanelOpen}
+					title={
+						hasAvailableDocument
+							? documentPanelOpen
+								? "Hide bottom dock"
+								: "Show bottom dock"
+							: "No document surfaces available"
+					}
+					className={`rounded-full border px-2 py-1 text-xs transition-colors disabled:cursor-not-allowed disabled:opacity-50 ${
+						documentPanelOpen
+							? "border-primary/50 bg-primary/10 text-foreground"
+							: "border-border/70 text-muted-foreground hover:text-foreground"
+					}`}
+				>
+					{documentPanelOpen && documentTab ? `Doc · ${documentTab.id}` : "Doc"}
+				</button>
+				<button
+					type="button"
+					onClick={onToggleSidePanel}
+					disabled={!hasAvailableSidePanel}
+					aria-pressed={sidePanelOpen}
+					title={
+						hasAvailableSidePanel
+							? sidePanelOpen
+								? "Hide right dock (⇧⌘D)"
+								: "Show right dock (⇧⌘D)"
+							: "No utility surfaces available"
+					}
+					className={`rounded-full border px-2 py-1 text-xs transition-colors disabled:cursor-not-allowed disabled:opacity-50 ${
+						sidePanelOpen
+							? "border-primary/50 bg-primary/10 text-foreground"
+							: "border-border/70 text-muted-foreground hover:text-foreground"
+					}`}
+				>
+					{sidePanelOpen ? `Utility · ${sidePanelActiveTab}` : "Utility"}
+				</button>
 				<div className="flex items-center gap-1 text-xs text-muted-foreground">
 					<TerminalIcon className="size-3.5" />
 					<span>{agent.branch}</span>

@@ -48,7 +48,7 @@ export interface PaneRoutingState {
 	documentPanel: DocumentPanelRoute | null
 }
 
-export const sidePanelOpenAtom = atomWithStorage<boolean>("elf:side-panel-open", false)
+export const sidePanelOpenAtom = atomWithStorage<boolean>("elf:side-panel-open", true)
 
 export type DocumentPanelTabId = LastDocumentPanelTabId
 export type UtilitySidePanelTabId = LastUtilitySidePanelTabId
@@ -159,7 +159,10 @@ export const setAvailableSidePanelTabsAtom = atom(
 	(get, set, tabs: UtilitySidePanelTabId[]) => {
 		const utilityTabs = tabs.filter((tab): tab is UtilitySidePanelTabId => !isDocumentPanelTab(tab))
 		if (utilityTabs.length === 0) {
-			set(sidePanelOpenAtom, false)
+			// No utility surfaces yet. Do NOT persist `false` here: the right dock
+			// zone already self-gates closed via `sidePanelOpen && utilityTabs.length
+			// > 0`, and writing false would stick the pane closed after surfaces
+			// finish loading (defeating open-by-default).
 			return
 		}
 
