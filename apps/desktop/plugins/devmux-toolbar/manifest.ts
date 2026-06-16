@@ -28,7 +28,7 @@ import { z } from "zod"
 
 import type { PluginManifest } from "../../src/shared/firefly-plugin/manifest"
 
-export const DEVMUX_TOOLBAR_PLUGIN_ID = "firefly.built-in.devmux-toolbar"
+export const DEVMUX_TOOLBAR_PLUGIN_ID = "firefly.devmux-toolbar"
 
 export const DEVMUX_TOOL_LIST_ID = "plugin.firefly.built-in.devmux-toolbar.list"
 export const DEVMUX_TOOL_STATUS_ID = "plugin.firefly.built-in.devmux-toolbar.status"

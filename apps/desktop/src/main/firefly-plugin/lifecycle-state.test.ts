@@ -98,16 +98,18 @@ describe("plugin lifecycle state store", () => {
 
 describe("catalog state overrides (lifecycle overlay)", () => {
 	test("disabled override flips entry status and projection availability", () => {
+		// stateOverrides accepts both canonical (firefly.palot-bridge) and legacy alias
+		// (firefly.built-in.palot-bridge) keys — catalog resolves both via the alias map.
 		const catalog = buildPluginCatalog({
 			appVersion: "0.11.0",
 			stateOverrides: {
-				"firefly.built-in.palot-bridge": { pluginDisabled: true },
+				"firefly.palot-bridge": { pluginDisabled: true },
 			},
 		})
-		const entry = catalog.entries.find((e) => e.pluginId === "firefly.built-in.palot-bridge")
+		const entry = catalog.entries.find((e) => e.pluginId === "firefly.palot-bridge")
 		expect(entry?.status).toBe("disabled")
 		const commands = catalog.projections.commands.filter(
-			(c) => c.pluginId === "firefly.built-in.palot-bridge",
+			(c) => c.pluginId === "firefly.palot-bridge",
 		)
 		expect(commands.length).toBeGreaterThan(0)
 		for (const command of commands) {

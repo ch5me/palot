@@ -22,7 +22,7 @@ import type { PluginManifest } from "../../src/shared/firefly-plugin/manifest"
 export const artifactsPluginManifest: PluginManifest = {
 	apiVersion: "firefly.plugin/v2",
 	kind: "PluginManifest",
-	id: "firefly.built-in.surface.artifacts",
+	id: "firefly.artifacts",
 	displayName: "Artifacts",
 	version: "0.11.0",
 	publisher: "Firefly",

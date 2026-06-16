@@ -19,7 +19,7 @@ import type { PluginManifest } from "../../src/shared/firefly-plugin/manifest"
 export const terminalPluginManifest: PluginManifest = {
 	apiVersion: "firefly.plugin/v2",
 	kind: "PluginManifest",
-	id: "firefly.built-in.surface.terminal",
+	id: "firefly.terminal",
 	displayName: "Terminal",
 	version: "0.11.0",
 	publisher: "Firefly",

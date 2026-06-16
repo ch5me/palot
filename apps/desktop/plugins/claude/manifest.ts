@@ -22,7 +22,7 @@ import type { PluginManifest } from "../../src/shared/firefly-plugin/manifest"
 export const claudePluginManifest: PluginManifest = {
 	apiVersion: "firefly.plugin/v2",
 	kind: "PluginManifest",
-	id: "firefly.built-in.surface.claude",
+	id: "firefly.claude",
 	displayName: "Claude Code",
 	version: "0.1.0",
 	publisher: "Firefly",

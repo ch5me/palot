@@ -22,7 +22,7 @@ import type { PluginManifest } from "../../src/shared/firefly-plugin/manifest"
 export const studioPluginManifest: PluginManifest = {
 	apiVersion: "firefly.plugin/v2",
 	kind: "PluginManifest",
-	id: "firefly.built-in.surface.studio",
+	id: "firefly.studio",
 	displayName: "Studio / Office",
 	version: "0.11.0",
 	publisher: "Firefly",

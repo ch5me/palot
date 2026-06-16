@@ -22,7 +22,7 @@ import type { PluginManifest } from "../../src/shared/firefly-plugin/manifest"
 export const crmPluginManifest: PluginManifest = {
 	apiVersion: "firefly.plugin/v2",
 	kind: "PluginManifest",
-	id: "firefly.built-in.surface.crm",
+	id: "firefly.crm",
 	displayName: "Contacts / CRM",
 	version: "0.11.0",
 	publisher: "Firefly",

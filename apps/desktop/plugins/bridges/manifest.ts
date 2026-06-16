@@ -22,7 +22,7 @@ import type { PluginManifest } from "../../src/shared/firefly-plugin/manifest"
 export const bridgesPluginManifest: PluginManifest = {
 	apiVersion: "firefly.plugin/v2",
 	kind: "PluginManifest",
-	id: "firefly.built-in.surface.bridges",
+	id: "firefly.bridges",
 	displayName: "Bridges",
 	version: "0.11.0",
 	publisher: "Firefly",

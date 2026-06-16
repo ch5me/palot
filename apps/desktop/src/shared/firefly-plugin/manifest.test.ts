@@ -78,14 +78,14 @@ describe("pluginManifestSchema", () => {
 		expect(result.issues.length).toBeGreaterThan(0)
 	})
 
-	test("rejects non-built-in plugins using firefly. prefix", () => {
+	test("rejects non-built-in plugins using firefly. namespace", () => {
 		const result = safeParsePluginManifest({
 			...baseManifest,
 			id: "firefly.not-built-in",
 			trust: "local-dev",
 		})
 		expect(result.manifest).toBeNull()
-		expect(result.issues.some((i) => i.message.includes('"firefly." prefix'))).toBe(true)
+		expect(result.issues.some((i) => i.message.includes('"firefly." namespace'))).toBe(true)
 	})
 
 	test("rejects command ids that collide with reserved host prefixes", () => {

@@ -22,7 +22,7 @@ import type { PluginManifest } from "../../src/shared/firefly-plugin/manifest"
 export const notesPluginManifest: PluginManifest = {
 	apiVersion: "firefly.plugin/v2",
 	kind: "PluginManifest",
-	id: "firefly.built-in.surface.notes",
+	id: "firefly.notes",
 	displayName: "Notes",
 	version: "0.11.0",
 	publisher: "Firefly",

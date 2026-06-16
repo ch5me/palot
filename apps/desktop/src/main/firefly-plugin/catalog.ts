@@ -126,6 +126,7 @@ import {
 import { palotBridgeManifest, PALOT_BRIDGE_PLUGIN_ID } from "../../shared/firefly-plugin/palot-bridge-manifest"
 
 import { derivePluginDescriptor, parsePluginManifest } from "../../shared/firefly-plugin/index"
+import { PLUGIN_ID_CANONICAL_TO_ALIASES, resolveCanonicalPluginId } from "../../shared/firefly-plugin/plugin-id-aliases"
 
 import { createLogger } from "../logger"
 
@@ -338,15 +339,43 @@ export function buildPluginCatalog(input: {
 		}
 
 		descriptors.push(descriptor)
-		const override = input.stateOverrides?.[descriptor.normalizedId]
+
+		// Also push alias descriptor entries for any legacy reverse-DNS ids that
+		// map to this canonical id. Callers like dispatch.ts that hold old ids and
+		// directly search `catalog.descriptors.find(d => d.normalizedId === oldId)`
+		// will transparently find the canonical descriptor. The alias entries are
+		// NOT counted as separate plugins (they share the same capabilities/tools)
+		// — they are identity shims for the migration period.
+		const legacyAliases = PLUGIN_ID_CANONICAL_TO_ALIASES[descriptor.normalizedId] ?? []
+		for (const alias of legacyAliases) {
+			// Cast required: we're intentionally creating a virtual normalizedId that
+			// resolves to the same canonical descriptor but is found by old ID lookups.
+			descriptors.push({ ...descriptor, normalizedId: alias as typeof descriptor.normalizedId })
+		}
+
+		// Resolve the override using whichever id the caller used (canonical or
+		// alias). Canonical id takes precedence; fall back to checking aliases.
+		const override =
+			input.stateOverrides?.[descriptor.normalizedId] ??
+			legacyAliases.reduce<PluginCatalogStateOverride | undefined>(
+				(acc, alias) => acc ?? input.stateOverrides?.[alias],
+				undefined,
+			)
 		const baseState = defaultCapabilityState(descriptor)
-		capabilityStates[descriptor.normalizedId] = override
+		const computedState = override
 			? {
 					...baseState,
 					pluginDisabled: override.pluginDisabled ?? false,
 					pluginQuarantined: override.pluginQuarantined ?? false,
 			  }
 			: baseState
+		// Index capability state under the canonical id AND all legacy aliases so
+		// `catalog.capabilityStates[oldId]` resolves correctly in dispatch.ts.
+		capabilityStates[descriptor.normalizedId] = computedState
+		for (const alias of legacyAliases) {
+			capabilityStates[alias] = computedState
+		}
+
 		const status: PluginCatalogStatus = override?.pluginQuarantined
 			? "quarantined"
 			: override?.pluginDisabled
@@ -456,30 +485,35 @@ export function summarizeProjection(catalog: PluginCatalog): readonly PluginProj
 }
 
 /**
- * Convenience: get one descriptor by normalized id. Returns `null`
- * when the plugin is unknown to the catalog (caller should usually
+ * Convenience: get one descriptor by normalized id. Transparently resolves
+ * legacy reverse-DNS aliases to their canonical `namespace.name` id so
+ * callers that still hold an old id can still find the plugin. Returns
+ * `null` when the plugin is unknown to the catalog (caller should usually
  * treat that as a `quarantined` result, not an error).
  */
 export function findDescriptor(
 	catalog: PluginCatalog,
 	pluginId: string,
 ): PluginDescriptor | null {
-	return catalog.descriptors.find((d) => d.normalizedId === pluginId) ?? null
+	const canonical = resolveCanonicalPluginId(pluginId)
+	return catalog.descriptors.find((d) => d.normalizedId === canonical) ?? null
 }
 
 /**
  * Convenience: get the capability state the renderer should read
- * for a plugin. Returns the catalog's default state when the
- * plugin is unknown so the renderer can render a "loading" row
- * instead of crashing.
+ * for a plugin. Transparently resolves legacy reverse-DNS aliases to
+ * their canonical `namespace.name` id. Returns the catalog's default
+ * state when the plugin is unknown so the renderer can render a
+ * "loading" row instead of crashing.
  */
 export function getCapabilityState(
 	catalog: PluginCatalog,
 	pluginId: string,
 ): CapabilityStateShape {
+	const canonical = resolveCanonicalPluginId(pluginId)
 	return (
-		catalog.capabilityStates[pluginId] ?? {
-			...defaultCapabilityStateForId(pluginId),
+		catalog.capabilityStates[canonical] ?? {
+			...defaultCapabilityStateForId(canonical),
 		}
 	)
 }
@@ -488,8 +522,13 @@ function defaultCapabilityStateForId(pluginId: string): CapabilityStateShape {
 	// We don't have a descriptor here; produce a minimal state with
 	// `session` scope and no granted tokens. The renderer treats
 	// this exactly like `defaultCapabilityState` would.
+	// Recognize both canonical `firefly.*` ids and legacy `firefly.built-in.*`
+	// reverse-DNS ids as built-in trust (caller has already resolved aliases
+	// but may pass a canonical firefly.* id directly).
+	const isFireflyBuiltin =
+		pluginId.startsWith("firefly.built-in.") || pluginId.startsWith("firefly.")
 	return {
-		trust: pluginId.startsWith("firefly.built-in.") ? "built-in" : "signed-third-party",
+		trust: isFireflyBuiltin ? "built-in" : "signed-third-party",
 		sessionScope: "session",
 		grantedTokens: [],
 		loading: true,

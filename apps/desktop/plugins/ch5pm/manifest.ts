@@ -24,7 +24,7 @@ import type { PluginManifest } from "../../src/shared/firefly-plugin/manifest"
 export const ch5pmPluginManifest: PluginManifest = {
 	apiVersion: "firefly.plugin/v2",
 	kind: "PluginManifest",
-	id: "firefly.built-in.surface.ch5pm",
+	id: "firefly.ch5pm",
 	displayName: "CH5PM Dashboard",
 	version: "0.11.0",
 	publisher: "Firefly",

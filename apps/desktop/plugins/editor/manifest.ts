@@ -25,7 +25,7 @@ import type { PluginManifest } from "../../src/shared/firefly-plugin/manifest"
 export const editorPluginManifest: PluginManifest = {
 	apiVersion: "firefly.plugin/v2",
 	kind: "PluginManifest",
-	id: "firefly.built-in.surface.editor",
+	id: "firefly.editor",
 	displayName: "Editor",
 	version: "0.11.0",
 	publisher: "Firefly",

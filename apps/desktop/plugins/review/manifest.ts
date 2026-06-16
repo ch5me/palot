@@ -19,7 +19,7 @@ import type { PluginManifest } from "../../src/shared/firefly-plugin/manifest"
 export const reviewPluginManifest: PluginManifest = {
 	apiVersion: "firefly.plugin/v2",
 	kind: "PluginManifest",
-	id: "firefly.built-in.surface.review",
+	id: "firefly.review",
 	displayName: "Changes",
 	version: "0.11.0",
 	publisher: "Firefly",

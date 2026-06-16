@@ -17,7 +17,7 @@ import type { PluginManifest } from "../../src/shared/firefly-plugin/manifest"
 export const oraclePluginManifest: PluginManifest = {
 	apiVersion: "firefly.plugin/v2",
 	kind: "PluginManifest",
-	id: "firefly.built-in.surface.oracle",
+	id: "firefly.oracle",
 	displayName: "Oracle Roster",
 	version: "0.11.0",
 	publisher: "Firefly",

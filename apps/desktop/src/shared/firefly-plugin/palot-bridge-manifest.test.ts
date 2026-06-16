@@ -16,7 +16,7 @@ import { summarizeComponentBindings } from "./component-zod"
 describe("palotBridgeManifest", () => {
 	test("parses as a valid V2 manifest", () => {
 		const parsed = parsePluginManifest(palotBridgeManifest)
-		expect(parsed.id).toBe("firefly.built-in.palot-bridge")
+		expect(parsed.id).toBe("firefly.palot-bridge")
 	})
 
 	test("derives a valid descriptor for the current app version", () => {
@@ -43,10 +43,14 @@ describe("palotBridgeManifest", () => {
 		expect(names).toContain("plugin.firefly.built-in.palot-bridge.tools_status")
 	})
 
-	test("all tool ids use the namespaced plugin.<id>.* shape", () => {
+	test("all tool ids use the namespaced plugin.<legacy-id>.* shape (tool ids stable across alias migration)", () => {
+		// Tool IDs keep the legacy `plugin.firefly.built-in.palot-bridge.*` prefix
+		// during the plugin-id alias migration so that dispatch.ts (which still uses
+		// hardcoded tool id strings) is not broken. Tool ids are stable identifiers —
+		// they are NOT required to reflect the current canonical plugin id.
 		const parsed = parsePluginManifest(palotBridgeManifest)
 		for (const tool of parsed.contributes.tools) {
-			expect(tool.id.startsWith(`plugin.${PALOT_BRIDGE_PLUGIN_ID}.`)).toBe(true)
+			expect(tool.id.startsWith("plugin.firefly.built-in.palot-bridge.")).toBe(true)
 		}
 	})
 

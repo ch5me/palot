@@ -24,7 +24,7 @@ import type { PluginManifest } from "../../src/shared/firefly-plugin/manifest"
 export const pulsePluginManifest: PluginManifest = {
 	apiVersion: "firefly.plugin/v2",
 	kind: "PluginManifest",
-	id: "firefly.built-in.surface.pulse",
+	id: "firefly.pulse",
 	displayName: "Pulse",
 	version: "0.11.0",
 	publisher: "Firefly",

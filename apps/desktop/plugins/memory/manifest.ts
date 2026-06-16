@@ -23,7 +23,7 @@ import type { PluginManifest } from "../../src/shared/firefly-plugin/manifest"
 export const memoryPluginManifest: PluginManifest = {
 	apiVersion: "firefly.plugin/v2",
 	kind: "PluginManifest",
-	id: "firefly.built-in.surface.memory",
+	id: "firefly.memory",
 	displayName: "Memory",
 	version: "0.11.0",
 	publisher: "Firefly",

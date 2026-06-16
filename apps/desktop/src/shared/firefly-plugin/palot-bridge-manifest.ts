@@ -231,7 +231,7 @@ const palotBridgeComponents: ComponentContribution[] = [
 export const palotBridgeManifest: PluginManifest = {
 	apiVersion: "firefly.plugin/v2",
 	kind: "PluginManifest",
-	id: "firefly.built-in.palot-bridge",
+	id: "firefly.palot-bridge",
 	displayName: "Palot Bridge",
 	version: "0.11.0",
 	publisher: "Firefly",

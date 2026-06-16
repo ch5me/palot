@@ -26,7 +26,7 @@ import type { PluginManifest } from "../../src/shared/firefly-plugin/manifest"
 export const pdfReviewPluginManifest: PluginManifest = {
 	apiVersion: "firefly.plugin/v2",
 	kind: "PluginManifest",
-	id: "firefly.built-in.surface.pdf-review",
+	id: "firefly.pdf-review",
 	displayName: "PDF Review",
 	version: "0.11.0",
 	publisher: "Firefly",

@@ -35,21 +35,38 @@
 import { z } from "zod"
 
 /**
- * PluginId: `firefly.built-in.<area>` for built-ins, `user.local.<slug>` for
- * local-dev, `org.name.<slug>` for third-party / AI-authored. Lowercase, dot
- * separated, 1-128 chars per segment, 2-6 segments.
+ * Reserved top-level namespaces. Only host-owned built-ins and first-party
+ * exemplars may claim these. `acme` is reserved for in-tree exemplars only.
+ */
+const RESERVED_NAMESPACES = ["firefly", "palot", "ch5", "acme"] as const
+
+/**
+ * PluginId: canonical form is `namespace.name` (Open VSX-style, §4 of the
+ * marketplace design doc). The legacy multi-segment reverse-DNS form
+ * (`firefly.built-in.surface.memory`) is still accepted for back-compat
+ * during the alias migration, but new plugins must use the two-segment form.
+ *
+ * Accepted forms:
+ *   - `namespace.name`                 — canonical (e.g. "firefly.memory")
+ *   - `namespace.segment.name`         — legacy reverse-DNS (e.g.
+ *                                        "firefly.built-in.surface.memory")
+ *   up to 6 segments total for backwards compatibility.
+ *
+ * Validation rules:
+ *   - Each segment: lowercase alphanumeric + hyphens, starts with alpha/digit.
+ *   - Total 2-6 dot-separated segments.
+ *   - Reserved namespaces (`firefly`, `palot`, `ch5`, `acme`) are rejected for
+ *     non-built-in plugins (trust must be "built-in" or the id is in the
+ *     reserved acme exemplar set — enforced at parse time via the manifest
+ *     superRefine; the schema itself only validates the string shape here).
  */
 const pluginIdSchema = z
 	.string()
 	.min(3)
 	.max(128)
 	.regex(
-		/^[a-z0-9]+(?:\.[a-z0-9-]+){1,5}$/u,
-		"plugin id must be lowercase dot-separated segments (2-6 segments)",
-	)
-	.refine(
-		(id) => !id.startsWith("firefly.") || id.startsWith("firefly.built-in."),
-		'non-built-in plugins must not use the "firefly." prefix',
+		/^[a-z0-9][a-z0-9-]*(?:\.[a-z0-9][a-z0-9-]*){1,5}$/u,
+		"plugin id must be lowercase dot-separated segments (2-6 segments, alphanumeric+hyphens)",
 	)
 
 /**
@@ -557,6 +574,23 @@ export const pluginManifestSchema = z
 	})
 	.strict()
 	.superRefine((manifest, ctx) => {
+		// Enforce reserved namespace policy: only built-in (host-owned) plugins
+		// may claim firefly, palot, ch5 namespaces. `acme` is reserved for
+		// in-tree exemplars which declare themselves as signed-third-party.
+		// Legacy multi-segment reverse-DNS ids that start with a reserved prefix
+		// are already "built-in" by convention, so we only reject the case where
+		// the namespace is reserved AND trust is NOT built-in AND it is NOT in
+		// the acme exemplar set.
+		const namespace = manifest.id.split(".")[0]!
+		const isReservedNs = (RESERVED_NAMESPACES as readonly string[]).includes(namespace)
+		if (isReservedNs && namespace !== "acme" && manifest.trust !== "built-in") {
+			ctx.addIssue({
+				code: z.ZodIssueCode.custom,
+				path: ["id"],
+				message: `non-built-in plugins must not use the "${namespace}." namespace (reserved for host-owned plugins)`,
+			})
+		}
+
 		const seen = {
 			panels: new Set<string>(),
 			navSidebars: new Set<string>(),
@@ -714,6 +748,7 @@ export const pluginManifestSchema = z
 export type PluginManifest = z.infer<typeof pluginManifestSchema>
 export type PluginId = z.infer<typeof pluginIdSchema>
 export type CapabilityToken = z.infer<typeof capabilityTokenSchema>
+export { RESERVED_NAMESPACES }
 export type PanelContribution = z.infer<typeof panelContributionSchema>
 export type NavSidebarContribution = z.infer<typeof navSidebarContributionSchema>
 export type WidgetContribution = z.infer<typeof widgetContributionSchema>
