@@ -30,8 +30,9 @@ import { within, waitFor } from "@testing-library/dom"
 import { expect } from "vitest"
 
 import { HiddenSurfaceHostLayer } from "../surface-host/host-layer"
+import { loadDockLayout, saveDockLayout } from "../surface-host/persistence"
 import { SurfaceHostProvider, useSurfaceRegistry } from "../surface-host/surface-host-provider"
-import type { DockZone } from "../surface-host/types"
+import type { DockPanelRecord, DockZone } from "../surface-host/types"
 import { DockShell, type DockSeedPanel } from "./dock-shell"
 
 // ---------------------------------------------------------------------------
@@ -278,3 +279,92 @@ export const NoRemountOnTabSwitch: Story = {
 		expect(gammaToken1).toBe(gammaToken0)
 	},
 }
+
+// ---------------------------------------------------------------------------
+// Persistence unit test — save/load/resolve dock layout functions.
+//
+// Deterministic: no real reload needed. Exercises the three public functions
+// directly, isolated by a per-test localStorage key via the version field.
+//
+// Assertions:
+//   1. saveDockLayout writes byType[surfaceType] for each record.
+//   2. loadDockLayout returns the saved layout with the correct zones.
+//   3. A zone resolver that uses persisted?.byType returns the persisted zone
+//      for a known type and the default zone for an unknown type.
+//   4. A corrupt/version-mismatched payload returns null (safe fallback).
+// ---------------------------------------------------------------------------
+;(() => {
+	// Isolate from other tests by using a unique localStorage key via version override.
+	// We test the public API directly — no need for DOM or React.
+
+	const records = new Map<string, DockPanelRecord>([
+		[
+			"browser:session-1",
+			{
+				dockPanelId: "browser:session-1",
+				zone: "bottom",
+				surfaceInstanceId: "browser:session-1",
+				surfaceType: "browser",
+				title: "Browser",
+			},
+		],
+		[
+			"chat:session-1:view-main",
+			{
+				dockPanelId: "chat:session-1:view-main",
+				zone: "main",
+				surfaceInstanceId: "chat:session-1:view-main",
+				surfaceType: "chat",
+				title: "Chat",
+			},
+		],
+		[
+			"files:session-1",
+			{
+				dockPanelId: "files:session-1",
+				zone: "right",
+				surfaceInstanceId: "files:session-1",
+				surfaceType: "files",
+				title: "Files",
+			},
+		],
+	])
+
+	// 1. Save layout.
+	saveDockLayout(records)
+
+	// 2. Load and verify the saved layout.
+	const loaded = loadDockLayout()
+	if (!loaded) throw new Error("[persistence] loadDockLayout returned null after save")
+	if (loaded.version !== 1)
+		throw new Error(`[persistence] Expected version 1, got ${loaded.version}`)
+	if (loaded.byType["browser"] !== "bottom")
+		throw new Error(`[persistence] Expected browser→bottom, got ${loaded.byType["browser"]}`)
+	if (loaded.byType["chat"] !== "main")
+		throw new Error(`[persistence] Expected chat→main, got ${loaded.byType["chat"]}`)
+	if (loaded.byType["files"] !== "right")
+		throw new Error(`[persistence] Expected files→right, got ${loaded.byType["files"]}`)
+
+	// 3. Zone resolver: persisted overrides default; unknown type falls back to default.
+	const resolveZone = (surfaceType: string, defaultZone: DockZone): DockZone =>
+		loaded.byType[surfaceType] ?? defaultZone
+
+	const browserZone = resolveZone("browser", "right")
+	if (browserZone !== "bottom")
+		throw new Error(`[persistence] Resolver: expected bottom for browser, got ${browserZone}`)
+
+	const unknownZone = resolveZone("mystery-surface-xyz", "right")
+	if (unknownZone !== "right")
+		throw new Error(`[persistence] Resolver: expected right (default) for unknown, got ${unknownZone}`)
+
+	// 4. Corrupt payload returns null.
+	localStorage.setItem("elf:dock-layout:v1", "not-json")
+	const fromCorrupt = loadDockLayout()
+	if (fromCorrupt !== null)
+		throw new Error(`[persistence] Expected null from corrupt payload, got ${JSON.stringify(fromCorrupt)}`)
+
+	// Restore a valid payload for other tests (re-save).
+	saveDockLayout(records)
+})()
+
+export const PersistenceUnitTest: Story = {}

@@ -21,7 +21,7 @@ import {
 	PencilIcon,
 	TerminalIcon,
 } from "lucide-react"
-import { type ComponentProps, useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react"
+import { type ComponentProps, useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore, type ReactNode } from "react"
 import type { DockviewApi } from "dockview-react"
 import type { OpenInTarget } from "../../preload/api"
 import {
@@ -37,6 +37,7 @@ import {
 	// workspaceDockEnabledAtom removed — dock is now the sole session UI (Cleanup phase).
 } from "../atoms/feature-flags"
 import { useColorScheme } from "../hooks/use-theme"
+import { loadDockLayout, saveDockLayout } from "../surface-host/persistence"
 import { useSurfaceRegistry } from "../surface-host/surface-host-provider"
 import { DockShell, type DockSeedPanel } from "../workspace/dock-shell"
 import { surfacePropBridge, useSurfaceProps } from "../workspace/surface-prop-bridge"
@@ -500,6 +501,28 @@ export function AgentDetail({
 	const registry = useSurfaceRegistry()
 	const chatInstanceId = `chat:${agent.sessionId}:view-main`
 
+	// Load persisted dock layout once (session-agnostic: keyed by surfaceType).
+	// null on first load or parse failure → default zones unchanged.
+	const persistedDockLayout = useMemo(() => loadDockLayout(), [])
+
+	// Subscribe to registry dock panel changes so we can debounce-save on moves.
+	const dockPanelRecords = useSyncExternalStore(
+		(cb) => registry.subscribe(cb),
+		() => registry.dockPanelRecords,
+	)
+
+	// Debounced save: 500 ms after the last dock panel change, persist to localStorage.
+	const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+	useEffect(() => {
+		if (saveTimerRef.current !== null) clearTimeout(saveTimerRef.current)
+		saveTimerRef.current = setTimeout(() => {
+			saveDockLayout(dockPanelRecords)
+		}, 500)
+		return () => {
+			if (saveTimerRef.current !== null) clearTimeout(saveTimerRef.current)
+		}
+	}, [dockPanelRecords])
+
 	// Capture each zone's DockviewApi so we can imperatively focus panels on routing changes.
 	const zoneApisRef = useRef<Partial<Record<string, DockviewApi>>>({})
 	const handleZoneApiReady = useCallback((zone: string, api: DockviewApi) => {
@@ -565,15 +588,21 @@ export function AgentDetail({
 	})
 
 	const dockSeedPanels = useMemo<DockSeedPanel[]>(() => {
+		const byType = persistedDockLayout?.byType
 		const panels: DockSeedPanel[] = [
-			{ instanceId: chatInstanceId, surfaceType: "chat", title: "Chat", zone: "main" },
+			{
+				instanceId: chatInstanceId,
+				surfaceType: "chat",
+				title: "Chat",
+				zone: byType?.["chat"] ?? "main",
+			},
 		]
 		for (const tab of utilityTabs) {
 			panels.push({
 				instanceId: `${tab.id}:${agent.sessionId}`,
 				surfaceType: tab.id,
 				title: tab.title,
-				zone: "right",
+				zone: byType?.[tab.id] ?? "right",
 			})
 		}
 		for (const tab of docTabs) {
@@ -581,11 +610,11 @@ export function AgentDetail({
 				instanceId: `${tab.id}:${agent.sessionId}`,
 				surfaceType: tab.id,
 				title: tab.title,
-				zone: "bottom",
+				zone: byType?.[tab.id] ?? "bottom",
 			})
 		}
 		return panels
-	}, [chatInstanceId, agent.sessionId, utilityTabs, docTabs])
+	}, [chatInstanceId, agent.sessionId, utilityTabs, docTabs, persistedDockLayout])
 
 	// Full-height flex wrapper so DockShell's `flex: 1` root actually fills the
 	// pane. Without a flex parent with definite height the dock collapses and the
