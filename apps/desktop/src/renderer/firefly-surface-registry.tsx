@@ -1,10 +1,9 @@
-import { ActivityIcon, DatabaseIcon, FileTextIcon, GlobeIcon, MicIcon, MonitorPlayIcon, PlugIcon, RectangleEllipsisIcon, Share2Icon, SquarePenIcon, TerminalSquareIcon, UsersIcon, WandSparklesIcon, type LucideIcon } from "lucide-react"
+import { ActivityIcon, DatabaseIcon, FileTextIcon, GlobeIcon, MicIcon, MonitorPlayIcon, PlugIcon, RectangleEllipsisIcon, SquarePenIcon, TerminalSquareIcon, UsersIcon, WandSparklesIcon, type LucideIcon } from "lucide-react"
 
 import type { ReactNode } from "react"
 
 import { Ch5PmDashboardPanel } from "./ch5pm-dashboard/panel"
 import { BrowserPanel } from "./components/side-panel/browser-panel"
-import { BridgesPanel } from "./components/side-panel/bridges-panel"
 import { ClaudePanel } from "./components/side-panel/claude-panel"
 import { CrmPanel } from "./components/side-panel/crm-panel"
 import { PluginPanelBoundary } from "./components/side-panel/plugin-panel-boundary"
@@ -221,27 +220,8 @@ export const FIREFLY_SURFACE_REGISTRY: FireflySurfaceDef[] = [
 		target: { kind: "side-panel", tab: "plugins" },
 		spawn: (ctx) => <V2PluginsPanel agent={ctx.agent} />,
 	},
-	{
-		id: "bridges",
-		manifestId: "firefly.built-in.side-panel.bridges",
-		title: "Bridges",
-		icon: Share2Icon,
-		formFactor: "side-panel-tab",
-		lane: "utility",
-		enabledFlag: {
-			key: "bridges",
-		},
-		defaultOn: true,
-		availability: (ctx) =>
-			ctx.flags.bridges
-				? { available: true }
-				: { available: false, reason: "Bridges surface is disabled in feature flags" },
-		commandIds: ["surface.bridges.open", "surface.bridges.toggle"],
-		persistenceKey: "side-panel.bridges",
-		telemetryNamespace: "firefly.surface.bridges",
-		target: { kind: "side-panel", tab: "bridges" },
-		spawn: (ctx) => <BridgesPanel agent={ctx.agent} />,
-	},
+	// `bridges` is served from the plugin catalog (firefly.built-in.surface.bridges,
+	// apps/desktop/plugins/bridges) — do not re-add a row here.
 	{
 		id: "crm",
 		manifestId: "firefly.built-in.side-panel.crm",
@@ -413,7 +393,7 @@ import { FIREFLY_SURFACE_IDS, type FireflySurfaceId } from "../shared/firefly-su
  * they are served from the plugin catalog (host plugin lifecycle owns
  * their enable/disable). First migrated surface: notes.
  */
-export const CATALOG_SERVED_SURFACE_IDS: readonly FireflySurfaceId[] = ["notes", "review", "files", "artifacts"]
+export const CATALOG_SERVED_SURFACE_IDS: readonly FireflySurfaceId[] = ["notes", "review", "files", "artifacts", "bridges"]
 
 export const FIREFLY_SURFACE_DEFAULT_ON = Object.fromEntries(
 	FIREFLY_SURFACE_REGISTRY.map((surface) => [surface.id, surface.defaultOn]),

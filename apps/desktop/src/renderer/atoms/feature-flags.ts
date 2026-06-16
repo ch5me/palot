@@ -87,7 +87,7 @@ export const toggleLoomAcmeComponentsAtom = atom(null, (get, set) => {
 	set(loomAcmeComponentsAtom, !get(loomAcmeComponentsAtom))
 })
 
-// NOTE: `notes`, `review`, `files`, and `artifacts` have no feature flags any more — they are
+// NOTE: `notes`, `review`, `files`, `artifacts`, and `bridges` have no feature flags any more — they are
 // catalog-served plugins; their enable/disable state lives in the host
 // plugin lifecycle store. The legacy localStorage values are migrated
 // once by `renderer/firefly-plugin-flag-migration.ts`.
@@ -98,7 +98,6 @@ export const fireflySurfaceDefaults = {
 	terminal: true,
 	editor: true,
 	plugins: true,
-	bridges: true,
 	crm: true,
 	studio: true,
 	voice: true,
@@ -116,7 +115,6 @@ export const memorySurfaceEnabledAtom = atomWithStorage<boolean>("elf:memorySurf
 export const terminalSurfaceEnabledAtom = atomWithStorage<boolean>("elf:terminalSurfaceEnabled", true)
 export const editorSurfaceEnabledAtom = atomWithStorage<boolean>("elf:editorSurfaceEnabled", true)
 export const pluginsSurfaceEnabledAtom = atomWithStorage<boolean>("elf:pluginsSurfaceEnabled", true)
-export const bridgesSurfaceEnabledAtom = atomWithStorage<boolean>("elf:bridgesSurfaceEnabled", true)
 export const crmSurfaceEnabledAtom = atomWithStorage<boolean>("elf:crmSurfaceEnabled", true)
 export const studioSurfaceEnabledAtom = atomWithStorage<boolean>("elf:studioSurfaceEnabled", true)
 export const voiceSurfaceEnabledAtom = atomWithStorage<boolean>("elf:voiceSurfaceEnabled", true)
@@ -132,7 +130,6 @@ export const fireflySurfaceFlagAtoms: Record<FireflySurfaceFlagKey, typeof brows
 	terminal: terminalSurfaceEnabledAtom,
 	editor: editorSurfaceEnabledAtom,
 	plugins: pluginsSurfaceEnabledAtom,
-	bridges: bridgesSurfaceEnabledAtom,
 	crm: crmSurfaceEnabledAtom,
 	studio: studioSurfaceEnabledAtom,
 	voice: voiceSurfaceEnabledAtom,
@@ -149,7 +146,6 @@ export const fireflySurfaceLabels: Record<FireflySurfaceFlagKey, string> = {
 	terminal: "Terminal",
 	editor: "Editor",
 	plugins: "Plugins",
-	bridges: "Bridges",
 	crm: "Contacts / CRM",
 	studio: "Studio / Office",
 	voice: "Voice",
@@ -181,10 +177,6 @@ export const toggleEditorSurfaceAtom = atom(null, (get, set) => {
 
 export const togglePluginsSurfaceAtom = atom(null, (get, set) => {
 	set(pluginsSurfaceEnabledAtom, !get(pluginsSurfaceEnabledAtom))
-})
-
-export const toggleBridgesSurfaceAtom = atom(null, (get, set) => {
-	set(bridgesSurfaceEnabledAtom, !get(bridgesSurfaceEnabledAtom))
 })
 
 export const toggleCrmSurfaceAtom = atom(null, (get, set) => {

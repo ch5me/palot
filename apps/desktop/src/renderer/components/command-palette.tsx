@@ -55,7 +55,6 @@ import { useQueryClient } from "@tanstack/react-query"
 import {
 	automationsEnabledAtom,
 	browserPanelEnabledAtom,
-	bridgesSurfaceEnabledAtom,
 	ch5pmSurfaceEnabledAtom,
 	claudeSurfaceEnabledAtom,
 	crmSurfaceEnabledAtom,
@@ -68,7 +67,6 @@ import {
 	terminalSurfaceEnabledAtom,
 	voiceSurfaceEnabledAtom,
 	toggleAutomationsAtom,
-	toggleBridgesSurfaceAtom,
 	toggleBrowserPanelAtom,
 	toggleCh5PmSurfaceAtom,
 	toggleClaudeSurfaceAtom,
@@ -147,7 +145,6 @@ export function CommandPalette({ open, onOpenChange, agents, onForkSession }: Co
 	const terminalSurfaceEnabled = useAtomValue(terminalSurfaceEnabledAtom)
 	const editorSurfaceEnabled = useAtomValue(editorSurfaceEnabledAtom)
 	const pluginsSurfaceEnabled = useAtomValue(pluginsSurfaceEnabledAtom)
-	const bridgesSurfaceEnabled = useAtomValue(bridgesSurfaceEnabledAtom)
 	const crmSurfaceEnabled = useAtomValue(crmSurfaceEnabledAtom)
 	const studioSurfaceEnabled = useAtomValue(studioSurfaceEnabledAtom)
 	const voiceSurfaceEnabled = useAtomValue(voiceSurfaceEnabledAtom)
@@ -158,7 +155,6 @@ export function CommandPalette({ open, onOpenChange, agents, onForkSession }: Co
 	const togglePulseSurface = useSetAtom(togglePulseSurfaceAtom)
 	const toggleMemorySurface = useSetAtom(toggleMemorySurfaceAtom)
 	const togglePluginsSurface = useSetAtom(togglePluginsSurfaceAtom)
-	const toggleBridgesSurface = useSetAtom(toggleBridgesSurfaceAtom)
 	const toggleCrmSurface = useSetAtom(toggleCrmSurfaceAtom)
 	const toggleStudioSurface = useSetAtom(toggleStudioSurfaceAtom)
 	const toggleVoiceSurface = useSetAtom(toggleVoiceSurfaceAtom)
@@ -238,7 +234,6 @@ export function CommandPalette({ open, onOpenChange, agents, onForkSession }: Co
 				terminal: terminalSurfaceEnabled,
 				editor: editorSurfaceEnabled,
 				plugins: pluginsSurfaceEnabled,
-				bridges: bridgesSurfaceEnabled,
 				crm: crmSurfaceEnabled,
 				studio: studioSurfaceEnabled,
 				voice: voiceSurfaceEnabled,
@@ -256,7 +251,6 @@ export function CommandPalette({ open, onOpenChange, agents, onForkSession }: Co
 		terminalSurfaceEnabled,
 		editorSurfaceEnabled,
 		pluginsSurfaceEnabled,
-		bridgesSurfaceEnabled,
 		crmSurfaceEnabled,
 		studioSurfaceEnabled,
 			voiceSurfaceEnabled,
@@ -306,6 +300,19 @@ export function CommandPalette({ open, onOpenChange, agents, onForkSession }: Co
 		await window.elf?.plugins.setEnabled("firefly.built-in.surface.files", !filesPluginEnabled)
 		await queryClient.invalidateQueries({ queryKey: ["firefly-plugin"] })
 	}, [filesPluginEnabled, queryClient])
+
+	// Bridges is a catalog-served plugin: its enable/disable flows through
+	// the host plugin lifecycle, not a renderer feature-flag atom.
+	const bridgesPluginEntry = pluginList?.plugins.find(
+		(plugin) => plugin.pluginId === "firefly.built-in.surface.bridges",
+	)
+	const bridgesPluginEnabled = bridgesPluginEntry
+		? bridgesPluginEntry.status !== "disabled" && bridgesPluginEntry.status !== "quarantined"
+		: true
+	const toggleBridgesPlugin = useCallback(async () => {
+		await window.elf?.plugins.setEnabled("firefly.built-in.surface.bridges", !bridgesPluginEnabled)
+		await queryClient.invalidateQueries({ queryKey: ["firefly-plugin"] })
+	}, [bridgesPluginEnabled, queryClient])
 
 	const catalogSurfaceTabs = useCatalogSurfaceTabs(activeAgent)
 	const availableSurfaceTabs = useMemo(
@@ -614,13 +621,13 @@ export function CommandPalette({ open, onOpenChange, agents, onForkSession }: Co
 					<CommandItem
 						keywords={["bridges", "connectors", "integrations", "hub"]}
 						onSelect={() => {
-							toggleBridgesSurface()
+							void toggleBridgesPlugin()
 							onOpenChange(false)
 						}}
 					>
 						<Share2Icon />
-						<span>{bridgesSurfaceEnabled ? "Disable Bridges Surface" : "Enable Bridges Surface"}</span>
-						{bridgesSurfaceEnabled && <CheckIcon className="ml-auto h-4 w-4" />}
+						<span>{bridgesPluginEnabled ? "Disable Bridges Surface" : "Enable Bridges Surface"}</span>
+						{bridgesPluginEnabled && <CheckIcon className="ml-auto h-4 w-4" />}
 					</CommandItem>
 					<CommandItem
 						keywords={["crm", "contacts", "people", "relationships"]}

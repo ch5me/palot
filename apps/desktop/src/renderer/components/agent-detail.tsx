@@ -29,7 +29,6 @@ import { createHtmlPortalNode, InPortal, OutPortal, type HtmlPortalNode } from "
 import type { OpenInTarget } from "../../preload/api"
 import {
 	browserPanelEnabledAtom,
-	bridgesSurfaceEnabledAtom,
 	ch5pmSurfaceEnabledAtom,
 	claudeSurfaceEnabledAtom,
 	crmSurfaceEnabledAtom,
@@ -316,7 +315,6 @@ export function AgentDetail({
 	const terminalSurfaceEnabled = useAtomValue(terminalSurfaceEnabledAtom)
 	const editorSurfaceEnabled = useAtomValue(editorSurfaceEnabledAtom)
 	const pluginsSurfaceEnabled = useAtomValue(pluginsSurfaceEnabledAtom)
-	const bridgesSurfaceEnabled = useAtomValue(bridgesSurfaceEnabledAtom)
 	const crmSurfaceEnabled = useAtomValue(crmSurfaceEnabledAtom)
 	const studioSurfaceEnabled = useAtomValue(studioSurfaceEnabledAtom)
 	const voiceSurfaceEnabled = useAtomValue(voiceSurfaceEnabledAtom)
@@ -337,7 +335,6 @@ export function AgentDetail({
 				terminal: terminalSurfaceEnabled,
 				editor: editorSurfaceEnabled,
 				plugins: pluginsSurfaceEnabled,
-				bridges: bridgesSurfaceEnabled,
 				crm: crmSurfaceEnabled,
 				studio: studioSurfaceEnabled,
 				voice: voiceSurfaceEnabled,
@@ -359,7 +356,6 @@ export function AgentDetail({
 		terminalSurfaceEnabled,
 		editorSurfaceEnabled,
 		pluginsSurfaceEnabled,
-		bridgesSurfaceEnabled,
 		crmSurfaceEnabled,
 		studioSurfaceEnabled,
 		voiceSurfaceEnabled,

@@ -19,18 +19,17 @@ import {
 	SparklesIcon,
 } from "lucide-react"
 import { useMemo, useState } from "react"
-import type { Agent } from "../../lib/types"
+import type { Agent } from "../../../src/renderer/lib/types"
 import {
 	fetchBridgeActivity,
 	fetchBridges,
 	type BridgeActivityResult,
 	type BridgeChannel,
 	type BridgeMessage,
-} from "../../services/backend"
+} from "../../../src/renderer/services/backend"
 
-interface BridgesPanelProps {
+export interface PluginPanelProps {
 	agent: Agent
-	className?: string
 }
 
 function useBridgeRoster() {
@@ -220,13 +219,13 @@ function BridgeCard({ channel }: { channel: BridgeChannel }) {
 	)
 }
 
-export function BridgesPanel({ agent, className }: BridgesPanelProps) {
+export default function BridgesPanel({ agent }: PluginPanelProps) {
 	const bridges = useBridgeRoster()
 	const channels = bridges.data?.bridges ?? []
 	const connectedCount = channels.filter((channel) => channel.status === "connected").length
 
 	return (
-		<div className={cn("flex h-full min-h-0 flex-col bg-background", className)}>
+		<div className="flex h-full min-h-0 flex-col bg-background">
 			<div className="border-b border-border px-4 py-3">
 				<div className="flex items-center justify-between gap-3">
 					<div>

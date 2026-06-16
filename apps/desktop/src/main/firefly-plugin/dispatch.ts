@@ -576,6 +576,63 @@ export function registerArtifactsHostHandlers(deps?: Partial<ArtifactsHostDeps>)
 }
 
 // ---------------------------------------------------------------------------
+// Bridges surface host handlers (firefly.built-in.surface.bridges)
+// ---------------------------------------------------------------------------
+
+export interface BridgesHostDeps {
+	openSidePanel: (tab: "bridges") => Promise<void>
+	getSidePanelState: () => SidePanelStateSnapshot
+	setPluginEnabled: (pluginId: string, enabled: boolean) => { enabled: boolean }
+}
+
+const BRIDGES_PLUGIN_ID = "firefly.built-in.surface.bridges"
+
+export function registerBridgesHostHandlers(deps?: Partial<BridgesHostDeps>): void {
+	const openSidePanel =
+		deps?.openSidePanel ??
+		(async (tab: "bridges") => {
+			const { broadcastOpenSidePanel } = await import("../palot-browser-ipc")
+			await broadcastOpenSidePanel(tab)
+		})
+	const getSidePanelState = deps?.getSidePanelState ?? defaultGetSidePanelState
+	const setEnabled =
+		deps?.setPluginEnabled ??
+		((pluginId: string, enabled: boolean) => {
+			// eslint-disable-next-line @typescript-eslint/no-var-requires
+			const authority = require("./authority") as typeof import("./authority")
+			return authority.setPluginEnabled(pluginId, enabled)
+		})
+
+	registerHostTool(BRIDGES_PLUGIN_ID, "plugin.firefly.built-in.surface.bridges.open", async () => {
+		await openSidePanel("bridges")
+		return ok({ opened: true, tab: "bridges", source: "v2-plugin-tool-dispatch" })
+	})
+
+	registerHostTool(BRIDGES_PLUGIN_ID, "plugin.firefly.built-in.surface.bridges.state", async () => {
+		const sidePanel = getSidePanelState()
+		return ok({
+			tab: "bridges",
+			available: sidePanel.availableTabs.includes("bridges"),
+			open: sidePanel.open,
+			active: sidePanel.open && sidePanel.activeTab === "bridges",
+		})
+	})
+
+	registerHostCommand(BRIDGES_PLUGIN_ID, "open-bridges", async () => {
+		await openSidePanel("bridges")
+		return ok({ opened: true, tab: "bridges" })
+	})
+
+	registerHostCommand(BRIDGES_PLUGIN_ID, "toggle-bridges", async () => {
+		const catalog = getPluginCatalog()
+		const state = catalog.capabilityStates[BRIDGES_PLUGIN_ID]
+		const currentlyEnabled = !(state?.pluginDisabled ?? false)
+		const next = setEnabled(BRIDGES_PLUGIN_ID, !currentlyEnabled)
+		return ok({ pluginId: BRIDGES_PLUGIN_ID, enabled: next.enabled })
+	})
+}
+
+// ---------------------------------------------------------------------------
 // DevMux Toolbar host handlers (firefly.built-in.devmux-toolbar)
 //
 // The Node-only work lives in `main/devmux/service.ts` and is reached here
@@ -677,6 +734,7 @@ export function registerBuiltInHostCommands(): void {
 	registerReviewHostHandlers()
 	registerFilesHostHandlers()
 	registerArtifactsHostHandlers()
+	registerBridgesHostHandlers()
 	registerDevmuxHostHandlers()
 	log.info("Registered V2 host command handlers", {
 		commands: Array.from(handlers.keys()),
