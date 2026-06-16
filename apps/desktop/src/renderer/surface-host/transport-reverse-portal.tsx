@@ -45,7 +45,16 @@ export class ReversePortalTransport implements SurfaceTransport {
 	createNode(instanceId: string): void {
 		if (this.entries.has(instanceId)) return
 		this.entries.set(instanceId, {
-			node: createHtmlPortalNode(),
+			// Size the portal-node div to fill its slot. Without this the node is a
+			// content-height block, so surfaces whose root is `h-full` (e.g. the
+			// BrowserPanel iframe) collapse to 0 height even though the SurfaceOutlet
+			// is 100%×100%. Flex column lets the single surface child fill via h-full
+			// or flex-1.
+			node: createHtmlPortalNode({
+				attributes: {
+					style: "display:flex;flex-direction:column;width:100%;height:100%;min-width:0;min-height:0;",
+				},
+			}),
 			element: null,
 			container: null,
 		})
