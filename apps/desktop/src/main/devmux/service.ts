@@ -1,24 +1,18 @@
 /**
- * Host-side DevMux service — the single seam between the Firefly plugin
- * runtime and the Node-only `@chriscode/devmux` library.
+ * Host-side DevMux service — the single seam between the host and the
+ * Node-only `@chriscode/devmux` library, and the reusable unit both transports
+ * call: the Electron plugin dispatch (`host:devmux.*` capability) and the
+ * Hono server route (`apps/server/src/routes/devmux.ts`, web build).
  *
- * This is the `vscode.tasks`-style host capability that the DevMux Toolbar
- * plugin (`firefly.built-in.devmux-toolbar`) consumes through the
- * `host:devmux.*` capability tokens. No plugin code runs here; the plugin
- * declares the capability and the host owns the implementation, exactly the
- * way `host:browser.*` and `host:theme.*` are host-owned.
- *
- * Why everything is lazy-imported:
- *   - `@chriscode/devmux` is ESM-only, shells out to `tmux`, and pulls in
- *     `execa`/`ps-list`/`fkill`. We never want it in the boot graph or in the
- *     bun test module graph (`dispatch.test.ts` imports the dispatcher).
- *   - Electron `shell` is only available in the main process at runtime.
- * Keeping both behind dynamic `import()` lets this module be statically
- * imported anywhere without dragging tmux/electron into the importing graph.
+ * It is deliberately runtime-neutral: no Electron, no DOM — only `@chriscode/devmux`
+ * (lazy-imported because it is ESM-only, shells out to `tmux`, and pulls in
+ * `execa`/`ps-list`/`fkill`, none of which belong in a boot graph or the bun
+ * test module graph) and a console logger. That is what lets `apps/server`
+ * import it without dragging Electron-main plumbing across the app boundary.
  *
  * Failure policy (CH5 fail-fast): every function throws a typed Error naming
- * the missing precondition (no config, unknown service, tmux missing). The
- * dispatch layer converts the throw into a typed error envelope; nothing here
+ * the missing precondition (no config, unknown service, tmux missing). Each
+ * transport converts the throw into its own typed error shape; nothing here
  * silently falls back.
  */
 
@@ -169,19 +163,4 @@ export async function ensureService(
 	const result = await devmux.ensureService(config, service, { timeout: timeoutSeconds })
 	const status = await devmux.getStatus(config, service)
 	return { service: result.serviceName, startedByUs: result.startedByUs, url: statusUrl(status) }
-}
-
-/** Open a vetted http(s) URL in the user's system browser. */
-export async function openExternalUrl(rawUrl: string): Promise<void> {
-	let parsed: URL
-	try {
-		parsed = new URL(rawUrl)
-	} catch {
-		throw new Error(`invalid url: ${rawUrl}`)
-	}
-	if (parsed.protocol !== "http:" && parsed.protocol !== "https:") {
-		throw new Error(`refusing to open non-http(s) url: ${parsed.protocol}`)
-	}
-	const { shell } = await import("electron")
-	await shell.openExternal(parsed.toString())
 }

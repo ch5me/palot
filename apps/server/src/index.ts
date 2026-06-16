@@ -5,6 +5,7 @@ import browserLanes, {
 	resolveBrowserLaneProxyTarget,
 } from "./routes/browser-lanes"
 import ch5pm from "./routes/ch5pm"
+import devmux from "./routes/devmux"
 import files from "./routes/files"
 import health from "./routes/health"
 import mcpConnections from "./routes/mcp-connections"
@@ -32,6 +33,7 @@ const routes = app
 	.route("/api/model-state", modelState)
 	.route("/api/mcp-connections", mcpConnections)
 	.route("/api/files", files)
+	.route("/api/devmux", devmux)
 	.route("/api/ch5pm", ch5pm)
 	.route("/browser", browserLanes)
 	.route("/health", health)

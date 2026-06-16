@@ -70,10 +70,6 @@ export const HOST_CAPABILITIES = {
 	// once that UX exists.
 	"host:devmux.read": { group: "host", verb: "devmux.read", risk: "low" },
 	"host:devmux.control": { group: "host", verb: "devmux.control", risk: "medium" },
-	// Open a vetted http(s) URL in the user's system browser (the
-	// `vscode.env.openExternal` analog). Low risk: it cannot read anything,
-	// only hands a URL to the OS default browser.
-	"host:shell.open-external": { group: "host", verb: "shell.open-external", risk: "low" },
 } as const satisfies Record<string, CapabilityClass>
 
 /**
@@ -132,7 +128,6 @@ export const BUILT_IN_DEFAULT_CAPABILITIES: readonly KnownCapabilityToken[] = [
 	"host:theme.preview",
 	"host:devmux.read",
 	"host:devmux.control",
-	"host:shell.open-external",
 ]
 
 /**

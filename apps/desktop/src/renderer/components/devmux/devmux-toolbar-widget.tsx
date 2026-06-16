@@ -3,10 +3,9 @@
  *
  * Host-bundled React component for the `firefly.built-in.devmux-toolbar`
  * plugin. It reads the active project's DevMux services and drives them
- * entirely through host commands (`devmux-list` / `devmux-status` /
- * `devmux-launch` / `devmux-open-external`) over the firefly-plugin invoke
- * IPC — it never imports a Node library. All the privileged work happens in
- * the main process behind the `host:devmux.*` capability tokens.
+ * through the renderer DevMux client (`services/devmux.ts`), which transparently
+ * uses the firefly-plugin IPC in Electron and the `/api/devmux/*` server route
+ * in the web build. The widget itself never imports a Node library.
  *
  * The surrounding card chrome (border, "DevMux" title, drag handle) is
  * provided by SessionWidgetCard; this component renders only the body.
@@ -14,55 +13,22 @@
  * Behaviour: lists declared services with a live running dot; clicking a
  * service reveals "In app" (embedded iframe) and "Browser" (system browser)
  * actions; both ensure the service is running first. If the project has no
- * devmux config (or the host bridge is unavailable, e.g. the web build where
- * window.elf is absent), the widget renders nothing.
+ * devmux config (or the host is unreachable), the widget renders nothing.
  */
 
 import { useCallback, useEffect, useState } from "react"
 import { cn } from "@ch5me/ch5-ui-web"
 import { ExternalLink, Loader2, MonitorPlay, RefreshCw, X } from "lucide-react"
 
-import { invokePluginCommand } from "../../hooks/use-firefly-plugins"
+import { openExternalUrl } from "../../services/backend"
+import {
+	type DevmuxServiceRuntime,
+	type DevmuxServiceSummary,
+	ensureService,
+	listServices,
+	statusAll,
+} from "../../services/devmux"
 import type { Agent } from "../../lib/types"
-
-const PLUGIN_ID = "firefly.built-in.devmux-toolbar"
-
-interface DevmuxServiceSummary {
-	name: string
-	description: string | null
-	command: string
-	port: number | null
-	dashboard: boolean
-	dependsOn: string[]
-}
-
-interface DevmuxServiceRuntime {
-	name: string
-	healthy: boolean
-	managedByDevmux: boolean
-	port: number | null
-	url: string | null
-}
-
-interface DevmuxListData {
-	project: string
-	configRoot: string
-	services: DevmuxServiceSummary[]
-}
-
-interface DevmuxStatusData {
-	services: DevmuxServiceRuntime[]
-}
-
-interface DevmuxEnsureData {
-	service: string
-	startedByUs: boolean
-	url: string | null
-}
-
-async function invoke(commandId: string, args: Record<string, unknown>) {
-	return invokePluginCommand({ pluginId: PLUGIN_ID, commandId, args })
-}
 
 function statusDotClass(runtime: DevmuxServiceRuntime | undefined): string {
 	if (runtime?.healthy) return "bg-emerald-500"
@@ -88,15 +54,12 @@ export function DevmuxToolbarWidget({ agent }: { agent: Agent }) {
 
 	const refreshStatus = useCallback(async () => {
 		try {
-			const res = await invoke("devmux-status", { projectDir })
-			if (res.status === "completed") {
-				const data = res.data as DevmuxStatusData
-				const map: Record<string, DevmuxServiceRuntime> = {}
-				for (const entry of data.services) map[entry.name] = entry
-				setRuntime(map)
-			}
+			const entries = await statusAll(projectDir)
+			const map: Record<string, DevmuxServiceRuntime> = {}
+			for (const entry of entries) map[entry.name] = entry
+			setRuntime(map)
 		} catch {
-			// Host bridge unavailable; leave the last known status in place.
+			// Host unreachable; leave the last known status in place.
 		}
 	}, [projectDir])
 
@@ -109,15 +72,10 @@ export function DevmuxToolbarWidget({ agent }: { agent: Agent }) {
 		setRuntime({})
 		void (async () => {
 			try {
-				const res = await invoke("devmux-list", { projectDir })
+				const list = await listServices(projectDir)
 				if (cancelled) return
-				if (res.status === "completed") {
-					const data = res.data as DevmuxListData
-					setServices(data.services)
-					void refreshStatus()
-				} else {
-					setHidden(true)
-				}
+				setServices(list)
+				void refreshStatus()
 			} catch {
 				if (!cancelled) setHidden(true)
 			}
@@ -140,24 +98,16 @@ export function DevmuxToolbarWidget({ agent }: { agent: Agent }) {
 			setBusy((prev) => ({ ...prev, [service]: true }))
 			setNote(null)
 			try {
-				const res = await invoke("devmux-launch", { projectDir, service })
-				if (res.status !== "completed") {
-					setNote(res.errorMessage ?? `Could not start ${service}`)
-					return
-				}
-				const data = res.data as DevmuxEnsureData
+				const result = await ensureService(projectDir, service)
 				void refreshStatus()
-				if (!data.url) {
+				if (!result.url) {
 					setNote(`${service} is running but exposes no URL (no port).`)
 					return
 				}
 				if (target === "embed") {
-					setEmbed({ service, url: data.url })
+					setEmbed({ service, url: result.url })
 				} else {
-					const open = await invoke("devmux-open-external", { url: data.url })
-					if (open.status !== "completed") {
-						setNote(open.errorMessage ?? "Could not open in browser")
-					}
+					await openExternalUrl(result.url)
 				}
 				setSelected(null)
 			} catch (cause) {
@@ -246,7 +196,7 @@ export function DevmuxToolbarWidget({ agent }: { agent: Agent }) {
 						<button
 							type="button"
 							title="Open in browser"
-							onClick={() => void invoke("devmux-open-external", { url: embed.url })}
+							onClick={() => void openExternalUrl(embed.url)}
 							className="ml-auto rounded p-1 text-muted-foreground hover:bg-muted hover:text-foreground"
 						>
 							<ExternalLink className="size-3.5" />

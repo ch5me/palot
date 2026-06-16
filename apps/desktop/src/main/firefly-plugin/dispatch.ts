@@ -408,10 +408,11 @@ export function registerNotesHostHandlers(deps?: Partial<NotesHostDeps>): void {
 // DevMux Toolbar host handlers (firefly.built-in.devmux-toolbar)
 //
 // The Node-only work lives in `main/devmux/service.ts` and is reached here
-// behind the `host:devmux.*` / `host:shell.open-external` capability tokens.
-// Both UI commands and agent tools route to the same service functions; the
-// service is dynamic-imported so its tmux/electron deps never enter the bun
-// test graph that imports this dispatcher.
+// behind the `host:devmux.*` capability tokens. Both UI commands and agent
+// tools route to the same service functions; the service is dynamic-imported
+// so its tmux deps never enter the bun test graph that imports this
+// dispatcher. (Opening a service URL externally is a pure client action —
+// the renderer uses `backend.openExternalUrl`, not a host command.)
 // ---------------------------------------------------------------------------
 
 const DEVMUX_TOOLBAR_PLUGIN_ID = "firefly.built-in.devmux-toolbar"
@@ -465,26 +466,11 @@ async function devmuxLaunch(args: unknown): Promise<HostCommandResult> {
 	}
 }
 
-async function devmuxOpenExternal(args: unknown): Promise<HostCommandResult> {
-	const url = readStringArg(args, "url")
-	if (!url) return err("validation_error", "missing url")
-	try {
-		const service = await import("../devmux/service")
-		await service.openExternalUrl(url)
-		return ok({ opened: true, url })
-	} catch (cause) {
-		return devmuxError(cause)
-	}
-}
-
 export function registerDevmuxHostHandlers(): void {
 	// UI commands (renderer-invoked via firefly-plugin:invoke).
 	registerHostCommand(DEVMUX_TOOLBAR_PLUGIN_ID, "devmux-list", ({ args }) => devmuxList(args))
 	registerHostCommand(DEVMUX_TOOLBAR_PLUGIN_ID, "devmux-status", ({ args }) => devmuxStatus(args))
 	registerHostCommand(DEVMUX_TOOLBAR_PLUGIN_ID, "devmux-launch", ({ args }) => devmuxLaunch(args))
-	registerHostCommand(DEVMUX_TOOLBAR_PLUGIN_ID, "devmux-open-external", ({ args }) =>
-		devmuxOpenExternal(args),
-	)
 
 	// Agent tools (OpenCode-invoked via firefly-plugin:invoke-tool).
 	registerHostTool(DEVMUX_TOOLBAR_PLUGIN_ID, "plugin.firefly.built-in.devmux-toolbar.list", ({ args }) =>

@@ -37,7 +37,6 @@ export const DEVMUX_TOOL_ENSURE_ID = "plugin.firefly.built-in.devmux-toolbar.ens
 export const DEVMUX_COMMAND_LIST_ID = "devmux-list"
 export const DEVMUX_COMMAND_STATUS_ID = "devmux-status"
 export const DEVMUX_COMMAND_LAUNCH_ID = "devmux-launch"
-export const DEVMUX_COMMAND_OPEN_EXTERNAL_ID = "devmux-open-external"
 
 export const devmuxToolbarManifest: PluginManifest = {
 	apiVersion: "firefly.plugin/v2",
@@ -63,7 +62,6 @@ export const devmuxToolbarManifest: PluginManifest = {
 		{ kind: "onCommand", commandId: DEVMUX_COMMAND_LIST_ID },
 		{ kind: "onCommand", commandId: DEVMUX_COMMAND_STATUS_ID },
 		{ kind: "onCommand", commandId: DEVMUX_COMMAND_LAUNCH_ID },
-		{ kind: "onCommand", commandId: DEVMUX_COMMAND_OPEN_EXTERNAL_ID },
 		{ kind: "onToolCall", toolId: DEVMUX_TOOL_LIST_ID },
 		{ kind: "onToolCall", toolId: DEVMUX_TOOL_STATUS_ID },
 		{ kind: "onToolCall", toolId: DEVMUX_TOOL_ENSURE_ID },
@@ -103,13 +101,6 @@ export const devmuxToolbarManifest: PluginManifest = {
 				description: "Ensure a DevMux service is running (start it if needed) and resolve its URL.",
 				category: "DevMux",
 				requires: ["host:command.register", "host:devmux.control"],
-			},
-			{
-				id: DEVMUX_COMMAND_OPEN_EXTERNAL_ID,
-				title: "DevMux: Open service in browser",
-				description: "Open a running DevMux service URL in the system browser.",
-				category: "DevMux",
-				requires: ["host:command.register", "host:shell.open-external"],
 			},
 		],
 		themes: [],
@@ -156,7 +147,6 @@ export const devmuxToolbarManifest: PluginManifest = {
 		"host:tool.register",
 		"host:devmux.read",
 		"host:devmux.control",
-		"host:shell.open-external",
 	],
 	bridge: {
 		schemaVersion: 1,

@@ -149,10 +149,18 @@ fail-fast); never silently fall back.
    Electron/Node imports at module load. Keep `shell`/`fs`/native libs in
    main-only service modules, lazy-imported.
 
-6. **The renderer→host bridge is Electron-only.** `invokePluginCommand` →
-   `window.elf.plugins.invoke`. In the web build `window.elf` is absent, so a
-   widget that depends on host commands must **hide itself** (catch + render
-   null) rather than throw.
+6. **The plugin invoke IPC is Electron-only — support the web build with a second
+   transport.** `invokePluginCommand` → `window.elf.plugins.invoke`; in the web
+   build `window.elf` is absent. A widget with no web story must **hide itself**
+   (catch + render null). To make it work in the web build (the current visual
+   hot path — see AGENTS.md), add a **Hono route in `apps/server`** that calls
+   the same runtime-neutral host service, and a renderer client that branches on
+   `isElectron` (IPC) vs a `fetch` to the server (web). Keep the host service
+   free of Electron/DOM so `apps/server` can use it. Note: importing `apps/desktop`
+   files into `apps/server` by **relative path** fails (`composite`/`rootDir`);
+   the DevMux route instead adapts the shared `@chriscode/devmux` library directly,
+   emitting the same JSON shapes. The capability broker currently gates only the
+   IPC path; a server route needs its own check once untrusted plugins exist.
 
 7. **Command args are NOT schema-validated; tool args ARE.** `commands` carry no
    `args` field — the handler receives raw `args` and must read them defensively.
@@ -170,25 +178,28 @@ fail-fast); never silently fall back.
    the dir must export exactly one V2 manifest; workers (`worker/index.ts`) are
    the only emitted built-in artifact.
 
-10. **URLs / external open:** open a vetted `http(s)` URL with
-    `host:shell.open-external` (Electron `shell.openExternal`, the
-    `vscode.env.openExternal` analog). Embed a localhost service in-app with a
-    plain `<iframe>` — no app-side CSP blocks it (only the target's own
-    `X-Frame-Options`/`frame-ancestors` would).
+10. **URLs / external open:** don't build a plugin capability for this — the
+    renderer already has `openExternalUrl(url)` in `services/backend.ts`
+    (`window.elf.openExternal` in Electron, `window.open` in the web build). Embed
+    a localhost service in-app with a plain `<iframe>` — no app-side CSP blocks it
+    (only the target's own `X-Frame-Options`/`frame-ancestors` would).
 
 ## Worked example: `firefly.built-in.devmux-toolbar`
 
 An inline `above-chat` widget that reads the active project's
 `devmux.config.json`, lists its DevMux services, shows live running state, and
-launches them (embed in-app or open in the system browser). It is the canonical
-"plugin that needs a host callback". Files:
+launches them (embed in-app or open in the system browser). Works in **both**
+the Electron and web builds. It is the canonical "plugin that needs a host
+callback". Files:
 
-- `apps/desktop/plugins/devmux-toolbar/manifest.ts` — widget + commands + tools + capabilities.
-- `apps/desktop/src/main/devmux/service.ts` — wraps `@chriscode/devmux` (lazy ESM import) + `shell.openExternal`.
-- `apps/desktop/src/shared/firefly-plugin/capabilities.ts` — `host:devmux.read`, `host:devmux.control`, `host:shell.open-external`.
-- `apps/desktop/src/main/firefly-plugin/dispatch.ts` — `registerDevmuxHostHandlers()` (commands + tools → service).
+- `apps/desktop/plugins/devmux-toolbar/manifest.ts` — widget + commands + tools + capabilities (`host:devmux.read`, `host:devmux.control`).
+- `apps/desktop/src/main/devmux/service.ts` — the runtime-neutral host service wrapping `@chriscode/devmux` (lazy ESM import; no Electron/DOM).
+- `apps/desktop/src/shared/firefly-plugin/capabilities.ts` — `host:devmux.read` / `host:devmux.control`.
+- `apps/desktop/src/main/firefly-plugin/dispatch.ts` — `registerDevmuxHostHandlers()` (commands + tools → service); the Electron transport.
 - `apps/desktop/src/main/firefly-plugin/catalog.ts` — manifest registered in `BUILT_IN_MANIFESTS`.
-- `apps/desktop/src/renderer/components/devmux/devmux-toolbar-widget.tsx` — the host-bundled component.
+- `apps/server/src/routes/devmux.ts` — the **web** transport (`/api/devmux/list|status|ensure`), adapting `@chriscode/devmux` directly.
+- `apps/desktop/src/renderer/services/devmux.ts` — renderer client that picks IPC (Electron) vs server `fetch` (web).
+- `apps/desktop/src/renderer/components/devmux/devmux-toolbar-widget.tsx` — the host-bundled component (uses the client + `backend.openExternalUrl`).
 - `apps/desktop/src/renderer/session-widget-registry.tsx` + `atoms/session-widgets.ts` — registry row + `SessionWidgetId` + default placement.
 
 DevMux library notes (`@chriscode/devmux`, ESM-only, shells out to `tmux`):
@@ -206,5 +217,7 @@ service URL = `status.proxyUrl ?? http://localhost:${status.resolvedPort ?? stat
   `invokePluginCommand`/`invokePluginTool` from `dispatch.ts`, register, and
   invoke your command with a real `projectDir` — the dispatcher runs the broker
   → handler → service exactly as the renderer does over IPC.
-- Live UI: run the `desktop` devmux service, open a **new** session in a project
-  that has the relevant config, and confirm the widget in the `above-chat` zone.
+- Web transport headlessly: `curl -X POST localhost:30206/api/devmux/status -H 'content-type: application/json' -d '{"projectDir":"<repo>"}'`.
+- Live UI (web is the visual hot path): `bun run dev`, open `localhost:20883`,
+  open a **new** session in a project that has the relevant config, and confirm
+  the widget in the `above-chat` zone.
