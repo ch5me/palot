@@ -35,10 +35,9 @@ export const folioPluginManifest: PluginManifest = {
 		keepAliveAcrossSessions: false,
 		quarantineOnCrashCount: 3,
 	},
-	// Folio is autoEnable; activate at startup so its rail tab is present
-	// immediately. (A dedicated `onNavSidebarOpen` activation kind can be
-	// added to the manifest schema later, mirroring `onPanelOpen`.)
-	activationEvents: [{ kind: "onStartup" }],
+	// Folio is autoEnable; `onStartup` keeps the rail tab present immediately,
+	// and `onNavSidebarOpen` activates it on selection (mirrors `onPanelOpen`).
+	activationEvents: [{ kind: "onStartup" }, { kind: "onNavSidebarOpen", navSidebarId: "folio" }],
 	contributes: {
 		panels: [
 			{

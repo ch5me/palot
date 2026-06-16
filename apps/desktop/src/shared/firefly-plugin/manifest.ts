@@ -157,6 +157,10 @@ const activationEventSchema = z.discriminatedUnion("kind", [
 		panelId: shortIdSchema,
 	}),
 	z.object({
+		kind: z.literal("onNavSidebarOpen"),
+		navSidebarId: shortIdSchema,
+	}),
+	z.object({
 		kind: z.literal("onWidgetPlace"),
 		widgetId: shortIdSchema,
 	}),
@@ -759,6 +763,7 @@ export const pluginManifestSchema = z
 		// unsupported in V2 to keep activation graphs auditable.
 		const declaredCommandIds = new Set(manifest.contributes.commands.map((c) => c.id))
 		const declaredPanelIds = new Set(manifest.contributes.panels.map((p) => p.id))
+		const declaredNavSidebarIds = new Set(manifest.contributes.navSidebars.map((n) => n.id))
 		const declaredWidgetIds = new Set(manifest.contributes.widgets.map((w) => w.id))
 		const declaredToolIds = new Set(manifest.contributes.tools.map((t) => t.id))
 		const declaredThemeIds = new Set(manifest.contributes.themes.map((t) => t.id))
@@ -780,6 +785,15 @@ export const pluginManifestSchema = z
 							code: z.ZodIssueCode.custom,
 							path: ["activationEvents", index],
 							message: `onPanelOpen references undeclared panel id: ${event.panelId}`,
+						})
+					}
+					break
+				case "onNavSidebarOpen":
+					if (!declaredNavSidebarIds.has(event.navSidebarId)) {
+						ctx.addIssue({
+							code: z.ZodIssueCode.custom,
+							path: ["activationEvents", index],
+							message: `onNavSidebarOpen references undeclared nav-sidebar id: ${event.navSidebarId}`,
 						})
 					}
 					break
