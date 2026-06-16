@@ -5,6 +5,22 @@
 - **Status:** Authoritative / executing slice-by-slice (overnight)
 - **Author authority:** Chris (2026-06-15) — supersedes any prior tracked plan where they conflict (see §4).
 
+## Progress (updated 2026-06-16, overnight)
+
+Done + pushed on `feat/workspace-dock-surface-migration`:
+- **Phase 0** (`0b6cf0327`) — SurfaceHost registry + reverse-portal transport + SurfaceOutlet + HiddenSurfaceHostLayer + vendored dock shell, gated behind temp `workspaceDock` flag (default OFF). Includes `surface-prop-bridge` (republishes live props to once-mounted hosts).
+- **Phase 0.5** (`d248d0803`) — dock seeds from the merged surface-tab list; migration state transparent to the dock.
+- **All 16 surface migrations DONE** (V1 row + flag atom deleted, manifest+panel+tests added, stable persistenceKey/telemetryNamespace preserved, flag→enabled carry-over): review, files, artifacts, bridges, pulse, memory, editor, terminal, claude, oracle, voice, browser, studio, ch5pm, pdf-review, crm. Plus `ch5pm` import-path fix (`6b2ba3b02`). Each batch verified: `tsgo --noEmit`, `biome check .`, full `electron-vite build` all green; lazy chunks emit per panel.
+- `CATALOG_SERVED_SURFACE_IDS` = 17 (16 + notes). Only the **host-only `plugins`** row remains in `FIREFLY_SURFACE_REGISTRY` (by design — operator UI, never a plugin).
+- Verified at BUILD/TYPECHECK/LINT level only. **Dock NOT yet runtime-verified** (visual smoke in progress).
+
+Remaining (gated on dock runtime proof before the irreversible cutover):
+- Runtime-verify the dock renders (flag ON) — chat in main + surfaces as dock tabs, drag preserves state.
+- Cleanup: reframe `plugins` host-only off `FIREFLY_SURFACE_REGISTRY`, then DELETE the registry; flip `workspaceDock` default / remove the flag + legacy SplitPane path.
+- Resource-specific controllers (Monaco/PTY/iframe) + eviction enforcement (currently a no-op stub, so nothing evicts — surfaces stay mounted, which is why every slice was uniform passive plumbing).
+- The 5 regression tests (§Phase Persistence).
+- Orphaned `shared/firefly-plugin/memory-surface-manifest.ts` shim (+ its standalone test) — delete in Cleanup (no longer in `BUILT_IN_MANIFESTS`).
+
 ## Thesis
 
 Palot today renders surfaces through two coupled legacy systems: a ~450-line hardcoded `FIREFLY_SURFACE_REGISTRY` gated by 17 renderer feature-flag atoms, laid out by nested `SplitPane`s in `agent-detail.tsx` / `sidebar-layout.tsx`. We converge the entire app onto a Dockview-based workspace shell **and** migrate all 17 side-panel surfaces to the V2 plugin catalog in one campaign, because the two efforts share a single seam: **the V2 plugin panel components ARE the "surfaces", they get mounted once into an app-owned Surface Host Registry, and a Dockview panel is just a lightweight SLOT that attaches to an already-mounted host.** Dockview owns layout/chrome/drag/serialization only; the app owns heavy content lifetime keyed by stable identity. Each per-surface slice does four things at once — (i) author manifest + move panel to the plugin catalog (notes recipe), (ii) register a SurfaceController with stable identity + retention policy, (iii) render it through a `SurfaceOutlet` slot in the dock shell, (iv) delete its feature-flag atom + its `FIREFLY_SURFACE_REGISTRY` row and migrate the flag value to plugin-enabled state. At the end: no `*SurfaceEnabledAtom`, no `FIREFLY_SURFACE_REGISTRY`, no `SplitPane` app layout. No legacy remains.
