@@ -53,11 +53,11 @@ generic knowledge.
 | Skill | When to load |
 |---|---|
 | `react-best-practices` | Writing or reviewing renderer components, optimizing re-renders or bundle size |
+| `firefly-plugins` | Adding or changing a Firefly desktop plugin: inline widget, side panel, command, agent tool, theme, host capability token, or the catalog/dispatch wiring. `firefly.built-in.devmux-toolbar` is the worked example |
 
 ## Docs / Wiki
 
 - GenUI and artifact architecture is documented in `docs/genui-artifact-architecture.md`. Read it before changing the GenUI registry, renderer, artifact atoms, session widget surfaces, side-panel artifact surface, or prompt-context injection.
-- The Firefly desktop plugin system (V2 manifests + capability broker: inline widgets, side panels, commands, agent tools, themes) is documented in the `firefly-plugins` skill (`.agents/skills/firefly-plugins/SKILL.md`). Read it before adding or changing a plugin, a session-widget or side-panel surface, a host capability token, or the catalog/dispatch wiring. `firefly.built-in.devmux-toolbar` is the worked end-to-end example (inline widget + `host:devmux.*` capability).
 - Session debugging runbook lives in `docs/session-debugging.md`. Use it when Palette/OpenCode sessions look stuck or DB/UI state disagrees.
 - `bun run debug:sessions -- <session-id>` now compares SQLite history with live active-session presence and `session.status()` truth. Use it first for hidden active sessions, stale recency, and child divergence.
 - Palot/OpenCode plugin/runtime seam is documented in `docs/palot-opencode-plugin-bridge.md`. Read it before changing plugin loading, tool registration, resolver payloads, browser action dispatch, or side-panel UI command bridges.
