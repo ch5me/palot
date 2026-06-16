@@ -1,11 +1,41 @@
 import fs from "node:fs"
+import { createRequire } from "node:module"
 import path from "node:path"
-
-import { DatabaseSync } from "node:sqlite"
 
 import { getDataDir } from "../automation/paths"
 import type { GenUiArtifactRecord } from "../../renderer/lib/types"
 import { isArtifactId, mintArtifactId } from "../../shared/loom/artifact-id"
+
+/**
+ * Minimal synchronous SQLite surface shared by both runtime bindings.
+ * node:sqlite's `DatabaseSync` and bun:sqlite's `Database` both satisfy it.
+ */
+interface SqliteStatement {
+	all(...params: unknown[]): unknown[]
+	get(...params: unknown[]): unknown
+	run(...params: unknown[]): unknown
+}
+interface SqliteDatabase {
+	exec(sql: string): void
+	prepare(sql: string): SqliteStatement
+	close(): void
+}
+
+/**
+ * Resolve the SQLite binding for the active runtime:
+ *   - Electron / Node main process → built-in `node:sqlite` (DatabaseSync)
+ *   - Bun test runtime             → `bun:sqlite` (Database)
+ * Both expose the same synchronous API, so the store code is identical
+ * against either. We resolve via `createRequire` rather than a static
+ * `import` so the unavailable builtin (node:sqlite isn't in Bun; bun:sqlite
+ * isn't in Node, and a static `bun:` import crashes Electron's ESM loader)
+ * is never referenced in a runtime that lacks it.
+ */
+const requireBuiltin = createRequire(import.meta.url)
+const isBunRuntime = typeof (globalThis as { Bun?: unknown }).Bun !== "undefined"
+const SqliteDatabaseCtor: new (filename: string) => SqliteDatabase = isBunRuntime
+	? (requireBuiltin("bun:sqlite").Database as new (filename: string) => SqliteDatabase)
+	: (requireBuiltin("node:sqlite").DatabaseSync as new (filename: string) => SqliteDatabase)
 
 interface ArtifactRow {
 	id: string
@@ -107,12 +137,12 @@ function stringifyRecord(record: GenUiArtifactRecord, sessionId: string, orderIn
 }
 
 export class ArtifactStore {
-	private readonly db: DatabaseSync
+	private readonly db: SqliteDatabase
 	private readonly jsonlPath: string
 
 	constructor(databasePath = getDatabasePath()) {
 		ensureLoomDir()
-		this.db = new DatabaseSync(databasePath)
+		this.db = new SqliteDatabaseCtor(databasePath)
 		this.jsonlPath = getJsonlPath()
 		this.db.exec(`
 			CREATE TABLE IF NOT EXISTS artifacts (

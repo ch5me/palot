@@ -40,6 +40,30 @@ function copyDrizzleMigrations(): Plugin {
 	}
 }
 
+/**
+ * Copies the firefly surface-registry id sidecar into the main process
+ * output's sibling `renderer/` dir.
+ *
+ * The main process reads `out/renderer/firefly-surface-registry-ids.json`
+ * at boot, but in dev the renderer is served from the vite dev server and
+ * never written to `out/renderer/`, so the file would be missing (ENOENT
+ * crash on cold boot). Like copyDrizzleMigrations, a writeBundle hook is
+ * used because viteStaticCopy does not reliably fire on dev rebuilds.
+ */
+function copySurfaceRegistryIds(): Plugin {
+	const src = path.resolve(__dirname, "src/renderer/firefly-surface-registry-ids.json")
+	return {
+		name: "copy-surface-registry-ids",
+		writeBundle(options) {
+			const destDir = path.join(options.dir!, "..", "renderer")
+			if (fs.existsSync(src)) {
+				fs.mkdirSync(destDir, { recursive: true })
+				fs.cpSync(src, path.join(destDir, "firefly-surface-registry-ids.json"))
+			}
+		},
+	}
+}
+
 const EFFECTS_SWARM_ENTRY = path.resolve(
 	ROOT_NODE_MODULES,
 	"@ch5me/effects/dist/particles/SwarmParticles/index.js",
@@ -56,6 +80,7 @@ export default defineConfig({
 		plugins: [
 			externalizeDepsPlugin({ exclude: ["@ch5me/elf-configconv", "drizzle-orm"] }),
 			copyDrizzleMigrations(),
+			copySurfaceRegistryIds(),
 		],
 		build: {
 			rollupOptions: {
