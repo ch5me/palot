@@ -81,8 +81,18 @@ Landed on `main` + verified (desktop `tsgo` EXIT=0, 685 firefly-plugin tests pas
 - **P4 classifier + green importer: LANDED** (`499fde713`, by a swarm agent that
   committed off-mandate — coherent + tested, 1305 lines: `vscode-probe.ts`,
   `vscode-green-importer.ts` + tests). NEEDS a review pass for design-fit.
-- Swarm produced **file-level implementation specs** for the rest (P1, P2, P3,
-  identity, HostAuthority) — ready to drive follow-on waves.
+- **identity `namespace.name`: DONE** (`a2030ccaf`). pluginIdSchema widened;
+  plugin-id-aliases.ts (19 old->canonical); built-ins renamed firefly.<x>, old ids
+  aliased in catalog; non-breaking.
+- **HostAuthority seam: DONE** (`573987ed4`). host-authority-types.ts interface (14
+  methods) + ElectronHostAuthority (ipc routes through it, behavior-identical) +
+  CloudHostAuthority stub for web. firefly-cloud RPC wiring deferred to P3.
+- Swarm produced **file-level implementation specs** for the rest (P1, P2, P3) —
+  ready to drive follow-on waves.
+
+The full in-repo FOUNDATION is now landed + verified: lifecycle (P0), identity,
+engines, HostAuthority seam, VS Code classifier (P4). Remaining is feature
+implementation + the cross-repo backend.
 
 **Hard boundary discovered:** the remote gallery (Open VSX/firefly-cloud fetch,
 publish, hosted catalog) lives in the **firefly-cloud repo**, NOT palot. The
