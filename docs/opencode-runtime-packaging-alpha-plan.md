@@ -87,7 +87,7 @@ Portable-opencode CI produces three artifact families:
 |---------|-------------|----------------------|--------|
 | `mac-mini` | `build-candidate.yml` | `portable-opencode-{version}-darwin-arm64-arm64.tar.gz` | Native tarball |
 | `dell-lxc` | `build-candidate.yml` | `portable-opencode-{version}-linux-x64-x64.tar.gz` | Native tarball |
-| `container` | `build-container.yml` | `ghcr.io/ch5me/portable-opencode:{version}` | OCI image |
+| `container` | `build-container.yml` | `oci.ch5.me/ch5/portable-opencode:{version}` | OCI image |
 
 Version string format: `candidate-{run_number}-{short_sha}` for candidates,
 `golden-{tag}` for promoted releases.
@@ -146,7 +146,7 @@ overrides, cache) lives under `app.getPath("userData")/portable-opencode/`.
 | macOS x64 | Same tarball (universal or arch-specific TBD) | Direction only | Same as arm64 |
 | Linux x64 | `candidate-dell-lxc` tarball | Direction only | Same checksum + version probe |
 | Windows x64 | Not yet produced by portable-opencode CI | Not planned for alpha | N/A |
-| Container | `ghcr.io/ch5me/portable-opencode:{version}` | Direction only (Windows fallback) | OCI healthcheck + smoke test |
+| Container | `oci.ch5.me/ch5/portable-opencode:{version}` | Direction only (Windows fallback) | OCI healthcheck + smoke test |
 
 **Alpha = macOS arm64 bundled-local first.** Other platforms are direction.
 
