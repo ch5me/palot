@@ -455,6 +455,11 @@ const toolContributionSchema = z
 		title: z.string().min(1).max(120),
 		description: z.string().min(1).max(400),
 		scope: z.enum(["session", "project", "app"]).default("session"),
+		/**
+		 * Optional id of the panel that owns this tool, linking a surface-scoped
+		 * tool to its surface (panel). Back-compat: absent on plugin-global tools.
+		 */
+		panelId: z.string().max(120).optional(),
 		requires: z.array(capabilityTokenSchema).default([]),
 		args: z.record(z.string().min(1).max(64), zodRawShapeEntrySchema).default({}),
 		resultSchemaRef: z.string().max(120).optional(),

@@ -577,11 +577,11 @@ export const createPalotPlugin = (
 		const catalogTools = await buildCatalogToolEntries({ bridgeRequest })
 		return {
 		"experimental.chat.system.transform": async (input, output) => {
-			if (!input?.sessionID) return
-			const resolved = await resolveBinding(input.sessionID)
-			const block = buildProductContextBlock(resolved)
-			if (!block) return
-			output.system.push(block)
+			if (!input?.sessionID || !bridgeRequest) return
+			const result = await bridgeRequest({ action: "list-context-fragments", sessionId: input.sessionID })
+			const context = result?.context ?? ""
+			if (!context) return
+			output.system.push(context)
 		},
 		event: async ({ event }) => {
 			if (!event || event.type !== "session.idle") return

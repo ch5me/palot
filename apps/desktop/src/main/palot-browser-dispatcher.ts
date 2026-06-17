@@ -1,18 +1,41 @@
-import type { BrowserActionEvent, BrowserLaneTabActionResult } from "../preload/api"
+import type { Actor, BrowserActionEvent, BrowserLaneTabActionResult } from "../preload/api"
 import type { DispatchBrowserToolInput } from "../shared/palot-bridge-schemas"
 import { dispatchBrowserToolInputSchema } from "../shared/palot-bridge-schemas"
 import {
 	activateBrowserLaneTab,
 	clickBrowserLane,
 	closeBrowserLaneTab,
+	createBrowserLane,
 	createBrowserLaneTab,
+	ensureBrowserLane,
 	listBrowserLaneTabs,
 	navigateBrowserLane,
 	scrollBrowserLane,
 	typeBrowserLane,
 } from "./browser-lane-manager"
+import { DEFAULT_BROWSER_LANE_ID } from "../shared/browser-lanes"
 import { publishBrowserAction } from "./palot-browser-ipc"
+import { attachLaneToBinding, ensureSessionBindingForSession } from "./palot-session-binding-store"
 import { resolvePalotSessionBinding } from "./palot-resolver"
+
+/**
+ * Derive a stable Actor for a session so the cursor overlay can render one
+ * distinctly-colored cursor per agent. Distinct sessions (e.g. a sub-agent in
+ * its own OpenCode session) get distinct colors for free; sub-agent `kind`
+ * distinction lands with multi-agent (Phase 4).
+ */
+function actorForSession(sessionId: string): Actor {
+	let hash = 0
+	for (let i = 0; i < sessionId.length; i++) {
+		hash = (hash * 31 + sessionId.charCodeAt(i)) >>> 0
+	}
+	return {
+		id: sessionId,
+		displayName: "Agent",
+		cursorColor: `hsl(${hash % 360} 80% 55%)`,
+		kind: "main",
+	}
+}
 
 function buildToolRequestEvent(input: DispatchBrowserToolInput): BrowserActionEvent {
 	return {
@@ -20,6 +43,7 @@ function buildToolRequestEvent(input: DispatchBrowserToolInput): BrowserActionEv
 		sessionId: input.sessionId,
 		laneId: null,
 		source: "tool_request",
+		actor: actorForSession(input.sessionId),
 		sequence: 0,
 		requestId: `${input.toolName}:${input.sessionId}`,
 		causationId: null,
@@ -44,6 +68,7 @@ function buildToolResultEvent(input: DispatchBrowserToolInput, summary: string):
 		sessionId: input.sessionId,
 		laneId: null,
 		source: "automation_runtime",
+		actor: actorForSession(input.sessionId),
 		sequence: 0,
 		requestId: `${input.toolName}:${input.sessionId}`,
 		causationId: null,
@@ -81,13 +106,53 @@ async function dispatchTabsAction(
 	}
 }
 
+async function provisionDefaultLaneForSession(sessionId: string): Promise<string> {
+	// Ensure the session has a binding first.
+	ensureSessionBindingForSession({ sessionId })
+	// Lazily create the default direct-iframe lane if it doesn't exist yet.
+	await createBrowserLane({
+		id: DEFAULT_BROWSER_LANE_ID,
+		label: "Default",
+		mode: "remote",
+		runtime: "remote-attached",
+		surfaceKind: "direct-iframe",
+		streamBackendUrl: null,
+		cdpEndpoint: null,
+		host: null,
+	}).catch(() => {
+		// Lane may already exist — that is fine, ensureBrowserLane will verify it.
+	})
+	const lane = await ensureBrowserLane(DEFAULT_BROWSER_LANE_ID)
+	// Attach the lane to the session binding.
+	const updated = attachLaneToBinding(sessionId, lane.id)
+	if (!updated) {
+		throw new Error(`no_session_binding: session ${sessionId} has no binding to attach lane to`)
+	}
+	return lane.id
+}
+
 export async function dispatchBrowserTool(input: DispatchBrowserToolInput): Promise<{ status: string; resultSummary: string }> {
 	const parsedInput = dispatchBrowserToolInputSchema.parse(input)
-	const resolved = resolvePalotSessionBinding(parsedInput.sessionId)
+	let resolved = resolvePalotSessionBinding(parsedInput.sessionId)
+
+	// Lazy lane auto-provision: if no lane is bound yet, ensure the default
+	// direct-iframe lane and attach it to this session before continuing.
 	if (!resolved.binding?.browserLaneId) {
-		return {
-			status: "failed",
-			resultSummary: "unbound_session",
+		let provisionedLaneId: string
+		try {
+			provisionedLaneId = await provisionDefaultLaneForSession(parsedInput.sessionId)
+		} catch (err) {
+			return {
+				status: "failed",
+				resultSummary: err instanceof Error ? err.message : "lane_provision_failed",
+			}
+		}
+		resolved = resolvePalotSessionBinding(parsedInput.sessionId)
+		if (!resolved.binding?.browserLaneId) {
+			return {
+				status: "failed",
+				resultSummary: `lane_bind_failed: provisioned lane ${provisionedLaneId} but binding was not updated`,
+			}
 		}
 	}
 	await publishBrowserAction({ event: buildToolRequestEvent(parsedInput) })

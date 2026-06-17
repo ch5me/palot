@@ -371,11 +371,25 @@ export interface BrowserGeometryFixture {
 	expected: BrowserCoordinateTransformResult
 }
 
+/**
+ * Actor identity carried on action events so the surface renderer can show a
+ * named, colored cursor per agent. `kind` distinguishes the primary session
+ * agent ("main") from a spawned sub-agent ("sub"). Optional on events for
+ * backward compatibility — events without an actor remain valid.
+ */
+export interface Actor {
+	id: string
+	displayName: string
+	cursorColor: string
+	kind: "main" | "sub"
+}
+
 export interface BrowserActionEventBase {
 	id: string
 	sessionId: string
 	laneId: string | null
 	source: BrowserActionSource
+	actor?: Actor | null
 	sequence: number
 	requestId: string | null
 	causationId: string | null

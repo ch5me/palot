@@ -1,6 +1,8 @@
 import { net } from "electron"
 import { createLogger } from "./logger"
 import { setServerUrl, showNotification, updateBadgeCount } from "./notifications"
+import type { Event } from "../renderer/lib/types"
+import { applyBindingLifecycleEvent } from "./palot-session-binding-store"
 
 const log = createLogger("notification-watcher")
 
@@ -200,6 +202,11 @@ interface GlobalSSEEvent {
 function processGlobalEvent(globalEvent: GlobalSSEEvent): void {
 	const event = globalEvent.payload
 	if (!event) return
+
+	// Wire session lifecycle events into the binding store so bindings are
+	// auto-created on session.created and released on session.deleted.
+	// Cast is safe: the payload shape matches the SDK Event union.
+	applyBindingLifecycleEvent(event as unknown as Event)
 
 	const eventType = event.type
 	const props = event.properties

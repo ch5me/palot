@@ -1,4 +1,5 @@
 import type {
+	Actor,
 	BrowserActionEvent,
 	BrowserActionStatus,
 	BrowserActionTargetDescription,
@@ -15,6 +16,7 @@ export interface NormalizeBrowserActionEventInput {
 	sessionId: string
 	laneId?: string | null
 	source: BrowserActionEvent["source"]
+	actor?: Actor | null
 	sequence: number
 	requestId?: string | null
 	causationId?: string | null
@@ -48,6 +50,7 @@ function buildBaseEvent(input: NormalizeBrowserActionEventInput) {
 		sessionId: input.sessionId,
 		laneId: input.laneId ?? null,
 		source: input.source,
+		actor: input.actor ?? null,
 		sequence: input.sequence,
 		requestId: input.requestId ?? null,
 		causationId: input.causationId ?? null,

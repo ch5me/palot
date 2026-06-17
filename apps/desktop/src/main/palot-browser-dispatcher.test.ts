@@ -13,17 +13,20 @@ function setupTempXdg() {
 	}
 }
 
-test("dispatcher rejects unbound session", async () => {
+test("dispatcher auto-provisions a default lane for an unbound session", async () => {
 	const cleanup = setupTempXdg()
 	try {
 		const mod = await import("./palot-browser-dispatcher")
+		// Lazy lane auto-provision (P1.3/P1.4): a previously-unbound session must
+		// not fail with `unbound_session`; the dispatcher ensures a binding and
+		// the default direct-iframe lane on first tool call, then proceeds.
 		const result = await mod.dispatchBrowserTool({
 			sessionId: "ses_unbound",
 			toolName: "browser_navigate",
 			args: { url: "https://example.com" },
 		})
-		assert.equal(result.status, "failed")
-		assert.equal(result.resultSummary, "unbound_session")
+		assert.equal(result.status, "queued")
+		assert.notEqual(result.resultSummary, "unbound_session")
 	} finally {
 		cleanup()
 	}
@@ -81,13 +84,15 @@ test("dispatcher returns queued result for navigate payloads before per-tool arg
 	const cleanup = setupTempXdg()
 	try {
 		const dispatcher = await import("./palot-browser-dispatcher")
+		// Empty url still auto-provisions a lane and queues (per-tool arg
+		// validation is not yet enforced); it no longer fails as unbound_session.
 		const result = await dispatcher.dispatchBrowserTool({
 			sessionId: "ses_bad",
 			toolName: "browser_navigate",
 			args: { url: "" },
 		})
-		assert.equal(result.status, "failed")
-		assert.equal(result.resultSummary, "unbound_session")
+		assert.equal(result.status, "queued")
+		assert.notEqual(result.resultSummary, "unbound_session")
 	} finally {
 		cleanup()
 	}
@@ -102,11 +107,15 @@ const listBrowserLaneTabs = mock(async () => ({
 	tabs: [{ id: "tab_1", title: "Example", url: "https://example.com", type: "page", active: true, attached: false, openerId: null, faviconUrl: null }],
 }))
 
+const defaultLane = { id: "default" }
+
 mock.module("./browser-lane-manager", () => ({
 	activateBrowserLaneTab: async () => ({ status: "queued" }),
 	clickBrowserLane,
 	closeBrowserLaneTab: async () => ({ status: "queued" }),
+	createBrowserLane: async () => defaultLane,
 	createBrowserLaneTab: async () => ({ status: "queued" }),
+	ensureBrowserLane: async () => defaultLane,
 	listBrowserLaneTabs,
 	navigateBrowserLane: async () => ({ status: "queued" }),
 	scrollBrowserLane,

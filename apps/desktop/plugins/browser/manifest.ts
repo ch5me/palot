@@ -20,6 +20,9 @@ import { z } from "zod"
 
 import type { PluginManifest } from "../../src/shared/firefly-plugin/manifest"
 
+// Shared prefix for all browser tool ids
+const BROWSER_TOOL_PREFIX = "plugin.firefly.built-in.surface.browser"
+
 export const browserPluginManifest: PluginManifest = {
 	apiVersion: "firefly.plugin/v2",
 	kind: "PluginManifest",
@@ -42,8 +45,15 @@ export const browserPluginManifest: PluginManifest = {
 		{ kind: "onPanelOpen", panelId: "browser" },
 		{ kind: "onCommand", commandId: "open-browser" },
 		{ kind: "onCommand", commandId: "toggle-browser" },
-		{ kind: "onToolCall", toolId: "plugin.firefly.built-in.surface.browser.open" },
-		{ kind: "onToolCall", toolId: "plugin.firefly.built-in.surface.browser.state" },
+		{ kind: "onToolCall", toolId: `${BROWSER_TOOL_PREFIX}.open` },
+		{ kind: "onToolCall", toolId: `${BROWSER_TOOL_PREFIX}.state` },
+		{ kind: "onToolCall", toolId: `${BROWSER_TOOL_PREFIX}.navigate` },
+		{ kind: "onToolCall", toolId: `${BROWSER_TOOL_PREFIX}.click` },
+		{ kind: "onToolCall", toolId: `${BROWSER_TOOL_PREFIX}.type` },
+		{ kind: "onToolCall", toolId: `${BROWSER_TOOL_PREFIX}.scroll` },
+		{ kind: "onToolCall", toolId: `${BROWSER_TOOL_PREFIX}.tabs` },
+		{ kind: "onToolCall", toolId: `${BROWSER_TOOL_PREFIX}.status` },
+		{ kind: "onToolCall", toolId: `${BROWSER_TOOL_PREFIX}.read` },
 	],
 	contributes: {
 		panels: [
@@ -87,26 +97,137 @@ export const browserPluginManifest: PluginManifest = {
 		iconThemes: [],
 		tools: [
 			{
-				id: "plugin.firefly.built-in.surface.browser.open",
+				id: `${BROWSER_TOOL_PREFIX}.open`,
 				title: "Open Browser panel",
 				description: "Open the Browser side-panel tab in the Firefly desktop UI.",
 				scope: "session",
+				panelId: "browser",
 				requires: ["host:bridge.ui-state-write", "host:tool.register"],
 				args: {},
 				timeoutMs: 5_000,
 				uiHints: { openPanel: "browser", refreshProjection: true },
 			},
 			{
-				id: "plugin.firefly.built-in.surface.browser.state",
+				id: `${BROWSER_TOOL_PREFIX}.state`,
 				title: "Get Browser surface state",
 				description:
 					"Read the Browser surface state: whether the tab is available, open, and active for the focused session.",
 				scope: "session",
+				panelId: "browser",
 				requires: ["host:bridge.ui-state-read", "host:tool.register"],
 				args: {
 					sessionId: z.string().optional(),
 				},
 				timeoutMs: 5_000,
+			},
+			// ── Action tools ─────────────────────────────────────────────────
+			{
+				id: `${BROWSER_TOOL_PREFIX}.navigate`,
+				title: "web.navigate",
+				description: "Navigate the bound browser lane to a URL.",
+				scope: "session",
+				panelId: "browser",
+				requires: ["host:browser.lane-control", "host:tool.register"],
+				args: {
+					url: z.string().url().describe("Destination URL"),
+				},
+				timeoutMs: 15_000,
+				uiHints: { openPanel: "browser" },
+			},
+			{
+				id: `${BROWSER_TOOL_PREFIX}.click`,
+				title: "web.click",
+				description:
+					"Click an element in the browser by CSS selector or visible text. Falls back to coordinates.",
+				scope: "session",
+				panelId: "browser",
+				requires: ["host:browser.lane-control", "host:tool.register"],
+				args: {
+					selector: z.string().optional().describe("CSS selector"),
+					text: z.string().optional().describe("Visible text to click"),
+					role: z.string().optional().describe("ARIA role"),
+					x: z.number().optional().describe("Viewport X coordinate"),
+					y: z.number().optional().describe("Viewport Y coordinate"),
+					button: z.enum(["left", "middle", "right"]).optional().default("left"),
+					clickCount: z.number().int().positive().optional().default(1),
+				},
+				timeoutMs: 10_000,
+				uiHints: { openPanel: "browser" },
+			},
+			{
+				id: `${BROWSER_TOOL_PREFIX}.type`,
+				title: "web.type",
+				description: "Type text into the focused or selected element in the browser.",
+				scope: "session",
+				panelId: "browser",
+				requires: ["host:browser.lane-control", "host:tool.register"],
+				args: {
+					selector: z.string().optional().describe("CSS selector to focus before typing"),
+					text: z.string().describe("Text to type"),
+					submit: z.boolean().optional().describe("Press Enter after typing"),
+				},
+				timeoutMs: 10_000,
+				uiHints: { openPanel: "browser" },
+			},
+			{
+				id: `${BROWSER_TOOL_PREFIX}.scroll`,
+				title: "web.scroll",
+				description: "Scroll the browser viewport up, down, or by pixel delta.",
+				scope: "session",
+				panelId: "browser",
+				requires: ["host:browser.lane-control", "host:tool.register"],
+				args: {
+					direction: z.enum(["up", "down"]).optional().describe("Scroll direction shorthand"),
+					amount: z.number().optional().describe("Pixel amount for direction shorthand"),
+					deltaX: z.number().optional().describe("Horizontal pixel delta"),
+					deltaY: z.number().optional().describe("Vertical pixel delta"),
+					selector: z.string().optional().describe("CSS selector of element to scroll"),
+				},
+				timeoutMs: 5_000,
+				uiHints: { openPanel: "browser" },
+			},
+			{
+				id: `${BROWSER_TOOL_PREFIX}.tabs`,
+				title: "web.tabs",
+				description: "List, open, close, or activate browser tabs in the bound lane.",
+				scope: "session",
+				panelId: "browser",
+				requires: ["host:browser.lane-control", "host:tool.register"],
+				args: {
+					action: z
+						.enum(["list", "open", "close", "activate"])
+						.optional()
+						.default("list")
+						.describe("Tab action to perform"),
+					tabId: z.string().optional().describe("Tab id (required for close/activate)"),
+					url: z.string().optional().describe("URL for new tab (action=open)"),
+				},
+				timeoutMs: 10_000,
+				uiHints: { openPanel: "browser" },
+			},
+			{
+				id: `${BROWSER_TOOL_PREFIX}.status`,
+				title: "web.status",
+				description: "Return the current browser lane binding, URL, and connection health.",
+				scope: "session",
+				panelId: "browser",
+				requires: ["host:bridge.ui-state-read", "host:tool.register"],
+				args: {},
+				timeoutMs: 5_000,
+			},
+			{
+				id: `${BROWSER_TOOL_PREFIX}.read`,
+				title: "web.read",
+				description:
+					"Read the current page title, URL, and a text summary of the visible content.",
+				scope: "session",
+				panelId: "browser",
+				requires: ["host:browser.lane-control", "host:tool.register"],
+				args: {
+					q: z.string().optional().describe("Optional focus query to narrow content extraction"),
+				},
+				timeoutMs: 15_000,
+				uiHints: { openPanel: "browser" },
 			},
 		],
 	},

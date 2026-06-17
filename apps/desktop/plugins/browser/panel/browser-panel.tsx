@@ -45,6 +45,8 @@ import {
 	type BrowserLaneSurfaceKind,
 } from "../../../src/shared/browser-lanes"
 import type { Agent, BrowserLane, BrowserLaneHealth } from "../../../src/renderer/lib/types"
+import { BrowserCursorOverlay } from "../../../src/renderer/components/side-panel/browser-cursor-overlay"
+import { useBrowserActions } from "../../../src/renderer/hooks/use-browser-actions"
 
 interface BrowserPanelProps {
 	agent: Agent
@@ -74,7 +76,7 @@ function isLikelyStreamUrl(url: string): boolean {
 	return false
 }
 
-function BrowserPanel({ agent: _agent, className }: BrowserPanelProps) {
+function BrowserPanel({ agent, className }: BrowserPanelProps) {
 	const [persistedUrl, setPersistedUrl] = useAtom(lastBrowserUrlAtom)
 	const [, setHistory] = useAtom(browserHistoryAtom)
 	const [activeLaneId, setActiveLaneId] = useAtom(activeBrowserLaneIdAtom)
@@ -110,6 +112,11 @@ function BrowserPanel({ agent: _agent, className }: BrowserPanelProps) {
 		() => laneList.find((lane) => lane.id === activeLaneId) ?? laneList[0] ?? null,
 		[laneList, activeLaneId],
 	)
+
+	// Scope key for the cursor overlay: prefer lane id (how events are bucketed),
+	// fall back to the agent's sessionId when no lane is resolved yet.
+	const browserActionScopeKey = activeLane?.id ?? agent.sessionId
+	const { events: browserActionEvents, overlayState: browserActionOverlayState, actors: browserActors, eventsByActor } = useBrowserActions(browserActionScopeKey)
 
 	const streamUrl = useMemo(() => {
 		if (!activeLane) return FALLBACK_URL
@@ -749,7 +756,7 @@ function BrowserPanel({ agent: _agent, className }: BrowserPanelProps) {
 					</div>
 				) : null}
 				<div
-					className="min-h-0 flex-1 overflow-hidden border-y border-border bg-muted/20"
+					className="relative min-h-0 flex-1 overflow-hidden border-y border-border bg-muted/20"
 					style={{
 						// @ts-expect-error -- vendor-prefixed CSS property
 						WebkitAppRegion: "no-drag",
@@ -780,6 +787,26 @@ function BrowserPanel({ agent: _agent, className }: BrowserPanelProps) {
 								</Button>
 							</div>
 						</div>
+					)}
+					{browserActors.size === 0 ? (
+						// Single-actor (or no actor) path — one overlay for the scope
+						<BrowserCursorOverlay
+							events={browserActionEvents}
+							overlayState={browserActionOverlayState}
+							sessionId={agent.sessionId}
+						/>
+					) : (
+						// Multi-actor path — one overlay per distinct actor so each gets
+						// its own colored cursor.  We pass only that actor's events but
+						// the shared overlayState so badges are consistent.
+						Array.from(browserActors.values()).map((actor) => (
+							<BrowserCursorOverlay
+								key={actor.id}
+								events={eventsByActor.get(actor.id) ?? []}
+								overlayState={browserActionOverlayState}
+								sessionId={agent.sessionId}
+							/>
+						))
 					)}
 				</div>
 			</div>

@@ -196,10 +196,12 @@ export function getBrowserLaneSurfaceKind(record: Pick<BrowserLaneRecord, "runti
 	if (record.surfaceKind) {
 		return record.surfaceKind
 	}
+	// docker-chromium streams via selkies; everything else defaults to direct-iframe.
+	// Selkies-stream is opt-in for remote lanes that explicitly supply a streamBackendUrl + cdpEndpoint.
 	if (record.runtime === "docker-chromium") {
 		return "selkies-stream"
 	}
-	return record.cdpEndpoint ? "selkies-stream" : "direct-iframe"
+	return "direct-iframe"
 }
 
 export function inflateBrowserLane(record: BrowserLaneRecord, health?: BrowserLaneHealth): BrowserLane {

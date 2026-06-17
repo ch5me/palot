@@ -8,6 +8,16 @@ import {
 	upsertSessionBinding,
 } from "./palot-session-binding"
 
+export function attachLaneToBinding(sessionId: string, browserLaneId: string): SessionBinding | null {
+	const existing = getSessionBindingByOpenCodeSession(sessionId)
+	if (!existing) return null
+	return upsertSessionBinding({
+		...existing,
+		browserLaneId,
+		status: existing.status === "unbound" || existing.status === "attaching" ? "attaching" : existing.status,
+	})
+}
+
 export function ensureSessionBindingForSession(input: {
 	sessionId: string
 	browserLaneId?: string | null

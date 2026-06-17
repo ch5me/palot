@@ -331,6 +331,7 @@ async function handleBridgePayload(payload: unknown): Promise<unknown> {
 	if (action === "get-ui-state") return getUiStateSnapshot()
 	if (action === "list-plugin-tools") return await listBridgePluginTools()
 	if (action === "invoke-plugin-tool") return await invokeBridgePluginTool(payload)
+	if (action === "list-context-fragments") return await composeBridgeSurfaceContext(payload)
 	throw new Error("Unsupported Palot bridge action")
 }
 
@@ -421,6 +422,20 @@ async function invokeBridgePluginTool(payload: unknown): Promise<unknown> {
 		args: input.args ?? {},
 		sessionId: input.sessionId ?? null,
 	})
+}
+
+const listContextFragmentsSchema = z.object({
+	action: z.literal("list-context-fragments"),
+	sessionId: z.string().nullable().optional(),
+})
+
+async function composeBridgeSurfaceContext(payload: unknown): Promise<{ context: string }> {
+	const input = listContextFragmentsSchema.parse(payload)
+	// Lazy import: surface-context-compose pulls in firefly-plugin/dispatch,
+	// which lazily imports THIS module, so a static import would be a cycle.
+	const { composeSurfaceContext } = await import("./surface-context-compose")
+	const context = await composeSurfaceContext(input.sessionId ?? null)
+	return { context }
 }
 
 function resolveBridgeBinding(payload: unknown): unknown {

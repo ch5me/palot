@@ -5,6 +5,8 @@ import { getPluginCatalog } from "./authority"
 import { getWorkerInvokeRouter } from "./worker-invoke-router"
 import type { PluginDescriptor } from "../../shared/firefly-plugin/descriptor"
 import type { CommandContribution, TrustTier } from "../../shared/firefly-plugin/manifest"
+import type { SurfaceContextFragment } from "../surface-context-compose"
+import { buildBrowserSurfaceFragment, resolveWebToolDispatch } from "./browser-tool-handlers"
 import { createLogger } from "../logger"
 
 const log = createLogger("firefly-plugin/dispatch")
@@ -259,6 +261,67 @@ export function listKnownTools(): string[] {
 
 export function _resetHostToolsForTests(): void {
 	toolHandlers.clear()
+}
+
+// ---------------------------------------------------------------------------
+// Host context projectors (host → agent, per-turn surface context)
+//
+// Each surface registers a projector keyed by `pluginId::surfaceId` that emits
+// a compact `SurfaceContextFragment` describing its live state. The host calls
+// every registered projector each turn and composes the results in
+// `surface-context-compose.ts`. A projector may return `null` to contribute
+// nothing this turn. A single broken projector must NOT kill the whole context,
+// so per-projector errors are swallowed with a logged warning here — this is a
+// scoped fail-soft so one bad surface can't blind the agent to every other one.
+// ---------------------------------------------------------------------------
+
+export type HostContextProjector = (input: {
+	sessionId: string | null
+}) => Promise<SurfaceContextFragment | null> | SurfaceContextFragment | null
+
+const contextProjectors = new Map<string, HostContextProjector>()
+
+export function registerHostContextProjector(
+	pluginId: string,
+	surfaceId: string,
+	fn: HostContextProjector,
+): void {
+	contextProjectors.set(`${pluginId}::${surfaceId}`, fn)
+}
+
+export function unregisterHostContextProjector(pluginId: string, surfaceId: string): void {
+	contextProjectors.delete(`${pluginId}::${surfaceId}`)
+}
+
+export function listKnownContextProjectors(): string[] {
+	return Array.from(contextProjectors.keys())
+}
+
+export function _resetHostContextProjectorsForTests(): void {
+	contextProjectors.clear()
+}
+
+/**
+ * Run every registered context projector for this session and collect the
+ * non-null fragments. Per-projector failures are logged and skipped so a broken
+ * surface can't blind the agent to the rest.
+ */
+export async function listContextProjectorFragments(
+	sessionId: string | null,
+): Promise<SurfaceContextFragment[]> {
+	const fragments: SurfaceContextFragment[] = []
+	for (const [key, projector] of contextProjectors) {
+		try {
+			const fragment = await projector({ sessionId })
+			if (fragment) fragments.push(fragment)
+		} catch (err) {
+			log.warn("Context projector failed; skipping its fragment", {
+				projector: key,
+				reason: err instanceof Error ? err.message : String(err),
+			})
+		}
+	}
+	return fragments
 }
 
 export interface PluginToolInvokeInput {
@@ -1228,6 +1291,40 @@ export function registerBrowserHostHandlers(deps?: Partial<BrowserHostDeps>): vo
 			active: sidePanel.open && sidePanel.activeTab === "browser",
 		})
 	})
+
+	// web.* action tools → existing browser-lane dispatcher (which publishes the
+	// actor-tagged action-bus events the cursor overlay animates, and lazily
+	// auto-provisions + binds a default iframe lane on first call).
+	const actionToolNames = ["navigate", "click", "type", "scroll", "tabs", "status"] as const
+	for (const short of actionToolNames) {
+		const toolId = `plugin.firefly.built-in.surface.browser.${short}`
+		registerHostTool(BROWSER_PLUGIN_ID, toolId, async ({ args, sessionId }) => {
+			if (!sessionId) return err("missing_session", "browser tools require an OpenCode session")
+			const mapped = resolveWebToolDispatch(toolId, args)
+			if (!mapped) return err("unsupported_tool", `no dispatch mapping for ${toolId}`)
+			const { dispatchBrowserTool } = await import("../palot-browser-dispatcher")
+			const result = await dispatchBrowserTool({ sessionId, toolName: mapped.toolName, args: mapped.args })
+			if (result.status === "failed") return err("browser_dispatch_failed", result.resultSummary)
+			return ok({ status: result.status, result: result.resultSummary })
+		})
+	}
+
+	// web.read needs DOM access the default iframe lane cannot provide (no CDP,
+	// cross-origin). Fail fast naming the precondition + how to enable it, rather
+	// than silently returning empty content.
+	registerHostTool(BROWSER_PLUGIN_ID, "plugin.firefly.built-in.surface.browser.read", async ({ sessionId }) => {
+		if (!sessionId) return err("missing_session", "browser tools require an OpenCode session")
+		return err(
+			"needs_streamed_mode",
+			"web.read requires the streamed browser engine (Magic Browser); the default iframe lane cannot read cross-origin DOM. Switch to a streamed lane (web.mode streamed) once streamed mode lands.",
+		)
+	})
+
+	// Browser surface context projector: the agent reads current mode/url/bound +
+	// which web.* tools are usable each turn.
+	registerHostContextProjector(BROWSER_PLUGIN_ID, "browser", ({ sessionId }) =>
+		buildBrowserSurfaceFragment(sessionId),
+	)
 
 	registerHostCommand(BROWSER_PLUGIN_ID, "open-browser", async () => {
 		await openSidePanel("browser")
