@@ -100,6 +100,27 @@ Per phase: desktop typecheck clean, lint clean, tests pass, and the user-facing 
 
 ## Current State (verified reuse map, 2026-06-16)
 
+### Progress (updated 2026-06-16 PM)
+
+LANDED + pushed to HQ: **P0–P4 + P3.2 + P5.1**.
+- P4 (sub-agent actor cursors + `show.doc`), commit `7c8e9c151`.
+- P3.2 generic `uiHints` (manifest-declared openPanel/focusWidget/refreshProjection applied
+  host-side post-dispatch via the `palot:tool-ui-hints` IPC channel + agent-detail reactor)
+  **and** the canonical tool-id resolution root fix (handler keys canonicalized via
+  `resolveCanonicalPluginId` so canonical `namespace.name` + legacy reverse-DNS ids both
+  resolve), commit `0a82c819c`.
+- P5.1 legacy cutover: `browser_*` tools + the fake `search_tools/describe_tool/call_tool/
+  tools_status` stubs + dead `buildProductContextBlock` removed from `plugin.js` (V2 `web.*`
+  fully covers via the same dispatcher; verified zero-residue).
+
+**The Electron cold-boot crash is RESOLVED** (fixed 2026-06-16 in `e11c58a37` + `0d3877fdc`;
+proven by code, git history, and a clean `electron-vite build` with zero static `bun:` imports).
+The AGENTS.md "crashes on load" staging note was stale and has been corrected. Live demo proof
+is therefore UNBLOCKED (owner: Chris drives the Electron run).
+
+REMAINING: the two-lanes-side-by-side panel multiplexing follow-on (deferred; not needed for the
+demoable target), and Chris-driven live Electron demo proof.
+
 The prior plan `palot-browser-side-panel-opencode-magic-browser-cursor.md` already landed
 T1–T15. **Most machinery exists; it is wired to legacy tools and Magic Browser is a stub.**
 

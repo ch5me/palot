@@ -121,14 +121,15 @@ output, renderer state, or the persisted binding JSON (`session-bindings.json`).
 The renderer never calls the resolver and never loads plugin code — it consumes
 derived snapshots + the action stream only.
 
-## Verification & the Electron-crash reality
+## Verification
 
-Per the repo **Temporary Staging Policy** (AGENTS.md): Electron dev currently
-**crashes on load** (`ERR_UNSUPPORTED_ESM_URL_SCHEME` for `bun:`), and the web
-build has no `window.elf` IPC. So surface tools (main-process logic) **cannot be
-visually proven in a running app right now** — prove the host/logic path headlessly
-and defer pixels to post-launch Electron proof. That is the sanctioned approach, not
-a shortcut.
+The prior Electron cold-boot crash (`ERR_UNSUPPORTED_ESM_URL_SCHEME` for `bun:`) is
+**RESOLVED** (fixed 2026-06-16 in `e11c58a37` + `0d3877fdc`: `bun:sqlite` now resolves
+through a runtime-guarded `createRequire`, so the `bun:` scheme never reaches Electron's
+ESM loader; `electron-vite build` is clean with zero static `bun:` imports). The app
+cold-boots — Electron is bootable for visual proof. The web build still has no `window.elf`
+IPC, so Electron-only surfaces must be proven in Electron or headlessly. Default verification
+remains headless (fast, deterministic); add Electron visual proof when a surface is Electron-only.
 
 Headless proof commands (from `apps/desktop`):
 - `bunx tsgo --noEmit` — typecheck.
@@ -164,7 +165,10 @@ code under test imports (e.g. `getBrowserLane`, `ensureBrowserLane`) or you get
 
 This contract is built in phases (`.sisyphus/goals/current-goal.md`). Done: P0
 foundation, P1 iframe+cursor vertical slice, P2 streamed Magic Browser engine,
-P3.1 generic action stream. Pending: generic `uiHints` application, multi-agent
-sub-agent tabs + `show.doc`, killing the legacy `browser_*` + connected-app stubs
-in `plugin.js` (only after live proof), and live Electron demo proof (blocked by
-the Electron-crash staging policy above).
+P3.1 generic action stream, P4 multi-agent (sub-agent actor cursors + `show.doc`),
+P3.2 generic `uiHints` application (manifest-declared hints applied host-side
+post-dispatch; handler keys canonicalized so canonical + legacy ids both resolve),
+and P5.1 legacy cutover (the `browser_*` tools + fake discovery stubs + dead
+`buildProductContextBlock` removed from `plugin.js`). Pending: the two-lanes-side-by-side
+panel multiplexing follow-on, and live Electron demo proof (now unblocked — the app
+cold-boots; see Verification).

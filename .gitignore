@@ -73,3 +73,6 @@ handoff-*.md
 
 # Stale npmrc backups from the GitHub→HQ registry flip (external leftover).
 .npmrc.github.bak
+
+# omx/codex CLI working state (transient swarm dispatch artifacts).
+.omx/
