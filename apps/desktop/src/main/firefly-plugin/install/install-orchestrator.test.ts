@@ -20,8 +20,25 @@
 
 import { describe, expect, it } from "bun:test"
 import * as crypto from "node:crypto"
-import { installExtension, type OrchestratorIo, type ExtensionStoreFns } from "./install-orchestrator"
+import {
+	installExtension,
+	UnsignedInstallBlockedError,
+	type OrchestratorIo,
+	type ExtensionStoreFns,
+	type InstallExtensionOptions,
+} from "./install-orchestrator"
+import { resolveDetachedSignature } from "./detached-signature"
+import { SignatureVerificationError } from "./signature-verify"
 import type { ExtensionPackageRecord, ExtensionInstallationRecord } from "./extension-store"
+import {
+	canonicalManifestBytes,
+	type CanonicalSignedManifest,
+	type ServedSignatureMetadata,
+} from "../../../shared/firefly-plugin/registry-signature-contract"
+import {
+	createTrustAnchorRegistry,
+	type TrustAnchorRegistry,
+} from "../../../shared/firefly-plugin/trust-anchor-registry"
 
 // ---------------------------------------------------------------------------
 // Minimal ZIP builder (hand-rolled, no deps)
@@ -214,6 +231,12 @@ function buildFakeStore(): ExtensionStoreFns & {
 				signatureState: input.signatureState ?? "unsigned",
 				scanState: input.scanState ?? "pending",
 				themesJson: input.themesJson ?? null,
+				publisherKeyId: input.publisherKeyId ?? null,
+				signatureAlgorithm: input.signatureAlgorithm ?? null,
+				signatureB64: input.signatureB64 ?? null,
+				signedManifestJson: input.signedManifestJson ?? null,
+				pluginManifestJson: input.pluginManifestJson ?? null,
+				requiredCapabilitiesJson: input.requiredCapabilitiesJson ?? null,
 				createdAt: Date.now(),
 			}
 			packages.set(input.id, row)
@@ -332,5 +355,285 @@ describe("installExtension (end-to-end)", () => {
 		// No records should have been written
 		expect(store.packages.size).toBe(0)
 		expect(store.installations.size).toBe(0)
+	})
+})
+
+// ---------------------------------------------------------------------------
+// A2 — registry signature verify-before-extract + trust derivation + provenance
+// ---------------------------------------------------------------------------
+
+const EPHEMERAL_KEY_ID = "ephemeral-test-key"
+
+/** Generate a throwaway ed25519 keypair, mirroring the A4 fixture flow. */
+function makeEphemeralKeypair(): { privatePem: string; publicPem: string } {
+	const { publicKey, privateKey } = crypto.generateKeyPairSync("ed25519")
+	return {
+		privatePem: privateKey.export({ type: "pkcs8", format: "pem" }).toString(),
+		publicPem: publicKey.export({ type: "spki", format: "pem" }).toString(),
+	}
+}
+
+/** Build + sign a `ServedSignatureMetadata` over the canonical manifest. */
+function signManifest(
+	privatePem: string,
+	manifest: CanonicalSignedManifest,
+): ServedSignatureMetadata {
+	const bytes = Buffer.from(canonicalManifestBytes(manifest))
+	const signatureB64 = crypto
+		.sign(null, bytes, crypto.createPrivateKey(privatePem))
+		.toString("base64")
+	return { manifest, signatureB64 }
+}
+
+/** A test trust registry whose single anchor is the ephemeral public key. */
+function ephemeralAnchorRegistry(publicPem: string, keyId = EPHEMERAL_KEY_ID): TrustAnchorRegistry {
+	const der = crypto.createPublicKey(publicPem).export({ type: "spki", format: "der" }) as Buffer
+	const fingerprintSha256 = crypto.createHash("sha256").update(der).digest("hex")
+	return createTrustAnchorRegistry({
+		anchors: { [keyId]: { publicKeyPem: publicPem, fingerprintSha256, devOnly: false } },
+		packaged: true,
+	})
+}
+
+describe("installExtension — A2 registry signature (verify-before-extract)", () => {
+	const PACKAGE_STORE_ROOT = "/fake/package-store"
+	const FAKE_VSIX_PATH = "/fake/test-theme-1.0.0.vsix"
+
+	function signedManifestFor(
+		contentSha256: string,
+		over: Partial<CanonicalSignedManifest> = {},
+	): CanonicalSignedManifest {
+		return {
+			namespace: "test-publisher",
+			name: "test-theme",
+			version: "1.0.0",
+			contentSha256,
+			algorithm: "ed25519",
+			signedAt: "2026-06-16T00:00:00.000Z",
+			publisherKeyId: EPHEMERAL_KEY_ID,
+			...over,
+		}
+	}
+
+	it("signed + known key + valid sig + sha match → signed-third-party, provenance persisted", async () => {
+		const { vsixBytes, expectedSha256 } = buildMinimalVsixBytes()
+		const io = buildFakeIo(vsixBytes, FAKE_VSIX_PATH, PACKAGE_STORE_ROOT)
+		const store = buildFakeStore()
+		const { privatePem, publicPem } = makeEphemeralKeypair()
+		const registrySignature = signManifest(privatePem, signedManifestFor(expectedSha256))
+
+		const opts: InstallExtensionOptions = {
+			packageStoreRoot: PACKAGE_STORE_ROOT,
+			io,
+			store,
+			trustAnchorRegistry: ephemeralAnchorRegistry(publicPem),
+			registrySignature,
+		}
+		const result = await installExtension(
+			{ kind: "local-vsix", vsixPath: FAKE_VSIX_PATH, expectedSha256 },
+			opts,
+		)
+
+		expect(result.installation.trustTier).toBe("signed-third-party")
+		expect(result.package.signatureState).toBe("verified")
+		expect(result.package.publisherKeyId).toBe(EPHEMERAL_KEY_ID)
+		expect(result.package.signatureAlgorithm).toBe("ed25519")
+		expect(result.package.signatureB64).toBe(registrySignature.signatureB64)
+		// Persisted canonical manifest round-trips.
+		const persisted = JSON.parse(result.package.signedManifestJson!) as CanonicalSignedManifest
+		expect(persisted.contentSha256).toBe(expectedSha256)
+		expect(persisted.version).toBe("1.0.0")
+	})
+
+	it("tampered bytes (manifest.contentSha256 ≠ sha256(bytes)) → integrity_mismatch, nothing written, no dir", async () => {
+		const { vsixBytes, expectedSha256 } = buildMinimalVsixBytes()
+		const io = buildFakeIo(vsixBytes, FAKE_VSIX_PATH, PACKAGE_STORE_ROOT)
+		const store = buildFakeStore()
+		const { privatePem, publicPem } = makeEphemeralKeypair()
+		// Sign a manifest binding a DIFFERENT content hash → cross-check fails.
+		const wrongSha = "f".repeat(64)
+		const registrySignature = signManifest(privatePem, signedManifestFor(wrongSha))
+
+		let mkdirCalls = 0
+		const guardedIo: OrchestratorIo = {
+			...io,
+			mkdirSync(p: string): void {
+				mkdirCalls++
+				io.mkdirSync(p)
+			},
+		}
+
+		await expect(
+			installExtension(
+				{ kind: "local-vsix", vsixPath: FAKE_VSIX_PATH, expectedSha256 },
+				{
+					packageStoreRoot: PACKAGE_STORE_ROOT,
+					io: guardedIo,
+					store,
+					trustAnchorRegistry: ephemeralAnchorRegistry(publicPem),
+					registrySignature,
+				},
+			),
+		).rejects.toBeInstanceOf(SignatureVerificationError)
+
+		// verify-before-extract: store never called, content-addressed dir never made.
+		expect(store.packages.size).toBe(0)
+		expect(store.installations.size).toBe(0)
+		expect(mkdirCalls).toBe(0)
+	})
+
+	it("present-but-invalid signature (wrong signer) → integrity_mismatch, nothing written", async () => {
+		const { vsixBytes, expectedSha256 } = buildMinimalVsixBytes()
+		const io = buildFakeIo(vsixBytes, FAKE_VSIX_PATH, PACKAGE_STORE_ROOT)
+		const store = buildFakeStore()
+		// Sign with one key but trust a DIFFERENT anchor key under the same id.
+		const signer = makeEphemeralKeypair()
+		const trusted = makeEphemeralKeypair()
+		const registrySignature = signManifest(signer.privatePem, signedManifestFor(expectedSha256))
+
+		await expect(
+			installExtension(
+				{ kind: "local-vsix", vsixPath: FAKE_VSIX_PATH, expectedSha256 },
+				{
+					packageStoreRoot: PACKAGE_STORE_ROOT,
+					io,
+					store,
+					trustAnchorRegistry: ephemeralAnchorRegistry(trusted.publicPem),
+					registrySignature,
+				},
+			),
+		).rejects.toBeInstanceOf(SignatureVerificationError)
+		expect(store.packages.size).toBe(0)
+	})
+
+	it("unknown publisher key → unsigned-third-party / unverified (no throw)", async () => {
+		const { vsixBytes, expectedSha256 } = buildMinimalVsixBytes()
+		const io = buildFakeIo(vsixBytes, FAKE_VSIX_PATH, PACKAGE_STORE_ROOT)
+		const store = buildFakeStore()
+		const { privatePem, publicPem } = makeEphemeralKeypair()
+		// Trust registry keyed under a DIFFERENT id → resolve(publisherKeyId)=null.
+		const registry = ephemeralAnchorRegistry(publicPem, "some-other-key")
+		const registrySignature = signManifest(privatePem, signedManifestFor(expectedSha256))
+
+		const result = await installExtension(
+			{ kind: "local-vsix", vsixPath: FAKE_VSIX_PATH, expectedSha256 },
+			{
+				packageStoreRoot: PACKAGE_STORE_ROOT,
+				io,
+				store,
+				trustAnchorRegistry: registry,
+				registrySignature,
+			},
+		)
+		expect(result.installation.trustTier).toBe("unsigned-third-party")
+		expect(result.package.signatureState).toBe("unverified")
+		// Unverified key id is still recorded for forensics.
+		expect(result.package.publisherKeyId).toBe(EPHEMERAL_KEY_ID)
+	})
+
+	it("local-vsix with no signature installs as unsigned-third-party (allow-unsigned source)", async () => {
+		const { vsixBytes, expectedSha256 } = buildMinimalVsixBytes()
+		const io = buildFakeIo(vsixBytes, FAKE_VSIX_PATH, PACKAGE_STORE_ROOT)
+		const store = buildFakeStore()
+
+		const result = await installExtension(
+			{ kind: "local-vsix", vsixPath: FAKE_VSIX_PATH, expectedSha256 },
+			{ packageStoreRoot: PACKAGE_STORE_ROOT, io, store },
+		)
+		expect(result.installation.trustTier).toBe("unsigned-third-party")
+		expect(result.package.signatureState).toBe("unsigned")
+		expect(result.package.publisherKeyId).toBeNull()
+	})
+})
+
+// ---------------------------------------------------------------------------
+// A2b/A2c — resolveDetachedSignature + unsigned-block policy gate (firefly source)
+// ---------------------------------------------------------------------------
+
+describe("resolveDetachedSignature (A2b) + unsigned-block gate (A2c)", () => {
+	const RAW = Buffer.from("FIREPKG bobsoft.linter fake package bytes for signing fixture test")
+	const RAW_SHA = crypto.createHash("sha256").update(RAW).digest("hex")
+
+	function fireflyManifest(over: Partial<CanonicalSignedManifest> = {}): CanonicalSignedManifest {
+		return {
+			namespace: "bobsoft",
+			name: "linter",
+			version: "0.1.0",
+			contentSha256: RAW_SHA,
+			algorithm: "ed25519",
+			signedAt: "2026-06-16T00:00:00.000Z",
+			publisherKeyId: EPHEMERAL_KEY_ID,
+			...over,
+		}
+	}
+
+	const noopIo = {
+		readFileSync(): Buffer {
+			throw new Error("unexpected read")
+		},
+		existsSync(): boolean {
+			return false
+		},
+	}
+
+	it("kind:firefly with served signature + valid + sha match → signed-third-party provenance", () => {
+		const { privatePem, publicPem } = makeEphemeralKeypair()
+		const registryMeta = signManifest(privatePem, fireflyManifest())
+		const provenance = resolveDetachedSignature({
+			source: "firefly",
+			registryMeta,
+			rawBytes: RAW,
+			trustAnchorRegistry: ephemeralAnchorRegistry(publicPem),
+			io: noopIo,
+		})
+		expect(provenance).not.toBeNull()
+		expect(provenance!.trustTier).toBe("signed-third-party")
+		expect(provenance!.signatureState).toBe("verified")
+		expect(provenance!.publisherKeyId).toBe(EPHEMERAL_KEY_ID)
+	})
+
+	it("kind:firefly absent signature → null (drives the unsigned-block gate)", () => {
+		const { publicPem } = makeEphemeralKeypair()
+		const provenance = resolveDetachedSignature({
+			source: "firefly",
+			registryMeta: null,
+			rawBytes: RAW,
+			trustAnchorRegistry: ephemeralAnchorRegistry(publicPem),
+			io: noopIo,
+		})
+		expect(provenance).toBeNull()
+	})
+
+	it("kind:open-vsx ALWAYS resolves null (Open VSX serves no CH5 signature)", () => {
+		const { privatePem, publicPem } = makeEphemeralKeypair()
+		const registryMeta = signManifest(privatePem, fireflyManifest())
+		const provenance = resolveDetachedSignature({
+			source: "open-vsx",
+			registryMeta,
+			rawBytes: RAW,
+			trustAnchorRegistry: ephemeralAnchorRegistry(publicPem),
+			io: noopIo,
+		})
+		expect(provenance).toBeNull()
+	})
+
+	it("kind:firefly contentSha256 mismatch → throws integrity_mismatch", () => {
+		const { privatePem, publicPem } = makeEphemeralKeypair()
+		const registryMeta = signManifest(privatePem, fireflyManifest({ contentSha256: "a".repeat(64) }))
+		expect(() =>
+			resolveDetachedSignature({
+				source: "firefly",
+				registryMeta,
+				rawBytes: RAW,
+				trustAnchorRegistry: ephemeralAnchorRegistry(publicPem),
+				io: noopIo,
+			}),
+		).toThrow(SignatureVerificationError)
+	})
+
+	it("UnsignedInstallBlockedError is exported with the source kind", () => {
+		const err = new UnsignedInstallBlockedError("firefly", "blocked")
+		expect(err.sourceKind).toBe("firefly")
+		expect(err.name).toBe("UnsignedInstallBlockedError")
 	})
 })

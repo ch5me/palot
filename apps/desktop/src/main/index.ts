@@ -332,7 +332,9 @@ if (!gotLock) {
 		registerFireflyPluginIpc()
 		bootPluginWorkerSupervisor()
 		// Layer persisted user/admin capability grants onto the built-in policy
-		// resolver. On failure we keep the secure deny-by-default resolver
+		// resolver. Wires the shared host grant store (getHostGrantStore singleton)
+		// so grants written at install time are immediately visible to dispatch.
+		// On failure we keep the secure deny-by-default resolver
 		// (fail loud, never silently mask — CH5 #9).
 		installPluginGrantResolver().catch((err) =>
 			log.warn("Plugin grant resolver wiring failed; deny-by-default in effect", err),

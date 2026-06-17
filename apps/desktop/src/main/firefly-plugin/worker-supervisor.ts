@@ -162,6 +162,20 @@ interface SupervisedPlugin {
 	stopping: boolean
 }
 
+export type WorkerInvokeKind = "command" | "tool"
+
+export interface WorkerSendInvokeInput {
+	readonly kind: WorkerInvokeKind
+	readonly targetId: string
+	readonly args: Record<string, unknown>
+	readonly sessionId: string | null
+	readonly timeoutMs: number
+}
+
+export type WorkerSendInvokeResult =
+	| { readonly ok: true; readonly data: unknown }
+	| { readonly ok: false; readonly errorCode: string; readonly errorMessage: string }
+
 export interface PluginWorkerSupervisor {
 	register(registration: PluginWorkerRegistration): PluginSupervisionSummary
 	activate(pluginId: string): PluginSupervisionSummary
@@ -172,6 +186,14 @@ export interface PluginWorkerSupervisor {
 	listSummaries(): PluginSupervisionSummary[]
 	/** Test/diagnostic hook: run one hang-detection pass now. */
 	scanForHangs(): void
+	/**
+	 * Post an `invoke-command` or `invoke-tool` message to the plugin's live
+	 * worker, correlate the response by `requestId`, and resolve with the
+	 * worker's `invoke-result`. Rejects with code `worker_invoke_timeout` if
+	 * the worker does not reply within `timeoutMs`. Rejects with
+	 * `worker_not_active` if the plugin is not currently active. (B3)
+	 */
+	sendInvoke(pluginId: string, input: WorkerSendInvokeInput): Promise<WorkerSendInvokeResult>
 	dispose(): Promise<void>
 }
 
@@ -205,6 +227,15 @@ export function createPluginWorkerSupervisor(
 	const baseBackoffPolicy = options.restartBackoffPolicy ?? DEFAULT_RESTART_BACKOFF_POLICY
 
 	const plugins = new Map<string, SupervisedPlugin>()
+	/** In-flight invoke correlations: requestId → { resolve, reject, timeoutHandle } */
+	const pendingInvokes = new Map<
+		string,
+		{
+			resolve: (result: WorkerSendInvokeResult) => void
+			reject: (reason: Error) => void
+			timeoutHandle: ReturnType<typeof setTimeout>
+		}
+	>()
 	let disposed = false
 
 	const hangScanIntervalMs = options.hangScanIntervalMs ?? heartbeatPolicy.heartbeatIntervalMs
@@ -383,9 +414,28 @@ export function createPluginWorkerSupervisor(
 				case "fatal":
 					apply(entry, { kind: "workerCrashed", pluginId, exitCode: null, message: message.message })
 					return
+				case "invoke-result": {
+					const pending = pendingInvokes.get(message.requestId)
+					if (pending) {
+						clearTimeout(pending.timeoutHandle)
+						pendingInvokes.delete(message.requestId)
+						if (message.ok) {
+							pending.resolve({ ok: true, data: message.data })
+						} else {
+							pending.resolve({
+								ok: false,
+								errorCode: message.errorCode ?? "invoke_failed",
+								errorMessage: message.errorMessage ?? "worker invoke failed",
+							})
+						}
+					} else {
+						// No pending correlator — route to onWorkerRequest as a fallback
+						handleWorkerRequest(entry, worker, message)
+					}
+					return
+				}
 				case "storage-request":
 				case "capability-request":
-				case "invoke-result":
 					handleWorkerRequest(entry, worker, message)
 					return
 			}
@@ -601,12 +651,51 @@ export function createPluginWorkerSupervisor(
 
 		scanForHangs,
 
+		sendInvoke(pluginId, input) {
+			return new Promise<WorkerSendInvokeResult>((resolve, reject) => {
+				const entry = plugins.get(pluginId)
+				if (!entry || entry.state.state !== "active" || !entry.worker) {
+					resolve({
+						ok: false,
+						errorCode: "worker_not_active",
+						errorMessage: `Plugin ${pluginId} is not active`,
+					})
+					return
+				}
+				const requestId = crypto.randomUUID()
+				const timeoutHandle = setTimeout(() => {
+					if (pendingInvokes.delete(requestId)) {
+						resolve({
+							ok: false,
+							errorCode: "worker_invoke_timeout",
+							errorMessage: `Worker did not reply within ${input.timeoutMs}ms`,
+						})
+					}
+				}, input.timeoutMs)
+				unrefTimer(timeoutHandle)
+				pendingInvokes.set(requestId, { resolve, reject, timeoutHandle })
+				const messageType = input.kind === "command" ? ("invoke-command" as const) : ("invoke-tool" as const)
+				entry.worker.postMessage({
+					type: messageType,
+					requestId,
+					[input.kind === "command" ? "commandId" : "toolId"]: input.targetId,
+					args: input.args,
+					sessionId: input.sessionId,
+				})
+			})
+		},
+
 		async dispose() {
 			disposed = true
 			clearInterval(hangScanTimer)
 			for (const entry of plugins.values()) {
 				clearRestartTimer(entry)
 				stopWorker(entry)
+			}
+			for (const [id, pending] of pendingInvokes) {
+				clearTimeout(pending.timeoutHandle)
+				pending.resolve({ ok: false, errorCode: "supervisor_disposed", errorMessage: "Supervisor disposed" })
+				pendingInvokes.delete(id)
 			}
 		},
 	}

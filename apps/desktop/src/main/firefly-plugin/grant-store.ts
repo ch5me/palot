@@ -19,6 +19,27 @@ import { defaultGrantResolver, setGrantResolver, type GrantResolver } from "./di
 
 type GrantDb = Awaited<ReturnType<typeof ensureDb>>
 
+// ---------------------------------------------------------------------------
+// Host grant-store singleton — one DB-backed GrantStore shared by the boot
+// resolver and the install path. Mirrors the getPluginStorageService pattern.
+// ---------------------------------------------------------------------------
+
+let hostGrantStorePromise: Promise<GrantStore> | null = null
+
+/**
+ * Lazily construct and cache the single DB-backed GrantStore for the host
+ * process. Every caller (boot resolver, install path) shares this one instance
+ * so grants written at install time are immediately visible to dispatch.
+ *
+ * Mirrors `getPluginStorageService()` in host-authority.ts.
+ */
+export function getHostGrantStore(): Promise<GrantStore> {
+	if (!hostGrantStorePromise) {
+		hostGrantStorePromise = ensureDb().then((db) => createGrantStore({ db }))
+	}
+	return hostGrantStorePromise
+}
+
 export type GrantScope = "session" | "project" | "app"
 export type GrantState = "granted" | "denied" | "prompt-required"
 export type GrantedBy = "builtin-policy" | "user" | "admin-policy"
@@ -83,8 +104,10 @@ export function createDbGrantResolver(store: GrantStore): GrantResolver {
  * for third-party) in effect rather than masking the failure.
  */
 export async function installPluginGrantResolver(deps?: { db?: GrantDb }): Promise<GrantStore> {
-	const db = deps?.db ?? (await ensureDb())
-	const store = createGrantStore({ db })
+	// If a test-injected db is provided, build a fresh store from it (test path).
+	// Otherwise resolve via the shared singleton so the boot resolver and the
+	// install path share exactly one GrantStore instance.
+	const store = deps?.db ? createGrantStore({ db: deps.db }) : await getHostGrantStore()
 	setGrantResolver(createDbGrantResolver(store))
 	return store
 }

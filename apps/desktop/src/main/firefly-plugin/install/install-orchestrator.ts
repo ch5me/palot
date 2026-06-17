@@ -43,12 +43,60 @@ import {
 	type RegistryVersionMetadata,
 	type FetchFn,
 } from "../registry/open-vsx-client"
-import { derivePackageTrust } from "./signature-verify"
+import { parseJsonPluginManifest } from "../../../shared/firefly-plugin/json-manifest"
+import { derivePluginDescriptor, type PluginDescriptor } from "../../../shared/firefly-plugin/descriptor"
+import {
+	resolveDetachedSignature,
+	type ResolvedSignatureProvenance,
+	type SignatureSourceKind,
+} from "./detached-signature"
 import { computeInstallConsentPlan, consentPlanToGrantRecords } from "../install-consent"
 import type { GrantStore, GrantScope } from "../grant-store"
 import type { TrustTier } from "../../../shared/firefly-plugin/manifest"
+import {
+	createDefaultTrustAnchorRegistry,
+	type TrustAnchorRegistry,
+} from "../../../shared/firefly-plugin/trust-anchor-registry"
+import type { ServedSignatureMetadata } from "../../../shared/firefly-plugin/registry-signature-contract"
 
 const log = createLogger("firefly-plugin/install-orchestrator")
+
+/**
+ * Thrown when a signing-authority install resolves NO signature and the source
+ * is not explicitly `allow-unsigned-with-consent` (A2c). Fail-fast (CH5 #9): an
+ * absent signature on a marketplace source is BLOCKED, never silently installed
+ * as unsigned-third-party.
+ */
+export class UnsignedInstallBlockedError extends Error {
+	constructor(
+		public readonly sourceKind: SignatureSourceKind,
+		message: string,
+	) {
+		super(message)
+		this.name = "UnsignedInstallBlockedError"
+	}
+}
+
+/**
+ * Whether a source kind is a CH5 signing-authority registry whose installs MUST
+ * carry a verifiable signature (unless explicitly allow-unsigned-with-consent).
+ * `open-vsx` serves no CH5 signature and is permanently unsigned-third-party, so
+ * it is NOT a signing-authority source and is not blocked here.
+ */
+function isSigningAuthoritySource(kind: SignatureSourceKind): boolean {
+	return kind === "firefly"
+}
+
+/**
+ * Map the orchestrator's internal `registrySource` to the signature source kind
+ * used by `resolveDetachedSignature`. Open VSX downloads carry no CH5 signature;
+ * a manual local VSIX install resolves its sidecar via the `local-vsix` path.
+ */
+function signatureSourceKind(
+	registrySource: "open-vsx" | "manual-vsix",
+): SignatureSourceKind {
+	return registrySource === "open-vsx" ? "open-vsx" : "local-vsix"
+}
 
 /**
  * Persist install-time capability grants (P3d/§10): auto-grant low-risk by trust
@@ -113,10 +161,16 @@ export interface InstallResult {
 	package: ExtensionPackageRecord
 	/** The mutable installation record. */
 	installation: ExtensionInstallationRecord
-	/** Converted theme contributions from this package. */
+	/** Converted theme contributions from this package (non-empty for VS Code theme packages). */
 	themes: ImportedThemeContribution[]
 	/** Whether the package was already installed (idempotent re-install). */
 	alreadyInstalled: boolean
+	/**
+	 * F1 — Firefly code-extension: the derived `PluginDescriptor` for a code
+	 * extension (manifest carries `runtime` / `contributes.tools|commands`).
+	 * `null` for VS Code theme packages (no Firefly manifest).
+	 */
+	descriptor: PluginDescriptor | null
 }
 
 // ---------------------------------------------------------------------------
@@ -209,6 +263,32 @@ export interface InstallExtensionOptions {
 	 * omitted, grant persistence is skipped (data-only theme installs need none).
 	 */
 	grantStore?: GrantStore
+	/**
+	 * Trust-anchor registry resolving `publisherKeyId → public PEM` for registry
+	 * signature verification (A2). Defaults to the build-baked default registry
+	 * (`createDefaultTrustAnchorRegistry()`). Override only for test injection.
+	 */
+	trustAnchorRegistry?: TrustAnchorRegistry
+	/**
+	 * Served registry signature metadata (canonical manifest + signatureB64),
+	 * supplied by the gallery byte+signature endpoint for a signed install. When
+	 * omitted, the signature is resolved per source kind (local sidecar / none).
+	 */
+	registrySignature?: ServedSignatureMetadata | null
+	/**
+	 * Per-source escape hatch: permit an install whose signature is ABSENT to
+	 * proceed as unsigned-third-party WITH consent (A2c). Default false →
+	 * absent-signature on a signing-authority source is blocked. `local-vsix`
+	 * fixtures in local-dev may opt in.
+	 */
+	allowUnsignedWithConsent?: boolean
+	/**
+	 * C3 — Capability tokens explicitly consented by the user in the pre-install
+	 * consent dialog. Passed through to `persistInstallGrants` so those tokens are
+	 * written as `granted/user` rather than `prompt-required`. Tokens not in this
+	 * list remain `prompt-required` until the user re-consents.
+	 */
+	consentedCapabilities?: readonly string[]
 }
 
 /**
@@ -233,6 +313,12 @@ export async function installExtension(
 	let tempVsixPath: string | null = null
 	let registrySource: "open-vsx" | "manual-vsix"
 	let registryMeta: RegistryVersionMetadata | null = null
+	/**
+	 * Raw downloaded package bytes, captured pre-extract so the registry
+	 * signature can be verified over them BEFORE the content-addressed dir is
+	 * ever created (A2a verify-before-extract).
+	 */
+	let rawBytes: Buffer
 
 	if (input.kind === "open-vsx") {
 		// 1a. Resolve version metadata from Open VSX
@@ -269,10 +355,60 @@ export async function installExtension(
 		tempVsixPath = io.writeTemp(data, ".vsix")
 		vsixPath = tempVsixPath
 		registrySource = "open-vsx"
+		rawBytes = data
 	} else {
 		// 1c. Local VSIX
 		vsixPath = input.vsixPath
 		registrySource = "manual-vsix"
+		// Read the raw bytes once, up-front, so the registry signature is verified
+		// over them BEFORE any extraction (A2a).
+		rawBytes = io.readFileSync(vsixPath)
+	}
+
+	// ---------------------------------------------------------------------
+	// A2a/A2b/A2c — Verify the registry signature over the RAW bytes BEFORE
+	// extract. On failure we never reach `unpackVsix`, so a rejected package
+	// never creates a discoverable content-addressed dir.
+	// ---------------------------------------------------------------------
+	const sourceKind = signatureSourceKind(registrySource)
+	const trustAnchorRegistry: TrustAnchorRegistry =
+		options.trustAnchorRegistry ?? createDefaultTrustAnchorRegistry()
+
+	// resolveDetachedSignature throws integrity_mismatch on a present-but-invalid
+	// signature or a contentSha256 mismatch; returns null when no signature is
+	// resolvable for the source (policy gate below decides if that is permitted).
+	const provenance: ResolvedSignatureProvenance | null = resolveDetachedSignature({
+		source: sourceKind,
+		registryMeta: options.registrySignature ?? null,
+		rawBytes,
+		localPackagePath: input.kind === "local-vsix" ? vsixPath : undefined,
+		trustAnchorRegistry,
+		io: {
+			readFileSync: io.readFileSync,
+			existsSync: io.existsSync,
+		},
+		downloadUrl: registryMeta?.downloadUrl ?? null,
+	})
+
+	// A2c policy gate: a signing-authority install with NO resolvable signature is
+	// blocked unless explicitly allow-unsigned-with-consent (CH5 fail-fast).
+	if (provenance === null && isSigningAuthoritySource(sourceKind) && !options.allowUnsignedWithConsent) {
+		// Clean up the downloaded temp before aborting — nothing was extracted.
+		if (tempVsixPath) io.unlinkSync(tempVsixPath)
+		throw new UnsignedInstallBlockedError(
+			sourceKind,
+			`Install blocked: ${sourceKind} source served no registry signature and the source is not allow-unsigned-with-consent`,
+		)
+	}
+
+	// Derive the trust tier + signature state for persistence. A resolved
+	// provenance carries the verified tier (signed-third-party / unverified);
+	// an absent signature on a permitted source is unsigned-third-party.
+	const trust = provenance
+		? { signatureState: provenance.signatureState, trustTier: provenance.trustTier }
+		: { signatureState: "unsigned" as const, trustTier: "unsigned-third-party" as const }
+	if (trust.trustTier === "built-in") {
+		throw new Error(`derivePackageTrust returned built-in trust for marketplace source ${registrySource}`)
 	}
 
 	try {
@@ -284,7 +420,7 @@ export async function installExtension(
 			unzip: io.unzip,
 		}
 
-		// 2. Verify + unpack
+		// 2. Verify + unpack (signature already verified over rawBytes above)
 		const unpacked: UnpackedVsixResult = await unpackVsix(vsixPath, {
 			packageStoreRoot: options.packageStoreRoot,
 			expectedSha256: input.kind === "open-vsx"
@@ -293,13 +429,119 @@ export async function installExtension(
 			io: packageStoreIo,
 		})
 
+		// 3. Detect package shape: Firefly code extension (manifest.json) vs VS Code theme (package.json)
+		//
+		// A Firefly FPK ships a `manifest.json` at `extension/manifest.json` inside the
+		// package ZIP. A VS Code theme package ships only `package.json` with a
+		// `contributes.themes` block. We detect the Firefly path first so existing theme
+		// packages continue to work unmodified.
+		const fireflyManifestPath = path.join(unpacked.unpackedPath, "extension", "manifest.json")
+		const hasFireflyManifest = io.existsSync(fireflyManifestPath)
+
+		if (hasFireflyManifest) {
+			// ---------------------------------------------------------------------------
+			// F1 — Firefly code-extension install branch
+			// ---------------------------------------------------------------------------
+			log.info("Firefly manifest.json detected — code-extension branch", { sha256: unpacked.contentSha256 })
+
+			// 3a. Read + parse the Firefly manifest via the JSON profile path.
+			const manifestBytes = io.readFileSync(fireflyManifestPath)
+			let manifestRaw: unknown
+			try {
+				manifestRaw = JSON.parse(manifestBytes.toString("utf8"))
+			} catch (err) {
+				throw new Error(
+					`Failed to parse extension/manifest.json in ${unpacked.unpackedPath}: ${err instanceof Error ? err.message : String(err)}`,
+				)
+			}
+			const pluginManifest = parseJsonPluginManifest(manifestRaw)
+
+			// 3b. Derive the descriptor (validates panel slots, widget zones, engine range).
+			const descriptor = derivePluginDescriptor(pluginManifest, {
+				appVersion: "0.0.0", // placeholder — host re-derives at catalog load time
+				currentBuild: "electron",
+			})
+
+			log.info("Firefly descriptor derived", {
+				pluginId: pluginManifest.id,
+				tools: pluginManifest.contributes.tools.length,
+				commands: pluginManifest.contributes.commands.length,
+				capabilities: pluginManifest.capabilities.length,
+			})
+
+			// 3c. Persist the package row. `pluginManifestJson` enables the F2 catalog
+			// bridge to reconstruct the descriptor from the install record without
+			// re-reading the disk. `requiredCapabilitiesJson` surfaces declared
+			// capabilities for the consent gate and catalog projection.
+			const pkg = await store.upsertExtensionPackage({
+				id: unpacked.contentSha256,
+				externalId: pluginManifest.id,
+				publisher: pluginManifest.publisher ?? null,
+				name: pluginManifest.id,
+				version: pluginManifest.version,
+				displayName: pluginManifest.displayName ?? null,
+				registrySource,
+				vsixPath: input.kind === "local-vsix" ? vsixPath : null,
+				unpackedPath: unpacked.unpackedPath,
+				signatureState: trust.signatureState,
+				scanState: "clean",
+				themesJson: null,
+				publisherKeyId: provenance?.publisherKeyId ?? null,
+				signatureAlgorithm: provenance?.signature.algorithm ?? null,
+				signatureB64: provenance?.signature.signatureB64 ?? null,
+				signedManifestJson: provenance ? JSON.stringify(provenance.signedManifest) : null,
+				pluginManifestJson: JSON.stringify(manifestRaw),
+				requiredCapabilitiesJson: pluginManifest.capabilities.length > 0
+					? JSON.stringify(pluginManifest.capabilities)
+					: null,
+			})
+
+			// 3d. Write ExtensionInstallation.
+			const installation = await store.createExtensionInstallation({
+				packageId: pkg.id,
+				lifecycleState: "installed",
+				trustTier: trust.trustTier,
+				scope: "app",
+			})
+
+			// 3e. Persist install-time capability grants (P3d / §10). Auto-grant
+			// low-risk by trust tier; leave medium/high/critical as prompt-required.
+			if (options.grantStore) {
+				await persistInstallGrants({
+					grantStore: options.grantStore,
+					pluginId: pluginManifest.id,
+					capabilities: pluginManifest.capabilities,
+					trust: trust.trustTier,
+					consentedCapabilities: options.consentedCapabilities,
+				})
+			}
+
+			log.info("Firefly code extension installed", {
+				packageId: pkg.id,
+				pluginId: pluginManifest.id,
+				installationId: installation.id,
+			})
+
+			return {
+				package: pkg,
+				installation,
+				themes: [],
+				alreadyInstalled: pkg.createdAt < Date.now() - 5000,
+				descriptor,
+			}
+		}
+
+		// ---------------------------------------------------------------------------
+		// VS Code theme package branch (original path — unchanged)
+		// ---------------------------------------------------------------------------
+
 		// 3. Detect contributes.themes
 		const packageJsonRaw = unpacked.packageJson as Record<string, unknown>
 		const contributes = packageJsonRaw.contributes as Record<string, unknown> | null | undefined
 		const themeDeclarations = (contributes?.themes ?? []) as unknown[]
 		if (!themeDeclarations || themeDeclarations.length === 0) {
 			throw new Error(
-				`Package ${unpacked.contentSha256} has no contributes.themes — Phase 1 supports theme packages only`,
+				`Package ${unpacked.contentSha256} has no contributes.themes and no extension/manifest.json — cannot install`,
 			)
 		}
 
@@ -335,23 +577,10 @@ export async function installExtension(
 			})),
 		)
 
-		// 5b. Derive trust from signature verification (§10). The publisher-key
-		// registry is not wired yet, so signature/publicKey are null → the
-		// derivation yields unsigned-third-party. When the registry lands, resolve
-		// the DetachedSignature + publisher key and pass them here — the trust
-		// tier then upgrades to signed-third-party automatically, no other change.
-		const trust = derivePackageTrust({
-			source: registrySource,
-			signature: null,
-			publicKeyPem: null,
-			data: Buffer.alloc(0), // unused while signature is null
-		})
-		// A marketplace source can never yield "built-in" trust; fail loud if the
-		// derivation contract ever changes rather than silently coercing.
-		if (trust.trustTier === "built-in") {
-			throw new Error(`derivePackageTrust returned built-in trust for marketplace source ${registrySource}`)
-		}
-
+		// 5b. The trust tier + signature state were derived pre-extract (A2) from
+		// the verified registry signature over the raw bytes. Persist the
+		// provenance (publisher key id, algorithm, signature bytes, canonical
+		// signed manifest) alongside the package row when a signature verified.
 		const pkg = await store.upsertExtensionPackage({
 			id: unpacked.contentSha256,
 			externalId: conversionResult.externalId,
@@ -365,6 +594,10 @@ export async function installExtension(
 			signatureState: trust.signatureState,
 			scanState: "clean",
 			themesJson,
+			publisherKeyId: provenance?.publisherKeyId ?? null,
+			signatureAlgorithm: provenance?.signature.algorithm ?? null,
+			signatureB64: provenance?.signature.signatureB64 ?? null,
+			signedManifestJson: provenance ? JSON.stringify(provenance.signedManifest) : null,
 		})
 
 		// 6. Write ExtensionInstallation
@@ -399,6 +632,7 @@ export async function installExtension(
 			installation,
 			themes: conversionResult.themes,
 			alreadyInstalled: pkg.createdAt < Date.now() - 5000,
+			descriptor: null,
 		}
 	} finally {
 		// Clean up temp VSIX download

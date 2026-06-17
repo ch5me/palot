@@ -59,6 +59,8 @@ function spySupervisor(registered: Set<string>): SupervisorSpy {
 			registered.has(pluginId) ? summary(pluginId, "active") : null,
 		listSummaries: () => [],
 		scanForHangs: () => undefined,
+		sendInvoke: async (_pluginId, _input) =>
+			({ ok: false, errorCode: "worker_not_active", errorMessage: "not active" }),
 		dispose: async () => undefined,
 	} satisfies PluginWorkerSupervisor
 	return { supervisor, calls }

@@ -43,6 +43,27 @@ export interface ExtensionPackageRecord {
 	signatureState: SignatureState
 	scanState: string
 	themesJson: string | null
+	/** Publisher key id that signed the canonical manifest (A2 provenance). */
+	publisherKeyId: string | null
+	/** Signature algorithm (e.g. "ed25519"). */
+	signatureAlgorithm: string | null
+	/** Base64-encoded detached signature bytes. */
+	signatureB64: string | null
+	/** Verified canonical signed-manifest JSON. */
+	signedManifestJson: string | null
+	/**
+	 * F1 — Firefly code-extension: the raw `manifest.json` content for this
+	 * package (JSON text). Null for VS Code theme packages. Used by the F2
+	 * catalog bridge to reconstruct the descriptor without re-parsing the disk.
+	 */
+	pluginManifestJson: string | null
+	/**
+	 * F1 — Firefly code-extension: JSON-encoded `readonly string[]` of the
+	 * plugin's declared `capabilities` from the manifest. Null for theme packages.
+	 * Surfaced on the install record so the F2 bridge + consent gate can read
+	 * required capabilities without re-parsing the full manifest.
+	 */
+	requiredCapabilitiesJson: string | null
 	createdAt: number
 }
 
@@ -70,6 +91,24 @@ export interface CreateExtensionPackageInput {
 	signatureState?: SignatureState
 	scanState?: "pending" | "clean" | "quarantined"
 	themesJson?: string | null
+	/** Publisher key id that signed the canonical manifest (A2 provenance). */
+	publisherKeyId?: string | null
+	/** Signature algorithm (e.g. "ed25519"). */
+	signatureAlgorithm?: string | null
+	/** Base64-encoded detached signature bytes. */
+	signatureB64?: string | null
+	/** Verified canonical signed-manifest JSON. */
+	signedManifestJson?: string | null
+	/**
+	 * F1 — Firefly code-extension: the raw `manifest.json` content for this
+	 * package (JSON text). Null for VS Code theme packages.
+	 */
+	pluginManifestJson?: string | null
+	/**
+	 * F1 — Firefly code-extension: JSON-encoded `readonly string[]` of the
+	 * plugin's declared capabilities. Null for theme packages.
+	 */
+	requiredCapabilitiesJson?: string | null
 }
 
 export interface CreateExtensionInstallationInput {
@@ -119,6 +158,12 @@ export async function upsertExtensionPackage(
 		signatureState: input.signatureState ?? "unsigned",
 		scanState: input.scanState ?? "pending",
 		themesJson: input.themesJson ?? null,
+		publisherKeyId: input.publisherKeyId ?? null,
+		signatureAlgorithm: input.signatureAlgorithm ?? null,
+		signatureB64: input.signatureB64 ?? null,
+		signedManifestJson: input.signedManifestJson ?? null,
+		pluginManifestJson: input.pluginManifestJson ?? null,
+		requiredCapabilitiesJson: input.requiredCapabilitiesJson ?? null,
 		createdAt: now,
 	}
 

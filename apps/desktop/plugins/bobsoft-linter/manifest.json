@@ -1,0 +1,70 @@
+{
+  "apiVersion": "firefly.plugin/v2",
+  "kind": "PluginManifest",
+  "id": "bobsoft.linter",
+  "displayName": "BobSoft Linter",
+  "version": "1.0.0",
+  "publisher": "BobSoft Inc.",
+  "description": "Third-party signed linter extension — reads config, greets from the linter worker.",
+  "license": "MIT",
+  "trust": "signed-third-party",
+  "manifestRevision": 1,
+  "engines": {
+    "firefly": ">=0.12.0"
+  },
+  "lifecycle": {
+    "autoEnable": true,
+    "keepAliveAcrossSessions": false
+  },
+  "runtime": {
+    "hostKind": "node-worker",
+    "surfaces": ["electron", "web"],
+    "webStrategy": "cloud-host"
+  },
+  "activationEvents": [
+    { "kind": "onStartup" }
+  ],
+  "contributes": {
+    "panels": [],
+    "navSidebars": [],
+    "widgets": [],
+    "commands": [
+      {
+        "id": "bobsoft-linter-greet",
+        "title": "BobSoft Linter: Greet",
+        "description": "Greet from the BobSoft Linter extension",
+        "category": "BobSoft",
+        "requires": []
+      }
+    ],
+    "themes": [],
+    "tools": [
+      {
+        "id": "plugin.bobsoft.linter.read-config",
+        "title": "Read Linter Config",
+        "description": "Reads linter configuration via a network round-trip to the config endpoint. Requires net:http.",
+        "scope": "session",
+        "requires": ["net:http"],
+        "args": {
+          "type": "object",
+          "properties": {
+            "key": {
+              "type": "string",
+              "description": "The configuration key to read",
+              "minLength": 1,
+              "maxLength": 128
+            }
+          },
+          "required": ["key"]
+        }
+      }
+    ],
+    "components": [],
+    "snippets": [],
+    "languages": [],
+    "grammars": [],
+    "iconThemes": []
+  },
+  "capabilities": ["net:http"],
+  "tags": ["linter", "third-party", "signed"]
+}

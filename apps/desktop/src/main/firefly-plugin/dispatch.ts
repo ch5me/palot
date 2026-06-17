@@ -2,6 +2,7 @@ import { z } from "zod"
 
 import { BUILT_IN_DEFAULT_CAPABILITIES, decideCapabilityAll, lookupCapability } from "./capability-broker"
 import { getPluginCatalog } from "./authority"
+import { getWorkerInvokeRouter } from "./worker-invoke-router"
 import type { PluginDescriptor } from "../../shared/firefly-plugin/descriptor"
 import type { CommandContribution, TrustTier } from "../../shared/firefly-plugin/manifest"
 import { createLogger } from "../logger"
@@ -172,6 +173,34 @@ export async function invokePluginCommand(
 			errorMessage: broker.failures[0]?.reason ?? "capability denied",
 		}
 	}
+	// Worker-backed path (B3): after broker approval, route to the live worker
+	// if the plugin is electron-utility and its supervisor state is active.
+	// Built-ins (no worker, in-process) fall through to the handler map below.
+	const router = getWorkerInvokeRouter()
+	if (router.isWorkerBacked(input.pluginId)) {
+		const workerResult = await router.invoke({
+			pluginId: input.pluginId,
+			kind: "command",
+			targetId: input.commandId,
+			args: input.args,
+			sessionId: input.sessionId ?? null,
+		})
+		if (workerResult.ok) {
+			return {
+				status: "completed",
+				pluginId: input.pluginId,
+				commandId: input.commandId,
+				data: workerResult.data,
+			}
+		}
+		return {
+			status: "failed",
+			pluginId: input.pluginId,
+			commandId: input.commandId,
+			errorCode: workerResult.errorCode,
+			errorMessage: workerResult.errorMessage,
+		}
+	}
 	const handler = handlers.get(`${input.pluginId}::${input.commandId}`)
 	if (!handler) {
 		return {
@@ -287,6 +316,34 @@ export async function invokePluginTool(
 			commandId: input.toolId,
 			errorCode: "permission_denied",
 			errorMessage: broker.failures[0]?.reason ?? "capability denied",
+		}
+	}
+	// Worker-backed path (B3): after broker approval, route to the live worker
+	// if the plugin is electron-utility and its supervisor state is active.
+	// Built-ins (no worker, in-process) fall through to the handler map below.
+	const toolRouter = getWorkerInvokeRouter()
+	if (toolRouter.isWorkerBacked(input.pluginId)) {
+		const workerResult = await toolRouter.invoke({
+			pluginId: input.pluginId,
+			kind: "tool",
+			targetId: input.toolId,
+			args: input.args,
+			sessionId: input.sessionId ?? null,
+		})
+		if (workerResult.ok) {
+			return {
+				status: "completed",
+				pluginId: input.pluginId,
+				commandId: input.toolId,
+				data: workerResult.data,
+			}
+		}
+		return {
+			status: "failed",
+			pluginId: input.pluginId,
+			commandId: input.toolId,
+			errorCode: workerResult.errorCode,
+			errorMessage: workerResult.errorMessage,
 		}
 	}
 	const argsSchema = z.object(tool.args as Record<string, z.ZodTypeAny>)

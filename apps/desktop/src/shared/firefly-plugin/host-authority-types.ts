@@ -216,6 +216,38 @@ export interface MarketplaceInstalledEntry {
 }
 
 // ---------------------------------------------------------------------------
+// CatalogProjectionSnapshot — web projection cache snapshot (D-P1)
+// ---------------------------------------------------------------------------
+
+/**
+ * A point-in-time snapshot of all catalog projections served by firefly-cloud.
+ *
+ * The web build's `CloudHostAuthority` cannot serve synchronous reads via remote
+ * calls; instead it keeps a local `CloudProjectionCache` hydrated from this
+ * snapshot. Each slice is typed as the corresponding `HostPlugin*Result` so sync
+ * reads are served verbatim from the cached snapshot.
+ *
+ * The `revision` is a monotonically increasing integer; a higher revision always
+ * replaces a lower one (stale regression guard). `fetchedAt` is an ISO-8601
+ * timestamp recorded at the time the snapshot was fetched.
+ */
+export interface CatalogProjectionSnapshot {
+	readonly revision: number
+	readonly fetchedAt: string
+	readonly catalog: HostPluginListResult
+	readonly tools: HostPluginToolsResult
+	readonly panels: HostPluginFamilyResult
+	readonly navSidebars: HostPluginFamilyResult
+	readonly widgets: HostPluginFamilyResult
+	readonly commands: HostPluginFamilyResult
+	readonly themes: HostPluginFamilyResult
+	/** Per-plugin describe results keyed by pluginId. */
+	readonly describeByPluginId: Record<string, HostPluginDescribeResult>
+	/** Per-plugin state results keyed by pluginId. */
+	readonly stateByPluginId: Record<string, HostPluginStateResult>
+}
+
+// ---------------------------------------------------------------------------
 // The HostAuthority interface — one contract, two implementations (§2.4)
 // ---------------------------------------------------------------------------
 

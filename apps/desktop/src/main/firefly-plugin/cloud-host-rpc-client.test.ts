@@ -8,6 +8,24 @@ import {
 	resolveCloudHostConfig,
 } from "./cloud-host-rpc-client"
 
+/** Build a fully-shaped CatalogProjectionSnapshot with empty-default slices. */
+function fullSnapshot(partial: { revision: number; fetchedAt: string }): CatalogProjectionSnapshot {
+	const emptyFamily = { appVersion: "0.0.0", items: [] }
+	return {
+		revision: partial.revision,
+		fetchedAt: partial.fetchedAt,
+		catalog: { appVersion: "0.0.0", plugins: [], summaries: [], knownCommands: [] },
+		tools: { appVersion: "0.0.0", tools: [] },
+		panels: emptyFamily,
+		navSidebars: emptyFamily,
+		widgets: emptyFamily,
+		commands: emptyFamily,
+		themes: emptyFamily,
+		describeByPluginId: {},
+		stateByPluginId: {},
+	}
+}
+
 describe("resolveCloudHostConfig", () => {
 	it("returns null when FIREFLY_CLOUD_URL is absent (no guessed default)", () => {
 		expect(resolveCloudHostConfig({})).toBeNull()
@@ -60,7 +78,7 @@ describe("createCloudHostRpcClient", () => {
 describe("fetchProjectionSnapshot (D-P2)", () => {
 	it("POSTs method 'projectionSnapshot' with no sinceRevision param when called without args", async () => {
 		const calls: { method: string; params: Record<string, unknown> }[] = []
-		const snapshot: CatalogProjectionSnapshot = { revision: 3, fetchedAt: "2026-06-16T00:00:00Z" }
+		const snapshot: CatalogProjectionSnapshot = fullSnapshot({ revision: 3, fetchedAt: "2026-06-16T00:00:00Z" })
 		const client = createCloudHostRpcClient({
 			config: { baseUrl: "https://cloud.example", token: "tok" },
 			fetchFn: async (_url, init) => {
@@ -78,7 +96,7 @@ describe("fetchProjectionSnapshot (D-P2)", () => {
 
 	it("includes sinceRevision in params when provided", async () => {
 		const calls: { method: string; params: Record<string, unknown> }[] = []
-		const snapshot: CatalogProjectionSnapshot = { revision: 7, fetchedAt: "2026-06-16T01:00:00Z" }
+		const snapshot: CatalogProjectionSnapshot = fullSnapshot({ revision: 7, fetchedAt: "2026-06-16T01:00:00Z" })
 		const client = createCloudHostRpcClient({
 			config: { baseUrl: "https://cloud.example", token: null },
 			fetchFn: async (_url, init) => {

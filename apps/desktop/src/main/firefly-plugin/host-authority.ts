@@ -35,6 +35,7 @@ import type {
 	MarketplaceInstalledEntry,
 	MarketplaceInstalledTheme,
 } from "../../shared/firefly-plugin/host-authority-types"
+import { createCloudProjectionCache, type CloudProjectionCache } from "./cloud-projection-cache"
 import { createOpenVsxClient } from "./registry/open-vsx-client"
 import { installExtension, uninstallExtension, applyInstalledTheme } from "./install/install-orchestrator"
 import { listInstalledExtensions } from "./install/extension-store"
@@ -68,6 +69,7 @@ import {
 	type CloudHostRpcClient,
 } from "./cloud-host-rpc-client"
 import { ensureDb } from "../automation/database"
+import { getHostGrantStore } from "./grant-store"
 import { createLogger } from "../logger"
 
 const log = createLogger("firefly-plugin-host-authority")
@@ -287,7 +289,19 @@ export class ElectronHostAuthority implements HostAuthority {
 			}
 		}
 
-		const result = await installExtension(installInput)
+		const grantStore = await getHostGrantStore()
+		// consentedCapabilities threads the pre-install consent result into
+		// persistInstallGrants so approved capabilities land as granted/user
+		// rows. C3 wires the orchestrator-side gating; C2 only passes it through.
+		// The options type is widened with the upcoming C3 addition of
+		// consentedCapabilities to InstallExtensionOptions.
+		const installOptions: Parameters<typeof installExtension>[1] & {
+			consentedCapabilities?: readonly string[]
+		} = {
+			grantStore,
+			consentedCapabilities: input.consentedCapabilities,
+		}
+		const result = await installExtension(installInput, installOptions)
 		return {
 			packageId: result.package.id,
 			installationId: result.installation.id,
@@ -372,57 +386,99 @@ export class ElectronHostAuthority implements HostAuthority {
  */
 export class CloudHostAuthority implements HostAuthority {
 	private readonly rpc: CloudHostRpcClient
+	private readonly cache: CloudProjectionCache
+	/** Promise for the in-flight initial hydration (kicked on construction). */
+	private readonly initialHydration: Promise<void>
 
-	constructor(rpc?: CloudHostRpcClient) {
+	constructor(rpc?: CloudHostRpcClient, cache?: CloudProjectionCache) {
 		this.rpc = rpc ?? createCloudHostRpcClient({ config: resolveCloudHostConfig() })
+		this.cache = cache ?? createCloudProjectionCache()
+		// Kick the initial projection fetch + subscribe for push-on-change.
+		// Failures are logged but do not prevent construction — reads will throw
+		// ProjectionCacheNotHydratedError until the fetch completes, which is the
+		// correct fail-fast behaviour (no silent empty projection).
+		this.initialHydration = this.kickHydration()
 	}
 
-	/** Sync projection reads need a hydrated local cache (not built yet). */
-	private projectionsUnavailable(method: string): never {
-		throw new CloudHostNotConfiguredError(
-			`a hydrated projection cache for "${method}" (web projection cache is a Phase 3 firefly-cloud feature)`,
-		)
+	private async kickHydration(): Promise<void> {
+		try {
+			const snapshot = await this.rpc.fetchProjectionSnapshot()
+			this.cache.hydrate(snapshot)
+		} catch (err) {
+			// Fail fast: log the error but do not suppress it. The cache remains
+			// un-hydrated and sync reads will throw ProjectionCacheNotHydratedError
+			// until a subsequent hydration succeeds (push or manual refresh).
+			log.warn("CloudHostAuthority: initial projection fetch failed", err instanceof Error ? err.message : err)
+		}
+		// Wire push-on-change subscription (stub until D-C5 lands; see D-P2).
+		// The try/catch above covers the initial fetch; subscription errors from
+		// an unconfigured host surface as CloudHostNotConfiguredError on subscribe().
+		try {
+			this.rpc.subscribeProjection((snapshot) => {
+				this.cache.hydrate(snapshot)
+			})
+		} catch (err) {
+			log.warn("CloudHostAuthority: projection push subscription failed", err instanceof Error ? err.message : err)
+		}
 	}
+
+	/**
+	 * Exposed for tests that need to await the initial hydration before asserting.
+	 * Not part of the `HostAuthority` interface — internal use only.
+	 */
+	async awaitInitialHydration(): Promise<void> {
+		return this.initialHydration
+	}
+
+	// ---- sync projection reads — delegate to cache -------------------------
 
 	catalog(): HostPluginListResult {
-		return this.projectionsUnavailable("catalog")
+		return this.cache.catalog()
 	}
 
-	describe(_pluginId: string): HostPluginDescribeResult {
-		return this.projectionsUnavailable("describe")
+	describe(pluginId: string): HostPluginDescribeResult {
+		return this.cache.describe(pluginId)
 	}
 
-	state(_pluginId: string): HostPluginStateResult {
-		return this.projectionsUnavailable("state")
+	state(pluginId: string): HostPluginStateResult {
+		return this.cache.state(pluginId)
 	}
 
 	listTools(): HostPluginToolsResult {
-		return this.projectionsUnavailable("listTools")
+		return this.cache.listTools()
 	}
 
 	listPanels(): HostPluginFamilyResult {
-		return this.projectionsUnavailable("listPanels")
+		return this.cache.listPanels()
 	}
 
 	listNavSidebars(): HostPluginFamilyResult {
-		return this.projectionsUnavailable("listNavSidebars")
+		return this.cache.listNavSidebars()
 	}
 
 	listWidgets(): HostPluginFamilyResult {
-		return this.projectionsUnavailable("listWidgets")
+		return this.cache.listWidgets()
 	}
 
 	listCommands(): HostPluginFamilyResult {
-		return this.projectionsUnavailable("listCommands")
+		return this.cache.listCommands()
 	}
 
 	listThemes(): HostPluginFamilyResult {
-		return this.projectionsUnavailable("listThemes")
+		return this.cache.listThemes()
 	}
 
 	refresh(): HostPluginRefreshResult {
-		return this.projectionsUnavailable("refresh")
+		// refresh() is a write that triggers a catalog rebuild on the server;
+		// in the web build we cannot issue a sync rebuild, so fail fast naming
+		// the gap (lifecycle writes are remote+async, the sync interface cannot
+		// express a remote round-trip).
+		throw new CloudHostNotConfiguredError(
+			"a synchronous refresh() in the web build (refresh is a server-side operation — issue a remote refresh via RPC and await the pushed snapshot)",
+		)
 	}
+
+	// ---- async write/dispatch — delegate to RPC ----------------------------
 
 	async invoke(
 		pluginId: string,
@@ -444,15 +500,21 @@ export class CloudHostAuthority implements HostAuthority {
 	setEnabled(_pluginId: string, _enabled: boolean): HostPluginSetEnabledResult {
 		// Lifecycle writes are remote+async in the web build; the sync interface
 		// shape cannot express a remote round-trip, so fail fast naming the gap.
-		return this.projectionsUnavailable("setEnabled")
+		throw new CloudHostNotConfiguredError(
+			"a synchronous setEnabled() in the web build (lifecycle writes are remote+async)",
+		)
 	}
 
 	reportPanelCrash(_pluginId: string, _message: string): HostPluginPanelCrashResult {
-		return this.projectionsUnavailable("reportPanelCrash")
+		throw new CloudHostNotConfiguredError(
+			"a synchronous reportPanelCrash() in the web build (lifecycle writes are remote+async)",
+		)
 	}
 
 	releaseQuarantine(_pluginId: string, _note: string): HostPluginReleaseQuarantineResult {
-		return this.projectionsUnavailable("releaseQuarantine")
+		throw new CloudHostNotConfiguredError(
+			"a synchronous releaseQuarantine() in the web build (lifecycle writes are remote+async)",
+		)
 	}
 
 	async gallerySearch(options: MarketplaceSearchOptions): Promise<MarketplaceSearchResult> {

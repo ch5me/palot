@@ -64,6 +64,29 @@ export const extensionPackages = sqliteTable(
 		scanState: text("scan_state").notNull().default("pending"),
 		/** Serialized contributes.themes array (JSON string) for theme packages. */
 		themesJson: text("themes_json"),
+		/**
+		 * Signature provenance (A2 / §10). Populated on a verified registry
+		 * install: the publisher key id that signed the canonical manifest, the
+		 * signature algorithm + base64 bytes, and the verified canonical signed
+		 * manifest JSON `{namespace,name,version,contentSha256,algorithm,signedAt,
+		 * publisherKeyId}`. Null for unsigned / theme-only installs.
+		 */
+		publisherKeyId: text("publisher_key_id"),
+		signatureAlgorithm: text("signature_algorithm"),
+		signatureB64: text("signature_b64"),
+		signedManifestJson: text("signed_manifest_json"),
+		/**
+		 * F1 — Firefly code-extension: the raw `manifest.json` content (JSON text).
+		 * Null for VS Code theme packages. Used by the F2 catalog bridge to
+		 * reconstruct the PluginManifest + PluginDescriptor from the install record.
+		 */
+		pluginManifestJson: text("plugin_manifest_json"),
+		/**
+		 * F1 — Firefly code-extension: JSON-encoded capability token array from
+		 * the Firefly manifest's top-level `capabilities` field. Null for theme
+		 * packages. Surfaced on the install record for the consent gate + F2 bridge.
+		 */
+		requiredCapabilitiesJson: text("required_capabilities_json"),
 		createdAt: int("created_at").notNull(),
 	},
 	(table) => [

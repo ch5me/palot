@@ -61,19 +61,11 @@ type FetchFn = (url: string, init: { method: string; headers: Record<string, str
 	text(): Promise<string>
 }>
 
-/**
- * Minimal placeholder for the catalog projection snapshot shape.
- *
- * TODO(D-P1): replace with the shared `CatalogProjectionSnapshot` type from
- * `host-authority-types.ts` once D-P1 adds it in Wave 2. This local interface
- * is intentionally open (`[k: string]: unknown`) so downstream consumers can
- * extend it without breaking the transport contract.
- */
-export interface CatalogProjectionSnapshot {
-	readonly revision: number
-	readonly fetchedAt: string
-	readonly [k: string]: unknown
-}
+// Import for local use in this file's own signatures.
+import type { CatalogProjectionSnapshot } from "../../shared/firefly-plugin/host-authority-types"
+// Re-export the shared CatalogProjectionSnapshot so importers of this module
+// (including the test file) can reference it without touching the shared path.
+export type { CatalogProjectionSnapshot } from "../../shared/firefly-plugin/host-authority-types"
 
 export interface CloudHostRpcClient {
 	call<T>(method: string, params: Record<string, unknown>): Promise<T>
