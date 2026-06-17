@@ -27,20 +27,15 @@ describe("palotBridgeManifest", () => {
 		expect(descriptor.bridge?.bindOnActivation).toBe(true)
 	})
 
-	test("declares all 13 current product + discovery tools", () => {
+	test("declares the remaining side-panel bridge tools", () => {
 		const parsed = parsePluginManifest(palotBridgeManifest)
-		expect(parsed.contributes.tools).toHaveLength(13)
+		expect(parsed.contributes.tools).toHaveLength(2)
 		for (const id of PALOT_BRIDGE_TOOL_IDS) {
 			expect(parsed.contributes.tools.some((t) => t.id === id)).toBe(true)
 		}
 		const names = parsed.contributes.tools.map((t) => t.id)
-		expect(names).toContain("plugin.firefly.built-in.palot-bridge.browser_status")
 		expect(names).toContain("plugin.firefly.built-in.palot-bridge.open_side_panel")
 		expect(names).toContain("plugin.firefly.built-in.palot-bridge.ui_state")
-		expect(names).toContain("plugin.firefly.built-in.palot-bridge.search_tools")
-		expect(names).toContain("plugin.firefly.built-in.palot-bridge.describe_tool")
-		expect(names).toContain("plugin.firefly.built-in.palot-bridge.call_tool")
-		expect(names).toContain("plugin.firefly.built-in.palot-bridge.tools_status")
 	})
 
 	test("all tool ids use the namespaced plugin.<legacy-id>.* shape (tool ids stable across alias migration)", () => {
@@ -67,8 +62,6 @@ describe("palotBridgeManifest", () => {
 	test("every tool that performs a side-effect declares the matching capability", () => {
 		const parsed = parsePluginManifest(palotBridgeManifest)
 		const byName = (id: string) => parsed.contributes.tools.find((t) => t.id.endsWith(id))
-		expect(byName("browser_open")?.requires).toContain("host:browser.lane-control")
-		expect(byName("browser_click")?.requires).toContain("host:browser.action-dispatch")
 		expect(byName("open_side_panel")?.requires).toContain("host:bridge.ui-state-write")
 		expect(byName("ui_state")?.requires).toContain("host:bridge.ui-state-read")
 	})

@@ -2,16 +2,15 @@
  * Firefly Plugin System V2 — Bridge migration (palot-bridge -> V2)
  *
  * The current `palot-bridge.js` runtime is the closest thing the
- * desktop app already has to a first-party V2 plugin. It exposes
- * 13 tools and a system-context block. The V2 plan calls for
- * moving every current bridge tool and hook onto a V2 landing
- * point so the runtime can drop the special-case Palot bridge
+ * desktop app already has to a first-party V2 plugin. After legacy
+ * browser/discovery cutover, it keeps side-panel tools and a
+ * system-context block. The V2 plan calls for moving the remaining
+ * bridge tools and hooks onto a V2 landing point so the runtime can drop the special-case Palot bridge
  * shim and treat the bridge as one more plugin on the canonical
  * path.
  *
- * This file encodes that migration as a source artifact: for every
- * current bridge capability, it records the V2 landing point and
- * the disposition. The matrix is append-only.
+ * This file encodes the still-live migration surface as a source artifact: for every
+ * remaining bridge capability, it records the V2 landing point and disposition.
  */
 
 import { z } from "zod"
@@ -70,76 +69,6 @@ export interface BridgeMigrationRow {
 
 export const BRIDGE_MIGRATION_MATRIX: readonly BridgeMigrationRow[] = [
 	{
-		currentId: "browser_status",
-		category: "browser-control",
-		currentSurface: "palot-bridge.js :: tool.browser_status",
-		landingPoint: "plugin.tool.<pluginId>.<shortName>",
-		targetPluginId: "firefly.built-in.palot-bridge",
-		disposition: "move",
-		removeIn: "v2.0",
-		notes: "V2 generalized projection wraps the args; runtime stops calling the Palot-only implementation.",
-	},
-	{
-		currentId: "browser_open",
-		category: "browser-control",
-		currentSurface: "palot-bridge.js :: tool.browser_open",
-		landingPoint: "plugin.tool.<pluginId>.<shortName>",
-		targetPluginId: "firefly.built-in.palot-bridge",
-		disposition: "move",
-		removeIn: "v2.0",
-		notes: "Requires host:browser.lane-control; args migrate to Zod schema.",
-	},
-	{
-		currentId: "browser_navigate",
-		category: "browser-control",
-		currentSurface: "palot-bridge.js :: tool.browser_navigate",
-		landingPoint: "plugin.tool.<pluginId>.<shortName>",
-		targetPluginId: "firefly.built-in.palot-bridge",
-		disposition: "move",
-		removeIn: "v2.0",
-		notes: "Same shape as browser_open; shares the lane-control capability.",
-	},
-	{
-		currentId: "browser_tabs",
-		category: "browser-control",
-		currentSurface: "palot-bridge.js :: tool.browser_tabs",
-		landingPoint: "plugin.tool.<pluginId>.<shortName>",
-		targetPluginId: "firefly.built-in.palot-bridge",
-		disposition: "move",
-		removeIn: "v2.0",
-		notes: "Browser-tab control lands on host:browser.tab-control.",
-	},
-	{
-		currentId: "browser_click",
-		category: "browser-control",
-		currentSurface: "palot-bridge.js :: tool.browser_click",
-		landingPoint: "plugin.tool.<pluginId>.<shortName>",
-		targetPluginId: "firefly.built-in.palot-bridge",
-		disposition: "move",
-		removeIn: "v2.0",
-		notes: "Dispatch is broker-mediated; runtime stops calling action dispatcher directly.",
-	},
-	{
-		currentId: "browser_type",
-		category: "browser-control",
-		currentSurface: "palot-bridge.js :: tool.browser_type",
-		landingPoint: "plugin.tool.<pluginId>.<shortName>",
-		targetPluginId: "firefly.built-in.palot-bridge",
-		disposition: "move",
-		removeIn: "v2.0",
-		notes: "Same as browser_click; lands on host:browser.action-dispatch.",
-	},
-	{
-		currentId: "browser_scroll",
-		category: "browser-control",
-		currentSurface: "palot-bridge.js :: tool.browser_scroll",
-		landingPoint: "plugin.tool.<pluginId>.<shortName>",
-		targetPluginId: "firefly.built-in.palot-bridge",
-		disposition: "move",
-		removeIn: "v2.0",
-		notes: "Scroll is action-dispatch; V2 wraps the arg schema in z.object(passthrough).",
-	},
-	{
 		currentId: "open_side_panel",
 		category: "side-panel-control",
 		currentSurface: "palot-bridge.js :: tool.open_side_panel",
@@ -158,46 +87,6 @@ export const BRIDGE_MIGRATION_MATRIX: readonly BridgeMigrationRow[] = [
 		disposition: "move",
 		removeIn: "v2.0",
 		notes: "Side-panel snapshot read; lands on host:bridge.ui-state-read.",
-	},
-	{
-		currentId: "search_tools",
-		category: "connected-app-discovery",
-		currentSurface: "palot-bridge.js :: tool.search_tools",
-		landingPoint: "plugins.tools",
-		targetPluginId: "host:built-in",
-		disposition: "remove",
-		removeIn: "v2.0",
-		notes: "V2 generalizes connected-app discovery under plugins.tools; the Palot copy is redundant and goes away.",
-	},
-	{
-		currentId: "describe_tool",
-		category: "connected-app-discovery",
-		currentSurface: "palot-bridge.js :: tool.describe_tool",
-		landingPoint: "plugins.tools",
-		targetPluginId: "host:built-in",
-		disposition: "remove",
-		removeIn: "v2.0",
-		notes: "Replaced by the host's plugins.tools with a structured describe argument.",
-	},
-	{
-		currentId: "call_tool",
-		category: "connected-app-discovery",
-		currentSurface: "palot-bridge.js :: tool.call_tool",
-		landingPoint: "plugins.tools",
-		targetPluginId: "host:built-in",
-		disposition: "remove",
-		removeIn: "v2.0",
-		notes: "Replaced by the host's plugins.tools with explicit execute semantics.",
-	},
-	{
-		currentId: "tools_status",
-		category: "connected-app-discovery",
-		currentSurface: "palot-bridge.js :: tool.tools_status",
-		landingPoint: "plugins.tools",
-		targetPluginId: "host:built-in",
-		disposition: "remove",
-		removeIn: "v2.0",
-		notes: "Replaced by plugins.tools with a status filter.",
 	},
 	{
 		currentId: "experimental.chat.system.transform",

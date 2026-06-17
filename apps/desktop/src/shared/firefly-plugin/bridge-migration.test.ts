@@ -31,24 +31,9 @@ describe("BRIDGE_LANDING_POINTS vocabulary", () => {
 })
 
 describe("BRIDGE_MIGRATION_MATRIX coverage", () => {
-	test("covers every current palot-bridge tool (13 entries)", () => {
+	test("covers the remaining palot-bridge tools", () => {
 		const rowIds = BRIDGE_MIGRATION_MATRIX.map((r) => r.currentId)
-		const expectedTools = [
-			"browser_status",
-			"browser_open",
-			"browser_navigate",
-			"browser_tabs",
-			"browser_click",
-			"browser_type",
-			"browser_scroll",
-			"open_side_panel",
-			"ui_state",
-			"search_tools",
-			"describe_tool",
-			"call_tool",
-			"tools_status",
-		]
-		for (const id of expectedTools) {
+		for (const id of ["open_side_panel", "ui_state"]) {
 			expect(rowIds).toContain(id)
 		}
 	})
@@ -79,22 +64,30 @@ describe("BRIDGE_MIGRATION_MATRIX coverage", () => {
 		}
 	})
 
-	test("the four connected-app discovery tools are all disposition=remove", () => {
-		const removeRows = BRIDGE_MIGRATION_MATRIX.filter(
-			(r) => r.category === "connected-app-discovery",
-		)
-		expect(removeRows.length).toBe(4)
-		for (const row of removeRows) {
-			expect(row.disposition).toBe("remove")
-			expect(row.landingPoint).toBe("plugins.tools")
+	test("removed legacy rows stay absent", () => {
+		const rowIds = BRIDGE_MIGRATION_MATRIX.map((r) => r.currentId)
+		for (const id of [
+			"browser_status",
+			"browser_open",
+			"browser_navigate",
+			"browser_tabs",
+			"browser_click",
+			"browser_type",
+			"browser_scroll",
+			"search_tools",
+			"describe_tool",
+			"call_tool",
+			"tools_status",
+		]) {
+			expect(rowIds).not.toContain(id)
 		}
 	})
 })
 
 describe("findBridgeMigrationRow", () => {
 	test("returns the row for a known id", () => {
-		const row = findBridgeMigrationRow("browser_status")
-		expect(row?.currentId).toBe("browser_status")
+		const row = findBridgeMigrationRow("open_side_panel")
+		expect(row?.currentId).toBe("open_side_panel")
 	})
 
 	test("returns null for an unknown id", () => {
@@ -109,13 +102,9 @@ describe("groupBridgeMigrationByDisposition", () => {
 		expect(total).toBe(BRIDGE_MIGRATION_MATRIX.length)
 	})
 
-	test("the 4 connected-app discovery tools are all in remove", () => {
+	test("no removed legacy tools remain in remove", () => {
 		const grouped = groupBridgeMigrationByDisposition()
-		const removeIds = grouped.remove.map((r) => r.currentId)
-		expect(removeIds).toContain("search_tools")
-		expect(removeIds).toContain("describe_tool")
-		expect(removeIds).toContain("call_tool")
-		expect(removeIds).toContain("tools_status")
+		expect(grouped.remove).toHaveLength(0)
 	})
 })
 
@@ -129,10 +118,10 @@ describe("groupBridgeMigrationByCategory", () => {
 		expect(total).toBe(BRIDGE_MIGRATION_MATRIX.length)
 	})
 
-	test("browser-control holds the 7 browser tools", () => {
+	test("browser-control and connected-app-discovery are empty after legacy cutover", () => {
 		const grouped = groupBridgeMigrationByCategory()
-		const ids = grouped["browser-control"].map((r) => r.currentId)
-		expect(ids.length).toBeGreaterThanOrEqual(7)
+		expect(grouped["browser-control"]).toHaveLength(0)
+		expect(grouped["connected-app-discovery"]).toHaveLength(0)
 	})
 })
 

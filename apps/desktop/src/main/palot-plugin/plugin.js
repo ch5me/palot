@@ -10,13 +10,6 @@ import {
 	loomPollArgsShape,
 	loomStateArgsShape,
 	palotToolArgsShapes,
-	palotBrowserClickArgsShape,
-	palotBrowserNavigateArgsShape,
-	palotBrowserOpenArgsShape,
-	palotBrowserScrollArgsShape,
-	palotBrowserStatusArgsShape,
-	palotBrowserTabsArgsShape,
-	palotBrowserTypeArgsShape,
 	palotComponentsDescribeArgsShape,
 	palotComponentsDescribeResultSchema,
 	palotComponentsListArgsShape,
@@ -72,15 +65,7 @@ const createTypedError = ({ toolName, code, message }) => ({
 	errorMessage: message,
 })
 
-const CONNECTION_DISCOVERY_TOOLS = ["search_tools", "describe_tool", "call_tool", "tools_status"]
 const PRODUCT_CONTROL_TOOLS = [
-	"browser_status",
-	"browser_open",
-	"browser_navigate",
-	"browser_tabs",
-	"browser_click",
-	"browser_type",
-	"browser_scroll",
 	"palot_components_list",
 	"palot_components_describe",
 	"palot_session_open",
@@ -116,41 +101,6 @@ const buildConnectedAppsBlock = (connections) => {
 		.filter(Boolean)
 	if (lines.length === 0) return ["none"]
 	return lines
-}
-
-export const buildProductContextBlock = (resolved) => {
-	const snapshot = resolved?.nonSecretSnapshot ?? null
-	const binding = resolved?.binding ?? null
-	const sidePanel = resolved?.uiState?.sidePanel ?? null
-	const documentPanel = resolved?.uiState?.documentPanel ?? null
-	const connectedApps = buildConnectedAppsBlock(resolved?.connections)
-	if (!binding && !snapshot && connectedApps.length === 1 && connectedApps[0] === "none") {
-		return null
-	}
-	return [
-		"<elf-context>",
-		`session_id: ${binding?.openCodeSessionId ?? "none"}`,
-		`browser_binding_status: ${binding?.status ?? "unbound"}`,
-		`browser_lane_id: ${binding?.browserLaneId ?? "none"}`,
-		`browser_session_id: ${binding?.magicBrowserSessionId ?? "none"}`,
-		`browser_viewer_url: ${snapshot?.viewerUrl ?? "none"}`,
-		`browser_current_url: ${snapshot?.viewport?.currentUrl ?? "none"}`,
-		`side_panel_open: ${sidePanel?.open ? "yes" : "no"}`,
-		`side_panel_tab: ${sidePanel?.activeTab ?? "none"}`,
-		`side_panel_tabs: ${(sidePanel?.availableTabs ?? []).join(",") || "none"}`,
-		`document_panel_open: ${documentPanel?.open ? "yes" : "no"}`,
-		`document_panel_tab: ${documentPanel?.activeTab ?? "none"}`,
-		`document_panel_tabs: ${(documentPanel?.availableTabs ?? []).join(",") || "none"}`,
-		`loom_component_tools: ${resolved?.loomComponentToolsEnabled ? "enabled" : "disabled"}`,
-		"connected_apps:",
-		...connectedApps.map((line) => `- ${line}`),
-		`connected_app_discovery_tools: ${CONNECTION_DISCOVERY_TOOLS.join(",")}`,
-		`product_control_tools: ${PRODUCT_CONTROL_TOOLS.join(",")}`,
-		"tool_routing_rule: If a user asks to use a connected app, inspect connected_apps first, then use the connected_app_discovery_tools to find the best matching capability before calling it.",
-		"tool_naming_rule: Refer to connected apps by product name and capability. Do not mention internal transport or setup details unless the user is debugging integrations.",
-		"tool_mapping_rule: If the user mentions MCP or MCP tools, treat that as referring to tools in this system.",
-		"</elf-context>",
-	].join("\n")
 }
 
 const createResolver = ({ resolve, bridgeRequest, listConnections }) => {
@@ -203,64 +153,6 @@ export const createBridgeClient = ({ fetchImpl = globalThis.fetch, env = globalT
 			throw new Error(message)
 		}
 		return body.result ?? null
-	}
-}
-
-export const buildBrowserToolHandler = ({ toolName, resolveBinding, dispatch, bridgeRequest, schema }) => {
-	return async (args, context = {}) => {
-		const parsedArgs = schema.parse(args ?? {})
-		const resolved = await resolveBinding(context.sessionID)
-		if (!resolved?.binding) {
-			return JSON.stringify(
-				createTypedError({
-					toolName,
-					code: "unbound_session",
-					message: "No browser binding for this OpenCode session",
-				}),
-			)
-		}
-		if (parsedArgs?.selector === "__geometry_low_confidence__") {
-			return JSON.stringify(
-				createTypedError({
-					toolName,
-					code: "geometry_low_confidence",
-					message: "Geometry confidence is too low for this action",
-				}),
-			)
-		}
-		if (parsedArgs?.selector === "__human_in_control__") {
-			return JSON.stringify(
-				createTypedError({
-					toolName,
-					code: "human_in_control",
-					message: "Human takeover is active",
-				}),
-			)
-		}
-		if (typeof dispatch === "function") {
-			const result = await dispatch({
-				sessionId: context.sessionID,
-				toolName,
-				args: parsedArgs,
-			})
-			return JSON.stringify(result)
-		}
-		if (bridgeRequest) {
-			const result = await bridgeRequest({
-				action: "dispatch-browser-tool",
-				sessionId: context.sessionID,
-				toolName,
-				args: parsedArgs,
-			})
-			return JSON.stringify(result)
-		}
-		return JSON.stringify(
-			createQueuedResponse({
-				toolName,
-				requestId: `${toolName}:${context.sessionID ?? "unknown"}`,
-				resultSummary: JSON.stringify(parsedArgs),
-			}),
-		)
 	}
 }
 
@@ -593,167 +485,6 @@ export const createPalotPlugin = (
 			// Catalog-projected tools first: static palot tools keep priority
 			// on a (never expected) name collision.
 			...catalogTools,
-			search_tools: {
-				description: "Search connected app capabilities without hydrating every tool schema",
-				args: { query: z.string().optional() },
-				execute: async (args = {}) =>
-					JSON.stringify({
-						query: args.query ?? "",
-						candidates: [
-							{ serverId: "github", toolName: "issues.search", summary: "Search issues and PR state" },
-							{ serverId: "notion", toolName: "docs.search", summary: "Search workspace docs" },
-						],
-					}),
-			},
-			describe_tool: {
-				description: "Describe one connected app capability on demand",
-				args: { serverId: z.string().optional(), toolName: z.string().optional() },
-				execute: async (args = {}) =>
-					JSON.stringify({
-						serverId: args.serverId ?? "github",
-						toolName: args.toolName ?? "issues.search",
-						schema: {
-							type: "object",
-							properties: {
-								query: { type: "string" },
-								state: { type: "string" },
-							},
-							required: ["query"],
-						},
-						hydration: "selected-tool-only",
-					}),
-			},
-			call_tool: {
-				description: "Execute one selected connected app capability through the compact runtime path",
-				args: {
-					query: z.string().trim().min(1),
-					serverId: z.string().optional(),
-					toolName: z.string().optional(),
-					state: z.string().optional(),
-				},
-				execute: async (args = {}) => {
-					const schema = {
-						type: "object",
-						properties: {
-							query: { type: "string" },
-							state: { type: "string" },
-						},
-						required: ["query"],
-					}
-					if (!args || typeof args.query !== "string" || args.query.trim().length === 0) {
-						return JSON.stringify({
-							status: "failed",
-							errorCode: "validation_error",
-							errorMessage: "query is required and must be a non-empty string",
-							schema,
-							remoteCalled: false,
-						})
-					}
-					// Fail fast: the connected-app runtime path is not wired yet.
-					// Never report a fake "queued"/"approval: required" state — no
-					// approval queue exists, so that response permanently dead-ends
-					// any agent that routes a real tool call through this stub
-					// (e.g. headless benchmark workers calling magic_browser_* names).
-					return JSON.stringify({
-						status: "failed",
-						errorCode: "not_implemented",
-						errorMessage:
-							"call_tool connected-app execution is not implemented; there is no approval queue behind this tool. Call the target tool by its exact native name instead of routing through call_tool.",
-						requested: {
-							serverId: args.serverId ?? null,
-							toolName: args.toolName ?? null,
-						},
-						schema,
-						remoteCalled: false,
-					})
-				},
-			},
-			tools_status: {
-				description: "Report connected app readiness without loading every schema",
-				args: { serverId: z.string().optional() },
-				execute: async (args = {}) =>
-					JSON.stringify({
-						serverId: args.serverId ?? null,
-						status: "ready",
-					}),
-			},
-			browser_status: {
-				description: "Get Palot browser status for the current OpenCode session",
-				args: palotBrowserStatusArgsShape,
-				execute: buildBrowserToolHandler({
-					toolName: "browser_status",
-					resolveBinding,
-					dispatch,
-					bridgeRequest,
-					schema: palotToolArgsSchemas.browser_status,
-				}),
-			},
-			browser_open: {
-				description: "Open a browser lane URL",
-				args: palotBrowserOpenArgsShape,
-				execute: buildBrowserToolHandler({
-					toolName: "browser_open",
-					resolveBinding,
-					dispatch,
-					bridgeRequest,
-					schema: palotToolArgsSchemas.browser_open,
-				}),
-			},
-			browser_navigate: {
-				description: "Navigate the current browser lane",
-				args: palotBrowserNavigateArgsShape,
-				execute: buildBrowserToolHandler({
-					toolName: "browser_navigate",
-					resolveBinding,
-					dispatch,
-					bridgeRequest,
-					schema: palotToolArgsSchemas.browser_navigate,
-				}),
-			},
-			browser_tabs: {
-				description: "List or manage browser lane tabs",
-				args: palotBrowserTabsArgsShape,
-				execute: buildBrowserToolHandler({
-					toolName: "browser_tabs",
-					resolveBinding,
-					dispatch,
-					bridgeRequest,
-					schema: palotToolArgsSchemas.browser_tabs,
-				}),
-			},
-			browser_click: {
-				description: "Click in the current browser lane",
-				args: palotBrowserClickArgsShape,
-				execute: buildBrowserToolHandler({
-					toolName: "browser_click",
-					resolveBinding,
-					dispatch,
-					bridgeRequest,
-					schema: palotToolArgsSchemas.browser_click,
-				}),
-			},
-			browser_type: {
-				description: "Type into the current browser lane",
-				args: palotBrowserTypeArgsShape,
-				execute: buildBrowserToolHandler({
-					toolName: "browser_type",
-					resolveBinding,
-					dispatch,
-					bridgeRequest,
-					schema: palotToolArgsSchemas.browser_type,
-				}),
-			},
-			browser_scroll: {
-				description: "Scroll the current browser lane",
-				args: palotBrowserScrollArgsShape,
-				execute: buildBrowserToolHandler({
-					toolName: "browser_scroll",
-					resolveBinding,
-					dispatch,
-					bridgeRequest,
-					schema: palotToolArgsSchemas.browser_scroll,
-				}),
-			},
 			palot_components_list: {
 				description: "List Loom component discovery entries as TOON",
 				args: palotComponentsListArgsShape,

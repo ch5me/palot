@@ -292,39 +292,6 @@ export const palotOpenSidePanelInputSchema = sidePanelTabSchema
 // whole ZodObject makes z.object() enumerate the ZodObject's internal props and
 // crashes toJSONSchema with `schema._zod.def is undefined`. The `*Schema`
 // exports below remain ZodObjects for runtime `.parse()` validation only.
-export const palotBrowserStatusArgsShape = {} satisfies z.ZodRawShape
-export const palotBrowserOpenArgsShape = {
-	url: z.string().trim().min(1),
-} satisfies z.ZodRawShape
-export const palotBrowserNavigateArgsShape = {
-	url: z.string().trim().min(1),
-} satisfies z.ZodRawShape
-export const palotBrowserTabsArgsShape = {
-	action: z.enum(["list", "open", "close", "activate"]).optional(),
-	tabId: z.string().optional(),
-	url: z.string().optional(),
-} satisfies z.ZodRawShape
-export const palotBrowserClickArgsShape = {
-	selector: z.string().optional(),
-	text: z.string().optional(),
-	role: z.string().optional(),
-	x: z.number().optional(),
-	y: z.number().optional(),
-	button: z.enum(["left", "middle", "right"]).optional(),
-	clickCount: z.number().int().positive().optional(),
-} satisfies z.ZodRawShape
-export const palotBrowserTypeArgsShape = {
-	selector: z.string().optional(),
-	text: z.string(),
-	submit: z.boolean().optional(),
-} satisfies z.ZodRawShape
-export const palotBrowserScrollArgsShape = {
-	selector: z.string().optional(),
-	deltaX: z.number().optional(),
-	deltaY: z.number().optional(),
-	direction: z.enum(["up", "down"]).optional(),
-	amount: z.number().optional(),
-} satisfies z.ZodRawShape
 export const palotComponentsListArgsShape = {
 	category: z.string().optional(),
 	presentation: z.enum(["inline-artifact", "chat-widget", "side-panel", "main-pane", "webview"]).optional(),
@@ -385,13 +352,6 @@ export const palotOpenSidePanelArgsShape = {
 } satisfies z.ZodRawShape
 export const palotUiStateArgsShape = {} satisfies z.ZodRawShape
 
-export const palotBrowserStatusArgsSchema = z.object(palotBrowserStatusArgsShape).passthrough()
-export const palotBrowserOpenArgsSchema = z.object(palotBrowserOpenArgsShape)
-export const palotBrowserNavigateArgsSchema = z.object(palotBrowserNavigateArgsShape)
-export const palotBrowserTabsArgsSchema = z.object(palotBrowserTabsArgsShape).passthrough()
-export const palotBrowserClickArgsSchema = z.object(palotBrowserClickArgsShape).passthrough()
-export const palotBrowserTypeArgsSchema = z.object(palotBrowserTypeArgsShape).passthrough()
-export const palotBrowserScrollArgsSchema = z.object(palotBrowserScrollArgsShape).passthrough()
 export const palotComponentsListArgsSchema = z.object(palotComponentsListArgsShape).passthrough()
 export const palotComponentsDescribeArgsSchema = z.object(palotComponentsDescribeArgsShape)
 export const loomSessionOpenArgsSchema = z.object(loomSessionOpenArgsShape)
@@ -460,13 +420,6 @@ export const loomPollResultSchema = z.object({
 })
 
 export const palotToolArgsSchemas = {
-	browser_status: palotBrowserStatusArgsSchema,
-	browser_open: palotBrowserOpenArgsSchema,
-	browser_navigate: palotBrowserNavigateArgsSchema,
-	browser_tabs: palotBrowserTabsArgsSchema,
-	browser_click: palotBrowserClickArgsSchema,
-	browser_type: palotBrowserTypeArgsSchema,
-	browser_scroll: palotBrowserScrollArgsSchema,
 	palot_components_list: palotComponentsListArgsSchema,
 	palot_components_describe: palotComponentsDescribeArgsSchema,
 	palot_session_open: loomSessionOpenArgsSchema,
@@ -480,13 +433,6 @@ export const palotToolArgsSchemas = {
 } as const
 
 export const palotToolArgsShapes = {
-	browser_status: palotBrowserStatusArgsShape,
-	browser_open: palotBrowserOpenArgsShape,
-	browser_navigate: palotBrowserNavigateArgsShape,
-	browser_tabs: palotBrowserTabsArgsShape,
-	browser_click: palotBrowserClickArgsShape,
-	browser_type: palotBrowserTypeArgsShape,
-	browser_scroll: palotBrowserScrollArgsShape,
 	palot_components_list: palotComponentsListArgsShape,
 	palot_components_describe: palotComponentsDescribeArgsShape,
 	palot_session_open: loomSessionOpenArgsShape,

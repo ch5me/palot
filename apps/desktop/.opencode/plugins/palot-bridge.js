@@ -1,8 +1,6 @@
 export {
-	buildBrowserToolHandler,
 	buildConnectedAppsBlock,
 	buildOpenSidePanelHandler,
-	buildProductContextBlock,
 	buildUiStateHandler,
 	createBridgeClient,
 	createPalotPlugin,
