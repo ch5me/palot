@@ -38,6 +38,7 @@
 		"clean": "rm -rf out release dist node_modules .turbo"
 	},
 	"dependencies": {
+		"@ch5me/agent-runtime-contracts": "file:../../../ch5-packages/packages/contracts/agent-runtime-contracts",
 		"@ch5me/dag-sparkline": "^0.1.0",
 		"@ch5me/elf-configconv": "workspace:*",
 		"@ch5me/elf-ui": "workspace:*",
