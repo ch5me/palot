@@ -42,9 +42,8 @@ const config: StorybookConfig = {
 				...(base.resolve ?? {}),
 				alias: {
 					...(base.resolve?.alias ?? {}),
-					// elf-ui imports its own subpaths via the package name
-					// (e.g. "@ch5me/elf-ui/lib/utils"). Map to src so stories
-					// resolve without a build step.
+					// elf-ui imports its own subpaths via the package name.
+					// Map to src so stories resolve without a build step.
 					"@ch5me/elf-ui": resolve(root, "src"),
 				},
 			},

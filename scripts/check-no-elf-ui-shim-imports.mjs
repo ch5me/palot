@@ -20,7 +20,7 @@ try {
 	// ripgrep is available in CI bun images and locally; fall back to git grep.
 	matches = execFileSync(
 		"rg",
-		["-n", "--no-heading", FORBIDDEN, "apps", "packages"],
+		["-n", "--no-heading", "--hidden", FORBIDDEN, "apps", "packages"],
 		{ encoding: "utf8" },
 	)
 } catch (err) {
