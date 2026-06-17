@@ -3,13 +3,18 @@ import fs from "node:fs"
 import { createRequire } from "node:module"
 import path from "node:path"
 import {
+	adapterDispatchPermissionSchema,
 	type ChildSession,
+	type PolicyMode,
+	type PolicyVerdict,
 	type MetaSession,
 	type MetaSessionStatus,
 	type RuntimeBlocker,
 	type RuntimeCapabilities,
+	type RuntimeEvent,
 	type RuntimeEventPage,
 	type RuntimeKind,
+	runtimeEventSchema,
 } from "@ch5me/agent-runtime-contracts"
 import type { Session, SessionStatus } from "@opencode-ai/sdk/v2/client"
 import { z } from "zod"
@@ -66,6 +71,10 @@ const storedChildSessionSchema = z
 		session: childSessionSchema,
 		workingDirectory: z.string().min(1),
 		dryRunSummary: nonEmptyStringSchema.optional(),
+		// Shared contracts use a different Zod instance than Palot; validate through the parser.
+		eventLog: z
+			.array(z.custom<RuntimeEvent>((value) => runtimeEventSchema.safeParse(value).success))
+			.default([]),
 	})
 	.strict()
 
@@ -107,6 +116,11 @@ interface MetaSessionClient {
 		create(args: { title: string }): Promise<{ data: unknown }>
 		get(args: { sessionID: string }): Promise<{ data: unknown }>
 		status(args: { directory?: string }): Promise<{ data: unknown }>
+		promptAsync(args: {
+			sessionID: string
+			parts: Array<{ type: "text"; text: string }>
+		}): Promise<unknown>
+		abort(args: { sessionID: string }): Promise<unknown>
 	}
 }
 
@@ -143,6 +157,14 @@ interface CreateChildSessionsInput {
 	workingDirectory?: string
 }
 
+type PolicyOperation = "send" | "cancel"
+
+interface PolicyGateInput {
+	policyMode: PolicyMode
+	approvalId?: string
+	approvedBy?: string
+}
+
 interface PalotMetaSessionServiceDeps {
 	now?: () => Date
 	storePath?: string
@@ -160,13 +182,29 @@ export interface PalotMetaSessionService {
 	createChildSessions(input: CreateChildSessionsInput): Promise<ChildSession[]>
 	listChildSessions(metaSessionId: string): Promise<ChildSession[]>
 	getChildSession(metaSessionId: string, childSessionId: string): Promise<ChildSession>
+	evaluateChildSessionPolicy(
+		metaSessionId: string,
+		childSessionId: string,
+		operation: PolicyOperation,
+		input: PolicyGateInput,
+	): Promise<PolicyVerdict>
 	readChildSessionEvents(
 		metaSessionId: string,
 		childSessionId: string,
 		cursor?: string,
 	): Promise<RuntimeEventPage>
-	sendChildSessionPrompt(metaSessionId: string, childSessionId: string, prompt: string): Promise<never>
-	cancelChildSession(metaSessionId: string, childSessionId: string, reason: string): Promise<never>
+	sendChildSessionPrompt(
+		metaSessionId: string,
+		childSessionId: string,
+		prompt: string,
+		input: PolicyGateInput,
+	): Promise<PolicyVerdict>
+	cancelChildSession(
+		metaSessionId: string,
+		childSessionId: string,
+		reason: string,
+		input: PolicyGateInput,
+	): Promise<PolicyVerdict>
 	listChildSessionArtifacts(metaSessionId: string, childSessionId: string): Promise<never>
 	getRuntimeCapabilities(runtimeKind: RuntimeKind): RuntimeCapabilities
 	getStorePath(): string
@@ -343,6 +381,26 @@ function throwUnsupportedOperation(
 	)
 }
 
+function buildPolicyModeBlocker(operation: PolicyOperation): RuntimeBlocker {
+	return {
+		code: "unsupported-operation",
+		scope: "request",
+		message: `${operation} blocked in dry-run policy mode`,
+		retryable: false,
+		details: "Dry-run policy proves gate wiring only. Switch to ask or enforce before adapter mutation.",
+	}
+}
+
+function buildApprovalRequiredBlocker(operation: PolicyOperation): RuntimeBlocker {
+	return {
+		code: "approval-required",
+		scope: "request",
+		message: `${operation} requires approval before mutation`,
+		retryable: true,
+		details: "Provide approval metadata through the policy gate before dispatching a mutating adapter action.",
+	}
+}
+
 function mapMetaStatusToRuntimeStatus(
 	status: MetaSessionStatus,
 ): RuntimeCapabilities["status"] {
@@ -363,6 +421,20 @@ function mapMetaStatusToRuntimeStatus(
 
 function buildRuntimeEventId(childSessionId: string, suffix: string): string {
 	return `${childSessionId}:${suffix}`
+}
+
+function buildRuntimeEventLogId(childSessionId: string): string {
+	return `${childSessionId}:log:${crypto.randomUUID()}`
+}
+
+function buildAdapterDispatchPermission(
+	input: PolicyGateInput,
+	timestamp: string,
+): z.infer<typeof adapterDispatchPermissionSchema> {
+	return adapterDispatchPermissionSchema.parse({
+		grantedAt: timestamp,
+		grantedBy: input.approvedBy ?? input.approvalId ?? "policy-gate",
+	})
 }
 
 function updateMetaSessionTimestamp(
@@ -505,6 +577,7 @@ export function createPalotMetaSessionService(
 			},
 			workingDirectory,
 			dryRunSummary: `${input.runtimeKind} dry-run child reserved. Native session id placeholder only. Send/cancel/artifacts stay blocked in Wave 3.`,
+			eventLog: [],
 		})
 	}
 
@@ -523,6 +596,20 @@ export function createPalotMetaSessionService(
 				buildUnsupportedOperationBlocker(runtimeKind, "cancel"),
 				buildUnsupportedOperationBlocker(runtimeKind, "artifacts"),
 			],
+		}
+	}
+
+	function buildPolicyGatedCapabilities(runtimeKind: RuntimeKind): RuntimeCapabilities {
+		return {
+			runtimeKind,
+			status: "ready",
+			canCreateSession: true,
+			canSendPrompt: true,
+			canReadEvents: true,
+			canCancel: true,
+			canListArtifacts: false,
+			canEvaluatePolicy: true,
+			blockers: [buildUnsupportedOperationBlocker(runtimeKind, "artifacts")],
 		}
 	}
 
@@ -576,8 +663,103 @@ export function createPalotMetaSessionService(
 		}
 
 		return {
-			events,
+			events: [...events, ...hydrated.eventLog],
 		}
+	}
+
+	function buildPolicyVerdict(
+		record: StoredChildSession,
+		operation: PolicyOperation,
+		input: PolicyGateInput,
+		occurredAt: string,
+	): PolicyVerdict {
+		if (isDryRunRuntimeKind(record.session.runtimeKind)) {
+			return {
+				mode: input.policyMode,
+				decision: "deny",
+				reason: `${record.session.runtimeKind} mutation authority stays disabled in Wave 4`,
+				blockers: [buildUnsupportedOperationBlocker(record.session.runtimeKind, operation)],
+			}
+		}
+
+		if (input.policyMode === "dry-run") {
+			return {
+				mode: "dry-run",
+				decision: "deny",
+				reason: `${operation} previewed only; dry-run policy blocks adapter mutation`,
+				blockers: [buildPolicyModeBlocker(operation)],
+			}
+		}
+
+		if (input.policyMode === "ask") {
+			return {
+				mode: "ask",
+				decision: "ask",
+				reason: `${operation} paused for operator approval`,
+				blockers: [buildApprovalRequiredBlocker(operation)],
+			}
+		}
+
+		if (!input.approvalId && !input.approvedBy) {
+			return {
+				mode: "enforce",
+				decision: "deny",
+				reason: `${operation} denied because approval metadata is missing`,
+				blockers: [buildApprovalRequiredBlocker(operation)],
+			}
+		}
+
+		return {
+			mode: "enforce",
+			decision: "allow",
+			reason: `${operation} approved for adapter dispatch`,
+			blockers: [],
+			adapterDispatchPermission: buildAdapterDispatchPermission(input, occurredAt),
+		}
+	}
+
+	function buildPolicyRuntimeEvent(
+		record: StoredChildSession,
+		verdict: PolicyVerdict,
+		occurredAt: string,
+	): RuntimeEvent {
+		return runtimeEventSchema.parse({
+			type: "policy",
+			eventId: buildRuntimeEventLogId(record.session.id),
+			childSessionId: record.session.id,
+			runtimeKind: record.session.runtimeKind,
+			occurredAt,
+			verdict,
+		})
+	}
+
+	function buildMutationRuntimeEvent(
+		record: StoredChildSession,
+		operation: PolicyOperation,
+		text: string,
+		occurredAt: string,
+	): RuntimeEvent {
+		return runtimeEventSchema.parse({
+			type: "message",
+			eventId: buildRuntimeEventLogId(record.session.id),
+			childSessionId: record.session.id,
+			runtimeKind: record.session.runtimeKind,
+			occurredAt,
+			role: "system",
+			text: `${operation} dispatched: ${text}`,
+		})
+	}
+
+	function persistChildSessionRecord(store: MetaSessionStoreFile, nextRecord: StoredChildSession): void {
+		store.childSessions = store.childSessions.map((entry) =>
+			entry.session.id === nextRecord.session.id ? nextRecord : entry,
+		)
+		updateMetaSessionTimestamp(
+			store,
+			nextRecord.session.parentSessionId,
+			nextRecord.session.lastEventAt ?? nextRecord.session.lastHeartbeatAt ?? nextRecord.session.createdAt,
+		)
+		writeStoreFile(storePath, store)
 	}
 
 	async function createSingleChildSession(input: CreateChildSessionInput): Promise<ChildSession> {
@@ -605,6 +787,7 @@ export function createPalotMetaSessionService(
 								toIsoFromMillis(runtimeSession.time.created) ?? toIsoString(createdAt),
 						},
 						workingDirectory,
+						eventLog: [],
 					})
 				})()
 
@@ -690,6 +873,24 @@ export function createPalotMetaSessionService(
 			return hydrated.session
 		},
 
+		async evaluateChildSessionPolicy(metaSessionId, childSessionId, operation, input) {
+			const store = readStoreFile(storePath)
+			const record = findChildSessionRecordOrThrow(store, metaSessionId, childSessionId)
+			const occurredAt = toIsoString(now())
+			const verdict = buildPolicyVerdict(record, operation, input, occurredAt)
+			const nextRecord = storedChildSessionSchema.parse({
+				...record,
+				session: {
+					...record.session,
+					lastEventAt: occurredAt,
+					lastHeartbeatAt: record.session.lastHeartbeatAt ?? occurredAt,
+				},
+				eventLog: [...record.eventLog, buildPolicyRuntimeEvent(record, verdict, occurredAt)],
+			})
+			persistChildSessionRecord(store, nextRecord)
+			return verdict
+		},
+
 		async readChildSessionEvents(metaSessionId, childSessionId) {
 			const store = readStoreFile(storePath)
 			const record = findChildSessionRecordOrThrow(store, metaSessionId, childSessionId)
@@ -701,16 +902,91 @@ export function createPalotMetaSessionService(
 			return buildRuntimeEventPage(hydrated)
 		},
 
-		async sendChildSessionPrompt(metaSessionId, childSessionId) {
+		async sendChildSessionPrompt(metaSessionId, childSessionId, prompt, input) {
 			const store = readStoreFile(storePath)
 			const record = findChildSessionRecordOrThrow(store, metaSessionId, childSessionId)
-			throwUnsupportedOperation(record.session.runtimeKind, record.session.id, "send")
+			const occurredAt = toIsoString(now())
+			const verdict = buildPolicyVerdict(record, "send", input, occurredAt)
+			const policyEvent = buildPolicyRuntimeEvent(record, verdict, occurredAt)
+			if (verdict.decision !== "allow") {
+				const nextRecord = storedChildSessionSchema.parse({
+					...record,
+					session: {
+						...record.session,
+						status: verdict.decision === "ask" ? "blocked" : record.session.status,
+						lastEventAt: occurredAt,
+						lastHeartbeatAt: record.session.lastHeartbeatAt ?? occurredAt,
+					},
+					eventLog: [...record.eventLog, policyEvent],
+				})
+				persistChildSessionRecord(store, nextRecord)
+				return verdict
+			}
+			requireOpenCodeServerUrl()
+			const client = requireOpenCodeClient(record.workingDirectory)
+			await client.session.promptAsync({
+				sessionID: record.session.runtimeSessionId,
+				parts: [{ type: "text", text: prompt }],
+			})
+			const nextRecord = storedChildSessionSchema.parse({
+				...record,
+				session: {
+					...record.session,
+					status: "active",
+					lastEventAt: occurredAt,
+					lastHeartbeatAt: occurredAt,
+				},
+				eventLog: [
+					...record.eventLog,
+					policyEvent,
+					buildMutationRuntimeEvent(record, "send", prompt, occurredAt),
+				],
+			})
+			persistChildSessionRecord(store, nextRecord)
+			return verdict
 		},
 
-		async cancelChildSession(metaSessionId, childSessionId) {
+		async cancelChildSession(metaSessionId, childSessionId, reason, input) {
 			const store = readStoreFile(storePath)
 			const record = findChildSessionRecordOrThrow(store, metaSessionId, childSessionId)
-			throwUnsupportedOperation(record.session.runtimeKind, record.session.id, "cancel")
+			const occurredAt = toIsoString(now())
+			const verdict = buildPolicyVerdict(record, "cancel", input, occurredAt)
+			const policyEvent = buildPolicyRuntimeEvent(record, verdict, occurredAt)
+			if (verdict.decision !== "allow") {
+				const nextRecord = storedChildSessionSchema.parse({
+					...record,
+					session: {
+						...record.session,
+						status: verdict.decision === "ask" ? "blocked" : record.session.status,
+						lastEventAt: occurredAt,
+						lastHeartbeatAt: record.session.lastHeartbeatAt ?? occurredAt,
+					},
+					eventLog: [...record.eventLog, policyEvent],
+				})
+				persistChildSessionRecord(store, nextRecord)
+				return verdict
+			}
+			requireOpenCodeServerUrl()
+			const client = requireOpenCodeClient(record.workingDirectory)
+			await client.session.abort({
+				sessionID: record.session.runtimeSessionId,
+			})
+			const nextRecord = storedChildSessionSchema.parse({
+				...record,
+				session: {
+					...record.session,
+					status: "cancelled",
+					lastEventAt: occurredAt,
+					lastHeartbeatAt: occurredAt,
+				},
+				eventLog: [
+					...record.eventLog,
+					policyEvent,
+					buildMutationRuntimeEvent(record, "cancel", reason, occurredAt),
+				],
+			})
+			persistChildSessionRecord(store, nextRecord)
+			return verdict
 		},
 
 		async listChildSessionArtifacts(metaSessionId, childSessionId) {
@@ -770,7 +1046,7 @@ export function createPalotMetaSessionService(
 			}
 
 			return {
-				...buildReadOnlyCapabilities(runtimeKind),
+				...buildPolicyGatedCapabilities(runtimeKind),
 			}
 		},
 

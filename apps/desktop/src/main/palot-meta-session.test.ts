@@ -12,6 +12,11 @@ import {
 interface MockClientOptions {
 	session: Session
 	statuses?: Record<string, SessionStatus>
+	onPromptAsync?: (args: {
+		sessionID: string
+		parts: Array<{ type: "text"; text: string }>
+	}) => void | Promise<void>
+	onAbort?: (args: { sessionID: string }) => void | Promise<void>
 }
 
 function buildSession(overrides: Partial<Session> = {}): Session {
@@ -48,6 +53,17 @@ function createMockClient(options: MockClientOptions) {
 			status: async () => ({
 				data: options.statuses ?? {},
 			}),
+			promptAsync: async (args: {
+				sessionID: string
+				parts: Array<{ type: "text"; text: string }>
+			}) => {
+				await options.onPromptAsync?.(args)
+				return { data: null }
+			},
+			abort: async (args: { sessionID: string }) => {
+				await options.onAbort?.(args)
+				return { data: null }
+			},
 		},
 	}
 }
@@ -267,6 +283,8 @@ describe("palot-meta-session", () => {
 						throw new Error("missing runtime session")
 					},
 					status: async () => ({ data: {} }),
+					promptAsync: async () => ({ data: null }),
+					abort: async () => ({ data: null }),
 				},
 			}),
 			workingDirectory: "/repo",
@@ -275,6 +293,154 @@ describe("palot-meta-session", () => {
 		await expect(reader.getChildSession(meta.id, child.id)).rejects.toMatchObject({
 			code: "runtime-session-not-found",
 		} satisfies Partial<PalotMetaSessionError>)
+
+		rmSync(path.dirname(storePath), { recursive: true, force: true })
+	})
+
+	test("denied policy never reaches prompt adapter path", async () => {
+		const storePath = createTempStorePath()
+		const runtimeSession = buildSession()
+		let promptCalls = 0
+		const service = createPalotMetaSessionService({
+			storePath,
+			now: () => new Date("2026-06-17T12:00:00.000Z"),
+			getServerUrl: () => "http://127.0.0.1:4096",
+			createClient: () =>
+				createMockClient({
+					session: runtimeSession,
+					statuses: {
+						[runtimeSession.id]: { type: "idle" },
+					},
+					onPromptAsync: () => {
+						promptCalls += 1
+					},
+				}),
+			workingDirectory: "/repo",
+		})
+		const meta = service.createMetaSession({ title: "Meta root" })
+		const child = await service.createChildSession({
+			parentSessionId: meta.id,
+			runtimeKind: "opencode",
+			title: "OpenCode child",
+		})
+
+		const verdict = await service.sendChildSessionPrompt(meta.id, child.id, "ship it", {
+			policyMode: "dry-run",
+		})
+
+		expect(verdict).toMatchObject({
+			mode: "dry-run",
+			decision: "deny",
+		})
+		expect(promptCalls).toBe(0)
+
+		rmSync(path.dirname(storePath), { recursive: true, force: true })
+	})
+
+	test("ask policy logs visible approval gate without adapter mutation", async () => {
+		const storePath = createTempStorePath()
+		const runtimeSession = buildSession()
+		let promptCalls = 0
+		const service = createPalotMetaSessionService({
+			storePath,
+			now: () => new Date("2026-06-17T12:00:00.000Z"),
+			getServerUrl: () => "http://127.0.0.1:4096",
+			createClient: () =>
+				createMockClient({
+					session: runtimeSession,
+					statuses: {
+						[runtimeSession.id]: { type: "idle" },
+					},
+					onPromptAsync: () => {
+						promptCalls += 1
+					},
+				}),
+			workingDirectory: "/repo",
+		})
+		const meta = service.createMetaSession({ title: "Meta root" })
+		const child = await service.createChildSession({
+			parentSessionId: meta.id,
+			runtimeKind: "opencode",
+			title: "OpenCode child",
+		})
+
+		const verdict = await service.evaluateChildSessionPolicy(meta.id, child.id, "send", {
+			policyMode: "ask",
+		})
+		const eventPage = await service.readChildSessionEvents(meta.id, child.id)
+		const policyEvent = eventPage.events.find((event) => event.type === "policy")
+
+		expect(verdict).toMatchObject({
+			mode: "ask",
+			decision: "ask",
+		})
+		expect(promptCalls).toBe(0)
+		expect(policyEvent).toMatchObject({
+			type: "policy",
+			verdict: expect.objectContaining({
+				mode: "ask",
+				decision: "ask",
+			}),
+		})
+
+		rmSync(path.dirname(storePath), { recursive: true, force: true })
+	})
+
+	test("approved send carries adapter dispatch permission into event log", async () => {
+		const storePath = createTempStorePath()
+		const runtimeSession = buildSession()
+		const promptPayloads: string[] = []
+		const service = createPalotMetaSessionService({
+			storePath,
+			now: () => new Date("2026-06-17T12:00:00.000Z"),
+			getServerUrl: () => "http://127.0.0.1:4096",
+			createClient: () =>
+				createMockClient({
+					session: runtimeSession,
+					statuses: {
+						[runtimeSession.id]: { type: "busy" },
+					},
+					onPromptAsync: (args) => {
+						promptPayloads.push(args.parts.map((part) => part.text).join("\n"))
+					},
+				}),
+			workingDirectory: "/repo",
+		})
+		const meta = service.createMetaSession({ title: "Meta root" })
+		const child = await service.createChildSession({
+			parentSessionId: meta.id,
+			runtimeKind: "opencode",
+			title: "OpenCode child",
+		})
+
+		const verdict = await service.sendChildSessionPrompt(meta.id, child.id, "ship it", {
+			policyMode: "enforce",
+			approvalId: "approval_meta_123",
+		})
+		const eventPage = await service.readChildSessionEvents(meta.id, child.id)
+		const policyEvent = eventPage.events.find((event) => event.type === "policy")
+		const mutationEvent = eventPage.events.find(
+			(event) => event.type === "message" && event.text.includes("send dispatched: ship it"),
+		)
+
+		expect(promptPayloads).toEqual(["ship it"])
+		expect(verdict).toMatchObject({
+			mode: "enforce",
+			decision: "allow",
+			adapterDispatchPermission: {
+				grantedBy: "approval_meta_123",
+			},
+		})
+		expect(policyEvent).toMatchObject({
+			type: "policy",
+			verdict: expect.objectContaining({
+				decision: "allow",
+				adapterDispatchPermission: expect.objectContaining({
+					grantedBy: "approval_meta_123",
+				}),
+			}),
+		})
+		expect(mutationEvent).toBeDefined()
 
 		rmSync(path.dirname(storePath), { recursive: true, force: true })
 	})
@@ -327,18 +493,24 @@ describe("palot-meta-session", () => {
 			text: expect.stringContaining("dry-run child reserved"),
 		})
 
-		await expect(service.sendChildSessionPrompt(meta.id, child.id, "ship it")).rejects.toMatchObject({
-			code: "unsupported-runtime-operation",
-			runtimeKind: "codex",
-			blocker: expect.objectContaining({
-				code: "unsupported-operation",
-			}),
+		const sendVerdict = await service.sendChildSessionPrompt(meta.id, child.id, "ship it", {
+			policyMode: "enforce",
+			approvalId: "approval_meta_123",
+		})
+		expect(sendVerdict).toMatchObject({
+			mode: "enforce",
+			decision: "deny",
+			blockers: [expect.objectContaining({ code: "unsupported-operation" })],
 		})
 
-		await expect(service.cancelChildSession(meta.id, child.id, "stop")).rejects.toMatchObject({
-			code: "unsupported-runtime-operation",
-			operation: "cancel",
-		} satisfies Partial<PalotMetaSessionError>)
+		const cancelVerdict = await service.cancelChildSession(meta.id, child.id, "stop", {
+			policyMode: "enforce",
+			approvalId: "approval_meta_123",
+		})
+		expect(cancelVerdict).toMatchObject({
+			mode: "enforce",
+			decision: "deny",
+		})
 
 		await expect(service.listChildSessionArtifacts(meta.id, child.id)).rejects.toMatchObject({
 			code: "unsupported-runtime-operation",
