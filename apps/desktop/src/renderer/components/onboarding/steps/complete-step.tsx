@@ -1,15 +1,4 @@
-/**
- * Onboarding: Complete / Ready.
- *
- * Shows a success state, quick tips, and optional prompts to migrate
- * from detected providers (Claude Code, Cursor, OpenCode). Migration
- * cards only appear for providers that have config on disk and haven't
- * already been migrated.
- */
-
-import { Badge } from "@ch5me/elf-ui/components/badge"
-import { Button } from "@ch5me/elf-ui/components/button"
-import { Spinner } from "@ch5me/elf-ui/components/spinner"
+import { Badge, Button, Spinner } from "@ch5me/ch5-ui-web";
 import { ArrowRightIcon, CheckCircle2Icon, CommandIcon, FlaskConicalIcon } from "lucide-react"
 import { motion } from "motion/react"
 import { useEffect, useRef, useState } from "react"

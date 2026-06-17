@@ -1,10 +1,4 @@
-import { Button } from "@ch5me/elf-ui/components/button"
-import {
-	DropdownMenu,
-	DropdownMenuContent,
-	DropdownMenuItem,
-	DropdownMenuTrigger,
-} from "@ch5me/elf-ui/components/dropdown-menu"
+import { Button, DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@ch5me/ch5-ui-web";
 import { ChevronDownIcon, Loader2Icon, ShieldCheckIcon, ZapIcon } from "lucide-react"
 import { memo, useState } from "react"
 import type { Agent, PermissionRequest } from "../../lib/types"

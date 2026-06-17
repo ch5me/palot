@@ -12,8 +12,6 @@ declare module "./palot-plugin/plugin.js" {
 		bridgeRequest: PalotBridgeRequest | null
 	}): Promise<Record<string, unknown>>
 	export function jsonSchemaShapeFromObjectSchema(objectSchema: unknown): Record<string, unknown>
-	export function buildProductContextBlock(resolved: unknown): string | null
-	export function buildBrowserToolHandler(input: unknown): unknown
 	export function buildOpenSidePanelHandler(input: unknown): unknown
 	export function buildUiStateHandler(input: unknown): unknown
 	export function buildComponentsListHandler(): (args?: unknown) => Promise<string>

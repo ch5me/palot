@@ -1,6 +1,4 @@
-import { Button } from "@ch5me/elf-ui/components/button"
-import { Textarea } from "@ch5me/elf-ui/components/textarea"
-import { cn } from "@ch5me/elf-ui/lib/utils"
+import { Button, Textarea, cn } from "@ch5me/ch5-ui-web";
 import { memo, useMemo } from "react"
 import { z } from "zod"
 import type { GenUiEntry } from "../registry"
@@ -103,6 +101,12 @@ export const DecisionCardEntry: GenUiEntry<DecisionCardProps> = {
 	name: "decision_card",
 	aliases: ["decision-card", "decision", "decision card"],
 	description: "Interactive decision card with local notes state and submit signal",
+	presentation: "inline-artifact",
+	scope: "generic",
+	maturity: "stable",
+	defaultPlacement: "inline",
+	allowedPlacements: ["inline", "chat-inline-right"],
+	docsPath: "docs/genui-artifact-architecture.md",
 	Component: DecisionCard,
 	props: decisionCardPropsSchema,
 	events: decisionCardEvents,

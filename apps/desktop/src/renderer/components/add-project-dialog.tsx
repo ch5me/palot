@@ -1,26 +1,4 @@
-/**
- * Dialog for adding a project directory on a remote server.
- *
- * When connected to a remote server, shows a text input for typing
- * the remote directory path (since the native picker shows the local
- * filesystem which is irrelevant for a remote machine).
- *
- * For local servers, the caller should use `pickDirectory()` directly
- * instead of opening this dialog.
- */
-
-import { Button } from "@ch5me/elf-ui/components/button"
-import {
-	Dialog,
-	DialogClose,
-	DialogContent,
-	DialogDescription,
-	DialogFooter,
-	DialogHeader,
-	DialogTitle,
-} from "@ch5me/elf-ui/components/dialog"
-import { Input } from "@ch5me/elf-ui/components/input"
-import { Label } from "@ch5me/elf-ui/components/label"
+import { Button, Dialog, DialogClose, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, Input, Label } from "@ch5me/ch5-ui-web";
 import { useAtomValue } from "jotai"
 import { FolderOpenIcon, Loader2Icon } from "lucide-react"
 import { useCallback, useState } from "react"

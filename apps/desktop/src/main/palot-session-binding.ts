@@ -76,6 +76,8 @@ export function createSessionBinding(input: {
 	openCodeSessionId: string
 	browserLaneId?: string | null
 	magicBrowserSessionId?: string | null
+	/** OpenCode parentID of the session — non-null means this is a sub-agent session. */
+	parentSessionId?: string | null
 	status?: SessionBindingStatus
 	now?: number
 }): SessionBinding {
@@ -85,6 +87,7 @@ export function createSessionBinding(input: {
 		openCodeSessionId: input.openCodeSessionId,
 		browserLaneId: input.browserLaneId ?? null,
 		magicBrowserSessionId: input.magicBrowserSessionId ?? null,
+		parentSessionId: input.parentSessionId ?? null,
 		status: input.status ?? "unbound",
 		createdAt: now,
 		updatedAt: now,

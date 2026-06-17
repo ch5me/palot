@@ -11,7 +11,7 @@ import {
 	ContextMenuItem,
 	ContextMenuSeparator,
 	ContextMenuTrigger,
-} from "@ch5me/elf-ui/components/context-menu"
+} from "@ch5me/ch5-ui-web"
 import {
 	ArchiveIcon,
 	CheckCircle2Icon,

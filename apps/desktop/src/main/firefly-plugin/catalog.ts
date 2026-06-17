@@ -29,16 +29,88 @@ import {
 	ACME_NOTEBOOK_PLUGIN_ID,
 } from "../../shared/firefly-plugin/acme-notebook-exemplar"
 import {
+	browserPluginManifest,
+	BROWSER_PLUGIN_ID,
+} from "../../../plugins/browser/manifest"
+import {
 	notesPluginManifest,
 	NOTES_PLUGIN_ID,
 } from "../../../plugins/notes/manifest"
+import {
+	reviewPluginManifest,
+	REVIEW_PLUGIN_ID,
+} from "../../../plugins/review/manifest"
+import {
+	devmuxToolbarManifest,
+	DEVMUX_TOOLBAR_PLUGIN_ID,
+} from "../../../plugins/devmux-toolbar/manifest"
+import {
+	filesPluginManifest,
+	FILES_PLUGIN_ID,
+} from "../../../plugins/files/manifest"
+import {
+	artifactsPluginManifest,
+	ARTIFACTS_PLUGIN_ID,
+} from "../../../plugins/artifacts/manifest"
+import {
+	bridgesPluginManifest,
+	BRIDGES_PLUGIN_ID,
+} from "../../../plugins/bridges/manifest"
+import {
+	pulsePluginManifest,
+	PULSE_PLUGIN_ID,
+} from "../../../plugins/pulse/manifest"
+import {
+	editorPluginManifest,
+	EDITOR_PLUGIN_ID,
+} from "../../../plugins/editor/manifest"
+import {
+	terminalPluginManifest,
+	TERMINAL_PLUGIN_ID,
+} from "../../../plugins/terminal/manifest"
+import {
+	claudePluginManifest,
+	CLAUDE_PLUGIN_ID,
+} from "../../../plugins/claude/manifest"
+import {
+	oraclePluginManifest,
+	ORACLE_PLUGIN_ID,
+} from "../../../plugins/oracle/manifest"
+import {
+	voicePluginManifest,
+	VOICE_PLUGIN_ID,
+} from "../../../plugins/voice/manifest"
+import {
+	studioPluginManifest,
+	STUDIO_PLUGIN_ID,
+} from "../../../plugins/studio/manifest"
+import {
+	ch5pmPluginManifest,
+	CH5PM_PLUGIN_ID,
+} from "../../../plugins/ch5pm/manifest"
+import {
+	pdfReviewPluginManifest,
+	PDF_REVIEW_PLUGIN_ID,
+} from "../../../plugins/pdf-review/manifest"
+import {
+	crmPluginManifest,
+	CRM_PLUGIN_ID,
+} from "../../../plugins/crm/manifest"
+import {
+	folioPluginManifest,
+	FOLIO_PLUGIN_ID,
+} from "../../../plugins/folio/manifest"
 import { BUILT_IN_DEFAULT_CAPABILITIES } from "../../shared/firefly-plugin/capabilities"
 import { type PluginDescriptor } from "../../shared/firefly-plugin/descriptor"
-import { memorySurfaceManifest, MEMORY_SURFACE_PLUGIN_ID } from "../../shared/firefly-plugin/memory-surface-manifest"
+import {
+	memoryPluginManifest,
+	MEMORY_PLUGIN_ID,
+} from "../../../plugins/memory/manifest"
 import {
 	defaultCapabilityState,
 	projectCommandsFromCatalog,
 	projectComponentsFromCatalog,
+	projectNavSidebarsFromCatalog,
 	projectSidePanelsFromCatalog,
 	projectSessionWidgetsFromCatalog,
 	projectThemesFromCatalog,
@@ -47,6 +119,7 @@ import {
 import {
 	type ProjectedCommand,
 	type ProjectedComponent,
+	type ProjectedNavSidebar,
 	type ProjectedSessionWidget,
 	type ProjectedSidePanel,
 	type ProjectedTheme,
@@ -59,6 +132,7 @@ import {
 import { palotBridgeManifest, PALOT_BRIDGE_PLUGIN_ID } from "../../shared/firefly-plugin/palot-bridge-manifest"
 
 import { derivePluginDescriptor, parsePluginManifest } from "../../shared/firefly-plugin/index"
+import { PLUGIN_ID_CANONICAL_TO_ALIASES, resolveCanonicalPluginId } from "../../shared/firefly-plugin/plugin-id-aliases"
 
 import { createLogger } from "../logger"
 
@@ -75,10 +149,27 @@ const log = createLogger("firefly-plugin-catalog")
  */
 const BUILT_IN_MANIFESTS: readonly PluginManifest[] = [
 	palotBridgeManifest,
-	memorySurfaceManifest,
+	memoryPluginManifest,
 	acmeNotebookManifest,
+	browserPluginManifest,
 	notesPluginManifest,
+	reviewPluginManifest,
+	filesPluginManifest,
+	artifactsPluginManifest,
+	bridgesPluginManifest,
+	pulsePluginManifest,
+	editorPluginManifest,
+	terminalPluginManifest,
+	claudePluginManifest,
+	oraclePluginManifest,
+	voicePluginManifest,
 	acmeComponentsExemplarManifest,
+	devmuxToolbarManifest,
+	studioPluginManifest,
+	ch5pmPluginManifest,
+	pdfReviewPluginManifest,
+	crmPluginManifest,
+	folioPluginManifest,
 ]
 
 /**
@@ -152,6 +243,7 @@ export interface PluginCatalog {
 	readonly capabilityStates: Readonly<Record<string, CapabilityStateShape>>
 	readonly projections: {
 		readonly panels: readonly ProjectedSidePanel[]
+		readonly navSidebars: readonly ProjectedNavSidebar[]
 		readonly widgets: readonly ProjectedSessionWidget[]
 		readonly commands: readonly ProjectedCommand[]
 		readonly themes: readonly ProjectedTheme[]
@@ -255,15 +347,43 @@ export function buildPluginCatalog(input: {
 		}
 
 		descriptors.push(descriptor)
-		const override = input.stateOverrides?.[descriptor.normalizedId]
+
+		// Also push alias descriptor entries for any legacy reverse-DNS ids that
+		// map to this canonical id. Callers like dispatch.ts that hold old ids and
+		// directly search `catalog.descriptors.find(d => d.normalizedId === oldId)`
+		// will transparently find the canonical descriptor. The alias entries are
+		// NOT counted as separate plugins (they share the same capabilities/tools)
+		// — they are identity shims for the migration period.
+		const legacyAliases = PLUGIN_ID_CANONICAL_TO_ALIASES[descriptor.normalizedId] ?? []
+		for (const alias of legacyAliases) {
+			// Cast required: we're intentionally creating a virtual normalizedId that
+			// resolves to the same canonical descriptor but is found by old ID lookups.
+			descriptors.push({ ...descriptor, normalizedId: alias as typeof descriptor.normalizedId })
+		}
+
+		// Resolve the override using whichever id the caller used (canonical or
+		// alias). Canonical id takes precedence; fall back to checking aliases.
+		const override =
+			input.stateOverrides?.[descriptor.normalizedId] ??
+			legacyAliases.reduce<PluginCatalogStateOverride | undefined>(
+				(acc, alias) => acc ?? input.stateOverrides?.[alias],
+				undefined,
+			)
 		const baseState = defaultCapabilityState(descriptor)
-		capabilityStates[descriptor.normalizedId] = override
+		const computedState = override
 			? {
 					...baseState,
 					pluginDisabled: override.pluginDisabled ?? false,
 					pluginQuarantined: override.pluginQuarantined ?? false,
 			  }
 			: baseState
+		// Index capability state under the canonical id AND all legacy aliases so
+		// `catalog.capabilityStates[oldId]` resolves correctly in dispatch.ts.
+		capabilityStates[descriptor.normalizedId] = computedState
+		for (const alias of legacyAliases) {
+			capabilityStates[alias] = computedState
+		}
+
 		const status: PluginCatalogStatus = override?.pluginQuarantined
 			? "quarantined"
 			: override?.pluginDisabled
@@ -301,6 +421,10 @@ export function buildPluginCatalog(input: {
 		descriptors,
 		capabilityStates,
 	).items
+	const navSidebars = projectNavSidebarsFromCatalog(
+		descriptors,
+		capabilityStates,
+	).items
 	const widgets = projectSessionWidgetsFromCatalog(
 		descriptors,
 		capabilityStates,
@@ -329,7 +453,7 @@ export function buildPluginCatalog(input: {
 		descriptors,
 		entries,
 		capabilityStates,
-		projections: { panels, widgets, commands, themes, components },
+		projections: { panels, navSidebars, widgets, commands, themes, components },
 	}
 }
 
@@ -373,30 +497,35 @@ export function summarizeProjection(catalog: PluginCatalog): readonly PluginProj
 }
 
 /**
- * Convenience: get one descriptor by normalized id. Returns `null`
- * when the plugin is unknown to the catalog (caller should usually
+ * Convenience: get one descriptor by normalized id. Transparently resolves
+ * legacy reverse-DNS aliases to their canonical `namespace.name` id so
+ * callers that still hold an old id can still find the plugin. Returns
+ * `null` when the plugin is unknown to the catalog (caller should usually
  * treat that as a `quarantined` result, not an error).
  */
 export function findDescriptor(
 	catalog: PluginCatalog,
 	pluginId: string,
 ): PluginDescriptor | null {
-	return catalog.descriptors.find((d) => d.normalizedId === pluginId) ?? null
+	const canonical = resolveCanonicalPluginId(pluginId)
+	return catalog.descriptors.find((d) => d.normalizedId === canonical) ?? null
 }
 
 /**
  * Convenience: get the capability state the renderer should read
- * for a plugin. Returns the catalog's default state when the
- * plugin is unknown so the renderer can render a "loading" row
- * instead of crashing.
+ * for a plugin. Transparently resolves legacy reverse-DNS aliases to
+ * their canonical `namespace.name` id. Returns the catalog's default
+ * state when the plugin is unknown so the renderer can render a
+ * "loading" row instead of crashing.
  */
 export function getCapabilityState(
 	catalog: PluginCatalog,
 	pluginId: string,
 ): CapabilityStateShape {
+	const canonical = resolveCanonicalPluginId(pluginId)
 	return (
-		catalog.capabilityStates[pluginId] ?? {
-			...defaultCapabilityStateForId(pluginId),
+		catalog.capabilityStates[canonical] ?? {
+			...defaultCapabilityStateForId(canonical),
 		}
 	)
 }
@@ -405,8 +534,13 @@ function defaultCapabilityStateForId(pluginId: string): CapabilityStateShape {
 	// We don't have a descriptor here; produce a minimal state with
 	// `session` scope and no granted tokens. The renderer treats
 	// this exactly like `defaultCapabilityState` would.
+	// Recognize both canonical `firefly.*` ids and legacy `firefly.built-in.*`
+	// reverse-DNS ids as built-in trust (caller has already resolved aliases
+	// but may pass a canonical firefly.* id directly).
+	const isFireflyBuiltin =
+		pluginId.startsWith("firefly.built-in.") || pluginId.startsWith("firefly.")
 	return {
-		trust: pluginId.startsWith("firefly.built-in.") ? "built-in" : "signed-third-party",
+		trust: isFireflyBuiltin ? "built-in" : "signed-third-party",
 		sessionScope: "session",
 		grantedTokens: [],
 		loading: true,
@@ -423,8 +557,25 @@ function defaultCapabilityStateForId(pluginId: string): CapabilityStateShape {
  */
 export const KNOWN_PLUGIN_IDS = {
 	palotBridge: PALOT_BRIDGE_PLUGIN_ID,
-	memorySurface: MEMORY_SURFACE_PLUGIN_ID,
+	memorySurface: MEMORY_PLUGIN_ID,
 	acmeNotebook: ACME_NOTEBOOK_PLUGIN_ID,
+	browser: BROWSER_PLUGIN_ID,
 	notes: NOTES_PLUGIN_ID,
+	review: REVIEW_PLUGIN_ID,
+	files: FILES_PLUGIN_ID,
+	artifacts: ARTIFACTS_PLUGIN_ID,
+	bridges: BRIDGES_PLUGIN_ID,
+	pulse: PULSE_PLUGIN_ID,
+	editor: EDITOR_PLUGIN_ID,
+	terminal: TERMINAL_PLUGIN_ID,
+	claude: CLAUDE_PLUGIN_ID,
+	oracle: ORACLE_PLUGIN_ID,
 	acmeComponents: ACME_COMPONENTS_PLUGIN_ID,
+	devmuxToolbar: DEVMUX_TOOLBAR_PLUGIN_ID,
+	voice: VOICE_PLUGIN_ID,
+	studio: STUDIO_PLUGIN_ID,
+	ch5pm: CH5PM_PLUGIN_ID,
+	pdfReview: PDF_REVIEW_PLUGIN_ID,
+	crm: CRM_PLUGIN_ID,
+	folio: FOLIO_PLUGIN_ID,
 } as const

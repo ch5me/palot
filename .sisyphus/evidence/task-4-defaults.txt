@@ -1,0 +1,34 @@
+Task 4 — Defaults/Toggles Alignment
+=====================================
+Date: 2026-06-14
+Plan: .sisyphus/plans/cloud000-174-palette-3pane-finish.md (Task 4)
+
+Change (verified in git diff HEAD):
+- File: apps/desktop/src/renderer/firefly-surface-registry.tsx
+- Changed browser surface defaultOn from false to true.
+- This was the ONLY mismatch found across all 17 registry surfaces.
+
+Diff excerpt:
+  -		defaultOn: false,
+  +		defaultOn: true,
+  (for the browser surface entry, line ~107)
+
+Alignment verification:
+- fireflySurfaceDefaults.browserPanelEnabled: true (in feature-flags.ts)
+- browserPanelEnabledAtom initial value: true
+- browser surface registry defaultOn: true (after fix)
+- All three sources now agree.
+
+Decision (from notepads/decisions.md):
+- Aligned browser surface registry defaultOn from false to true to match
+  fireflySurfaceDefaults.browserPanelEnabled: true and the browserPanelEnabledAtom
+  initial value.
+- This was the only mismatch across all 17 registry surfaces.
+
+Deferred (from notepads/issues.md):
+- fireflySurfaceDefaults and registry defaultOn are still two separate declarations.
+- A future hardening pass could derive one from the other (or add a build-time assertion)
+  to prevent re-drift. Low urgency — only 1 mismatch found across 17 surfaces.
+- No other discoverability issues found beyond the duplicate PDF Review toggle.
+- Surfaces with defaultOn: false (pulse, memory, ch5pm, pdf-review) are intentionally
+  off by default per feature-flag policy; no misleading hidden-on surfaces detected.

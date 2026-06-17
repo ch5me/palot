@@ -22,7 +22,7 @@ import type { PluginManifest } from "../../src/shared/firefly-plugin/manifest"
 export const notesPluginManifest: PluginManifest = {
 	apiVersion: "firefly.plugin/v2",
 	kind: "PluginManifest",
-	id: "firefly.built-in.surface.notes",
+	id: "firefly.notes",
 	displayName: "Notes",
 	version: "0.11.0",
 	publisher: "Firefly",
@@ -60,6 +60,7 @@ export const notesPluginManifest: PluginManifest = {
 				render: { mode: "host-reconciler" },
 			},
 		],
+		navSidebars: [],
 		widgets: [],
 		commands: [
 			{
@@ -79,6 +80,10 @@ export const notesPluginManifest: PluginManifest = {
 		],
 		themes: [],
 		components: [],
+		snippets: [],
+		languages: [],
+		grammars: [],
+		iconThemes: [],
 		tools: [
 			{
 				id: "plugin.firefly.built-in.surface.notes.open",

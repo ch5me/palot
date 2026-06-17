@@ -19,8 +19,13 @@
  * and quarantined without affecting the host or any sibling plugin.
  */
 
-import { z } from "zod"
-
+import {
+	parseWorkerToHostMessage,
+	workerLifecycleMessageSchema,
+	type HostToWorkerMessage,
+	type WorkerLifecycleMessage,
+	type WorkerToHostMessage,
+} from "../../shared/firefly-plugin/extension-host-protocol"
 import {
 	applySupervisionEvent,
 	computeNextRestartDelayMs,
@@ -50,17 +55,12 @@ const log = createLogger("firefly-plugin/worker-supervisor")
 // Worker transport contract
 // ---------------------------------------------------------------------------
 
-/** Messages a plugin worker may send the supervisor. Zod-gated; anything
- *  else is a protocol violation that degrades the worker (fail loud). */
-export const pluginWorkerMessageSchema = z.discriminatedUnion("type", [
-	z.object({ type: z.literal("ready") }),
-	z.object({ type: z.literal("heartbeat") }),
-	z.object({
-		type: z.literal("fatal"),
-		message: z.string().max(2000),
-	}),
-])
-export type PluginWorkerMessage = z.infer<typeof pluginWorkerMessageSchema>
+/** Lifecycle messages a plugin worker may send the supervisor. Re-exported
+ *  from the extension-host protocol so there is one definition (S10). Anything
+ *  outside the full worker→host protocol is a violation that degrades the
+ *  worker (fail loud). */
+export const pluginWorkerMessageSchema = workerLifecycleMessageSchema
+export type PluginWorkerMessage = WorkerLifecycleMessage
 
 export interface PluginWorkerHandle {
 	postMessage(message: unknown): void
@@ -102,6 +102,13 @@ export interface PluginWorkerRegistration {
 	/** Per-plugin crash threshold (descriptor `quarantineOnCrashCount`). */
 	readonly quarantineOnCrashCount?: number
 	readonly restartBackoffMs?: number
+	/**
+	 * Spawn-gate prep (security, §B1). Thread-through: the actual refusal
+	 * logic lands in F3 — B1 accepts + passes these through so callers can
+	 * wire trust data without implementing the gate here.
+	 */
+	readonly trustTier?: string
+	readonly signatureState?: string
 }
 
 export interface PluginWorkerSupervisorOptions {
@@ -115,6 +122,29 @@ export interface PluginWorkerSupervisorOptions {
 	readonly now?: () => number
 	readonly random01?: () => number
 	readonly onTransition?: (summary: PluginSupervisionSummary, decision: SupervisionDecision) => void
+	/**
+	 * Services non-lifecycle worker→host messages (storage / capability /
+	 * invoke-result) per the extension-host protocol. Returns the message to
+	 * post back to the worker, or null for fire-and-forget. Keeps the supervisor
+	 * generic: the concrete routing (storage service, grant store) is injected.
+	 */
+	readonly onWorkerRequest?: (input: {
+		pluginId: string
+		message: WorkerToHostMessage
+	}) => Promise<HostToWorkerMessage | null> | HostToWorkerMessage | null
+	/**
+	 * Resolves the granted-capability snapshot + session scope for a plugin
+	 * just before its `activate` message is sent. Called once per spawn.
+	 * Wire from `grant-store.ts` `resolveGrantedTokens` in production;
+	 * omit in tests that inject their own activate payload or need no grants.
+	 */
+	readonly resolveActivation?: (pluginId: string) => Promise<{
+		grantedCapabilities: string[]
+		sessionScope: "session" | "project" | "app"
+	}> | {
+		grantedCapabilities: string[]
+		sessionScope: "session" | "project" | "app"
+	}
 }
 
 interface SupervisedPlugin {
@@ -132,6 +162,20 @@ interface SupervisedPlugin {
 	stopping: boolean
 }
 
+export type WorkerInvokeKind = "command" | "tool"
+
+export interface WorkerSendInvokeInput {
+	readonly kind: WorkerInvokeKind
+	readonly targetId: string
+	readonly args: Record<string, unknown>
+	readonly sessionId: string | null
+	readonly timeoutMs: number
+}
+
+export type WorkerSendInvokeResult =
+	| { readonly ok: true; readonly data: unknown }
+	| { readonly ok: false; readonly errorCode: string; readonly errorMessage: string }
+
 export interface PluginWorkerSupervisor {
 	register(registration: PluginWorkerRegistration): PluginSupervisionSummary
 	activate(pluginId: string): PluginSupervisionSummary
@@ -142,6 +186,14 @@ export interface PluginWorkerSupervisor {
 	listSummaries(): PluginSupervisionSummary[]
 	/** Test/diagnostic hook: run one hang-detection pass now. */
 	scanForHangs(): void
+	/**
+	 * Post an `invoke-command` or `invoke-tool` message to the plugin's live
+	 * worker, correlate the response by `requestId`, and resolve with the
+	 * worker's `invoke-result`. Rejects with code `worker_invoke_timeout` if
+	 * the worker does not reply within `timeoutMs`. Rejects with
+	 * `worker_not_active` if the plugin is not currently active. (B3)
+	 */
+	sendInvoke(pluginId: string, input: WorkerSendInvokeInput): Promise<WorkerSendInvokeResult>
 	dispose(): Promise<void>
 }
 
@@ -175,6 +227,15 @@ export function createPluginWorkerSupervisor(
 	const baseBackoffPolicy = options.restartBackoffPolicy ?? DEFAULT_RESTART_BACKOFF_POLICY
 
 	const plugins = new Map<string, SupervisedPlugin>()
+	/** In-flight invoke correlations: requestId → { resolve, reject, timeoutHandle } */
+	const pendingInvokes = new Map<
+		string,
+		{
+			resolve: (result: WorkerSendInvokeResult) => void
+			reject: (reason: Error) => void
+			timeoutHandle: ReturnType<typeof setTimeout>
+		}
+	>()
 	let disposed = false
 
 	const hangScanIntervalMs = options.hangScanIntervalMs ?? heartbeatPolicy.heartbeatIntervalMs
@@ -249,6 +310,25 @@ export function createPluginWorkerSupervisor(
 		}
 	}
 
+	function handleWorkerRequest(
+		entry: SupervisedPlugin,
+		worker: PluginWorkerHandle,
+		message: WorkerToHostMessage,
+	): void {
+		const handler = options.onWorkerRequest
+		if (!handler) return
+		void Promise.resolve(handler({ pluginId: entry.state.pluginId, message }))
+			.then((response) => {
+				if (response) worker.postMessage(response)
+			})
+			.catch((err) => {
+				log.warn("worker request handler failed", {
+					pluginId: entry.state.pluginId,
+					error: err instanceof Error ? err.message : String(err),
+				})
+			})
+	}
+
 	function spawn(entry: SupervisedPlugin): void {
 		if (disposed) return
 		clearRestartTimer(entry)
@@ -272,26 +352,91 @@ export function createPluginWorkerSupervisor(
 		}
 		entry.worker = worker
 
+		// Post the activation message immediately after wiring. The worker's
+		// `activate()` runs, posts `activated` (carrying the registered id table),
+		// and THAT flips lifecycle to `active`. A worker that replies only `ready`
+		// without `activated` within hangTimeoutMs is failed by scanForHangs.
+		void (async () => {
+			try {
+				const resolved = options.resolveActivation
+					? await Promise.resolve(options.resolveActivation(pluginId))
+					: { grantedCapabilities: [], sessionScope: "session" as const }
+				if (entry.generation !== generation) return
+				worker.postMessage({
+					type: "activate",
+					pluginId,
+					grantedCapabilities: resolved.grantedCapabilities,
+					sessionScope: resolved.sessionScope,
+				})
+			} catch (err) {
+				if (entry.generation !== generation) return
+				apply(entry, {
+					kind: "activationFailed",
+					pluginId,
+					failureClass: "load_failure",
+					message: `resolveActivation failed: ${err instanceof Error ? err.message : String(err)}`,
+					exitCode: null,
+				})
+			}
+		})()
+
 		worker.onMessage((raw) => {
 			if (entry.generation !== generation) return
-			const parsed = pluginWorkerMessageSchema.safeParse(raw)
-			if (!parsed.success) {
+			const parsed = parseWorkerToHostMessage(raw)
+			if (!parsed.ok) {
 				apply(entry, {
 					kind: "healthDegraded",
 					pluginId,
-					message: `protocol violation: ${parsed.error.issues[0]?.message ?? "invalid worker message"}`,
+					message: `protocol violation: ${parsed.reason}`,
 				})
 				return
 			}
-			switch (parsed.data.type) {
+			const message = parsed.message
+			switch (message.type) {
 				case "ready":
+					// Transport-up only: the worker signals it is connected. Do NOT
+					// flip lifecycle to active — that happens only on `activated`.
+					log.debug("Worker transport up (ready)", { pluginId })
+					return
+				case "activated":
+					// Activation complete: the worker's activate() ran, handlers are
+					// registered. Flip lifecycle to active and seed routing table.
+					log.debug("Worker activated", {
+						pluginId,
+						registeredCommands: message.registeredCommands,
+						registeredTools: message.registeredTools,
+					})
 					apply(entry, { kind: "activationSucceeded", pluginId })
 					return
 				case "heartbeat":
 					apply(entry, { kind: "heartbeat", pluginId })
 					return
 				case "fatal":
-					apply(entry, { kind: "workerCrashed", pluginId, exitCode: null, message: parsed.data.message })
+					apply(entry, { kind: "workerCrashed", pluginId, exitCode: null, message: message.message })
+					return
+				case "invoke-result": {
+					const pending = pendingInvokes.get(message.requestId)
+					if (pending) {
+						clearTimeout(pending.timeoutHandle)
+						pendingInvokes.delete(message.requestId)
+						if (message.ok) {
+							pending.resolve({ ok: true, data: message.data })
+						} else {
+							pending.resolve({
+								ok: false,
+								errorCode: message.errorCode ?? "invoke_failed",
+								errorMessage: message.errorMessage ?? "worker invoke failed",
+							})
+						}
+					} else {
+						// No pending correlator — route to onWorkerRequest as a fallback
+						handleWorkerRequest(entry, worker, message)
+					}
+					return
+				}
+				case "storage-request":
+				case "capability-request":
+					handleWorkerRequest(entry, worker, message)
 					return
 			}
 		})
@@ -506,12 +651,51 @@ export function createPluginWorkerSupervisor(
 
 		scanForHangs,
 
+		sendInvoke(pluginId, input) {
+			return new Promise<WorkerSendInvokeResult>((resolve, reject) => {
+				const entry = plugins.get(pluginId)
+				if (!entry || entry.state.state !== "active" || !entry.worker) {
+					resolve({
+						ok: false,
+						errorCode: "worker_not_active",
+						errorMessage: `Plugin ${pluginId} is not active`,
+					})
+					return
+				}
+				const requestId = crypto.randomUUID()
+				const timeoutHandle = setTimeout(() => {
+					if (pendingInvokes.delete(requestId)) {
+						resolve({
+							ok: false,
+							errorCode: "worker_invoke_timeout",
+							errorMessage: `Worker did not reply within ${input.timeoutMs}ms`,
+						})
+					}
+				}, input.timeoutMs)
+				unrefTimer(timeoutHandle)
+				pendingInvokes.set(requestId, { resolve, reject, timeoutHandle })
+				const messageType = input.kind === "command" ? ("invoke-command" as const) : ("invoke-tool" as const)
+				entry.worker.postMessage({
+					type: messageType,
+					requestId,
+					[input.kind === "command" ? "commandId" : "toolId"]: input.targetId,
+					args: input.args,
+					sessionId: input.sessionId,
+				})
+			})
+		},
+
 		async dispose() {
 			disposed = true
 			clearInterval(hangScanTimer)
 			for (const entry of plugins.values()) {
 				clearRestartTimer(entry)
 				stopWorker(entry)
+			}
+			for (const [id, pending] of pendingInvokes) {
+				clearTimeout(pending.timeoutHandle)
+				pending.resolve({ ok: false, errorCode: "supervisor_disposed", errorMessage: "Supervisor disposed" })
+				pendingInvokes.delete(id)
 			}
 		},
 	}

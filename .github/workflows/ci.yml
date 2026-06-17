@@ -34,6 +34,9 @@ jobs:
       - name: Lint
         run: bun run lint
 
+      - name: Guard — no elf-ui shim imports
+        run: node scripts/check-no-elf-ui-shim-imports.mjs
+
   typecheck:
     name: Type Check
     runs-on: ubuntu-latest

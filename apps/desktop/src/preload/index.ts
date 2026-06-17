@@ -80,6 +80,8 @@ contextBridge.exposeInMainWorld("elf", {
 			ipcRenderer.invoke("palot:binding-set", binding),
 		releaseBinding: (sessionId: string) => ipcRenderer.invoke("palot:binding-release", sessionId),
 		getUiStateSnapshot: () => ipcRenderer.invoke("palot:ui-state-snapshot"),
+		setUiStateSnapshot: (snapshot: import("./api").PalotUiStateSnapshot) =>
+			ipcRenderer.invoke("palot:ui-state-snapshot:set", snapshot),
 		openSidePanel: (tab: import("./api").SidePanelTabId) =>
 			ipcRenderer.invoke("palot:open-side-panel", tab),
 		openLoomSession: (sessionId: string) => ipcRenderer.invoke("palot:loom-session-open", sessionId),
@@ -108,8 +110,11 @@ contextBridge.exposeInMainWorld("elf", {
 			sessionId: string,
 			delta: { nodeId: string; field: string; value: unknown },
 		) => ipcRenderer.invoke("palot:loom-state", sessionId, delta),
-		onOpenSidePanel: (callback: (payload: { tab: import("./api").SidePanelTabId }) => void) => {
-			const listener = (_event: unknown, payload: { tab: import("./api").SidePanelTabId }) => callback(payload)
+		onOpenSidePanel: (callback: (payload: import("./api").PalotOpenSidePanelPayload) => void) => {
+			const listener = (
+				_event: unknown,
+				payload: import("./api").PalotOpenSidePanelPayload,
+			) => callback(payload)
 			ipcRenderer.on("palot:open-side-panel", listener)
 			return () => {
 				ipcRenderer.removeListener("palot:open-side-panel", listener)
@@ -120,6 +125,30 @@ contextBridge.exposeInMainWorld("elf", {
 			ipcRenderer.on("palot:browser-actions", listener)
 			return () => {
 				ipcRenderer.removeListener("palot:browser-actions", listener)
+			}
+		},
+		onArtifactPushed: (
+			callback: (payload: { sessionId: string; record: import("./api").GenUiArtifactRecord }) => void,
+		) => {
+			const listener = (
+				_event: unknown,
+				payload: { sessionId: string; record: import("./api").GenUiArtifactRecord },
+			) => callback(payload)
+			ipcRenderer.on("palot:artifact-pushed", listener)
+			return () => {
+				ipcRenderer.removeListener("palot:artifact-pushed", listener)
+			}
+		},
+		onToolUiHints: (
+			callback: (payload: import("./api").PalotToolUiHintsPayload) => void,
+		) => {
+			const listener = (
+				_event: unknown,
+				payload: import("./api").PalotToolUiHintsPayload,
+			) => callback(payload)
+			ipcRenderer.on("palot:tool-ui-hints", listener)
+			return () => {
+				ipcRenderer.removeListener("palot:tool-ui-hints", listener)
 			}
 		},
 	},
@@ -255,12 +284,28 @@ contextBridge.exposeInMainWorld("elf", {
 	},
 
 	openExternal: (url: string) => ipcRenderer.invoke("browser:open-external", url),
+	marketplace: {
+		gallerySearch: (options: {
+			query?: string
+			category?: string
+			size?: number
+			offset?: number
+		}) => ipcRenderer.invoke("firefly-marketplace:gallery-search", options),
+		install: (input: import("./api").MarketplaceInstallInput) =>
+			ipcRenderer.invoke("firefly-marketplace:install", input),
+		listInstalled: () => ipcRenderer.invoke("firefly-marketplace:list-installed"),
+		uninstall: (installationId: string) =>
+			ipcRenderer.invoke("firefly-marketplace:uninstall", { installationId }),
+		applyTheme: (installationId: string, themeId: string) =>
+			ipcRenderer.invoke("firefly-marketplace:apply-theme", { installationId, themeId }),
+	},
 	plugins: {
 		list: () => ipcRenderer.invoke("firefly-plugin:list"),
 		describe: (pluginId: string) => ipcRenderer.invoke("firefly-plugin:describe", { pluginId }),
 		capabilities: (pluginId: string) =>
 			ipcRenderer.invoke("firefly-plugin:state", { pluginId }),
 		panels: () => ipcRenderer.invoke("firefly-plugin:panels"),
+		navSidebars: () => ipcRenderer.invoke("firefly-plugin:nav-sidebars"),
 		widgets: () => ipcRenderer.invoke("firefly-plugin:widgets"),
 		commands: () => ipcRenderer.invoke("firefly-plugin:commands"),
 		themes: () => ipcRenderer.invoke("firefly-plugin:themes"),

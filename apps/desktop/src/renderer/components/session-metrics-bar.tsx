@@ -1,15 +1,4 @@
-/**
- * Compact session metrics bar for the agent-detail app bar.
- *
- * Inline: work time, cost, and error/retry alerts.
- * Popover: full token breakdown, exchanges, model distribution,
- * tool calls, and cache efficiency.
- *
- * Context window usage is displayed separately in the StatusBar below
- * the chat input (see prompt-toolbar.tsx).
- */
-import { Popover, PopoverContent, PopoverTrigger } from "@ch5me/elf-ui/components/popover"
-import { Tooltip, TooltipContent, TooltipTrigger } from "@ch5me/elf-ui/components/tooltip"
+import { Popover, PopoverContent, PopoverTrigger, Tooltip, TooltipContent, TooltipTrigger } from "@ch5me/ch5-ui-web";
 import { useAtomValue } from "jotai"
 import { BarChart3Icon, CoinsIcon, TimerIcon } from "lucide-react"
 import { Fragment, memo, useEffect, useState } from "react"

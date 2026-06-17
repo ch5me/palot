@@ -1,0 +1,69 @@
+Task 7 — Closeout Completeness Audit
+=======================================
+Date: 2026-06-14
+Plan: .sisyphus/plans/cloud000-174-palette-3pane-finish.md (Task 7)
+
+Evidence files verified present:
+- .sisyphus/evidence/task-6-browser-proof.md (4.6K) — browser-mode manual proof
+- .sisyphus/evidence/task-6-browser-proof.png (1.0M PNG, 3024x1964) — browser screenshot
+- .sisyphus/evidence/task-6-electron-proof.md (1.8K) — Electron blocker documentation
+- .sisyphus/evidence/task-6-electron-pane.txt (895B) — raw tmux pane crash log
+- .sisyphus/evidence/task-7-closeout.md — full evidence summary
+- .sisyphus/evidence/task-7-ticket-closeout.md — ticket-ready paste text
+- .sisyphus/notepads/cloud000-174-palette-3pane-finish/decisions.md — 17 entries
+- .sisyphus/notepads/cloud000-174-palette-3pane-finish/issues.md — 13 entries
+- .sisyphus/notepads/cloud000-174-palette-3pane-finish/learnings.md — 20 entries
+
+Backfilled evidence files (created in this wave):
+- .sisyphus/evidence/task-1-doc-state-contract.txt
+- .sisyphus/evidence/task-1-doc-state-fallback.txt
+- .sisyphus/evidence/task-2-doc-metadata.txt
+- .sisyphus/evidence/task-2-doc-metadata-regression.txt
+- .sisyphus/evidence/task-3-storybook-proof.png.txt (substitute note)
+- .sisyphus/evidence/task-3-storybook-switch.txt
+- .sisyphus/evidence/task-4-command-palette.txt
+- .sisyphus/evidence/task-4-defaults.txt
+- .sisyphus/evidence/task-5-bridge-studio.txt
+- .sisyphus/evidence/task-5-bridge-pdf-review.txt
+- .sisyphus/evidence/task-7-closeout-audit.txt (this file)
+- .sisyphus/evidence/task-7-doc-audit.txt
+
+Implementation files in working tree for Tasks 1-6 plus final-wave repair:
+- apps/desktop/src/shared/firefly-surface-ids.ts
+- apps/desktop/src/renderer/firefly-surface-registry.tsx
+- apps/desktop/src/renderer/firefly-plugin-surfaces.tsx
+- apps/desktop/src/renderer/firefly-plugin-surface-merge.ts
+- apps/desktop/src/renderer/atoms/ui.ts
+- apps/desktop/src/renderer/atoms/preferences.ts
+- apps/desktop/src/renderer/components/agent-detail.tsx
+- apps/desktop/src/renderer/components/side-panel/session-side-panel.tsx
+- apps/desktop/src/renderer/components/command-palette.tsx
+- apps/desktop/src/main/palot-browser-ipc.ts
+- apps/desktop/src/main/ipc-handlers.ts
+- apps/desktop/src/main/palot-browser-ipc.test.ts
+- apps/desktop/src/main/palot-managed-runtime-verification.test.ts
+- apps/desktop/src/main/palot-plugin/plugin.js
+- apps/desktop/src/preload/api.d.ts
+- apps/desktop/src/preload/index.ts
+- apps/desktop/src/renderer/services/backend.ts
+- apps/desktop/src/renderer/__tests__/surface-mirror-lists.test.ts
+- apps/desktop/src/renderer/firefly-plugin-surface-merge.test.ts
+- apps/desktop/src/renderer/atoms/ui.test.ts (new file)
+
+Storybook story (new file):
+- packages/ui/src/stories/ai-elements/palot-three-pane-shell.stories.tsx (534 lines, 17.6K)
+
+Removed from this ticket slice as unrelated experimental churn:
+- apps/desktop/package.json
+- apps/desktop/src/main/palot-runtime/artifact-store.ts
+- bun.lock
+
+Verification commands status:
+- Targeted tests (`bun test src/main/palot-browser-ipc.test.ts src/main/palot-managed-runtime-verification.test.ts src/renderer/atoms/ui.test.ts`): PASS
+- Type-check (`bun run check-types`): PASS
+- Lint (`bun run lint`): PASS
+
+Remaining blocker:
+- Electron dev runtime crashes with ERR_UNSUPPORTED_ESM_URL_SCHEME on bun: protocol.
+- Pre-existing dev-environment issue, not a regression from this plan.
+- Blocks Electron-mode three-pane proof (Task 6).

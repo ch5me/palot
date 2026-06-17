@@ -7,14 +7,22 @@ mock.module("../lib/monaco", () => ({
 	languageForPath: () => "plaintext",
 }))
 
-const { CATALOG_SERVED_SURFACE_IDS, FIREFLY_SURFACE_IDS, FIREFLY_SURFACE_REGISTRY } = await import(
-	"../firefly-surface-registry"
-)
+const {
+	CATALOG_SERVED_SURFACE_IDS,
+	FIREFLY_SURFACE_IDS,
+	FIREFLY_SURFACE_REGISTRY,
+	FIREFLY_SURFACE_REGISTRY_BY_ID,
+} = await import("../firefly-surface-registry")
 const {
 	fireflySurfaceDefaults,
 	fireflySurfaceFlagAtoms,
 	fireflySurfaceLabels,
 } = await import("../atoms/feature-flags")
+const {
+	FIREFLY_SURFACE_LANE_BY_ID,
+	isDocumentSurfaceId,
+	DOCUMENT_SURFACE_IDS,
+} = await import("../../shared/firefly-surface-ids")
 const { palotSidePanelTabSchema } = await import(
 	"../../shared/firefly-plugin/palot-bridge-manifest"
 )
@@ -75,6 +83,18 @@ test("sidePanelTabSchema options match FIREFLY_SURFACE_IDS", () => {
 
 test("registry id sidecar matches FIREFLY_SURFACE_IDS", () => {
 	expect(sorted(sidecarIds)).toEqual(sorted(FIREFLY_SURFACE_IDS))
+})
+
+test("lane metadata has one authority per surface id", () => {
+	for (const id of FIREFLY_SURFACE_IDS) {
+		if (CATALOG_SERVED_SURFACE_IDS.includes(id)) continue
+		expect(FIREFLY_SURFACE_REGISTRY_BY_ID[id]?.lane).toBe(FIREFLY_SURFACE_LANE_BY_ID[id])
+	}
+	expect(DOCUMENT_SURFACE_IDS.filter((id) => isDocumentSurfaceId(id))).toEqual(DOCUMENT_SURFACE_IDS)
+	const registryDocumentIds = FIREFLY_SURFACE_REGISTRY.filter((surface) => surface.lane === "document").map(
+		(surface) => surface.id,
+	)
+	expect(sorted(registryDocumentIds)).toEqual(sorted(DOCUMENT_SURFACE_IDS))
 })
 
 test("every surface flag atom is a usable atom object", () => {

@@ -101,7 +101,7 @@ export function useThemeEffect() {
 		// Sync native theme with macOS so the glass tint matches the CSS color scheme.
 		// Without this, macOS applies its system appearance (dark/light) to the native
 		// glass layer regardless of what the app's CSS says — causing mismatched tinting.
-		if ("elf" in window) {
+		if (typeof window !== "undefined" && "elf" in window) {
 			window.elf.setNativeTheme(colorScheme === "system" ? "system" : cls)
 		}
 

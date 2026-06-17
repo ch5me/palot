@@ -67,13 +67,13 @@ function createDefaultRecord(): BrowserLaneRecord {
 	return {
 		id: DEFAULT_BROWSER_LANE_ID,
 		label: "Default",
-		mode: "local",
-		runtime: "docker-chromium",
-		surfaceKind: "selkies-stream",
+		mode: "remote",
+		runtime: "remote-attached",
+		surfaceKind: "direct-iframe",
 		streamBackendUrl: null,
 		cdpEndpoint: null,
 		profilePath: null,
-		host: "127.0.0.1",
+		host: null,
 		createdAt: now,
 		updatedAt: now,
 	}

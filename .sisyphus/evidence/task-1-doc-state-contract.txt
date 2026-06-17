@@ -1,0 +1,29 @@
+Task 1 — Doc-Lane State Contract
+=================================
+Date: 2026-06-14
+Plan: .sisyphus/plans/cloud000-174-palette-3pane-finish.md (Task 1)
+
+Contract (verified in source):
+- Document lane openness is explicit durable UI state, NOT derived from shared sidePanelActiveTab.
+- atoms/ui.ts defines:
+  - documentPanelOpenAtom (read atom, line 75) — derived from fireflySurfacePreferencesAtom.documentPanelOpen
+  - lastDocumentPanelTabAtom (read atom, line 85) — derived from fireflySurfacePreferencesAtom.lastDocumentPanelTab
+  - setDocumentPanelOpenAtom (write, line 80) — sets documentPanelOpen independently
+  - setDocumentPanelActiveTabAtom (write, line 91) — sets lastDocumentPanelTab + documentPanelOpen: true
+  - isDocumentPanelTab() type guard (line 58) — distinguishes document vs utility tab ids
+- atoms/preferences.ts persists doc-lane fields separately:
+  - lastDocumentPanelTab: LastDocumentPanelTabId (line 57)
+  - documentPanelOpen: boolean (line 58)
+  - Defaults: lastDocumentPanelTab: "studio", documentPanelOpen: false (lines 217-218)
+  - Legacy migration: falls back through parsed.lastDocumentPanelTab -> legacyTab -> "studio" (line 133)
+
+Files changed (git diff HEAD):
+- apps/desktop/src/renderer/atoms/ui.ts (+111/-lines)
+- apps/desktop/src/renderer/atoms/preferences.ts (+62/-lines)
+- apps/desktop/src/renderer/components/agent-detail.tsx (+139/-lines)
+- apps/desktop/src/renderer/components/side-panel/session-side-panel.tsx (+15/-lines)
+
+Decision (from notepads/decisions.md):
+- Doc lane stays explicit durable UI state.
+- Utility pane keeps its own persisted tab/open state.
+- Bridge/runtime open path uses isDocumentPanelTab(tab) to route to correct pane atom.

@@ -1,0 +1,12 @@
+SUBSTITUTE NOTE — not a real PNG. See task-3-storybook-proof.png.txt for full explanation.
+
+No Storybook screenshot was captured because:
+1. Browser-lane tooling returned "unbound_session" during this work.
+2. Storybook uses mock doc content (not live runtime), so a screenshot here would be
+   weaker proof than the live browser screenshot already captured.
+
+Existing substitute evidence:
+- packages/ui/src/stories/ai-elements/palot-three-pane-shell.stories.tsx (534 lines, 17.6K)
+- .sisyphus/evidence/task-6-browser-proof.png (1.0M real PNG, 3024x1964, live browser proof)
+- .sisyphus/evidence/task-6-browser-proof.md (textual DOM observations from live browser)
+- .sisyphus/evidence/task-3-storybook-switch.txt (story structure and tab switching proof)

@@ -1,3 +1,5 @@
+import type { OpenCodeRuntimeDescriptor } from "../shared/opencode-runtime"
+
 /**
  * Type definitions for the Electron preload bridge.
  *
@@ -9,7 +11,16 @@ export interface OpenCodeServerInfo {
 	url: string
 	pid: number | null
 	managed: boolean
+	runtime?: OpenCodeRuntimeDescriptor
 }
+
+export type {
+	OpenCodeRuntimeDescriptor,
+	OpenCodeRuntimeLifecycle,
+	OpenCodeRuntimeMode,
+	OpenCodeRuntimeOwnership,
+	OpenCodeRuntimeSource,
+} from "../shared/opencode-runtime"
 
 export type BrowserLaneMode = "local" | "remote"
 
@@ -200,6 +211,12 @@ export interface SessionBinding {
 	openCodeSessionId: string
 	browserLaneId: string | null
 	magicBrowserSessionId: string | null
+	/**
+	 * OpenCode parentID of the session — non-null means this is a sub-agent
+	 * session. Optional for back-compat with records written before this field
+	 * was added; treat absent/undefined as null (root session).
+	 */
+	parentSessionId?: string | null
 	status: SessionBindingStatus
 	createdAt: number
 	updatedAt: number
@@ -211,6 +228,12 @@ export interface SessionBindingRecord {
 	openCodeSessionId: string
 	browserLaneId: string | null
 	magicBrowserSessionId: string | null
+	/**
+	 * OpenCode parentID of the session — non-null means this is a sub-agent
+	 * session. Optional for back-compat with records written before this field
+	 * was added; treat absent/undefined as null (root session).
+	 */
+	parentSessionId?: string | null
 	status: SessionBindingStatus
 	createdAt: number
 	updatedAt: number
@@ -272,8 +295,32 @@ export interface PalotSidePanelSnapshot {
 	availableTabs: SidePanelTabId[]
 }
 
+export interface PalotDocumentPanelSnapshot {
+	open: boolean
+	activeTab: DocumentPanelTabId | null
+	availableTabs: DocumentPanelTabId[]
+}
+
 export interface PalotUiStateSnapshot {
 	sidePanel: PalotSidePanelSnapshot
+	documentPanel: PalotDocumentPanelSnapshot
+}
+
+export interface PalotOpenSidePanelPayload {
+	tab: SidePanelTabId
+}
+
+/** Generic, host-applied UI side effects a tool declared in its manifest. */
+export interface PalotToolUiHints {
+	openPanel: string | null
+	focusWidget: string | null
+	refreshProjection: boolean
+}
+
+export interface PalotToolUiHintsPayload {
+	sessionId: string
+	toolId: string
+	uiHints: PalotToolUiHints
 }
 
 export interface LoomOpenSessionResult {
@@ -360,11 +407,25 @@ export interface BrowserGeometryFixture {
 	expected: BrowserCoordinateTransformResult
 }
 
+/**
+ * Actor identity carried on action events so the surface renderer can show a
+ * named, colored cursor per agent. `kind` distinguishes the primary session
+ * agent ("main") from a spawned sub-agent ("sub"). Optional on events for
+ * backward compatibility — events without an actor remain valid.
+ */
+export interface Actor {
+	id: string
+	displayName: string
+	cursorColor: string
+	kind: "main" | "sub"
+}
+
 export interface BrowserActionEventBase {
 	id: string
 	sessionId: string
 	laneId: string | null
 	source: BrowserActionSource
+	actor?: Actor | null
 	sequence: number
 	requestId: string | null
 	causationId: string | null
@@ -765,10 +826,32 @@ export interface OpenInTargetsResult {
 // ============================================================
 
 /** Built-in local server, auto-managed by Elf via OpenCodeManager. */
+/** Source of the OpenCode runtime binary for a local server. */
+export type LocalRuntimeKind = "bundled" | "host" | "container"
+
+/** Who owns the OpenCode server lifecycle for a local server. */
+export type LocalRuntimeOwnership = "managed" | "attach-only"
+
 export interface LocalServerConfig {
 	id: "local"
 	name: string
 	type: "local"
+	runtime?: OpenCodeRuntimeDescriptor
+	/**
+	 * Where the OpenCode runtime binary comes from.
+	 * - "bundled": portable-opencode sidecar shipped with the app.
+	 * - "host": host-installed `opencode` resolved from PATH.
+	 * - "container": container runtime (future).
+	 * Absent on legacy records; migration fills "host" for pre-alpha users.
+	 */
+	runtimeKind?: LocalRuntimeKind
+	/**
+	 * Who manages the server process.
+	 * - "managed": Elf spawns and supervises the server.
+	 * - "attach-only": Elf connects to an already-running server.
+	 * Absent on legacy records; migration fills "managed".
+	 */
+	ownership?: LocalRuntimeOwnership
 	/** Hostname the local server binds to (default "127.0.0.1"). Use "0.0.0.0" to expose on the network. */
 	hostname?: string
 	/** Port the local server listens on (default 14096). */
@@ -786,6 +869,7 @@ export interface RemoteServerConfig {
 	id: string
 	name: string
 	type: "remote"
+	runtime?: OpenCodeRuntimeDescriptor
 	/** Full base URL, e.g. "https://opencode.example.com:<port>" */
 	url: string
 	/** Basic Auth username (defaults to "opencode" if omitted). */
@@ -871,6 +955,75 @@ export interface McpConnectionConfigMutationInput {
 // ============================================================
 // Firefly Cloud auth types
 // ============================================================
+
+// ============================================================
+// Marketplace types (§7, §8)
+// ============================================================
+
+export interface MarketplaceSearchEntry {
+	namespace: string
+	name: string
+	displayName: string | null
+	description: string | null
+	version: string
+	iconUrl: string | null
+	downloadCount: number | null
+	/** Declared capabilities required by this extension (for pre-install consent dialog). */
+	requiredCapabilities?: readonly string[]
+	/** Short hint about the trust tier (e.g. "signed-third-party"). */
+	trustHint?: string
+	/** Short hint about the runtime surface (e.g. "node-worker", "web-worker"). */
+	runtimeHint?: string
+}
+
+export interface MarketplaceSearchResult {
+	offset: number
+	totalSize: number
+	extensions: MarketplaceSearchEntry[]
+}
+
+export interface MarketplaceInstallInput {
+	kind: "open-vsx" | "local-vsix" | "firefly"
+	// open-vsx / firefly fields
+	namespace?: string
+	name?: string
+	version?: string
+	// local-vsix fields
+	vsixPath?: string
+	expectedSha256?: string
+	/** Capabilities the user explicitly consented to during the pre-install dialog. */
+	consentedCapabilities?: readonly string[]
+}
+
+export interface MarketplaceInstalledTheme {
+	id: string
+	label: string
+	kind: "light" | "dark" | "high-contrast"
+	/** Mapped CSS custom property tokens (shadcn/ui token names). */
+	appTokens?: Record<string, string>
+}
+
+export interface MarketplaceInstallResult {
+	packageId: string
+	installationId: string
+	externalId: string
+	displayName: string | null
+	version: string
+	themes: MarketplaceInstalledTheme[]
+	alreadyInstalled: boolean
+}
+
+export interface MarketplaceInstalledEntry {
+	packageId: string
+	installationId: string
+	externalId: string
+	displayName: string | null
+	version: string
+	registrySource: string
+	lifecycleState: string
+	appliedThemeId: string | null
+	themes: MarketplaceInstalledTheme[]
+}
 
 export interface ElfAuthStateDto {
 	hasToken: boolean
@@ -1161,6 +1314,7 @@ export interface ElfAPI {
 		setBinding: (binding: SessionBinding) => Promise<SessionBinding>
 		releaseBinding: (sessionId: string) => Promise<SessionBinding | null>
 		getUiStateSnapshot: () => Promise<PalotUiStateSnapshot>
+		setUiStateSnapshot: (snapshot: PalotUiStateSnapshot) => Promise<PalotUiStateSnapshot>
 		openSidePanel: (tab: SidePanelTabId) => Promise<PalotUiStateSnapshot>
 		openLoomSession: (sessionId: string) => Promise<LoomOpenSessionResult>
 		getArtifact: (sessionId: string, artifactId: string) => Promise<GenUiArtifactRecord | null>
@@ -1186,8 +1340,10 @@ export interface ElfAPI {
 			sessionId: string,
 			delta: { nodeId: string; field: string; value: unknown },
 		) => Promise<void>
-		onOpenSidePanel: (callback: (payload: { tab: SidePanelTabId }) => void) => () => void
+		onOpenSidePanel: (callback: (payload: PalotOpenSidePanelPayload) => void) => () => void
 		onBrowserActions: (callback: (event: BrowserActionEvent) => void) => () => void
+		onArtifactPushed: (callback: (payload: { sessionId: string; record: GenUiArtifactRecord }) => void) => () => void
+		onToolUiHints: (callback: (payload: PalotToolUiHintsPayload) => void) => () => void
 	}
 	onActiveOpenCodeSessionsChanged: (
 		callback: (snapshot: ActiveOpenCodeSessionsSnapshot) => void,
@@ -1439,6 +1595,10 @@ export interface ElfAPI {
 			appVersion: string
 			items: Array<import("../shared/firefly-plugin/renderer-projection").ProjectedSidePanel>
 		}>
+		navSidebars: () => Promise<{
+			appVersion: string
+			items: Array<import("../shared/firefly-plugin/renderer-projection").ProjectedNavSidebar>
+		}>
 		widgets: () => Promise<{ appVersion: string; items: unknown[] }>
 		commands: () => Promise<{ appVersion: string; items: unknown[] }>
 		themes: () => Promise<{ appVersion: string; items: unknown[] }>
@@ -1589,6 +1749,23 @@ restoreBackup: () => Promise<{
 
 	auth: ElfAuthApi
 	cloud: FireflyCloudApi
+
+	/** Firefly Plugin Marketplace — search, install, manage theme extensions. */
+	marketplace: {
+		gallerySearch: (options: {
+			query?: string
+			category?: string
+			size?: number
+			offset?: number
+		}) => Promise<MarketplaceSearchResult>
+		install: (input: MarketplaceInstallInput) => Promise<MarketplaceInstallResult>
+		listInstalled: () => Promise<{ extensions: MarketplaceInstalledEntry[] }>
+		uninstall: (installationId: string) => Promise<{ ok: true }>
+		applyTheme: (
+			installationId: string,
+			themeId: string,
+		) => Promise<{ ok: true; appTokens?: Record<string, string>; kind?: "light" | "dark" | "high-contrast" }>
+	}
 }
 
 declare global {

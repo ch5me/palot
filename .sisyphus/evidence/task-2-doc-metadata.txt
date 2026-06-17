@@ -1,0 +1,33 @@
+Task 2 — Metadata-Driven Lane Classification
+==============================================
+Date: 2026-06-14
+Plan: .sisyphus/plans/cloud000-174-palette-3pane-finish.md (Task 2)
+
+Contract (verified in source):
+- FireflySurfaceLane type = "utility" | "document"
+  Location: apps/desktop/src/shared/firefly-surface-ids.ts line 35
+  This is the renderer-free authority for lane membership.
+
+- FIRELY_SURFACE_LANE_MAP (or equivalent record) satisfies Record<FireflySurfaceId, FireflySurfaceLane>
+  Location: apps/desktop/src/shared/firefly-surface-ids.ts line 56
+
+- Every registry row in firefly-surface-registry.tsx carries explicit lane field.
+  grep count for "lane:" in registry: 20 matches (all 17+ surfaces declare lane).
+
+- Catalog-projected tabs derive lane from hostTarget.slot:
+  - hostTarget.slot === "main-pane" => document lane
+  - hostTarget.slot === "side-panel" => utility lane
+  Location: apps/desktop/src/renderer/firefly-plugin-surfaces.tsx
+
+Files changed (git diff HEAD):
+- apps/desktop/src/shared/firefly-surface-ids.ts (+31 lines) — lane type + authority map
+- apps/desktop/src/renderer/firefly-surface-registry.tsx (+34/-lines) — lane field on all rows
+- apps/desktop/src/renderer/firefly-plugin-surfaces.tsx (+1 line) — catalog lane projection
+- apps/desktop/src/renderer/firefly-plugin-surface-merge.ts (+13/-lines) — merge lane support
+
+Decision (from notepads/decisions.md):
+- Durable lane field name is "lane" with values "document" | "utility".
+- Source of truth lives in shared/firefly-surface-ids.ts.
+- Registry rows copy that meaning explicitly.
+- Catalog descriptors carry same concept into FireflySidePanelTab.
+- Adding a future doc surface requires one metadata declaration, not a new routing helper.

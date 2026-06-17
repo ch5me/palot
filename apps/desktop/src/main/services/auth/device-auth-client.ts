@@ -133,12 +133,19 @@ export async function requestDeviceCode(params: {
 export async function pollForApproval(params: {
 	deviceCode: string
 	intervalSec?: number
-	expiresAtSec?: number
+	/**
+	 * How long, in seconds *from now*, the device code stays valid before
+	 * polling gives up. This is a relative TTL, NOT an absolute epoch
+	 * deadline — `pollForApproval` computes the wall-clock deadline itself so
+	 * callers cannot get the units wrong. Defaults to 600s (10 minutes).
+	 */
+	expiresInSec?: number
 	signal?: AbortSignal
 	fetchImpl?: typeof fetch
 }): Promise<TokenResponse> {
 	const intervalMs = (params.intervalSec ?? 3) * 1000
-	const deadline = params.expiresAtSec ? params.expiresAtSec * 1000 : Date.now() + 600_000
+	const ttlSec = params.expiresInSec ?? 600
+	const deadline = Date.now() + ttlSec * 1000
 	const fetchImpl = params.fetchImpl ?? globalThis.fetch
 
 	while (!params.signal?.aborted && Date.now() < deadline) {

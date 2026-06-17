@@ -1,11 +1,4 @@
-import {
-	Select,
-	SelectContent,
-	SelectItem,
-	SelectTrigger,
-	SelectValue,
-} from "@ch5me/elf-ui/components/select"
-import { Switch } from "@ch5me/elf-ui/components/switch"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue, Switch } from "@ch5me/ch5-ui-web";
 import { useCallback } from "react"
 import { useSettings } from "../../hooks/use-settings"
 import { SettingsRow } from "./settings-row"

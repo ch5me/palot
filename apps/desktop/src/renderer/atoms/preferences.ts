@@ -42,10 +42,28 @@ export type LastSidePanelTabId =
 	| "artifacts"
 	| "pdf-review"
 
-export type NavSidebarTabId = "built-in" | "built-in-duplicate"
+export type LastDocumentPanelTabId = "studio" | "pdf-review"
+
+export type LastUtilitySidePanelTabId = Exclude<LastSidePanelTabId, LastDocumentPanelTabId>
+
+export function isLastDocumentPanelTabId(tab: LastSidePanelTabId): tab is LastDocumentPanelTabId {
+	return tab === "studio" || tab === "pdf-review"
+}
+
+/** Canonical id of the built-in "Palot" workspace — host-rendered, always present. */
+export const BUILT_IN_NAV_SIDEBAR_TAB_ID = "built-in"
+
+/**
+ * A nav-sidebar (left-rail) workspace id. `"built-in"` is the host's own
+ * Palot workspace; every other id is a catalog projected-id contributed
+ * by a plugin's `navSidebars` family (e.g. `"firefly.folio.folio"`).
+ */
+export type NavSidebarTabId = string
 
 export interface FireflySurfacePreferences {
-	lastSidePanelTab: LastSidePanelTabId
+	lastUtilitySidePanelTab: LastUtilitySidePanelTabId
+	lastDocumentPanelTab: LastDocumentPanelTabId
+	documentPanelOpen: boolean
 	lastNavSidebarTab: NavSidebarTabId
 }
 
@@ -68,45 +86,61 @@ export interface FireflyProfilePreferences {
 }
 
 // ============================================================
-// One-time migration from Zustand persist to Jotai atomWithStorage
+// One-time localStorage format migration
 // ============================================================
 
-function migrateFromZustandPersist(): void {
+function migrateFireflySurfacePreferences(): void {
 	if (typeof localStorage === "undefined") return
-	const oldKey = "elf-preferences"
-	const raw = localStorage.getItem(oldKey)
+	const key = "elf:firefly-surface-preferences"
+	const raw = localStorage.getItem(key)
 	if (!raw) return
 
 	try {
-		const { state } = JSON.parse(raw) // Zustand persist wraps in { state, version }
-		if (state.displayMode)
-			localStorage.setItem("elf:displayMode", JSON.stringify(state.displayMode))
-		if (state.theme) localStorage.setItem("elf:theme", JSON.stringify(state.theme))
-		if (state.colorScheme)
-			localStorage.setItem("elf:colorScheme", JSON.stringify(state.colorScheme))
-		if (state.drafts) localStorage.setItem("elf:drafts", JSON.stringify(state.drafts))
-		if (state.projectModels)
-			localStorage.setItem("elf:projectModels", JSON.stringify(state.projectModels))
+		const parsed = JSON.parse(raw) as Partial<FireflySurfacePreferences> & {
+			lastSidePanelTab?: LastSidePanelTabId
+		}
+		const legacyTab = parsed.lastSidePanelTab
+		const migratedDocumentTab =
+			(parsed.lastDocumentPanelTab as LastSidePanelTabId | undefined) ?? legacyTab ?? "studio"
+		const lastDocumentPanelTab: LastDocumentPanelTabId = isLastDocumentPanelTabId(
+			migratedDocumentTab,
+		)
+			? migratedDocumentTab
+			: "studio"
+		const migratedUtilityTab =
+			(parsed.lastUtilitySidePanelTab as LastSidePanelTabId | undefined) ?? legacyTab ?? "review"
+		const lastUtilitySidePanelTab: LastUtilitySidePanelTabId = isLastDocumentPanelTabId(
+			migratedUtilityTab,
+		)
+			? "review"
+			: migratedUtilityTab
 
-		// Remove old key after successful migration
-		localStorage.removeItem(oldKey)
+		const next: FireflySurfacePreferences = {
+			lastUtilitySidePanelTab,
+			lastDocumentPanelTab,
+			// Only preserve documentPanelOpen if the stored value is explicitly
+			// true. The legacy format had no documentPanelOpen field, so
+			// inferring open=true from the legacyTab caused the Studio / Office
+			// panel to auto-appear for any user whose last active tab was a
+			// document-lane tab. Default closed; let the user re-open.
+			documentPanelOpen:
+				typeof parsed.documentPanelOpen === "boolean" ? parsed.documentPanelOpen : false,
+			// Legacy "built-in-duplicate" placeholder is gone; map it (and any
+			// missing value) back to the always-present built-in workspace. A
+			// stored catalog tab id that no longer projects is self-healed by
+			// setAvailableNavSidebarTabsAtom at runtime.
+			lastNavSidebarTab:
+				!parsed.lastNavSidebarTab || parsed.lastNavSidebarTab === "built-in-duplicate"
+					? "built-in"
+					: parsed.lastNavSidebarTab,
+		}
+
+		localStorage.setItem(key, JSON.stringify(next))
 	} catch {
 		// Ignore malformed data
 	}
 }
-
-// Run migration at module load time (before any atoms are read)
-migrateFromZustandPersist()
-
-// Migrate removed "compact" display mode to "default"
-function migrateDisplayMode(): void {
-	if (typeof localStorage === "undefined") return
-	const raw = localStorage.getItem("elf:displayMode")
-	if (raw === '"compact"') {
-		localStorage.setItem("elf:displayMode", '"default"')
-	}
-}
-migrateDisplayMode()
+migrateFireflySurfacePreferences()
 
 // ============================================================
 // Persisted atoms — each is independent with its own localStorage key
@@ -159,7 +193,12 @@ export const automationsBannerDismissedAtom = atomWithStorage<boolean>(
 
 export const fireflySurfacePreferencesAtom = atomWithStorage<FireflySurfacePreferences>(
 	"elf:firefly-surface-preferences",
-	{ lastSidePanelTab: "review", lastNavSidebarTab: "built-in" },
+	{
+		lastUtilitySidePanelTab: "review",
+		lastDocumentPanelTab: "studio",
+		documentPanelOpen: false,
+		lastNavSidebarTab: "built-in",
+	},
 )
 
 export const browserPanelStateAtom = atomWithStorage<Record<string, BrowserPanelState>>(

@@ -1,78 +1,61 @@
 import { expect, test } from "bun:test"
 
-import { encode as encodeToon } from "../../palot-runtime/toon"
-import {
-	describeComponentCatalogEntry,
-	getComponentCatalogItems,
-} from "../../palot-runtime/component-catalog"
+import { decode as decodeToon } from "../../palot-runtime/toon"
+import { buildComponentsDescribeHandler, buildComponentsListHandler } from "../plugin.js"
 
-function buildComponentsListHandler() {
-	const items = getComponentCatalogItems()
-	return async (args: { category?: string } = {}) => {
-		const filtered =
-			typeof args.category === "string"
-				? items.filter((entry) => entry.category === args.category)
-				: items
-		return encodeToon({
-			count: filtered.length,
-			components: filtered.map((entry) => ({
-				name: entry.name,
-				one_line: entry.one_line,
-				category: entry.category,
-			})),
-		})
-	}
-}
-
-function buildComponentsDescribeHandler() {
-	const items = getComponentCatalogItems()
-	return async (args: { name?: string; category?: string } = {}) => {
-		if (typeof args.name === "string") {
-			const entry = describeComponentCatalogEntry(args.name)
-			if (!entry) {
-				return encodeToon({
-					errorCode: "unknown_component",
-					name: args.name,
-					help: ["Run `palot components list` to see available components."],
-				})
-			}
-			return encodeToon({
-				name: entry.name,
-				one_line: entry.one_line,
-				category: entry.category,
-				example: entry.example,
-			})
-		}
-		const filtered =
-			typeof args.category === "string"
-				? items.filter((entry) => entry.category === args.category)
-				: items
-		return encodeToon({
-			count: filtered.length,
-			components: filtered.map((entry) => ({
-				name: entry.name,
-				one_line: entry.one_line,
-				category: entry.category,
-			})),
-		})
-	}
-}
-
-test.skip("palot_components_list returns TOON catalog", async () => {
+test("palot_components_list returns TOON catalog with surface metadata", async () => {
 	const result = await buildComponentsListHandler()({})
-	expect(result).toBe(
-		"count: 1\ncomponents[1]{name,one_line,category}:\n  dag-sparkline,\"Render DAG with node + edge props\",diagram",
+	const decoded = decodeToon(result) as { count: number; components: Array<Record<string, unknown>> }
+	expect(decoded.count).toBeGreaterThanOrEqual(3)
+	expect(decoded.components).toContainEqual(
+		expect.objectContaining({
+			name: "dag-sparkline",
+			category: "diagram",
+			presentation: "inline-artifact",
+			scope: "generic",
+			maturity: "stable",
+			defaultPlacement: "inline",
+			sourcePackage: "@ch5me/dag-sparkline",
+		}),
+	)
+	expect(decoded.components).toContainEqual(
+		expect.objectContaining({
+			name: "status_thinking_card",
+			presentation: "inline-artifact",
+			maturity: "beta",
+			sourcePackage: "@ch5me/remotion-experiences",
+		}),
 	)
 })
 
-test.skip("palot_components_describe returns TOON details", async () => {
-	const result = await buildComponentsDescribeHandler()({ name: "dag-sparkline" })
-	expect(result).toContain("name: dag-sparkline")
-	expect(result).toContain('one_line: "Render DAG with node + edge props"')
-	expect(result).toContain("example")
+test("palot_components_list filters by metadata", async () => {
+	const result = await buildComponentsListHandler()({ maturity: "beta" })
+	const decoded = decodeToon(result) as { count: number; components: Array<Record<string, unknown>> }
+	expect(decoded.components.map((component) => component.name)).toContain("status_thinking_card")
+	expect(decoded.components.every((component) => component.maturity === "beta")).toBe(true)
 })
 
-test.skip("palot_components_describe returns unknown_component error", async () => {
+test("palot_components_describe returns TOON details", async () => {
+	const result = await buildComponentsDescribeHandler()({ name: "status_thinking_card" })
+	const decoded = decodeToon(result) as Record<string, unknown>
+	expect(decoded).toMatchObject({
+		name: "status_thinking_card",
+		one_line: "Compact status card for multi-step agent work",
+		presentation: "inline-artifact",
+		scope: "generic",
+		maturity: "beta",
+		defaultPlacement: "inline",
+		sourcePackage: "@ch5me/remotion-experiences",
+	})
+	expect(decoded.allowedPlacements).toEqual(["inline", "above-chat", "chat-inline-right"])
+	expect(decoded.example).toEqual(
+		expect.objectContaining({
+			component: "status_thinking_card",
+		}),
+	)
+})
+
+test("palot_components_describe returns unknown_component error", async () => {
 	const result = await buildComponentsDescribeHandler()({ name: "unknown" })
 	expect(result).toContain("errorCode: unknown_component")
 	expect(result).toContain("help[1]:")

@@ -1,23 +1,4 @@
-import { Button } from "@ch5me/elf-ui/components/button"
-import {
-	Dialog,
-	DialogContent,
-	DialogDescription,
-	DialogFooter,
-	DialogHeader,
-	DialogTitle,
-} from "@ch5me/elf-ui/components/dialog"
-import {
-	SearchableListPopover,
-	SearchableListPopoverContent,
-	SearchableListPopoverEmpty,
-	SearchableListPopoverGroup,
-	SearchableListPopoverItem,
-	SearchableListPopoverList,
-	SearchableListPopoverSearch,
-	SearchableListPopoverTrigger,
-	useSearchableListPopoverSearch,
-} from "@ch5me/elf-ui/components/searchable-list-popover"
+import { Button, Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, SearchableListPopover, SearchableListPopoverContent, SearchableListPopoverEmpty, SearchableListPopoverGroup, SearchableListPopoverItem, SearchableListPopoverList, SearchableListPopoverSearch, SearchableListPopoverTrigger, useSearchableListPopoverSearch } from "@ch5me/ch5-ui-web";
 import {
 	AlertTriangleIcon,
 	CheckIcon,

@@ -1,4 +1,4 @@
-import { Button } from "@ch5me/elf-ui/components/button"
+import { Button } from "@ch5me/ch5-ui-web"
 import { useRouter } from "@tanstack/react-router"
 import { SearchXIcon } from "lucide-react"
 

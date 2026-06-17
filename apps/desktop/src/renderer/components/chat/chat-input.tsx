@@ -1,3 +1,4 @@
+import { type ConfigData, type ModelRef, type ProvidersData, type SdkAgent, getModelInputCapabilities, resolveEffectiveModel, useModelState } from "../../hooks/use-opencode-data";
 import {
 	PromptInput,
 	PromptInputButton,
@@ -8,20 +9,13 @@ import {
 	PromptInputTools,
 	usePromptInputAttachments,
 	usePromptInputController,
-} from "@ch5me/elf-ui/components/ai-elements/prompt-input"
+} from "@ch5me/agent-ui-web"
 import { useAtomValue } from "jotai"
 import { PlusIcon } from "lucide-react"
 import { useCallback, useEffect, useMemo, useRef, useState, useTransition } from "react"
 import { activeFireflyProfileAtom, setProjectModelAtom } from "../../atoms/preferences"
 import { appStore } from "../../atoms/store"
 import { useDraftActions, useDraftSnapshot } from "../../hooks/use-draft"
-import type { ConfigData, ModelRef, ProvidersData, SdkAgent } from "../../hooks/use-opencode-data"
-import {
-	getModelInputCapabilities,
-	resolveEffectiveModel,
-	useModelState,
-} from "../../hooks/use-opencode-data"
-
 import { gateAgentSelection, resolveToolbarGating } from "../../lib/profile"
 import type { Agent, FileAttachment } from "../../lib/types"
 import { ContextItems } from "./context-items"

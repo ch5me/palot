@@ -1,16 +1,4 @@
-/**
- * Detail view for a selected automation config.
- *
- * Shows the automation's configuration summary (schedule, workspaces, execution
- * settings) and a filterable list of its past runs. Clicking a run navigates to
- * the nested run detail route.
- *
- * Rendered at /automations/:automationId
- */
-
-import { Badge } from "@ch5me/elf-ui/components/badge"
-import { Button } from "@ch5me/elf-ui/components/button"
-import { Separator } from "@ch5me/elf-ui/components/separator"
+import { Badge, Button, Separator } from "@ch5me/ch5-ui-web";
 import { useNavigate, useParams } from "@tanstack/react-router"
 import {
 	CalendarIcon,

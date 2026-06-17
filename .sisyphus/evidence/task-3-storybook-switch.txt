@@ -1,0 +1,33 @@
+Task 3 — Storybook Story Tab Switching Proof
+==============================================
+Date: 2026-06-14
+Plan: .sisyphus/plans/cloud000-174-palette-3pane-finish.md (Task 3)
+
+Story file (verified on disk):
+- Path: packages/ui/src/stories/ai-elements/palot-three-pane-shell.stories.tsx
+- Size: 534 lines, 17.6K
+- Layout: "fullscreen" (line 24) — renders like the real shell, not a card demo
+
+Story structure (mirrors agent-detail.tsx nesting):
+- Left sidebar shell split
+- Center chat area
+- Inner document pane (doc lane)
+- Outer utility pane
+
+Tab switching proof:
+- Uses react-reverse-portal to prove doc surfaces stay mounted across tab swaps.
+- Toggles for studio, pdf-review, and utility surfaces.
+- Document lane surfaces use static mock content (not live iframe/runtime coupling).
+- Proof target: nested pane composition and portal-backed switching.
+
+Decision (from notepads/decisions.md):
+- Storybook proof intentionally avoids live iframe/browser/runtime mounting.
+- Document lane surfaces use static mock content.
+- The proof target is nested pane behavior plus portal-backed tab switching,
+  not backend/browser integration.
+
+Caveat (from notepads/issues.md):
+- Storybook proof intentionally avoids live iframe/browser/runtime mounting, so Task 6
+  still needs end-to-end evidence that real studio and pdf-review surfaces survive
+  bridge-driven opens, restore, and coexistence with an active utility lane.
+- Task 6 browser proof (task-6-browser-proof.md) provides that live runtime evidence.

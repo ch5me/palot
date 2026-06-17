@@ -1,13 +1,4 @@
-/**
- * Onboarding: Provider Setup.
- *
- * Allows users to connect AI providers during onboarding.
- * OpenCode Zen is featured prominently as the built-in provider with free models.
- * Reuses ConnectProviderDialog for the actual auth flows.
- */
-
-import { Button } from "@ch5me/elf-ui/components/button"
-import { Spinner } from "@ch5me/elf-ui/components/spinner"
+import { Button, Spinner } from "@ch5me/ch5-ui-web";
 import { useQueryClient } from "@tanstack/react-query"
 import { CheckIcon, ExternalLinkIcon, LinkIcon, SparklesIcon, ZapIcon } from "lucide-react"
 import { motion } from "motion/react"

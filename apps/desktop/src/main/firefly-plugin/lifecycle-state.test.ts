@@ -76,6 +76,20 @@ describe("plugin lifecycle state store", () => {
 		expect(released.uiCrashCount).toBe(0)
 	})
 
+	test("quarantine state survives a fresh store from the same io (restart survives)", () => {
+		const io = memoryIo()
+		const id = "firefly.built-in.surface.notes"
+		const session1 = createPluginLifecycleStateStore({ io })
+		session1.reportUiCrash(id, "drill crash 1", { threshold: 3 })
+		session1.reportUiCrash(id, "drill crash 2", { threshold: 3 })
+		session1.reportUiCrash(id, "drill crash 3", { threshold: 3 })
+		expect(session1.get(id).quarantined).toBe(true)
+
+		const session2 = createPluginLifecycleStateStore({ io })
+		expect(session2.get(id).quarantined).toBe(true)
+		expect(session2.get(id).quarantineDetail).toContain("renderer panel crashes")
+	})
+
 	test("corrupt persisted file starts from defaults (loud, non-blocking)", () => {
 		const store = createPluginLifecycleStateStore({ io: memoryIo("{nonsense") })
 		expect(store.get("anything").enabled).toBe(true)
@@ -84,16 +98,18 @@ describe("plugin lifecycle state store", () => {
 
 describe("catalog state overrides (lifecycle overlay)", () => {
 	test("disabled override flips entry status and projection availability", () => {
+		// stateOverrides accepts both canonical (firefly.palot-bridge) and legacy alias
+		// (firefly.built-in.palot-bridge) keys — catalog resolves both via the alias map.
 		const catalog = buildPluginCatalog({
 			appVersion: "0.11.0",
 			stateOverrides: {
-				"firefly.built-in.palot-bridge": { pluginDisabled: true },
+				"firefly.palot-bridge": { pluginDisabled: true },
 			},
 		})
-		const entry = catalog.entries.find((e) => e.pluginId === "firefly.built-in.palot-bridge")
+		const entry = catalog.entries.find((e) => e.pluginId === "firefly.palot-bridge")
 		expect(entry?.status).toBe("disabled")
 		const commands = catalog.projections.commands.filter(
-			(c) => c.pluginId === "firefly.built-in.palot-bridge",
+			(c) => c.pluginId === "firefly.palot-bridge",
 		)
 		expect(commands.length).toBeGreaterThan(0)
 		for (const command of commands) {

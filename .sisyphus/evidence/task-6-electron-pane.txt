@@ -1,0 +1,47 @@
+dev server running for the electron renderer process at:
+
+  ➜  Local:   http://localhost:1420/
+  ➜  Network: use --host to expose
+
+starting electron app...
+
+App threw an error during load
+Error [ERR_UNSUPPORTED_ESM_URL_SCHEME]: Only URLs with a scheme in: file, data, node, and electron are supported by the default ESM loader. Received protocol 'bu
+n:'
+    at throwIfUnsupportedURLScheme (node:internal/modules/esm/load:196:11)
+    at defaultLoadSync (node:internal/modules/esm/load:142:3)
+    at ModuleLoader.load (node:internal/modules/esm/loader:821:12)
+    at ModuleLoader.loadAndTranslate (node:internal/modules/esm/loader:591:31)
+    at #createModuleJob (node:internal/modules/esm/loader:623:36)
+    at #getJobFromResolveResult (node:internal/modules/esm/loader:329:34)
+    at ModuleLoader.getModuleJobForImport (node:internal/modules/esm/loader:294:41)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

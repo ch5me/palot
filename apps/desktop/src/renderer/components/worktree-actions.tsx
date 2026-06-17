@@ -1,24 +1,4 @@
-/**
- * Worktree action buttons for the session app bar.
- *
- * Shows "Apply to project" and "Commit & Push" actions for worktree sessions.
- * "Apply to project" patches the worktree's uncommitted changes into the main
- * project checkout (the parent directory of the worktree).
- * "Commit & Push" commits all changes and pushes the branch to origin.
- */
-
-import { Button } from "@ch5me/elf-ui/components/button"
-import {
-	Dialog,
-	DialogContent,
-	DialogDescription,
-	DialogFooter,
-	DialogHeader,
-	DialogTitle,
-} from "@ch5me/elf-ui/components/dialog"
-import { Input } from "@ch5me/elf-ui/components/input"
-import { Textarea } from "@ch5me/elf-ui/components/textarea"
-import { Tooltip, TooltipContent, TooltipTrigger } from "@ch5me/elf-ui/components/tooltip"
+import { Button, Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, Input, Textarea, Tooltip, TooltipContent, TooltipTrigger } from "@ch5me/ch5-ui-web";
 import {
 	ArrowDownToLineIcon,
 	ArrowUpFromLineIcon,

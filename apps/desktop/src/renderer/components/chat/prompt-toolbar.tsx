@@ -1,24 +1,5 @@
-import {
-	SearchableListPopover,
-	SearchableListPopoverContent,
-	SearchableListPopoverEmpty,
-	SearchableListPopoverGroup,
-	SearchableListPopoverItem,
-	SearchableListPopoverList,
-	SearchableListPopoverSearch,
-	SearchableListPopoverTrigger,
-	useSearchableListPopoverSearch,
-} from "@ch5me/elf-ui/components/searchable-list-popover"
-import {
-	Select,
-	SelectContent,
-	SelectItem,
-	SelectTrigger,
-	SelectValue,
-} from "@ch5me/elf-ui/components/select"
-import { Separator } from "@ch5me/elf-ui/components/separator"
-import { Tooltip, TooltipContent, TooltipTrigger } from "@ch5me/elf-ui/components/tooltip"
-import { cn } from "@ch5me/elf-ui/lib/utils"
+import { type CompactionConfig, type ModelRef, type ProvidersData, type SdkAgent, type SdkProvider, type VcsData, getModelVariants, parseModelRef } from "../../hooks/use-opencode-data";
+import { SearchableListPopover, SearchableListPopoverContent, SearchableListPopoverEmpty, SearchableListPopoverGroup, SearchableListPopoverItem, SearchableListPopoverList, SearchableListPopoverSearch, SearchableListPopoverTrigger, useSearchableListPopoverSearch, Select, SelectContent, SelectItem, SelectTrigger, SelectValue, Separator, Tooltip, TooltipContent, TooltipTrigger, cn } from "@ch5me/ch5-ui-web";
 import { useAtomValue } from "jotai"
 import {
 	CheckIcon,
@@ -34,15 +15,6 @@ import { useCallback, useMemo, useState } from "react"
 import { messagesFamily } from "../../atoms/messages"
 import { activeFireflyProfileAtom, type DisplayMode } from "../../atoms/preferences"
 import { useDisplayMode, useSetDisplayMode } from "../../hooks/use-agents"
-import type {
-	CompactionConfig,
-	ModelRef,
-	ProvidersData,
-	SdkAgent,
-	SdkProvider,
-	VcsData,
-} from "../../hooks/use-opencode-data"
-import { getModelVariants, parseModelRef } from "../../hooks/use-opencode-data"
 import {
 	resolveToolbarGating,
 	SIMPLE_MODE_MAIN_AGENT,

@@ -1,0 +1,39 @@
+Task 7 — Documentation Audit
+==============================
+Date: 2026-06-14
+Plan: .sisyphus/plans/cloud000-174-palette-3pane-finish.md (Task 7)
+
+Contract documentation:
+- The doc-lane state contract is documented in code via:
+  - atoms/ui.ts: documentPanelOpenAtom, lastDocumentPanelTabAtom, isDocumentPanelTab
+  - atoms/preferences.ts: persistence fields and legacy migration
+  - shared/firefly-surface-ids.ts: FireflySurfaceLane type authority
+- No separate contract doc file was created; the code IS the contract.
+
+Notepads as durable documentation:
+- .sisyphus/notepads/cloud000-174-palette-3pane-finish/decisions.md (17 entries)
+  Documents all contract decisions made during Tasks 1-7.
+- .sisyphus/notepads/cloud000-174-palette-3pane-finish/issues.md (13 entries)
+  Documents known limitations, deferred work, and blockers.
+- .sisyphus/notepads/cloud000-174-palette-3pane-finish/learnings.md (20 entries)
+  Documents lessons learned during implementation.
+
+Repo docs check:
+- AGENTS.md: No changes needed; existing runtime policy and footguns still apply.
+- docs/session-debugging.md: No changes needed; doc-lane behavior does not affect
+  session debugging runbook.
+- docs/palot-opencode-plugin-bridge.md: No changes needed; bridge path for doc surfaces
+  uses existing open_side_panel mechanism.
+
+Git diff for doc changes:
+- No .md files in docs/ were modified by Tasks 1-6.
+- All documentation is in .sisyphus/notepads/ and .sisyphus/evidence/.
+
+Decision (from notepads/decisions.md):
+- Closeout artifacts live under .sisyphus/evidence/task-7-closeout.md (full evidence
+  summary) and .sisyphus/evidence/task-7-ticket-closeout.md (ticket-ready paste text).
+
+Honest scope:
+- No silent contract drift: all contract changes are in code + notepads.
+- No repo-level doc updates were needed because the contract is internal to the
+  renderer state layer and does not change external interfaces.

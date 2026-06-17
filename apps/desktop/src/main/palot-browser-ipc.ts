@@ -5,10 +5,12 @@ import type {
 	BrowserActionEvent,
 	BrowserLaneHealth,
 	BrowserStateSnapshot,
+	GenUiArtifactRecord,
 	PalotUiStateSnapshot,
 	SessionBinding,
 	SidePanelTabId,
 } from "../preload/api"
+import { FIREFLY_SURFACE_LANE_BY_ID } from "../shared/firefly-surface-ids"
 import {
 	browserStateSnapshotSchema,
 	dispatchBrowserToolInputSchema,
@@ -102,6 +104,11 @@ let uiStateSnapshot: PalotUiStateSnapshot = {
 		activeTab: null,
 		availableTabs: [],
 	},
+	documentPanel: {
+		open: false,
+		activeTab: null,
+		availableTabs: [],
+	},
 }
 const laneSnapshots = new Map<
 	string,
@@ -115,6 +122,21 @@ const laneSnapshots = new Map<
 >()
 let browserWindowProvider: BrowserWindowProvider | null = null
 let palotBridgeServer: (PalotBridgeServer & { server: Server }) | null = null
+
+function buildDefaultUiStateSnapshot(): PalotUiStateSnapshot {
+	return {
+		sidePanel: {
+			open: false,
+			activeTab: null,
+			availableTabs: [],
+		},
+		documentPanel: {
+			open: false,
+			activeTab: null,
+			availableTabs: [],
+		},
+	}
+}
 
 async function broadcastBrowserAction(event: BrowserActionEvent): Promise<void> {
 	const windows = await getPalotBrowserWindows()
@@ -135,11 +157,63 @@ export function registerPalotBrowserWindows(provider: BrowserWindowProvider): vo
 	browserWindowProvider = provider
 }
 
+export async function resetPalotBrowserIpcStateForTests(): Promise<void> {
+	const activeBridgeServer = palotBridgeServer
+	actionEvents.length = 0
+	sequenceBySession.clear()
+	humanTakeoverPaused = false
+	laneSnapshots.clear()
+	browserWindowProvider = null
+	uiStateSnapshot = buildDefaultUiStateSnapshot()
+	palotBridgeServer = null
+	if (activeBridgeServer) {
+		await new Promise<void>((resolve, reject) => {
+			activeBridgeServer.server.close((error) => {
+				if (error) {
+					reject(error)
+					return
+				}
+				resolve()
+			})
+		})
+	}
+}
+
 export async function broadcastOpenSidePanel(tab: SidePanelTabId): Promise<void> {
 	const parsedTab = palotOpenSidePanelInputSchema.parse(tab)
 	const windows = await getPalotBrowserWindows()
 	for (const win of windows) {
-		win.webContents.send("palot:open-side-panel", parsedTab)
+		win.webContents.send("palot:open-side-panel", { tab: parsedTab })
+	}
+}
+
+export async function broadcastArtifactPushed(sessionId: string, record: GenUiArtifactRecord): Promise<void> {
+	const windows = await getPalotBrowserWindows()
+	for (const win of windows) {
+		win.webContents.send("palot:artifact-pushed", { sessionId, record })
+	}
+}
+
+/**
+ * Generic UI side effects a tool declared in its manifest (`uiHints`), broadcast
+ * to every renderer after a completed dispatch. The renderer applies them
+ * generically (open a panel / focus a widget / refresh a projection) so tools no
+ * longer hand-roll their own UI side effects. Fail-safe: unknown panel = no-op.
+ */
+export interface ToolUiHints {
+	openPanel: string | null
+	focusWidget: string | null
+	refreshProjection: boolean
+}
+
+export async function broadcastToolUiHints(
+	sessionId: string,
+	toolId: string,
+	uiHints: ToolUiHints,
+): Promise<void> {
+	const windows = await getPalotBrowserWindows()
+	for (const win of windows) {
+		win.webContents.send("palot:tool-ui-hints", { sessionId, toolId, uiHints })
 	}
 }
 
@@ -288,6 +362,7 @@ async function handleBridgePayload(payload: unknown): Promise<unknown> {
 	if (action === "get-ui-state") return getUiStateSnapshot()
 	if (action === "list-plugin-tools") return await listBridgePluginTools()
 	if (action === "invoke-plugin-tool") return await invokeBridgePluginTool(payload)
+	if (action === "list-context-fragments") return await composeBridgeSurfaceContext(payload)
 	throw new Error("Unsupported Palot bridge action")
 }
 
@@ -372,12 +447,34 @@ const invokeBridgePluginToolSchema = z.object({
 async function invokeBridgePluginTool(payload: unknown): Promise<unknown> {
 	const input = invokeBridgePluginToolSchema.parse(payload)
 	const { invokePluginTool } = await import("./firefly-plugin/dispatch")
-	return invokePluginTool({
+	const envelope = await invokePluginTool({
 		pluginId: input.pluginId,
 		toolId: input.toolId,
 		args: input.args ?? {},
 		sessionId: input.sessionId ?? null,
 	})
+	// Generic uiHints application: when a completed tool declared manifest
+	// uiHints, the HOST applies them post-dispatch by broadcasting a single
+	// generic event. Tools no longer hand-roll their own panel/widget/projection
+	// side effects. Only on completed dispatches with a known session id.
+	if (envelope.status === "completed" && envelope.uiHints && input.sessionId) {
+		await broadcastToolUiHints(input.sessionId, input.toolId, envelope.uiHints)
+	}
+	return envelope
+}
+
+const listContextFragmentsSchema = z.object({
+	action: z.literal("list-context-fragments"),
+	sessionId: z.string().nullable().optional(),
+})
+
+async function composeBridgeSurfaceContext(payload: unknown): Promise<{ context: string }> {
+	const input = listContextFragmentsSchema.parse(payload)
+	// Lazy import: surface-context-compose pulls in firefly-plugin/dispatch,
+	// which lazily imports THIS module, so a static import would be a cycle.
+	const { composeSurfaceContext } = await import("./surface-context-compose")
+	const context = await composeSurfaceContext(input.sessionId ?? null)
+	return { context }
 }
 
 function resolveBridgeBinding(payload: unknown): unknown {
@@ -411,8 +508,9 @@ async function dispatchBridgeBrowserTool(payload: unknown): Promise<unknown> {
 
 async function openBridgeSidePanel(payload: unknown): Promise<PalotUiStateSnapshot> {
 	const tab = palotOpenSidePanelInputSchema.parse((payload as { tab?: unknown })?.tab)
+	const targetPanel = FIREFLY_SURFACE_LANE_BY_ID[tab] === "document" ? "documentPanel" : "sidePanel"
 	const snapshot = setUiStateSnapshot({
-		sidePanel: {
+		[targetPanel]: {
 			open: true,
 			activeTab: tab,
 		},
@@ -433,11 +531,21 @@ export function getUiStateSnapshot(): PalotUiStateSnapshot {
 			activeTab: uiStateSnapshot.sidePanel.activeTab,
 			availableTabs: [...uiStateSnapshot.sidePanel.availableTabs],
 		},
+		documentPanel: {
+			open: uiStateSnapshot.documentPanel.open,
+			activeTab: uiStateSnapshot.documentPanel.activeTab,
+			availableTabs: [...uiStateSnapshot.documentPanel.availableTabs],
+		},
 	})
 }
 
 export function setUiStateSnapshot(input: {
 	sidePanel?: {
+		open?: boolean
+		activeTab?: SidePanelTabId | null
+		availableTabs?: SidePanelTabId[]
+	}
+	documentPanel?: {
 		open?: boolean
 		activeTab?: SidePanelTabId | null
 		availableTabs?: SidePanelTabId[]
@@ -449,6 +557,13 @@ export function setUiStateSnapshot(input: {
 			activeTab: input.sidePanel?.activeTab ?? uiStateSnapshot.sidePanel.activeTab,
 			availableTabs:
 				input.sidePanel?.availableTabs ? [...input.sidePanel.availableTabs] : [...uiStateSnapshot.sidePanel.availableTabs],
+		},
+		documentPanel: {
+			open: input.documentPanel?.open ?? uiStateSnapshot.documentPanel.open,
+			activeTab: input.documentPanel?.activeTab ?? uiStateSnapshot.documentPanel.activeTab,
+			availableTabs: input.documentPanel?.availableTabs
+				? [...input.documentPanel.availableTabs]
+				: [...uiStateSnapshot.documentPanel.availableTabs],
 		},
 	}
 	return getUiStateSnapshot()

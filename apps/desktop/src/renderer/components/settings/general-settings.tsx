@@ -1,11 +1,4 @@
-import {
-	Select,
-	SelectContent,
-	SelectItem,
-	SelectTrigger,
-	SelectValue,
-} from "@ch5me/elf-ui/components/select"
-import { Switch } from "@ch5me/elf-ui/components/switch"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue, Switch } from "@ch5me/ch5-ui-web";
 import { useAtomValue, useSetAtom } from "jotai"
 import { MonitorIcon, MoonIcon, SunIcon } from "lucide-react"
 import { useCallback, useEffect, useState } from "react"

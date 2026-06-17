@@ -1,17 +1,14 @@
 /**
  * Firefly Plugin System V2 — Plugins side-panel (V2-driven)
  *
- * Slice 5 surface migration: this panel reads from the V2 plugin
- * catalog (via `useFireflyPlugins()`) and renders one card per
- * registered plugin. It supersedes the hardcoded OpenCode-native
- * skills/commands/MCP view in `plugins-panel.tsx` for the V2 path.
- *
- * The legacy panel is preserved for OpenCode-native skills/commands
- * since those are sourced from the OpenCode server, not the V2
- * catalog. Side-by-side rendering is gated by feature flag.
+ * This panel reads from the V2 plugin catalog (via
+ * `useFireflyPlugins()`) and renders one card per registered plugin.
+ * It is the sole operator surface for the plugin lifecycle; if the
+ * catalog fails to load it surfaces the error loudly rather than
+ * falling back to any legacy view.
  */
 
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
+import { useMutation, useQueryClient } from "@tanstack/react-query"
 import { AlertTriangleIcon, Loader2Icon, PlugIcon, PowerIcon, PowerOffIcon, RefreshCwIcon, ShieldCheckIcon, ShieldOffIcon, SparklesIcon, UnlockIcon } from "lucide-react"
 import { useEffect } from "react"
 
@@ -23,7 +20,7 @@ import {
 	type FireflyPluginEntry,
 	type FireflyPluginProjectionSummary,
 } from "../../hooks/use-firefly-plugins"
-import { Button } from "@ch5me/elf-ui/components/button"
+import { Button } from "@ch5me/ch5-ui-web"
 
 interface V2PluginsPanelProps {
 	agent: { sessionId: string; directory: string; project: string }
@@ -155,13 +152,6 @@ function PluginLifecycleControls({
 
 export function V2PluginsPanel({ agent, className }: V2PluginsPanelProps) {
 	const catalog = useV2PluginCatalog(agent.directory)
-	const fallback = useQuery({
-		queryKey: ["firefly-plugin", "v2-panel-fallback", agent.directory],
-		queryFn: async (): Promise<never> => {
-			throw new Error("V2 plugin catalog unavailable")
-		},
-		enabled: false,
-	})
 
 	const plugins = catalog.data?.plugins ?? []
 	const summaries = catalog.data?.summaries ?? []
@@ -197,9 +187,9 @@ export function V2PluginsPanel({ agent, className }: V2PluginsPanelProps) {
 					<div className="flex items-start gap-2 rounded-md border border-destructive/30 bg-destructive/5 px-3 py-2 text-xs text-destructive">
 						<AlertTriangleIcon className="mt-0.5 size-3.5 shrink-0" aria-hidden="true" />
 						<div>
-							V2 plugin catalog failed to load. Falling back to legacy view.
+							V2 plugin catalog failed to load.
 							<br />
-							<span className="text-[10px] text-muted-foreground">{String(fallback.error ?? catalog.error ?? "")}</span>
+							<span className="text-[10px] text-muted-foreground">{String(catalog.error ?? "")}</span>
 						</div>
 					</div>
 				) : plugins.length === 0 ? (

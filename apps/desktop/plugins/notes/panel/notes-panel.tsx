@@ -1,15 +1,4 @@
-/**
- * Notes panel — UI for the `firefly.built-in.surface.notes` plugin.
- *
- * Host-reconciler render mode: trusted first-party React, mounted by
- * the host inside a `PluginPanelBoundary` and loaded as a lazy chunk
- * keyed by the catalog's projected panel id (see
- * `renderer/firefly-plugin-surfaces.tsx`). Moved verbatim from
- * `renderer/components/side-panel/notes-panel.tsx` at migration time.
- */
-
-import { Button } from "@ch5me/elf-ui/components/button"
-import { Textarea } from "@ch5me/elf-ui/components/textarea"
+import { Button, Textarea } from "@ch5me/ch5-ui-web";
 import { SendHorizontalIcon } from "lucide-react"
 import { useCallback, useEffect, useMemo, useState } from "react"
 import { toast } from "sonner"

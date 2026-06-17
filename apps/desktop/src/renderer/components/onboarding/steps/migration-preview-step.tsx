@@ -1,13 +1,4 @@
-/**
- * Migration Preview & Execute step.
- *
- * Shows a file tree of what will be created/modified, a diff preview of
- * selected files, and executes the migration with backup on confirmation.
- * Supports all migration providers (Claude Code, Cursor, OpenCode).
- */
-
-import { Button } from "@ch5me/elf-ui/components/button"
-import { Spinner } from "@ch5me/elf-ui/components/spinner"
+import { Button, Spinner } from "@ch5me/ch5-ui-web";
 import {
 	AlertTriangleIcon,
 	ArrowLeftIcon,

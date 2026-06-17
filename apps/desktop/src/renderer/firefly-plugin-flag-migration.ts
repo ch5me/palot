@@ -24,8 +24,72 @@ export interface SurfaceFlagMigration {
 /** One row per migrated surface. Append on each migration slice. */
 export const SURFACE_FLAG_MIGRATIONS: readonly SurfaceFlagMigration[] = [
 	{
+		pluginId: "firefly.built-in.surface.browser",
+		legacyStorageKey: "elf:browserPanelEnabled",
+	},
+	{
 		pluginId: "firefly.built-in.surface.notes",
 		legacyStorageKey: "elf:notesSurfaceEnabled",
+	},
+	{
+		pluginId: "firefly.built-in.surface.review",
+		legacyStorageKey: "elf:reviewSurfaceEnabled",
+	},
+	{
+		pluginId: "firefly.built-in.surface.files",
+		legacyStorageKey: "elf:filesSurfaceEnabled",
+	},
+	{
+		pluginId: "firefly.built-in.surface.artifacts",
+		legacyStorageKey: "elf:artifactsSurfaceEnabled",
+	},
+	{
+		pluginId: "firefly.built-in.surface.bridges",
+		legacyStorageKey: "elf:bridgesSurfaceEnabled",
+	},
+	{
+		pluginId: "firefly.built-in.surface.pulse",
+		legacyStorageKey: "elf:pulseSurfaceEnabled",
+	},
+	{
+		pluginId: "firefly.built-in.surface.memory",
+		legacyStorageKey: "elf:memorySurfaceEnabled",
+	},
+	{
+		pluginId: "firefly.built-in.surface.editor",
+		legacyStorageKey: "elf:editorSurfaceEnabled",
+	},
+	{
+		pluginId: "firefly.built-in.surface.terminal",
+		legacyStorageKey: "elf:terminalSurfaceEnabled",
+	},
+	{
+		pluginId: "firefly.built-in.surface.claude",
+		legacyStorageKey: "elf:claudeSurfaceEnabled",
+	},
+	{
+		pluginId: "firefly.built-in.surface.oracle",
+		legacyStorageKey: "elf:oracleSurfaceEnabled",
+	},
+	{
+		pluginId: "firefly.built-in.surface.voice",
+		legacyStorageKey: "elf:voiceSurfaceEnabled",
+	},
+	{
+		pluginId: "firefly.built-in.surface.studio",
+		legacyStorageKey: "elf:studioSurfaceEnabled",
+	},
+	{
+		pluginId: "firefly.built-in.surface.ch5pm",
+		legacyStorageKey: "elf:ch5pmSurfaceEnabled",
+	},
+	{
+		pluginId: "firefly.built-in.surface.pdf-review",
+		legacyStorageKey: "elf:pdfReviewSurfaceEnabled",
+	},
+	{
+		pluginId: "firefly.built-in.surface.crm",
+		legacyStorageKey: "elf:crmSurfaceEnabled",
 	},
 ]
 

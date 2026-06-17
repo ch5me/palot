@@ -1,16 +1,4 @@
-import { Badge } from "@ch5me/elf-ui/components/badge"
-import { Button } from "@ch5me/elf-ui/components/button"
-import {
-	Dialog,
-	DialogContent,
-	DialogDescription,
-	DialogHeader,
-	DialogTitle,
-} from "@ch5me/elf-ui/components/dialog"
-import { Input } from "@ch5me/elf-ui/components/input"
-import { Label } from "@ch5me/elf-ui/components/label"
-import { ScrollArea } from "@ch5me/elf-ui/components/scroll-area"
-import { Spinner } from "@ch5me/elf-ui/components/spinner"
+import { Badge, Button, Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Input, Label, ScrollArea, Spinner } from "@ch5me/ch5-ui-web";
 import {
 	ChevronRightIcon,
 	PlugIcon,

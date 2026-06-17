@@ -14,8 +14,8 @@
 	"type": "module",
 	"main": "./out/main/index.js",
 	"scripts": {
-		"dev": "bunx devmux ensure desktop",
-		"dev:wayland": "bunx devmux ensure desktop-wayland",
+		"dev": "cd ../.. && bunx devmux ensure desktop",
+		"dev:wayland": "cd ../.. && bunx devmux ensure desktop-wayland",
 		"dev:web": "node ../../node_modules/vite/bin/vite.js --config src/renderer/vite.web.config.ts --port $PORT",
 		"dev:electron-local": "node ../../node_modules/electron-vite/bin/electron-vite.js dev",
 		"dev:electron-wayland-local": "node ../../node_modules/electron-vite/bin/electron-vite.js dev -- --ozone-platform=wayland --enable-features=WaylandWindowDecorations --disable-features=WaylandFractionalScaleV1",
@@ -38,12 +38,12 @@
 		"clean": "rm -rf out release dist node_modules .turbo"
 	},
 	"dependencies": {
-		"@ch5me/dag-sparkline": "workspace:*",
+		"@ch5me/dag-sparkline": "^0.1.0",
 		"@ch5me/elf-configconv": "workspace:*",
 		"@ch5me/elf-ui": "workspace:*",
-		"@ch5me/firefly-design": "workspace:*",
-		"@ch5me/react-dev-surface": "workspace:*",
-		"@ch5me/workspace": "workspace:*",
+		"@ch5me/firefly-design": "^0.1.3",
+		"@ch5me/react-dev-surface": "^0.1.0",
+		"@ch5me/workspace": "^0.1.5",
 		"@dnd-kit/core": "^6.3.1",
 		"@dnd-kit/sortable": "^10.0.0",
 		"@fontsource-variable/inter": "^5.2.8",
@@ -80,13 +80,15 @@
 		"simple-git": "^3.30.0",
 		"sonner": "^2.0.7",
 		"three": "^0.184.0",
+		"vscode-oniguruma": "^2.0.1",
+		"vscode-textmate": "^9.3.2",
 		"zod": "^4.1.11"
 	},
 	"optionalDependencies": {
 		"electron-liquid-glass": "^1.1.1"
 	},
 	"devDependencies": {
-		"@ch5me/effects": "workspace:*",
+		"@ch5me/effects": "^0.7.1",
 		"@ch5me/elf-server": "workspace:*",
 		"@electron/rebuild": "^4.0.3",
 		"@tailwindcss/vite": "^4.0.0",

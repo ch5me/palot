@@ -5,4 +5,6 @@ declare module "./plugin.js" {
 	export function buildLoomRenderHandler(): LoomHandler
 	export function buildLoomPatchHandler(): LoomHandler
 	export function buildLoomPollHandler(): LoomHandler
+	export function buildComponentsListHandler(): (args?: unknown) => Promise<string>
+	export function buildComponentsDescribeHandler(): (args?: unknown) => Promise<string>
 }

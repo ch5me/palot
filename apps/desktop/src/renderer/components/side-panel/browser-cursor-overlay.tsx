@@ -1,4 +1,5 @@
-import type { BrowserActionEvent } from "../../../preload/api"
+import type React from "react"
+import type { Actor, BrowserActionEvent } from "../../../preload/api"
 import type { BrowserActionOverlayState } from "../../atoms/browser-actions"
 import { BROWSER_DRIFT_TOLERANCE_PX, calculateDriftPx } from "../../../shared/browser-geometry"
 
@@ -6,6 +7,7 @@ interface BrowserCursorOverlayProps {
 	events: BrowserActionEvent[]
 	overlayState: BrowserActionOverlayState
 	sessionId: string
+	actor?: Actor
 }
 
 function formatActionLabel(event: BrowserActionEvent | null): string {
@@ -27,20 +29,29 @@ function formatActionLabel(event: BrowserActionEvent | null): string {
 }
 
 function buildCursorClasses(event: BrowserActionEvent | null, frozen: boolean): string {
-	const base = `absolute left-0 top-0 h-4 w-4 rounded-full border-2 border-foreground bg-background/90 shadow transition-transform duration-150 ${frozen ? "opacity-70" : "opacity-100"}`
+	const base = `absolute left-0 top-0 h-4 w-4 rounded-full border-2 shadow transition-transform duration-150 ${frozen ? "opacity-70" : "opacity-100"}`
 	if (!event) return base
 	if (event.kind === "hover") return `${base} ring-2 ring-blue-400/50`
 	if (event.kind === "click") return `${base} scale-110`
 	return base
 }
 
-export function BrowserCursorOverlay({ events, overlayState, sessionId }: BrowserCursorOverlayProps) {
+export function BrowserCursorOverlay({ events, overlayState, sessionId, actor }: BrowserCursorOverlayProps) {
 	const latestEvent = events.at(-1) ?? overlayState.lastEvent
-	const cursorStyle = latestEvent?.viewportCoords
+	const cursorBaseStyle = latestEvent?.viewportCoords
 		? {
 				transform: `translate3d(${latestEvent.viewportCoords.x}px, ${latestEvent.viewportCoords.y}px, 0)`,
 			}
 		: undefined
+	// When an actor is present use its cursorColor for the cursor fill and border;
+	// otherwise fall back to the Tailwind foreground/background tokens via class names.
+	const cursorColorStyle: React.CSSProperties | undefined = actor
+		? { borderColor: actor.cursorColor, backgroundColor: actor.cursorColor + "33" }
+		: undefined
+	const cursorStyle = cursorBaseStyle || cursorColorStyle
+		? { ...cursorBaseStyle, ...cursorColorStyle }
+		: undefined
+
 	if (overlayState.activeSessionId && overlayState.activeSessionId !== sessionId) {
 		return <div className="hidden" />
 	}
@@ -52,6 +63,14 @@ export function BrowserCursorOverlay({ events, overlayState, sessionId }: Browse
 			: 0
 	const showDriftBadge = overlayState.showDriftBadge || drift > BROWSER_DRIFT_TOLERANCE_PX
 	const logEvents = events.slice(-8)
+
+	// Click ripple color: actor color at low opacity, else fallback token class
+	const rippleStyle: React.CSSProperties | undefined = actor
+		? { borderColor: actor.cursorColor + "66", backgroundColor: actor.cursorColor + "0d" }
+		: undefined
+	const rippleClass = actor
+		? "absolute left-0 top-0 h-8 w-8 -translate-x-1/2 -translate-y-1/2 rounded-full border"
+		: "absolute left-0 top-0 h-8 w-8 -translate-x-1/2 -translate-y-1/2 rounded-full border border-foreground/40 bg-foreground/5"
 
 	return (
 		<div className="pointer-events-none absolute inset-0 z-10 overflow-hidden">
@@ -73,12 +92,25 @@ export function BrowserCursorOverlay({ events, overlayState, sessionId }: Browse
 					Drift detected
 				</div>
 			) : null}
-			<div className={buildCursorClasses(latestEvent, overlayState.frozen)} style={cursorStyle} />
+			<div
+				className={`${buildCursorClasses(latestEvent, overlayState.frozen)}${actor ? "" : " border-foreground bg-background/90"}`}
+				style={cursorStyle}
+			>
+				{actor && latestEvent?.viewportCoords ? (
+					<span
+						className="absolute left-5 top-0 whitespace-nowrap rounded px-1 py-0.5 text-[9px] font-semibold text-white shadow"
+						style={{ backgroundColor: actor.cursorColor }}
+					>
+						{actor.displayName}
+					</span>
+				) : null}
+			</div>
 			{latestEvent?.kind === "click" && latestEvent.viewportCoords ? (
 				<div
-					className="absolute left-0 top-0 h-8 w-8 -translate-x-1/2 -translate-y-1/2 rounded-full border border-foreground/40 bg-foreground/5"
+					className={rippleClass}
 					style={{
 						transform: `translate3d(${latestEvent.viewportCoords.x}px, ${latestEvent.viewportCoords.y}px, 0)`,
+						...rippleStyle,
 					}}
 				/>
 			) : null}

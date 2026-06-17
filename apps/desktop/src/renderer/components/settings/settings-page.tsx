@@ -5,7 +5,7 @@ import {
 	SidebarMenu,
 	SidebarMenuButton,
 	SidebarMenuItem,
-} from "@ch5me/elf-ui/components/sidebar"
+} from "@ch5me/ch5-ui-web"
 import { Outlet, useNavigate, useRouterState } from "@tanstack/react-router"
 import {
 	ArrowLeftIcon,

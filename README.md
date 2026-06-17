@@ -1,3 +1,12 @@
+> # ⚠️ ARCHIVED — this repo is superseded by `firefly-cloud`
+>
+> This standalone `palot` repo is **archived / read-only**. The entire codebase
+> has been imported into the CH5 monorepo **`firefly-cloud`**
+> (`git.ch5.me/ch5/firefly-cloud`), which is the live home for the ELF desktop
+> app and its services. All new work happens there. See [`ARCHIVED.md`](./ARCHIVED.md)
+> for the import map and details. This repo is kept only to preserve the
+> upstream-fork history.
+
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="apps/desktop/resources/brand/lockup-dark.png">
   <source media="(prefers-color-scheme: light)" srcset="apps/desktop/resources/brand/lockup-light.png">
@@ -266,7 +275,7 @@ Elf is in early alpha and we welcome contributions! Here's how to get started:
 6. Open a pull request
 
 Please see the [AGENTS.md](AGENTS.md) file for code style conventions, naming patterns, and important architectural notes.
-For Firefly desktop surface work, also see [docs/firefly-surface-playbook.md](docs/firefly-surface-playbook.md).
+For Firefly desktop plugin work (inline widgets, side panels, commands, agent tools, themes), see the **firefly-plugins** skill at `.agents/skills/firefly-plugins/SKILL.md`.
 
 <br>
 

@@ -1,5 +1,5 @@
-import { MessageResponse } from "@ch5me/elf-ui/components/ai-elements/message"
-import { cn } from "@ch5me/elf-ui/lib/utils"
+import { MessageResponse } from "@ch5me/agent-ui-web"
+import { cn } from "@ch5me/ch5-ui-web"
 import { useNavigate, useParams } from "@tanstack/react-router"
 import { useAtomValue } from "jotai"
 import {

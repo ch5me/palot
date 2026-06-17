@@ -9,7 +9,7 @@ Do NOT add one-time setup notes, general knowledge, or things discoverable from 
 ## Project Structure
 
 - **Monorepo**: Turborepo + Bun workspaces (Bun 1.3.8)
-- **`packages/ui`**: Shared shadcn/ui component library (`@ch5me/elf-ui`)
+- **`packages/ui`** (`@ch5me/elf-ui`): Storybook + global styles host for the CH5-owned UI packages (`@ch5me/ch5-ui-web`, `@ch5me/agent-ui-web`). Holds **no components of its own** — apps import UI directly from those upstream packages. (Historically a shadcn/ui shim layer; the 133 pass-through shims were burned down 2026-06-14.)
 - **`packages/configconv`**: Universal agent config converter library (`@ch5me/elf-configconv`) -- converts between Claude Code, OpenCode, and Cursor formats
 - **`packages/configconv-cli`**: Thin CLI wrapper (`configconv`) for the converter library
 - **`apps/desktop`**: Electron 40 + Vite + React 19 desktop app (via `electron-vite`)
@@ -31,6 +31,14 @@ When the provider's `dist/` is stale (new exports not in built output), rebuild:
 cd ~/src/ch5/ch5-packages/packages/workspace/contract && pnpm run build
 ```
 
+**Isolated-worktree gotcha:** the root `package.json` `workspaces` use sibling-relative
+paths (`../ch5-packages/...`). A worktree checked out somewhere other than
+`~/src/ch5/palot` (e.g. a `/tmp` isolation worktree) has no sibling `ch5-packages`,
+so `bun install` fails with `Workspace not found "../ch5-packages/..."` and deps
+(`@tanstack/react-router`, etc.) never land. Fix: put a sibling symlink next to the
+worktree before installing, e.g. `ln -s ~/src/ch5/ch5-packages <worktree-parent>/ch5-packages`,
+then `bun install`.
+
 Vite needs React dedup aliases because `@react-spring/web` resolves its own React.
 See `apps/desktop/src/renderer/vite.web.config.ts` for the aliases.
 
@@ -45,6 +53,8 @@ generic knowledge.
 | Skill | When to load |
 |---|---|
 | `react-best-practices` | Writing or reviewing renderer components, optimizing re-renders or bundle size |
+| `firefly-plugins` | Adding or changing a Firefly desktop plugin: inline widget, side panel, command, agent tool, theme, host capability token, or the catalog/dispatch wiring. `firefly.built-in.devmux-toolbar` is the worked example |
+| `surface-contract` | The generic human+agent+surface seam: agent-callable surface tools (AXI/TOON), per-turn context projection (`<surface-context>`), the surface action stream + animated cursor, and Magic Browser (iframe vs streamed). The Browser plugin is the reference. Load before touching `web.*` tools, context projectors, the action stream, or browser lanes |
 
 ## Docs / Wiki
 
@@ -52,7 +62,15 @@ generic knowledge.
 - Session debugging runbook lives in `docs/session-debugging.md`. Use it when Palette/OpenCode sessions look stuck or DB/UI state disagrees.
 - `bun run debug:sessions -- <session-id>` now compares SQLite history with live active-session presence and `session.status()` truth. Use it first for hidden active sessions, stale recency, and child divergence.
 - Palot/OpenCode plugin/runtime seam is documented in `docs/palot-opencode-plugin-bridge.md`. Read it before changing plugin loading, tool registration, resolver payloads, browser action dispatch, or side-panel UI command bridges.
+- Firefly marketplace, VS Code/Open VSX import, compatibility, install lifecycle, and theme conversion design lives in `docs/firefly-extension-marketplace-v2.md`. Read it before changing plugin marketplace or theme import behavior.
 - For this repo, do not treat unrelated dirty worktrees as an automatic blocker. Assume parallel agents are active, commit your scoped work frequently, and move forward unless a direct file-level conflict makes the current edit unsafe.
+
+## Temporary Staging Policy (expires at full launch)
+
+**Hot path = the web build (browser mode). Electron is NOT the hot path right now.** Until the full launch, web-mode (`bun run dev` → browser mode on `20883`, live Chrome + screenshot/DOM capture) is the primary visual/manual verification surface. Electron-side visual proof is not *required* for ticket closeout, but it is **no longer blocked** (see below) — exercise it when a surface is Electron-only.
+
+- **RESOLVED (2026-06-16)**: the prior Electron cold-boot crash (`ERR_UNSUPPORTED_ESM_URL_SCHEME` for the `bun:` protocol, evidence dated 2026-06-14 in `.sisyphus/evidence/task-6-electron-*`) was **fixed** in `e11c58a37` (node:sqlite in artifact-store) + `0d3877fdc` (dual-runtime sqlite via `createRequire` + sidecar copy). The `bun:sqlite` builtin is now resolved through a runtime-guarded `createRequire` (`apps/desktop/src/main/palot-runtime/artifact-store.ts`), so the `bun:` scheme never reaches Electron's ESM loader. The app cold-boots. Do NOT re-cite that crash as a current blocker; if a NEW Electron boot failure appears, capture fresh evidence rather than reusing the stale task-6 logs.
+- **Caveat**: a renderer surface that only works in Electron (anything depending on `window.elf` IPC, which is absent in the web build) still cannot be verified in web mode — verify those in Electron (now bootable) or prove the host/logic path headlessly and note which surface you proved on.
 
 ## Commands
 
@@ -64,7 +82,7 @@ generic knowledge.
 - **Electron dev**: use devmux service `desktop` / `desktop-wayland`; do not run `cd apps/desktop && bun run dev:electron-local` manually unless editing that service definition
 - **Browser-only dev**: devmux service `web` runs Vite on `20883`; do not run `cd apps/desktop && bun run dev:web` manually unless editing that service definition
 - **Backend server** (browser mode only): devmux service `server` runs Bun server on `30206`; do not run `cd apps/server && bun run dev` manually unless editing that service definition
-- **Storybook**: `packages/ui` no longer owns a local Storybook. Generic UI stories live in `~/src/ch5/ch5-packages` (`pnpm run storybook` for main, `pnpm run storybook:fx` for effects).
+- **Storybook**: `packages/ui` (@ch5me/elf-ui) owns a local Storybook — devmux service `storybook` on port `10618` (`bun run svc:status`; tmux `omo-elf-storybook`). Start it like any other service via devmux (`cd ~/src/ch5/palot && npx devmux ensure storybook`); do not run `cd packages/ui && bun run storybook` manually unless editing that service definition. Stories live in `packages/ui/src/stories/{foundations,ai-elements,animate}`; the React-Vite + `@tailwindcss/vite` config is `packages/ui/.storybook`. Stories render the CH5-owned upstream packages (`@ch5me/ch5-ui-web` + `@ch5me/agent-ui-web`) — this is the parity/visual surface for them. (The companion generic-UI Storybooks still live in `~/src/ch5/ch5-packages`: `pnpm run storybook` design-system on `10616`, `pnpm run storybook:fx` effects on `10617`.)
 - **Session debug**: `bun run debug:sessions -- <session-id> [session-id...]`
 
 - **Lint check**: `bun run lint` (from root)
@@ -78,7 +96,7 @@ generic knowledge.
 - **MCP connections proof**: `bun run generate:mcp-verification-fixture -- --scenario mixed --output /tmp/palot-mcp-mixed.json` then `bun test apps/desktop/src/main/mcp-connections-runtime.test.ts apps/desktop/src/renderer/lib/mcp-connections-verification.test.ts apps/desktop/src/renderer/lib/mcp-connections-verification-fixtures.test.ts apps/desktop/src/renderer/lib/mcp-connections-e2e.test.ts apps/desktop/.opencode/plugins/palot-bridge.test.js` then `bun run verify:mcp-connections -- --file /tmp/palot-mcp-mixed.json --require-gateway --require-cloud-restore` and `bun run verify:mcp-connections:e2e -- --file /tmp/palot-mcp-mixed.json`
 - **Palot plugin implementation**: canonical source is `apps/desktop/src/main/palot-plugin/plugin.js`; `apps/desktop/.opencode/plugins/palot-bridge.js` is only a compatibility shim.
 - **Rebuild server types**: `cd apps/server && bun run build:types` (required after adding server routes)
-- **Add UI component**: `cd packages/ui && bunx shadcn@latest add <component>`
+- **Add UI component**: add it to the upstream CH5 package (`ch5-packages/packages/web/ch5-ui-web` or `agent-ui-web`), then import directly via `@ch5me/ch5-ui-web` / `@ch5me/agent-ui-web`. Do NOT add components to `packages/ui` (`@ch5me/elf-ui`) — it is a Storybook/styles host only, with no local components, and `@ch5me/elf-ui/components/*` no longer resolves.
 - **Package**: `cd apps/desktop && bun run package` (or `package:linux`, `package:mac`, `package:win`, `package:all`)
 - **Package without code signing (macOS)**: `CSC_IDENTITY_AUTO_DISCOVERY=false cd apps/desktop && bun run package:mac`
 - **Changeset -- add**: `bun changeset` (interactive -- pick packages, bump type, write description)
@@ -99,7 +117,7 @@ generic knowledge.
 - Use `import type { ... }` for type-only imports (Biome warns otherwise)
 - Order: external packages first, then internal/relative imports (no blank line between)
 - Main process: `node:` builtins first, then `electron`, then local
-- Renderer: `@ch5me/elf-ui` -> `@tanstack/*` -> `lucide-react` -> `react` -> local atoms/hooks/services
+- Renderer: `@ch5me/ch5-ui-web` / `@ch5me/agent-ui-web` -> `@tanstack/*` -> `lucide-react` -> `react` -> local atoms/hooks/services
 
 ### Naming Conventions
 
@@ -165,15 +183,37 @@ The codebase uses Jotai for state management. Derive data with `useMemo` from at
 
 ### Tailwind v4 Monorepo -- Missing Styles
 
-`packages/ui/src/styles/globals.css` must have `@source "../components";` or utility classes used only in UI components won't generate CSS. Do NOT remove this line.
+`packages/ui/src/styles/globals.css` must `@source` the upstream package builds plus the local stories:
+
+```css
+@source "../stories";
+@source "../../../../node_modules/@ch5me/ch5-ui-web/dist";
+@source "../../../../node_modules/@ch5me/agent-ui-web/dist";
+```
+
+The components live in the sibling `ch5-packages` repo and Tailwind v4 auto-detection ignores `node_modules`, so without these explicit `@source` lines their utility classes (`bg-primary`, `h-9`, `px-4`, `inline-flex`, …) never generate and components render **unstyled** (transparent, no padding/height). The path is relative to the CSS file, so it works for every consumer (app + Storybook). Do NOT remove these lines. (The old `@source "../components"` is dead — that dir was deleted in the 2026-06-14 shim burn-down.)
 
 ### Biome -- CSS Disabled
 
 Biome v2 cannot parse Tailwind v4 syntax. CSS linting/formatting is disabled. Do not try to enable it.
 
+### Git -- NEVER open PRs; merge to main
+
+**Do not open pull requests.** When work on a branch is verified and done, merge it directly to `main` and push: `git checkout main && git pull --rebase origin main && git merge <branch> && git push origin main` (refetch+rebase+retry on non-fast-forward). Do not run `gh pr create`. (Chris, 2026-06-16, emphatic.)
+
+### Commit cadence for small UI tweaks -- batch, don't auto-push
+
+When Chris asks for a small UI tweak (a className change, removing a button, realigning something), **do not commit-and-push each one** — that's too aggressive. Instead:
+
+- Make the change and verify it (typecheck/lint + a live check), but **leave it uncommitted** so a series of small tweaks can accumulate.
+- **Commit the batch only when moving on to the next logical task** (a natural boundary), with one coherent message covering the batch.
+- **Never push immediately** for these. Push later — at a larger milestone, or when Chris asks. Holding the push is the default for iterative UI work.
+
+This intentionally overrides the global "commit + push verified work right away" default *for small iterative UI changes in this repo*. Substantial/standalone work (a real fix, a feature, a refactor) still follows the normal commit+push flow. (Chris, 2026-06-16.)
+
 ### Changesets -- versioning workflow
 
-All five workspace packages are **linked** (version together). When making user-facing changes, run `bun changeset` before opening a PR.
+All five workspace packages are **linked** (version together). When making user-facing changes, run `bun changeset` before merging to main.
 
 ### Packaging -- macOS without code signing
 
@@ -231,20 +271,11 @@ To connect a one-off desktop dev run to an existing server:
 cd apps/desktop && OPENCODE_PORT=4096 node ../../node_modules/.bin/electron-vite dev
 ```
 
-### Elf as Firefly Cloud integration
+### Consuming CH5 UI from other repos
 
-The `@ch5me/elf-ui` package is published to GitHub Packages (`npm.pkg.github.com`) at `^0.6.0`. Consumer repos (e.g. Firefly Cloud) add it as a registry dependency:
+`@ch5me/elf-ui` is **internal-only** — it is NOT published to GitHub Packages (a `npm view` returns 404) and holds no components. After the 2026-06-14 burn-down, the shared UI lives in `@ch5me/ch5-ui-web` and `@ch5me/agent-ui-web` (in `ch5-packages`). External consumers (e.g. Firefly Cloud) should depend on **those** packages, not on elf-ui.
 
-```json
-"@ch5me/elf-ui": "^0.6.0"
-```
-
-**Do NOT use cross-repo workspace links** (e.g. `workspace:*` pointing to `../elf/packages/*`) in pnpm workspaces. pnpm hoists `node_modules` from the workspace root, which creates cross-repo symlinks and causes duplicate React instances (different versions resolved from different workspace roots). This manifests as `useState`/`useEffect` errors in Electron.
-
-**Publishing workflow:**
-```bash
-cd packages/ui && npm publish   # requires NPM_TOKEN from Hush
-```
+**Cross-repo React-dedup lesson (still load-bearing):** different physical copies of `react` / `@types/react` / `lucide-react` / `react-hook-form` across the bun(palot)↔pnpm(ch5-packages) boundary cause duplicate React instances (→ `useState`/`useEffect` errors in Electron) and break type assignability at the package seam. Pin identical exact versions in BOTH repos — palot via root `package.json` `overrides`, ch5-packages via `pnpm-workspace.yaml` `overrides:`. See `docs/ui-component-unification-audit.md` for the exact pins.
 
 ## Testing
 

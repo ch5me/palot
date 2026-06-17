@@ -1,7 +1,7 @@
 import {
 	PromptInputHeader,
 	usePromptInputAttachments,
-} from "@ch5me/elf-ui/components/ai-elements/prompt-input"
+} from "@ch5me/agent-ui-web"
 import { AlertTriangleIcon, FileIcon, XIcon } from "lucide-react"
 import { memo, useMemo } from "react"
 

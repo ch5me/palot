@@ -4,7 +4,7 @@
  * Brief introduction to Elf and what the setup will cover.
  */
 
-import { Button } from "@ch5me/elf-ui/components/button"
+import { Button } from "@ch5me/ch5-ui-web"
 import { ArrowRightIcon } from "lucide-react"
 import { ElfWordmark } from "../../elf-wordmark"
 

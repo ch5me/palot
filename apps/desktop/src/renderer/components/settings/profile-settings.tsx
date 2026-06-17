@@ -1,12 +1,4 @@
-import { Button } from "@ch5me/elf-ui/components/button"
-import { Input } from "@ch5me/elf-ui/components/input"
-import {
-	Select,
-	SelectContent,
-	SelectItem,
-	SelectTrigger,
-	SelectValue,
-} from "@ch5me/elf-ui/components/select"
+import { Button, Input, Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@ch5me/ch5-ui-web";
 import { useAtomValue, useSetAtom } from "jotai"
 import { useState } from "react"
 import {

@@ -1,8 +1,9 @@
-import { SidebarProvider } from "@ch5me/elf-ui/components/sidebar"
+import { Button, SidebarProvider } from "@ch5me/ch5-ui-web"
 import { SplitPane } from "@ch5me/workspace"
 import { Outlet, useNavigate } from "@tanstack/react-router"
+import { PanelLeftIcon } from "lucide-react"
 import { useAtom, useAtomValue } from "jotai"
-import { useCallback, useEffect, useRef, useState } from "react"
+import { type CSSProperties, useCallback, useEffect, useRef, useState } from "react"
 import { activeServerConfigAtom, serverConnectedAtom } from "../atoms/connection"
 import { leftPanelOpenAtom } from "../atoms/ui"
 import { useAgents, useProjectList, useSetCommandPaletteOpen } from "../hooks/use-agents"
@@ -11,7 +12,8 @@ import type { Agent } from "../lib/types"
 import { pickDirectory } from "../services/backend"
 import { loadProjectSessions } from "../services/connection-manager"
 import { AddProjectDialog } from "./add-project-dialog"
-import { APP_BAR_HEIGHT, AppBar } from "./app-bar"
+import { APP_BAR_HEIGHT, GlobalAppChrome, isElectron, WINDOW_CONTROLS_LEFT } from "./app-bar"
+import { useAppBarContent } from "./app-bar-context"
 import { AppSidebarContent } from "./sidebar"
 import { useSidebarSlot } from "./sidebar-slot-context"
 import { UpdateBanner } from "./update-banner"
@@ -46,6 +48,7 @@ export function SidebarLayout() {
 	const navigate = useNavigate()
 	const [leftPanelOpen, setLeftPanelOpen] = useAtom(leftPanelOpenAtom)
 	const { content: slotContent, footer: slotFooter } = useSidebarSlot()
+	const appBarContent = useAppBarContent()
 	const agents = useAgents()
 	const projects = useProjectList()
 	const setCommandPaletteOpen = useSetCommandPaletteOpen()
@@ -150,27 +153,18 @@ export function SidebarLayout() {
 				style={{
 					background: "var(--ws-bg, hsl(var(--background)))",
 					color: "var(--ws-text-primary, hsl(var(--foreground)))",
-					display: "grid",
-					gridTemplateRows: `${APP_BAR_HEIGHT}px 1fr`,
 					height: "100vh",
 					overflow: "hidden",
 					width: "100%",
 				}}
 			>
-			<div className="relative">
-				<UpdateBanner />
-				<AppBar />
-			</div>
-
-			<div style={{ minWidth: 0, overflow: "hidden" }}>
-
-					<SplitPane
-						side="left"
-						open={leftPanelOpen}
-						onOpenChange={setLeftPanelOpen}
-						defaultPanelWidth={320}
-						minPanelWidth={200}
-						maxPanelWidth={480}
+				<SplitPane
+					side="left"
+					open={leftPanelOpen}
+					onOpenChange={setLeftPanelOpen}
+					defaultPanelWidth={320}
+					minPanelWidth={200}
+					maxPanelWidth={480}
 					panel={
 						<SidebarProvider
 							embedded
@@ -182,30 +176,62 @@ export function SidebarLayout() {
 								className="flex h-full flex-col overflow-hidden"
 								style={{ background: "hsl(var(--sidebar, var(--card)))" }}
 							>
+								{/* Global chrome (logo, sidebar toggle, new session) lives at the top
+								    of the sidebar now that the full-width app bar is gone. The row is
+								    a window-drag region on Electron; the inner buttons opt out. */}
 								<div
-									className="flex shrink-0 items-center gap-1"
-									style={{
-										height: APP_BAR_HEIGHT,
-										// @ts-expect-error -- vendor-prefixed CSS property
-										WebkitAppRegion: "drag",
-									}}
-								/>
+									className="flex shrink-0 items-center"
+									style={{ height: APP_BAR_HEIGHT, WebkitAppRegion: "drag" } as CSSProperties}
+								>
+									<GlobalAppChrome />
+								</div>
 								<div className="min-h-0 flex-1 overflow-hidden">{sidebarContent}</div>
 								{slotFooter !== false && slotFooter}
 							</div>
 						</SidebarProvider>
 					}
+				>
+					<main
+						className="relative flex h-full min-h-0 min-w-0 flex-1 flex-col overflow-hidden"
+						style={{ background: "hsl(var(--background))" }}
 					>
-						<main
-							className="relative flex h-full min-h-0 min-w-0 flex-1 flex-col overflow-hidden"
-							style={{ background: "hsl(var(--background))" }}
-						>
-							<div data-slot="content-area" className="relative min-h-0 min-w-0 flex-1 overflow-hidden">
-								<Outlet />
+						<UpdateBanner />
+						{/* Content toolbar above the dock — the per-page slot (session title +
+						    dock show/hide toggles). Shown when a page provides content, or when
+						    the sidebar is collapsed (so it can be reopened). */}
+						{(appBarContent || !leftPanelOpen) && (
+							<div
+								data-slot="content-toolbar"
+								className="relative z-30 flex shrink-0 items-center border-b border-border/50"
+								style={
+									{
+										height: APP_BAR_HEIGHT,
+										paddingLeft: leftPanelOpen ? undefined : WINDOW_CONTROLS_LEFT,
+										WebkitAppRegion: isElectron() ? "drag" : undefined,
+									} as CSSProperties
+								}
+							>
+								{!leftPanelOpen && (
+									<Button
+										variant="ghost"
+										size="icon"
+										className="ml-2 size-7 shrink-0"
+										onClick={() => setLeftPanelOpen(true)}
+										aria-label="Open sidebar (⌘B)"
+										title="Open sidebar (⌘B)"
+										style={{ WebkitAppRegion: "no-drag" } as CSSProperties}
+									>
+										<PanelLeftIcon className="size-3.5" />
+									</Button>
+								)}
+								<div className="relative flex h-full min-w-0 flex-1 items-center">{appBarContent}</div>
 							</div>
-						</main>
-					</SplitPane>
-				</div>
+						)}
+						<div data-slot="content-area" className="relative min-h-0 min-w-0 flex-1 overflow-hidden">
+							<Outlet />
+						</div>
+					</main>
+				</SplitPane>
 			</div>
 			<AddProjectDialog
 				open={addProjectOpen}

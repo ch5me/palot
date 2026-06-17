@@ -25,10 +25,15 @@ import { startEnvResolution } from "./shell-env"
 import { createTray, destroyTray } from "./tray"
 import { initAutoUpdater, stopAutoUpdater } from "./updater"
 import { registerBuiltInHostCommands } from "./firefly-plugin/dispatch"
+import { installPluginGrantResolver } from "./firefly-plugin/grant-store"
 import {
 	bootPluginWorkerSupervisor,
 	disposePluginWorkerSupervisor,
 } from "./firefly-plugin/supervisor-boot"
+import {
+	bootDevPluginWatcher,
+	disposeDevPluginWatcher,
+} from "./firefly-plugin/dev-watcher-boot"
 
 
 const log = createLogger("app")
@@ -326,6 +331,17 @@ if (!gotLock) {
 		registerBuiltInHostCommands()
 		registerFireflyPluginIpc()
 		bootPluginWorkerSupervisor()
+		// Layer persisted user/admin capability grants onto the built-in policy
+		// resolver. Wires the shared host grant store (getHostGrantStore singleton)
+		// so grants written at install time are immediately visible to dispatch.
+		// On failure we keep the secure deny-by-default resolver
+		// (fail loud, never silently mask — CH5 #9).
+		installPluginGrantResolver().catch((err) =>
+			log.warn("Plugin grant resolver wiring failed; deny-by-default in effect", err),
+		)
+		// Dev-only: watch plugin roots and hot-reload on edit (no app restart).
+		// Packaged builds get a no-op (the executor/watcher require disk roots).
+		bootDevPluginWatcher({ isPackaged: app.isPackaged })
 		initBrowserLaneManager().catch(console.error)
 		initAutomations().catch(console.error)
 		initNotchCommandFileWatcher()
@@ -355,6 +371,7 @@ if (!gotLock) {
 	app.on("before-quit", () => {
 		destroyTray()
 		shutdownNotchCommandFileWatcher()
+		disposeDevPluginWatcher()
 		disposePluginWorkerSupervisor().catch(console.error)
 		shutdownAutomations()
 		shutdownBrowserLaneManager().catch(console.error)

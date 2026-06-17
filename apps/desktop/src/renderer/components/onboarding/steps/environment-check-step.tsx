@@ -1,15 +1,4 @@
-/**
- * Onboarding Step 2: Environment Check.
- *
- * Verifies OpenCode CLI is installed and compatible. Offers install/update
- * if needed. When OpenCode is not found locally, shows any mDNS-discovered
- * servers on the network as an alternative connection path.
- */
-
-import { Button } from "@ch5me/elf-ui/components/button"
-import { Input } from "@ch5me/elf-ui/components/input"
-import { Label } from "@ch5me/elf-ui/components/label"
-import { Spinner } from "@ch5me/elf-ui/components/spinner"
+import { Button, Input, Label, Spinner } from "@ch5me/ch5-ui-web";
 import { useAtomValue } from "jotai"
 import {
 	AlertCircleIcon,

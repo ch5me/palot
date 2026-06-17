@@ -1,0 +1,33 @@
+Task 4 — Command Palette Cleanup
+==================================
+Date: 2026-06-14
+Plan: .sisyphus/plans/cloud000-174-palette-3pane-finish.md (Task 4)
+
+Change (verified in git diff HEAD):
+- File: apps/desktop/src/renderer/components/command-palette.tsx
+- Removed 11 lines: duplicate PDF Review toggle entry.
+- The first entry (keywords: pdf, document, reader, annotations, citations) was kept
+  because it had slightly broader search coverage.
+- The second entry (keywords: pdf, pdf review, document, paper, citation) was removed.
+
+Diff excerpt:
+  -					<CommandItem
+  -						keywords={["pdf", "pdf review", "document", "paper", "citation"]}
+  -						onSelect={() => {
+  -							togglePdfReviewSurface()
+  -							onOpenChange(false)
+  -						}}
+  -					>
+  -						<FileTextIcon />
+  -						<span>{pdfReviewSurfaceEnabled ? "Disable PDF Review Surface" : "Enable PDF Review Surface"}</span>
+  -						{pdfReviewSurfaceEnabled && <CheckIcon className="ml-auto h-4 w-4" />}
+  -					</CommandItem>
+
+Decision (from notepads/decisions.md):
+- Removed duplicate PDF Review toggle from command palette.
+- Kept the first entry as it has slightly broader search coverage.
+
+Learning (from notepads/learnings.md):
+- Duplicate command-palette toggle entries for the same surface are easy to introduce
+  when two developers add the same feature flag command in separate branches; they render
+  as two identical menu items with no visual distinction.

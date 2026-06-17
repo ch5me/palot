@@ -1,6 +1,5 @@
-import { DagSparkline } from "@ch5me/dag-sparkline"
-import type { DagSparklineDirection, DagSparklineProps } from "@ch5me/dag-sparkline"
-import { cn } from "@ch5me/elf-ui/lib/utils"
+import { DagSparkline, type DagSparklineDirection, type DagSparklineProps } from "@ch5me/dag-sparkline";
+import { cn } from "@ch5me/ch5-ui-web"
 import { memo } from "react"
 import { z } from "zod"
 import type { GenUiEntry } from "../registry"
@@ -61,6 +60,14 @@ export const DagSparklineEntry: GenUiEntry<DagSparklineFenceProps> = {
 	name: "dag-sparkline",
 	aliases: ["dag", "dag spark", "dag sparkline", "graph", "flow graph", "dependency graph"],
 	description: "Render DAG with node + edge props",
+	presentation: "inline-artifact",
+	scope: "generic",
+	maturity: "stable",
+	defaultPlacement: "inline",
+	allowedPlacements: ["inline", "chat-inline-right", "side-panel"],
+	sourcePackage: "@ch5me/dag-sparkline",
+	storybookPath: "packages/web/dag-sparkline/src/DagSpark.stories.tsx",
+	docsPath: "docs/genui-artifact-architecture.md",
 	Component: DagSparklineGenUi,
 	props: dagSparklinePropsSchema,
 	events: {},

@@ -3,6 +3,7 @@ import { mkdtempSync, rmSync } from "node:fs"
 import { tmpdir } from "node:os"
 import path from "node:path"
 import test from "node:test"
+import { FIREFLY_SURFACE_LANE_BY_ID } from "../shared/firefly-surface-ids"
 
 function setupTempXdg() {
 	const root = mkdtempSync(path.join(tmpdir(), "elf-palot-managed-"))
@@ -17,12 +18,31 @@ interface PluginToolHandler {
 	execute: (args?: unknown, context?: unknown) => Promise<string>
 }
 
+function assertDocumentOpenResult(result: unknown, expectedTab: "studio" | "pdf-review") {
+	assert.deepEqual(result, {
+		status: "completed",
+		toolName: "open_side_panel",
+		sidePanel: {
+			open: false,
+			activeTab: null,
+			availableTabs: ["browser", "review"],
+		},
+		documentPanel: {
+			open: true,
+			activeTab: expectedTab,
+			availableTabs: ["studio", "pdf-review"],
+		},
+	})
+	assert.equal(FIREFLY_SURFACE_LANE_BY_ID[expectedTab], "document")
+}
+
 test("real plugin over real bridge server proves managed runtime contract end-to-end", async () => {
 	const cleanup = setupTempXdg()
 	try {
 		const bindingMod = await import("./palot-session-binding")
 		const ipcMod = await import("./palot-browser-ipc")
 		const pluginSource = await import("./palot-plugin-entry.js")
+		await ipcMod.resetPalotBrowserIpcStateForTests()
 
 		bindingMod.upsertSessionBinding(
 			bindingMod.createSessionBinding({
@@ -55,9 +75,27 @@ test("real plugin over real bridge server proves managed runtime contract end-to
 			},
 		})
 		ipcMod.setUiStateSnapshot({
-			sidePanel: { open: false, activeTab: null, availableTabs: ["browser", "review"] },
+			sidePanel: {
+				open: false,
+				activeTab: null,
+				availableTabs: ["browser", "review"],
+			},
+			documentPanel: {
+				open: false,
+				activeTab: null,
+				availableTabs: ["studio", "pdf-review"],
+			},
 		})
-		ipcMod.registerPalotBrowserWindows(() => [])
+		const sent: Array<{ channel: string; payload: unknown }> = []
+		ipcMod.registerPalotBrowserWindows(() => [
+			{
+				webContents: {
+					send(channel: string, payload: unknown) {
+						sent.push({ channel, payload })
+					},
+				},
+			},
+		])
 
 		const bridge = await ipcMod.ensurePalotBridgeServer()
 		const bridgeRequest = await pluginSource.createBridgeClient({
@@ -95,10 +133,27 @@ test("real plugin over real bridge server proves managed runtime contract end-to
 			"http://elf-browser-lane.local/browser/lane_managed/",
 		)
 
-		const opened = JSON.parse(await tools.open_side_panel.execute({ tab: "browser" }))
-		assert.equal(opened.sidePanel.activeTab, "browser")
+		const openedStudio = JSON.parse(await tools.open_side_panel.execute({ tab: "studio" }))
+		assertDocumentOpenResult(openedStudio, "studio")
+		const uiStateAfterStudio = JSON.parse(await tools.ui_state.execute({}))
+		assert.deepEqual(uiStateAfterStudio.sidePanel.availableTabs, ["browser", "review"])
+		assert.equal(uiStateAfterStudio.sidePanel.activeTab, null)
+		assert.deepEqual(uiStateAfterStudio.documentPanel.availableTabs, ["studio", "pdf-review"])
+		assert.equal(uiStateAfterStudio.documentPanel.activeTab, "studio")
+
+		const openedPdfReview = JSON.parse(await tools.open_side_panel.execute({ tab: "pdf-review" }))
+		assertDocumentOpenResult(openedPdfReview, "pdf-review")
 		const uiState = JSON.parse(await tools.ui_state.execute({}))
-		assert.equal(uiState.sidePanel.activeTab, "browser")
+		assert.equal(uiState.sidePanel.activeTab, null)
+		assert.deepEqual(uiState.sidePanel.availableTabs, ["browser", "review"])
+		assert.equal(uiState.documentPanel.activeTab, "pdf-review")
+		assert.deepEqual(uiState.documentPanel.availableTabs, ["studio", "pdf-review"])
+		const openSidePanelEvents = sent.filter((event) => event.channel === "palot:open-side-panel")
+		assert.equal(openSidePanelEvents.length, 2)
+		assert.deepEqual(openSidePanelEvents.map((event) => event.payload), [
+			{ tab: "studio" },
+			{ tab: "pdf-review" },
+		])
 
 		const events = ipcMod.getBrowserActionEvents("ses_managed")
 		assert.ok(events.some((event) => event.kind === "toolRequest" && event.toolName === "browser_status"))
@@ -114,12 +169,14 @@ test("catalog tools project dynamically into the real plugin and dispatch throug
 		const ipcMod = await import("./palot-browser-ipc")
 		const dispatchMod = await import("./firefly-plugin/dispatch")
 		const pluginSource = await import("./palot-plugin-entry.js")
+		await ipcMod.resetPalotBrowserIpcStateForTests()
 
 		// Host side: notes handlers registered exactly like main/index.ts does.
 		dispatchMod.registerBuiltInHostCommands()
 		ipcMod.registerPalotBrowserWindows(() => [])
 		ipcMod.setUiStateSnapshot({
 			sidePanel: { open: false, activeTab: null, availableTabs: ["notes", "review"] },
+			documentPanel: { open: false, activeTab: null, availableTabs: [] },
 		})
 
 		const bridge = await ipcMod.ensurePalotBridgeServer()

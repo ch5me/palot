@@ -3,7 +3,6 @@ import type {
 	PermissionRequest as SdkPermissionRequest,
 	QuestionRequest as SdkQuestionRequest,
 } from "@opencode-ai/sdk/v2/client"
-import type { SidePanelTabId } from "../atoms/ui"
 
 // Re-export all SDK types from v2
 export type {
@@ -181,7 +180,7 @@ export interface GenUiArtifactDescriptor {
 
 export type FireflySurfaceTarget = {
 	kind: "side-panel"
-	tab: SidePanelTabId
+	tab: string
 }
 
 export type AgentVisibilityReason =

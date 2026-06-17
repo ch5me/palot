@@ -12,8 +12,9 @@
  * (`firefly-plugin-surfaces.tsx`) builds renderable tabs on top.
  */
 
-import type { SidePanelTabId } from "./atoms/ui"
 import type { ProjectedSidePanel } from "../shared/firefly-plugin/renderer-projection"
+import type { FireflySurfaceLane } from "./firefly-surface-registry"
+import type { SidePanelTabId } from "./atoms/ui"
 
 /**
  * Canonical visual order of side-panel tabs. Mirrors the registry
@@ -53,7 +54,9 @@ export function isKnownSidePanelTabId(value: string): value is SidePanelTabId {
  * tab ids are a later-slice concern, stated openly.
  */
 export interface CatalogSurfaceTabDescriptor {
-	readonly id: SidePanelTabId
+	readonly id: string
+	readonly workspace: string | null
+	readonly lane: FireflySurfaceLane
 	readonly pluginId: string
 	readonly projectedId: string
 	readonly title: string
@@ -66,13 +69,24 @@ export interface CatalogSurfaceTabDescriptor {
 	readonly renderMode: "host-reconciler" | "declarative-props" | "iframe"
 }
 
+function laneForCatalogPanel(panel: ProjectedSidePanel): FireflySurfaceLane {
+	if (panel.hostTarget.kind !== "side-panel") {
+		return "utility"
+	}
+
+	return panel.hostTarget.slot === "main-pane" ? "document" : "utility"
+}
+
 export function catalogPanelToTabDescriptor(
 	panel: ProjectedSidePanel,
 ): CatalogSurfaceTabDescriptor | null {
 	if (panel.formFactor !== "side-panel-tab") return null
-	if (!isKnownSidePanelTabId(panel.contributionId)) return null
+	const isWorkspaceScoped = panel.workspace !== null && panel.workspace !== undefined
+	if (!isWorkspaceScoped && !isKnownSidePanelTabId(panel.contributionId)) return null
 	return {
-		id: panel.contributionId,
+		id: isWorkspaceScoped ? panel.projectedId : panel.contributionId,
+		workspace: panel.workspace ?? null,
+		lane: laneForCatalogPanel(panel),
 		pluginId: panel.pluginId,
 		projectedId: panel.projectedId,
 		title: panel.title,
@@ -93,11 +107,11 @@ export function catalogPanelToTabDescriptor(
  * `SIDE_PANEL_TAB_ORDER`; ids outside the canonical list keep their
  * relative input order at the end.
  */
-export function mergeSurfaceTabs<T extends { id: SidePanelTabId }>(
+export function mergeSurfaceTabs<T extends { id: string }>(
 	registryTabs: readonly T[],
 	catalogTabs: readonly T[],
 ): T[] {
-	const byId = new Map<SidePanelTabId, T>()
+	const byId = new Map<string, T>()
 	for (const tab of registryTabs) byId.set(tab.id, tab)
 	for (const tab of catalogTabs) byId.set(tab.id, tab)
 

@@ -1,7 +1,7 @@
 import { atom } from "jotai"
 import { atomFamily, atomWithStorage } from "jotai/utils"
 
-export type SessionWidgetId = "session-task-list" | "genui-artifacts"
+export type SessionWidgetId = "session-task-list" | "genui-artifacts" | "devmux-toolbar"
 
 export type SessionWidgetZoneId = "above-chat" | "chat-inline-right"
 
@@ -21,8 +21,10 @@ export interface SessionWidgetZoneAvailability {
 
 const DEFAULT_LAYOUT: SessionWidgetLayout = {
 	placement: {
-		"above-chat": ["session-task-list"],
-		"chat-inline-right": ["genui-artifacts"],
+		"above-chat": ["devmux-toolbar", "session-task-list"],
+		// Artifacts widget temporarily disabled (see session-widget-registry.tsx).
+		// Inline-right starts empty; other widgets can still be dragged into it.
+		"chat-inline-right": [],
 	},
 }
 

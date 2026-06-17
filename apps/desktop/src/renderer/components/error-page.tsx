@@ -1,4 +1,4 @@
-import { Button } from "@ch5me/elf-ui/components/button"
+import { Button } from "@ch5me/ch5-ui-web"
 import { type ErrorComponentProps, useRouter } from "@tanstack/react-router"
 import { AlertTriangleIcon, ChevronDownIcon, RefreshCwIcon } from "lucide-react"
 import { useState } from "react"

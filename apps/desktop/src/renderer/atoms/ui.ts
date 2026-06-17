@@ -1,8 +1,11 @@
 import { atom } from "jotai"
 import { atomFamily, atomWithStorage } from "jotai/utils"
+import { DOCUMENT_SURFACE_IDS, isDocumentSurfaceId } from "../../shared/firefly-surface-ids"
 import {
 	fireflySurfacePreferencesAtom,
+	type LastDocumentPanelTabId,
 	type LastSidePanelTabId,
+	type LastUtilitySidePanelTabId,
 	type NavSidebarTabId,
 } from "./preferences"
 import type { FileDiff } from "../lib/types"
@@ -28,25 +31,72 @@ export const viewedSessionIdAtom = atom<string | null>(null)
 
 export type SidePanelTabId = LastSidePanelTabId
 
-export const NAV_SIDEBAR_TABS = ["built-in", "built-in-duplicate"] as const satisfies readonly NavSidebarTabId[]
+/** Built-in nav-sidebar tabs that always exist; plugin tabs are merged in at render. */
+export const NAV_SIDEBAR_TABS = ["built-in"] as const satisfies readonly NavSidebarTabId[]
 
 export interface SidePanelRoute {
 	tab: SidePanelTabId
 	focusToken: number
 }
 
-export interface PaneRoutingState {
-	sidePanel: SidePanelRoute | null
+export interface DocumentPanelRoute {
+	tab: DocumentPanelTabId
+	focusToken: number
 }
 
-export const sidePanelOpenAtom = atomWithStorage<boolean>("elf:side-panel-open", false)
+export interface PaneRoutingState {
+	sidePanel: SidePanelRoute | null
+	documentPanel: DocumentPanelRoute | null
+}
 
-export const sidePanelActiveTabAtom = atom<SidePanelTabId>((get) => get(fireflySurfacePreferencesAtom).lastSidePanelTab)
+// Right (side-panel) dock visibility. NOT persisted and defaults closed: with
+// spawn-on-demand tabs a fresh session has no open tabs, so the panel stays
+// hidden rather than showing an empty toolbar. It auto-opens when a tab is
+// spawned and auto-collapses when the last tab is closed (see agent-detail);
+// the user can still toggle it open manually to reach the spawn toolbar. Kept
+// in-memory so a stale "open" can't resurface the empty panel on next launch.
+export const sidePanelOpenAtom = atom<boolean>(false)
 
-export const setSidePanelActiveTabAtom = atom(null, (get, set, tab: SidePanelTabId) => {
+export type DocumentPanelTabId = LastDocumentPanelTabId
+export type UtilitySidePanelTabId = LastUtilitySidePanelTabId
+
+export const DOCUMENT_PANEL_TABS = DOCUMENT_SURFACE_IDS as readonly DocumentPanelTabId[]
+
+export const isDocumentPanelTab = (value: string): value is DocumentPanelTabId =>
+	isDocumentSurfaceId(value)
+
+// Utility and document lanes persist independently so restore/fallback stays
+// deterministic when a session switches or a doc surface becomes unavailable.
+
+export const sidePanelActiveTabAtom = atom<LastUtilitySidePanelTabId>(
+	(get) => get(fireflySurfacePreferencesAtom).lastUtilitySidePanelTab,
+)
+
+export const setSidePanelActiveTabAtom = atom(null, (get, set, tab: LastUtilitySidePanelTabId) => {
 	set(fireflySurfacePreferencesAtom, {
 		...get(fireflySurfacePreferencesAtom),
-		lastSidePanelTab: tab,
+		lastUtilitySidePanelTab: tab,
+	})
+})
+
+export const documentPanelOpenAtom = atom((get) => get(fireflySurfacePreferencesAtom).documentPanelOpen)
+
+export const setDocumentPanelOpenAtom = atom(null, (get, set, open: boolean) => {
+	set(fireflySurfacePreferencesAtom, {
+		...get(fireflySurfacePreferencesAtom),
+		documentPanelOpen: open,
+	})
+})
+
+export const documentPanelActiveTabAtom = atom<DocumentPanelTabId>(
+	(get) => get(fireflySurfacePreferencesAtom).lastDocumentPanelTab,
+)
+
+export const setDocumentPanelActiveTabAtom = atom(null, (get, set, tab: DocumentPanelTabId) => {
+	set(fireflySurfacePreferencesAtom, {
+		...get(fireflySurfacePreferencesAtom),
+		lastDocumentPanelTab: tab,
+		documentPanelOpen: true,
 	})
 })
 
@@ -75,6 +125,7 @@ export const setAvailableNavSidebarTabsAtom = atom(null, (get, set, tabs: NavSid
 })
 
 export const sidePanelFocusTokenAtom = atom(0)
+export const documentPanelFocusTokenAtom = atom(0)
 
 export const paneRoutingStateAtom = atom<PaneRoutingState>((get) => ({
 	sidePanel: get(sidePanelOpenAtom)
@@ -83,9 +134,51 @@ export const paneRoutingStateAtom = atom<PaneRoutingState>((get) => ({
 			focusToken: get(sidePanelFocusTokenAtom)
 		}
 		: null,
+	documentPanel: get(documentPanelOpenAtom)
+		? {
+			tab: get(documentPanelActiveTabAtom),
+			focusToken: get(documentPanelFocusTokenAtom),
+		}
+		: null,
 }))
 
+// Spawn-on-demand dock tabs. Surfaces no longer get a dock panel by default;
+// each side-panel/document tab is spawned only when the user opens it (toolbar,
+// Cmd+K, or a programmatic open request). This atom is the source of truth for
+// which surface ids currently have a spawned panel.
+//
+// In-memory + global (mirrors the global active-tab / zone preferences): it
+// resets to empty on app restart so a fresh launch shows chat only, and the set
+// applies to whichever session is being viewed.
+export const openDockTabsAtom = atom<readonly string[]>([])
+
+/** Ensure a surface id has a spawned dock tab. No-op if already open. */
+export const spawnDockTabAtom = atom(null, (get, set, tab: string) => {
+	const open = get(openDockTabsAtom)
+	if (!open.includes(tab)) set(openDockTabsAtom, [...open, tab])
+})
+
+/** Drop a surface id from the open set (its dock panel has been closed). */
+export const closeDockTabAtom = atom(null, (get, set, tab: string) => {
+	const open = get(openDockTabsAtom)
+	if (open.includes(tab)) {
+		set(
+			openDockTabsAtom,
+			open.filter((id) => id !== tab),
+		)
+	}
+})
+
 export const openSidePanelTabAtom = atom(null, (get, set, tab: SidePanelTabId) => {
+	// Spawn-on-demand: opening a tab creates its dock panel if it isn't already
+	// present, then focuses it. The agent-detail dock reconciler observes the open
+	// set and adds the panel; the pane-routing focus effect brings it forward.
+	set(spawnDockTabAtom, tab)
+	if (isDocumentPanelTab(tab)) {
+		set(setDocumentPanelActiveTabAtom, tab)
+		set(documentPanelFocusTokenAtom, get(documentPanelFocusTokenAtom) + 1)
+		return
+	}
 	set(sidePanelOpenAtom, true)
 	set(setSidePanelActiveTabAtom, tab)
 	set(sidePanelFocusTokenAtom, get(sidePanelFocusTokenAtom) + 1)
@@ -95,20 +188,59 @@ export const closeSidePanelAtom = atom(null, (_get, set) => {
 	set(sidePanelOpenAtom, false)
 })
 
-export const setAvailableSidePanelTabsAtom = atom(null, (get, set, tabs: SidePanelTabId[]) => {
-	if (tabs.length === 0) {
-		set(sidePanelOpenAtom, false)
-		return
-	}
-
-	const activeTab = get(sidePanelActiveTabAtom)
-	if (tabs.includes(activeTab)) {
-		return
-	}
-
-	set(setSidePanelActiveTabAtom, tabs[0])
-	set(sidePanelFocusTokenAtom, get(sidePanelFocusTokenAtom) + 1)
+export const closeDocumentPanelAtom = atom(null, (_get, set) => {
+	set(setDocumentPanelOpenAtom, false)
 })
+
+export const setAvailableSidePanelTabsAtom = atom(
+	null,
+	(get, set, tabs: UtilitySidePanelTabId[]) => {
+		const utilityTabs = tabs.filter((tab): tab is UtilitySidePanelTabId => !isDocumentPanelTab(tab))
+		if (utilityTabs.length === 0) {
+			// No utility surfaces yet. Do NOT persist `false` here: the right dock
+			// zone already self-gates closed via `sidePanelOpen && utilityTabs.length
+			// > 0`, and writing false would stick the pane closed after surfaces
+			// finish loading (defeating open-by-default).
+			return
+		}
+
+		const activeTab = get(sidePanelActiveTabAtom) as UtilitySidePanelTabId
+		if (utilityTabs.includes(activeTab)) {
+			return
+		}
+
+		set(setSidePanelActiveTabAtom, utilityTabs[0])
+		set(sidePanelFocusTokenAtom, get(sidePanelFocusTokenAtom) + 1)
+	},
+)
+
+export const setAvailableDocumentPanelTabsAtom = atom(
+	null,
+	(get, set, tabs: DocumentPanelTabId[]) => {
+		if (tabs.length === 0) {
+			// No document surfaces. Do NOT force the panel closed: the bottom dock is
+			// a manually-toggleable drag target (open empty → "drag tabs here"), and
+			// forcing false here would slam it shut whenever the surface list
+			// recomputes. It defaults closed via the documentPanelOpen preference.
+			return
+		}
+
+		const activeTab = get(documentPanelActiveTabAtom)
+		if (tabs.includes(activeTab)) {
+			return
+		}
+
+		// Only update the stored tab preference — do NOT open the panel. The
+		// panel was not open before this fallback, so forcing it open here is
+		// what caused the Studio / Office panel to auto-appear on session load.
+		// If the panel IS already open, keep it open (open state is unchanged).
+		set(fireflySurfacePreferencesAtom, {
+			...get(fireflySurfacePreferencesAtom),
+			lastDocumentPanelTab: tabs[0],
+		})
+		set(documentPanelFocusTokenAtom, get(documentPanelFocusTokenAtom) + 1)
+	},
+)
 
 export const reviewPanelOpenAtom = sidePanelOpenAtom
 

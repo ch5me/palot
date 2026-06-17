@@ -22,9 +22,49 @@ import {
 	type PluginLifecycleStateStore,
 	type PluginRuntimeStateSnapshot,
 } from "./lifecycle-state"
+import {
+	createDefaultInstalledManifestStore,
+	discoverInstalledManifests,
+	type InstalledManifestStoreApi,
+} from "./discover-installed-manifests"
 
 let cached: PluginCatalog | null = null
 let lifecycleStore: PluginLifecycleStateStore | null = null
+
+/**
+ * F2 — injectable installed-manifest store. Defaults to the real DB-backed
+ * store; tests override via `_setInstalledManifestStoreForTests`.
+ */
+let installedManifestStore: InstalledManifestStoreApi | null = null
+
+function getInstalledManifestStore(): InstalledManifestStoreApi {
+	if (!installedManifestStore) {
+		installedManifestStore = createDefaultInstalledManifestStore()
+	}
+	return installedManifestStore
+}
+
+const log = {
+	debug: (..._args: unknown[]) => undefined,
+	info: (...args: unknown[]) => {
+		// Re-attach to the host logger lazily so the authority module
+		// still loads in the bun test runner.
+		try {
+			// eslint-disable-next-line @typescript-eslint/no-var-requires
+			const { createLogger } = require("../logger") as typeof import("../logger")
+			createLogger("firefly-plugin-authority").info(...args)
+		} catch {
+			// ignore
+		}
+	},
+	warn: (..._args: unknown[]) => undefined,
+	error: (..._args: unknown[]) => undefined,
+} satisfies {
+	debug: (...args: unknown[]) => void
+	info: (...args: unknown[]) => void
+	warn: (...args: unknown[]) => void
+	error: (...args: unknown[]) => void
+}
 
 function resolveAppVersion(): string {
 	try {
@@ -101,11 +141,22 @@ function lifecycleOverrides(): Record<string, PluginCatalogStateOverride> {
 	return overrides
 }
 
-function buildCatalogWithDiskPlugins(): PluginCatalog {
+/**
+ * Build the catalog from built-ins + disk manifests + (optionally) already-
+ * resolved installed manifests. Synchronous: takes pre-fetched installed
+ * manifests so async DB I/O is separated from the pure catalog assembly.
+ *
+ * @param installedManifests - resolved Firefly manifests from the install DB
+ *   (empty by default — callers that want installed extensions must fetch them
+ *    first via `discoverInstalledManifests`).
+ */
+function buildCatalogWithDiskPlugins(
+	installedManifests: readonly import("../../shared/firefly-plugin/manifest").PluginManifest[] = [],
+): PluginCatalog {
 	const discovery = discoverDiskManifests(resolvePluginRoots())
 	return buildPluginCatalog({
 		appVersion: resolveAppVersion(),
-		diskManifests: discovery.manifests,
+		diskManifests: [...discovery.manifests, ...installedManifests],
 		diskFailures: discovery.failures.map((failure) => ({
 			manifestPath: failure.manifestPath,
 			pluginId: failure.pluginId,
@@ -113,6 +164,41 @@ function buildCatalogWithDiskPlugins(): PluginCatalog {
 		})),
 		stateOverrides: lifecycleOverrides(),
 	})
+}
+
+/**
+ * F2 — async variant that also reads installed code-extensions from the DB.
+ * Merges built-ins + disk manifests + installed manifests into one catalog.
+ * Failures from the installed-manifest discovery are logged (quarantine-not-
+ * throw policy) but never block the rest of the catalog.
+ */
+async function buildCatalogWithAllPlugins(
+	store?: InstalledManifestStoreApi,
+): Promise<PluginCatalog> {
+	const resolvedStore = store ?? getInstalledManifestStore()
+	let installedManifests: readonly import("../../shared/firefly-plugin/manifest").PluginManifest[] = []
+	try {
+		const discovery = await discoverInstalledManifests(resolvedStore)
+		installedManifests = discovery.manifests
+		if (discovery.failures.length > 0) {
+			log.warn("Some installed manifests failed to parse (quarantined)", {
+				count: discovery.failures.length,
+				failures: discovery.failures.map((f) => ({
+					installationId: f.installationId,
+					externalId: f.externalId,
+					firstIssue: f.issues[0]?.message ?? "unknown",
+				})),
+			})
+		}
+	} catch (err) {
+		// DB unavailable at catalog-build time (e.g. migration not yet run).
+		// Fail-loud: log and rethrow so the caller is aware. The test runner
+		// uses an injected in-memory store, so this only fires in production
+		// when the DB is genuinely broken.
+		log.error("discoverInstalledManifests failed — installed extensions not in catalog", { err })
+		throw err
+	}
+	return buildCatalogWithDiskPlugins(installedManifests)
 }
 
 /** Operator/host action: enable or disable a plugin at runtime. */
@@ -151,31 +237,19 @@ export function releasePluginQuarantine(pluginId: string, note: string): PluginR
 export function _resetPluginAuthorityForTests(): void {
 	cached = null
 	lifecycleStore = null
+	installedManifestStore = null
 }
 
-const log = {
-	debug: () => undefined,
-	info: (...args: unknown[]) => {
-		// Re-attach to the host logger lazily so the authority module
-		// still loads in the bun test runner.
-		try {
-			// eslint-disable-next-line @typescript-eslint/no-var-requires
-			const { createLogger } = require("../logger") as typeof import("../logger")
-			createLogger("firefly-plugin-authority").info(...args)
-		} catch {
-			// ignore
-		}
-	},
-	warn: () => undefined,
-	error: () => undefined,
-} satisfies {
-	debug: (...args: unknown[]) => void
-	info: (...args: unknown[]) => void
-	warn: (...args: unknown[]) => void
-	error: (...args: unknown[]) => void
+/**
+ * F2 test hook: override the installed-manifest store with an in-memory stub
+ * so tests do not need a real DB. Call `_resetPluginAuthorityForTests` to
+ * restore the default after the test.
+ */
+export function _setInstalledManifestStoreForTests(store: InstalledManifestStoreApi): void {
+	installedManifestStore = store
 }
 
-export { decideCapability, type CapabilityDecision }
+export { decideCapability, type CapabilityDecision, type InstalledManifestStoreApi }
 
 export function getPluginCatalog(): PluginCatalog {
 	if (cached) return cached
@@ -186,6 +260,26 @@ export function getPluginCatalog(): PluginCatalog {
 export function refreshPluginCatalog(): PluginCatalog {
 	cached = buildCatalogWithDiskPlugins()
 	log.info("Refreshed V2 plugin catalog", {
+		pluginCount: cached.descriptors.length,
+	})
+	return cached
+}
+
+/**
+ * F2 — async refresh that includes installed code-extensions from the DB.
+ *
+ * Use this after an extension install/uninstall/enable/disable so the catalog
+ * immediately reflects the change without an app restart. The sync
+ * `refreshPluginCatalog()` and `getPluginCatalog()` will return the updated
+ * catalog from `cached` after this call resolves.
+ *
+ * @param store - injectable store for tests (defaults to the real DB adapter)
+ */
+export async function refreshPluginCatalogAsync(
+	store?: InstalledManifestStoreApi,
+): Promise<PluginCatalog> {
+	cached = await buildCatalogWithAllPlugins(store)
+	log.info("Refreshed V2 plugin catalog (async, includes installed extensions)", {
 		pluginCount: cached.descriptors.length,
 	})
 	return cached
@@ -240,6 +334,10 @@ export function getPluginCapabilities(pluginId: string): {
 
 export function listPluginPanels() {
 	return getPluginCatalog().projections.panels
+}
+
+export function listPluginNavSidebars() {
+	return getPluginCatalog().projections.navSidebars
 }
 
 export function listPluginWidgets() {

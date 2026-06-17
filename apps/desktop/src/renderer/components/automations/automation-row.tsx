@@ -1,18 +1,4 @@
-/**
- * A single automation config row in the "Scheduled" section.
- *
- * Shows: status icon, name (truncated), project path(s), "Starts in Xm" countdown.
- * Right-click context menu: Edit, Run Now, Pause/Resume, Delete.
- */
-
-import {
-	ContextMenu,
-	ContextMenuContent,
-	ContextMenuItem,
-	ContextMenuSeparator,
-	ContextMenuTrigger,
-} from "@ch5me/elf-ui/components/context-menu"
-import { Tooltip, TooltipContent, TooltipTrigger } from "@ch5me/elf-ui/components/tooltip"
+import { ContextMenu, ContextMenuContent, ContextMenuItem, ContextMenuSeparator, ContextMenuTrigger, Tooltip, TooltipContent, TooltipTrigger } from "@ch5me/ch5-ui-web";
 import { CircleIcon, PauseIcon, PencilIcon } from "lucide-react"
 import { memo, useState } from "react"
 import type { Automation } from "../../../preload/api"

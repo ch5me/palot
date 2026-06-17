@@ -1,28 +1,4 @@
-/**
- * Schedule picker with presets, natural language sentence builder, and
- * live next-runs preview.
- *
- * Externally controlled via RRULE string: value + onChange.
- *
- * Layout:
- * 1. Preset selector (dropdown) -- covers 80% of use cases in one click
- * 2. Custom configuration (sentence builder) -- shown when "Custom" is
- *    selected, or when the current RRULE doesn't match any preset
- * 3. Live summary + next 3 runs -- always shown at the bottom
- */
-
-import { Button } from "@ch5me/elf-ui/components/button"
-import { Input } from "@ch5me/elf-ui/components/input"
-import { Label } from "@ch5me/elf-ui/components/label"
-import {
-	Select,
-	SelectContent,
-	SelectItem,
-	SelectSeparator,
-	SelectTrigger,
-	SelectValue,
-} from "@ch5me/elf-ui/components/select"
-import { Tooltip, TooltipContent, TooltipTrigger } from "@ch5me/elf-ui/components/tooltip"
+import { Button, Input, Label, Select, SelectContent, SelectItem, SelectSeparator, SelectTrigger, SelectValue, Tooltip, TooltipContent, TooltipTrigger } from "@ch5me/ch5-ui-web";
 import { CalendarClockIcon } from "lucide-react"
 import { useCallback, useEffect, useMemo, useState } from "react"
 import {
