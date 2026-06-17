@@ -67,11 +67,10 @@ generic knowledge.
 
 ## Temporary Staging Policy (expires at full launch)
 
-**Hot path = the web build (browser mode). Electron is NOT the hot path right now.** Until the full launch, do visual/manual verification ONLY on the web version (`bun run dev` → browser mode on `20883`, live Chrome + screenshot/DOM capture). Electron-side visual proof is not required and must not block scope review or ticket closeout. A current Electron dev blocker reinforces this, but the policy holds until launch regardless of that blocker.
+**Hot path = the web build (browser mode). Electron is NOT the hot path right now.** Until the full launch, web-mode (`bun run dev` → browser mode on `20883`, live Chrome + screenshot/DOM capture) is the primary visual/manual verification surface. Electron-side visual proof is not *required* for ticket closeout, but it is **no longer blocked** (see below) — exercise it when a surface is Electron-only.
 
-- **Blocker (context)**: Electron dev runtime crashes on app load with `ERR_UNSUPPORTED_ESM_URL_SCHEME` for the `bun:` protocol before a usable renderer window appears. Evidence: `.sisyphus/evidence/task-6-electron-pane.txt` and `.sisyphus/evidence/task-6-electron-proof.md`.
-- **Caveat**: a renderer surface that only works in Electron (e.g. anything depending on `window.elf` IPC, which is absent in the web build) cannot be visually verified during this window — prove the host/logic path headlessly and defer the pixels to post-launch Electron proof. Note this explicitly in the handoff rather than claiming visual proof.
-- **Expires**: at full launch, when Electron becomes a shipped runtime again. At that point, re-enable Electron-side visual proof as a required verification step for both runtimes.
+- **RESOLVED (2026-06-16)**: the prior Electron cold-boot crash (`ERR_UNSUPPORTED_ESM_URL_SCHEME` for the `bun:` protocol, evidence dated 2026-06-14 in `.sisyphus/evidence/task-6-electron-*`) was **fixed** in `e11c58a37` (node:sqlite in artifact-store) + `0d3877fdc` (dual-runtime sqlite via `createRequire` + sidecar copy). The `bun:sqlite` builtin is now resolved through a runtime-guarded `createRequire` (`apps/desktop/src/main/palot-runtime/artifact-store.ts`), so the `bun:` scheme never reaches Electron's ESM loader. The app cold-boots. Do NOT re-cite that crash as a current blocker; if a NEW Electron boot failure appears, capture fresh evidence rather than reusing the stale task-6 logs.
+- **Caveat**: a renderer surface that only works in Electron (anything depending on `window.elf` IPC, which is absent in the web build) still cannot be verified in web mode — verify those in Electron (now bootable) or prove the host/logic path headlessly and note which surface you proved on.
 
 ## Commands
 

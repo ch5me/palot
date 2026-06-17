@@ -1,3 +1,5 @@
+import type { OpenCodeRuntimeDescriptor } from "../shared/opencode-runtime"
+
 /**
  * Type definitions for the Electron preload bridge.
  *
@@ -9,7 +11,16 @@ export interface OpenCodeServerInfo {
 	url: string
 	pid: number | null
 	managed: boolean
+	runtime?: OpenCodeRuntimeDescriptor
 }
+
+export type {
+	OpenCodeRuntimeDescriptor,
+	OpenCodeRuntimeLifecycle,
+	OpenCodeRuntimeMode,
+	OpenCodeRuntimeOwnership,
+	OpenCodeRuntimeSource,
+} from "../shared/opencode-runtime"
 
 export type BrowserLaneMode = "local" | "remote"
 
@@ -802,10 +813,32 @@ export interface OpenInTargetsResult {
 // ============================================================
 
 /** Built-in local server, auto-managed by Elf via OpenCodeManager. */
+/** Source of the OpenCode runtime binary for a local server. */
+export type LocalRuntimeKind = "bundled" | "host" | "container"
+
+/** Who owns the OpenCode server lifecycle for a local server. */
+export type LocalRuntimeOwnership = "managed" | "attach-only"
+
 export interface LocalServerConfig {
 	id: "local"
 	name: string
 	type: "local"
+	runtime?: OpenCodeRuntimeDescriptor
+	/**
+	 * Where the OpenCode runtime binary comes from.
+	 * - "bundled": portable-opencode sidecar shipped with the app.
+	 * - "host": host-installed `opencode` resolved from PATH.
+	 * - "container": container runtime (future).
+	 * Absent on legacy records; migration fills "host" for pre-alpha users.
+	 */
+	runtimeKind?: LocalRuntimeKind
+	/**
+	 * Who manages the server process.
+	 * - "managed": Elf spawns and supervises the server.
+	 * - "attach-only": Elf connects to an already-running server.
+	 * Absent on legacy records; migration fills "managed".
+	 */
+	ownership?: LocalRuntimeOwnership
 	/** Hostname the local server binds to (default "127.0.0.1"). Use "0.0.0.0" to expose on the network. */
 	hostname?: string
 	/** Port the local server listens on (default 14096). */
@@ -823,6 +856,7 @@ export interface RemoteServerConfig {
 	id: string
 	name: string
 	type: "remote"
+	runtime?: OpenCodeRuntimeDescriptor
 	/** Full base URL, e.g. "https://opencode.example.com:<port>" */
 	url: string
 	/** Basic Auth username (defaults to "opencode" if omitted). */

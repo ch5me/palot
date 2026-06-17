@@ -4,6 +4,7 @@ import { app } from "electron"
 import type { AppSettings, NotificationSettings } from "../preload/api"
 import { DEFAULT_SERVER_SETTINGS } from "../shared/server-config"
 import { createLogger } from "./logger"
+import { migrateRuntimeSettings } from "./settings-runtime-migration"
 
 const log = createLogger("settings-store")
 
@@ -59,6 +60,14 @@ export function initSettingsStore(): void {
 		}
 	} catch (err) {
 		log.error("Failed to load settings, using defaults", err)
+	}
+
+	// Migrate legacy server records to the alpha runtime model
+	const migrated = migrateRuntimeSettings(settings)
+	if (migrated !== settings) {
+		settings = migrated
+		persist()
+		log.info("Runtime settings migrated to alpha model")
 	}
 
 	// Migrate opaqueWindows from the old preferences.json into settings.json
