@@ -254,6 +254,8 @@ export const dispatchBrowserToolNameSchema = z.enum([
 	"browser_click",
 	"browser_type",
 	"browser_scroll",
+	"browser_read",
+	"browser_set_mode",
 ])
 
 export const dispatchBrowserToolInputSchema = z.object({

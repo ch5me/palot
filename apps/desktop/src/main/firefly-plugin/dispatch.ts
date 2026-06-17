@@ -1309,15 +1309,40 @@ export function registerBrowserHostHandlers(deps?: Partial<BrowserHostDeps>): vo
 		})
 	}
 
-	// web.read needs DOM access the default iframe lane cannot provide (no CDP,
-	// cross-origin). Fail fast naming the precondition + how to enable it, rather
-	// than silently returning empty content.
-	registerHostTool(BROWSER_PLUGIN_ID, "plugin.firefly.built-in.surface.browser.read", async ({ sessionId }) => {
+	// web.read: streamed mode → engine documentText; iframe → fail fast naming precondition.
+	registerHostTool(BROWSER_PLUGIN_ID, "plugin.firefly.built-in.surface.browser.read", async ({ args, sessionId }) => {
 		if (!sessionId) return err("missing_session", "browser tools require an OpenCode session")
-		return err(
-			"needs_streamed_mode",
-			"web.read requires the streamed browser engine (Magic Browser); the default iframe lane cannot read cross-origin DOM. Switch to a streamed lane (web.mode streamed) once streamed mode lands.",
-		)
+		const { dispatchBrowserTool } = await import("../palot-browser-dispatcher")
+		const result = await dispatchBrowserTool({
+			sessionId,
+			toolName: "browser_read",
+			args: args ?? {},
+		})
+		if (result.status === "failed") return err("browser_dispatch_failed", result.resultSummary)
+		if (result.resultSummary.startsWith("needs_streamed_mode")) {
+			return err(
+				"needs_streamed_mode",
+				"web.read requires the streamed browser engine (Magic Browser); the default iframe lane cannot read cross-origin DOM. Use web.mode mode=streamed to switch.",
+			)
+		}
+		return ok({ status: result.status, result: result.resultSummary })
+	})
+
+	// web.mode: switch the bound lane mode for this session.
+	registerHostTool(BROWSER_PLUGIN_ID, "plugin.firefly.built-in.surface.browser.mode", async ({ args, sessionId }) => {
+		if (!sessionId) return err("missing_session", "browser tools require an OpenCode session")
+		const mode = args.mode as "iframe" | "streamed" | undefined
+		if (mode !== "iframe" && mode !== "streamed") {
+			return err("validation_error", `web.mode requires mode=iframe or mode=streamed; got ${JSON.stringify(mode)}`)
+		}
+		const { dispatchBrowserTool } = await import("../palot-browser-dispatcher")
+		const result = await dispatchBrowserTool({
+			sessionId,
+			toolName: "browser_set_mode",
+			args: { mode },
+		})
+		if (result.status === "failed") return err("browser_dispatch_failed", result.resultSummary)
+		return ok({ status: result.status, mode, result: result.resultSummary })
 	})
 
 	// Browser surface context projector: the agent reads current mode/url/bound +

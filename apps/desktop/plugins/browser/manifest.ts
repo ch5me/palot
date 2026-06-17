@@ -54,6 +54,7 @@ export const browserPluginManifest: PluginManifest = {
 		{ kind: "onToolCall", toolId: `${BROWSER_TOOL_PREFIX}.tabs` },
 		{ kind: "onToolCall", toolId: `${BROWSER_TOOL_PREFIX}.status` },
 		{ kind: "onToolCall", toolId: `${BROWSER_TOOL_PREFIX}.read` },
+		{ kind: "onToolCall", toolId: `${BROWSER_TOOL_PREFIX}.mode` },
 	],
 	contributes: {
 		panels: [
@@ -227,6 +228,22 @@ export const browserPluginManifest: PluginManifest = {
 					q: z.string().optional().describe("Optional focus query to narrow content extraction"),
 				},
 				timeoutMs: 15_000,
+				uiHints: { openPanel: "browser" },
+			},
+			{
+				id: `${BROWSER_TOOL_PREFIX}.mode`,
+				title: "web.mode",
+				description:
+					"Switch the browser lane mode for this session: 'iframe' (default, navigate-only) or 'streamed' (full DOM control via Magic Browser engine). Fail-fast if streamed mode cannot be provisioned.",
+				scope: "session",
+				panelId: "browser",
+				requires: ["host:browser.lane-control", "host:tool.register"],
+				args: {
+					mode: z
+						.enum(["iframe", "streamed"])
+						.describe("Target browser mode — 'iframe' for navigate-only, 'streamed' for full DOM access"),
+				},
+				timeoutMs: 30_000,
 				uiHints: { openPanel: "browser" },
 			},
 		],

@@ -14,6 +14,7 @@
  */
 
 import type { DispatchBrowserToolInput } from "../../shared/palot-bridge-schemas"
+import type { BrowserLane } from "../../shared/browser-lanes"
 import { getBrowserLane } from "../browser-lane-manager"
 import { resolvePalotSessionBinding } from "../palot-resolver"
 import type { SurfaceContextFragment } from "../surface-context-compose"
@@ -23,6 +24,15 @@ export const BROWSER_TOOL_PREFIX = "plugin.firefly.built-in.surface.browser."
 export interface WebToolDispatch {
 	toolName: DispatchBrowserToolInput["toolName"]
 	args: Record<string, unknown>
+}
+
+/**
+ * A streamed lane is one that has CDP access — either a selkies-stream
+ * (docker-chromium) lane or any remote-attached lane that exposes a cdpEndpoint.
+ * Direct-iframe lanes have no CDP and can only navigate.
+ */
+export function isStreamedLane(lane: BrowserLane): boolean {
+	return lane.surfaceKind === "selkies-stream" || !!lane.cdpEndpoint
 }
 
 /**
@@ -53,11 +63,83 @@ export function resolveWebToolDispatch(
 	}
 }
 
+// ---------------------------------------------------------------------------
+// TOON formatters — compact agent-readable summaries (AXI: 3-4 fields max,
+// truncate big text with a (truncated, N chars) hint + next-step suggestion).
+// ---------------------------------------------------------------------------
+
+const TOON_TEXT_LIMIT = 800
+
+function toonTruncate(text: string): string {
+	if (text.length <= TOON_TEXT_LIMIT) return text
+	return `${text.slice(0, TOON_TEXT_LIMIT)} (truncated, ${text.length} chars — use web.read q=<topic> to narrow)`
+}
+
+/**
+ * Format a magic-browser snapshot/documentText result as a compact TOON string.
+ * Input is the parsed CLI JSON (shape varies by verb, so we duck-type the
+ * fields we care about).
+ */
+export function formatSnapshotToon(raw: unknown): string {
+	if (!raw || typeof raw !== "object") return String(raw ?? "no content")
+	const r = raw as Record<string, unknown>
+	const url = typeof r.url === "string" ? r.url : null
+	const title = typeof r.title === "string" ? r.title : null
+	const text = typeof r.text === "string" ? r.text : typeof r.content === "string" ? r.content : null
+	const parts: string[] = []
+	if (url) parts.push(`url ${url}`)
+	if (title) parts.push(`title ${title}`)
+	if (text) parts.push(toonTruncate(text))
+	return parts.length > 0 ? parts.join("\n") : JSON.stringify(raw).slice(0, TOON_TEXT_LIMIT)
+}
+
+/**
+ * Format magic-browser extractLinks result (array of {url, text} or plain strings).
+ */
+export function formatLinksToon(raw: unknown): string {
+	if (!Array.isArray(raw)) return `links: ${String(raw)}`
+	const items = raw.slice(0, 20).map((item) => {
+		if (typeof item === "string") return item
+		if (item && typeof item === "object") {
+			const { url, text } = item as Record<string, unknown>
+			return text ? `${text} → ${url}` : String(url)
+		}
+		return String(item)
+	})
+	const suffix = raw.length > 20 ? `\n(${raw.length - 20} more)` : ""
+	return `links (${raw.length})\n${items.join("\n")}${suffix}`
+}
+
+/**
+ * Format magic-browser tabs result as TOON.
+ */
+export function formatTabsToon(raw: unknown): string {
+	if (!Array.isArray(raw)) return `tabs: ${String(raw)}`
+	const items = raw.slice(0, 10).map((tab) => {
+		if (!tab || typeof tab !== "object") return String(tab)
+		const t = tab as Record<string, unknown>
+		return `[${t.id ?? "?"}] ${t.title ?? t.url ?? "untitled"}`
+	})
+	return `tabs (${raw.length})\n${items.join("\n")}`
+}
+
+/**
+ * Format a generic magic-browser action result (click/type/scroll/fill/eval)
+ * as TOON — just surface status and the verb.
+ */
+export function formatActionToon(verb: string, raw: unknown): string {
+	if (!raw || typeof raw !== "object") return `${verb}: ok`
+	const r = raw as Record<string, unknown>
+	const status = typeof r.status === "string" ? r.status : "ok"
+	const msg = typeof r.message === "string" ? ` — ${r.message}` : ""
+	return `${verb} ${status}${msg}`
+}
+
 // Capability split by browser mode. The default iframe lane has no CDP, so DOM
 // actions cannot run there — advertise that honestly in the projected context
 // (fail-fast / no silent no-op) rather than letting the agent call a tool that
 // silently does nothing.
-const IFRAME_USABLE_TOOLS = ["web.open", "web.navigate", "web.tabs", "web.status"]
+const IFRAME_USABLE_TOOLS = ["web.open", "web.navigate", "web.tabs", "web.status", "web.mode"]
 const STREAMED_ONLY_TOOLS = ["web.click", "web.type", "web.scroll", "web.read"]
 
 /**
@@ -72,7 +154,7 @@ export async function buildBrowserSurfaceFragment(
 	const resolved = resolvePalotSessionBinding(sessionId)
 	const laneId = resolved.binding?.browserLaneId ?? null
 	const lane = laneId ? await getBrowserLane(laneId) : null
-	const mode = lane?.surfaceKind === "selkies-stream" ? "streamed" : "iframe"
+	const mode = lane && isStreamedLane(lane) ? "streamed" : "iframe"
 	const url = resolved.nonSecretSnapshot?.viewport?.currentUrl ?? "about:blank"
 	const usable = mode === "streamed" ? [...IFRAME_USABLE_TOOLS, ...STREAMED_ONLY_TOOLS] : IFRAME_USABLE_TOOLS
 	const lines = [`mode ${mode}`, `bound ${laneId ? "y" : "n"}`, `url ${url}`, `usable ${usable.join(",")}`]

@@ -107,7 +107,10 @@ const listBrowserLaneTabs = mock(async () => ({
 	tabs: [{ id: "tab_1", title: "Example", url: "https://example.com", type: "page", active: true, attached: false, openerId: null, faviconUrl: null }],
 }))
 
-const defaultLane = { id: "default" }
+// A direct-iframe lane (no cdpEndpoint) keeps the dispatcher on the raw-CDP
+// iframe path that these tests assert; `isStreamedLane` only reads these two
+// fields, so a minimal lane shape is sufficient.
+const defaultLane = { id: "default", surfaceKind: "direct-iframe", cdpEndpoint: null }
 
 mock.module("./browser-lane-manager", () => ({
 	activateBrowserLaneTab: async () => ({ status: "queued" }),
@@ -116,6 +119,7 @@ mock.module("./browser-lane-manager", () => ({
 	createBrowserLane: async () => defaultLane,
 	createBrowserLaneTab: async () => ({ status: "queued" }),
 	ensureBrowserLane: async () => defaultLane,
+	getBrowserLane: async () => defaultLane,
 	listBrowserLaneTabs,
 	navigateBrowserLane: async () => ({ status: "queued" }),
 	scrollBrowserLane,
