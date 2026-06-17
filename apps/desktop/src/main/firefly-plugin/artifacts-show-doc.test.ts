@@ -9,11 +9,9 @@ function makeDeps(overrides?: Partial<ShowDocDeps>): ShowDocDeps {
 		id: (record as { id?: string }).id ?? "art_test",
 	} as GenUiArtifactRecord))
 	const broadcastArtifactPushed = mock(async (_sessionId: string, _record: GenUiArtifactRecord) => {})
-	const broadcastOpenSidePanel = mock(async (_tab: "artifacts") => {})
 	return {
 		upsertArtifact,
 		broadcastArtifactPushed,
-		broadcastOpenSidePanel,
 		...overrides,
 	}
 }
@@ -52,10 +50,9 @@ describe("executeShowDoc", () => {
 		}
 		expect((deps.upsertArtifact as ReturnType<typeof mock>).mock.calls.length).toBe(0)
 		expect((deps.broadcastArtifactPushed as ReturnType<typeof mock>).mock.calls.length).toBe(0)
-		expect((deps.broadcastOpenSidePanel as ReturnType<typeof mock>).mock.calls.length).toBe(0)
 	})
 
-	it("persists the record and broadcasts both events on success", async () => {
+	it("persists the record and broadcasts the data push on success (no panel open here)", async () => {
 		const deps = makeDeps()
 		const result = await executeShowDoc({ title: "My Doc", markdown: "# Content" }, "ses_123", deps)
 
@@ -73,9 +70,10 @@ describe("executeShowDoc", () => {
 		expect(pushCalls.length).toBe(1)
 		expect(pushCalls[0][0]).toBe("ses_123")
 
-		const openCalls = (deps.broadcastOpenSidePanel as ReturnType<typeof mock>).mock.calls
-		expect(openCalls.length).toBe(1)
-		expect(openCalls[0][0]).toBe("artifacts")
+		// Opening the artifacts panel is no longer this handler's job — the host
+		// applies it generically from the tool's manifest uiHints. The handler has
+		// no broadcastOpenSidePanel dep at all now.
+		expect("broadcastOpenSidePanel" in deps).toBe(false)
 	})
 
 	it("returns the artifactId from the persisted record", async () => {

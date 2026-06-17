@@ -310,6 +310,19 @@ export interface PalotOpenSidePanelPayload {
 	tab: SidePanelTabId
 }
 
+/** Generic, host-applied UI side effects a tool declared in its manifest. */
+export interface PalotToolUiHints {
+	openPanel: string | null
+	focusWidget: string | null
+	refreshProjection: boolean
+}
+
+export interface PalotToolUiHintsPayload {
+	sessionId: string
+	toolId: string
+	uiHints: PalotToolUiHints
+}
+
 export interface LoomOpenSessionResult {
 	sessionId: string
 	surfaceUrl: string
@@ -1330,6 +1343,7 @@ export interface ElfAPI {
 		onOpenSidePanel: (callback: (payload: PalotOpenSidePanelPayload) => void) => () => void
 		onBrowserActions: (callback: (event: BrowserActionEvent) => void) => () => void
 		onArtifactPushed: (callback: (payload: { sessionId: string; record: GenUiArtifactRecord }) => void) => () => void
+		onToolUiHints: (callback: (payload: PalotToolUiHintsPayload) => void) => () => void
 	}
 	onActiveOpenCodeSessionsChanged: (
 		callback: (snapshot: ActiveOpenCodeSessionsSnapshot) => void,

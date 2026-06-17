@@ -2,8 +2,13 @@
  * Handler for the show.doc tool (plugin.firefly.built-in.surface.artifacts.show-doc).
  *
  * Builds a GenUiArtifactRecord from the agent-supplied title + markdown body,
- * persists it via the main-process artifact store, broadcasts the new record to
- * all renderer windows, then opens the artifacts side-panel tab.
+ * persists it via the main-process artifact store, then broadcasts the new
+ * record to all renderer windows.
+ *
+ * Opening the artifacts side-panel tab is NOT this handler's concern: the tool
+ * declares `uiHints: { openPanel: "artifacts" }` in its manifest and the host
+ * applies that generically post-dispatch (see `broadcastToolUiHints`). The data
+ * push (broadcastArtifactPushed) is a separate concern and stays here.
  */
 
 import type { GenUiArtifactRecord } from "../../renderer/lib/types"
@@ -23,7 +28,6 @@ export interface ShowDocResult {
 export interface ShowDocDeps {
 	upsertArtifact: (sessionId: string, record: Omit<GenUiArtifactRecord, "id"> & { id?: string }) => GenUiArtifactRecord
 	broadcastArtifactPushed: (sessionId: string, record: GenUiArtifactRecord) => Promise<void>
-	broadcastOpenSidePanel: (tab: "artifacts") => Promise<void>
 }
 
 /**
@@ -72,8 +76,10 @@ export function buildShowDocRecord(args: ShowDocArgs, sessionId: string): Omit<G
  *   1. Build the artifact record.
  *   2. Persist via artifact store.
  *   3. Broadcast "palot:artifact-pushed" to renderer windows.
- *   4. Broadcast "palot:open-side-panel" with tab "artifacts".
- *   5. Return { artifactId, opened: true }.
+ *   4. Return { artifactId, opened: true }.
+ *
+ * Opening the artifacts panel is handled generically by the host from the
+ * tool's manifest `uiHints`, not here.
  *
  * Fails fast with a typed error when sessionId is absent.
  */
@@ -95,7 +101,6 @@ export async function executeShowDoc(
 	const persisted = deps.upsertArtifact(sessionId, partial)
 
 	await deps.broadcastArtifactPushed(sessionId, persisted)
-	await deps.broadcastOpenSidePanel("artifacts")
 
 	return {
 		data: {

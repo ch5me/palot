@@ -302,6 +302,59 @@ describe("B3 dispatch routing — worker-backed command/tool invocation", () => 
 		expect(calls).toHaveLength(1)
 	})
 
+	test("completed in-process tool carries manifest uiHints on the envelope (generic uiHints seam)", async () => {
+		reset()
+		registerBuiltInHostCommands()
+		// The Artifacts `open` tool declares `uiHints: { openPanel: "artifacts",
+		// refreshProjection: true }` in its manifest. A completed dispatch must
+		// surface those generically on the envelope so the host can apply them
+		// post-dispatch — no tool hand-rolls its own panel side effect.
+		const envelope = await invokePluginTool(
+			{
+				pluginId: "firefly.built-in.surface.artifacts",
+				toolId: "plugin.firefly.built-in.surface.artifacts.open",
+				args: {},
+				sessionId: "ses_uihints",
+			},
+			{
+				grantedTokens: ["host:bridge.ui-state-write", "host:tool.register"],
+				sessionScope: "session",
+			},
+		)
+		expect(envelope.status).toBe("completed")
+		expect(envelope.uiHints).toEqual({
+			openPanel: "artifacts",
+			focusWidget: null,
+			refreshProjection: true,
+		})
+	})
+
+	test("canonical plugin id resolves the legacy-registered handler (no 'unavailable')", async () => {
+		reset()
+		registerBuiltInHostCommands()
+		// Handlers register under the legacy reverse-DNS id, but manifests/descriptors
+		// declare the canonical `namespace.name` id. Invoking via the canonical id must
+		// resolve the same handler (handler keys are canonicalized) and still carry uiHints.
+		const envelope = await invokePluginTool(
+			{
+				pluginId: "firefly.artifacts",
+				toolId: "plugin.firefly.built-in.surface.artifacts.open",
+				args: {},
+				sessionId: "ses_canonical",
+			},
+			{
+				grantedTokens: ["host:bridge.ui-state-write", "host:tool.register"],
+				sessionScope: "session",
+			},
+		)
+		expect(envelope.status).toBe("completed")
+		expect(envelope.uiHints).toEqual({
+			openPanel: "artifacts",
+			focusWidget: null,
+			refreshProjection: true,
+		})
+	})
+
 	test("DENIED tool capability: denied envelope, router.invoke NOT called", async () => {
 		reset()
 		registerBuiltInHostCommands()

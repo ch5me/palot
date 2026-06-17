@@ -5,6 +5,7 @@ import { getPluginCatalog } from "./authority"
 import { getWorkerInvokeRouter } from "./worker-invoke-router"
 import type { PluginDescriptor } from "../../shared/firefly-plugin/descriptor"
 import type { CommandContribution, TrustTier } from "../../shared/firefly-plugin/manifest"
+import { resolveCanonicalPluginId } from "../../shared/firefly-plugin/plugin-id-aliases"
 import type { SurfaceContextFragment } from "../surface-context-compose"
 import { buildBrowserSurfaceFragment, resolveWebToolDispatch } from "./browser-tool-handlers"
 import { createLogger } from "../logger"
@@ -134,6 +135,18 @@ function err(code: string, message: string): HostCommandResult {
 	return { error: { code, message } }
 }
 
+/**
+ * Generic, host-applied UI side effects declared by a tool's manifest
+ * (`contributes.tools[].uiHints`). Carried on the dispatch envelope so the
+ * host can apply them post-dispatch (open a panel / focus a widget / refresh
+ * the projection) instead of each tool hand-rolling the side effect.
+ */
+export interface ToolDispatchUiHints {
+	openPanel: string | null
+	focusWidget: string | null
+	refreshProjection: boolean
+}
+
 export interface ToolDispatchEnvelope {
 	status: "completed" | "failed" | "denied" | "unavailable" | "queued" | "cancelled"
 	pluginId: string
@@ -141,6 +154,7 @@ export interface ToolDispatchEnvelope {
 	errorCode?: string
 	errorMessage?: string
 	data?: unknown
+	uiHints?: ToolDispatchUiHints
 }
 
 export async function invokePluginCommand(
@@ -248,11 +262,14 @@ export type HostToolHandler = (input: {
 const toolHandlers = new Map<string, HostToolHandler>()
 
 export function registerHostTool(pluginId: string, toolId: string, handler: HostToolHandler): void {
-	toolHandlers.set(`${pluginId}::${toolId}`, handler)
+	// Key handlers by canonical id so invocation resolves regardless of whether
+	// the caller uses the canonical `namespace.name` id (what manifests/descriptors
+	// declare) or a legacy reverse-DNS alias. See plugin-id-aliases.ts.
+	toolHandlers.set(`${resolveCanonicalPluginId(pluginId)}::${toolId}`, handler)
 }
 
 export function unregisterHostTool(pluginId: string, toolId: string): void {
-	toolHandlers.delete(`${pluginId}::${toolId}`)
+	toolHandlers.delete(`${resolveCanonicalPluginId(pluginId)}::${toolId}`)
 }
 
 export function listKnownTools(): string[] {
@@ -422,7 +439,7 @@ export async function invokePluginTool(
 				.join("; "),
 		}
 	}
-	const handler = toolHandlers.get(`${input.pluginId}::${input.toolId}`)
+	const handler = toolHandlers.get(`${resolveCanonicalPluginId(input.pluginId)}::${input.toolId}`)
 	if (!handler) {
 		return {
 			status: "unavailable",
@@ -450,6 +467,15 @@ export async function invokePluginTool(
 		pluginId: input.pluginId,
 		commandId: input.toolId,
 		data: result.data,
+		...(tool.uiHints
+			? {
+					uiHints: {
+						openPanel: tool.uiHints.openPanel ?? null,
+						focusWidget: tool.uiHints.focusWidget ?? null,
+						refreshProjection: tool.uiHints.refreshProjection ?? false,
+					},
+				}
+			: {}),
 	}
 }
 
@@ -745,7 +771,6 @@ export function registerArtifactsHostHandlers(deps?: Partial<ArtifactsHostDeps>)
 			{
 				upsertArtifact,
 				broadcastArtifactPushed,
-				broadcastOpenSidePanel: openSidePanel,
 			},
 		)
 		return result

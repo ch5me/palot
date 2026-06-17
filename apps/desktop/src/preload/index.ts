@@ -139,6 +139,18 @@ contextBridge.exposeInMainWorld("elf", {
 				ipcRenderer.removeListener("palot:artifact-pushed", listener)
 			}
 		},
+		onToolUiHints: (
+			callback: (payload: import("./api").PalotToolUiHintsPayload) => void,
+		) => {
+			const listener = (
+				_event: unknown,
+				payload: import("./api").PalotToolUiHintsPayload,
+			) => callback(payload)
+			ipcRenderer.on("palot:tool-ui-hints", listener)
+			return () => {
+				ipcRenderer.removeListener("palot:tool-ui-hints", listener)
+			}
+		},
 	},
 
 	onActiveOpenCodeSessionsChanged: (

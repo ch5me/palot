@@ -194,6 +194,29 @@ export async function broadcastArtifactPushed(sessionId: string, record: GenUiAr
 	}
 }
 
+/**
+ * Generic UI side effects a tool declared in its manifest (`uiHints`), broadcast
+ * to every renderer after a completed dispatch. The renderer applies them
+ * generically (open a panel / focus a widget / refresh a projection) so tools no
+ * longer hand-roll their own UI side effects. Fail-safe: unknown panel = no-op.
+ */
+export interface ToolUiHints {
+	openPanel: string | null
+	focusWidget: string | null
+	refreshProjection: boolean
+}
+
+export async function broadcastToolUiHints(
+	sessionId: string,
+	toolId: string,
+	uiHints: ToolUiHints,
+): Promise<void> {
+	const windows = await getPalotBrowserWindows()
+	for (const win of windows) {
+		win.webContents.send("palot:tool-ui-hints", { sessionId, toolId, uiHints })
+	}
+}
+
 export function setBrowserLaneSnapshot(input: {
 	laneId: string
 	currentUrl?: string | null
@@ -424,12 +447,20 @@ const invokeBridgePluginToolSchema = z.object({
 async function invokeBridgePluginTool(payload: unknown): Promise<unknown> {
 	const input = invokeBridgePluginToolSchema.parse(payload)
 	const { invokePluginTool } = await import("./firefly-plugin/dispatch")
-	return invokePluginTool({
+	const envelope = await invokePluginTool({
 		pluginId: input.pluginId,
 		toolId: input.toolId,
 		args: input.args ?? {},
 		sessionId: input.sessionId ?? null,
 	})
+	// Generic uiHints application: when a completed tool declared manifest
+	// uiHints, the HOST applies them post-dispatch by broadcasting a single
+	// generic event. Tools no longer hand-roll their own panel/widget/projection
+	// side effects. Only on completed dispatches with a known session id.
+	if (envelope.status === "completed" && envelope.uiHints && input.sessionId) {
+		await broadcastToolUiHints(input.sessionId, input.toolId, envelope.uiHints)
+	}
+	return envelope
 }
 
 const listContextFragmentsSchema = z.object({

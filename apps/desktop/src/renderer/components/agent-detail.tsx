@@ -86,6 +86,7 @@ import {
 	openInTarget,
 	subscribeToArtifactPushed,
 	subscribeToPalotOpenSidePanel,
+	subscribeToToolUiHints,
 	syncPalotUiStateSnapshot,
 } from "../services/backend"
 import { useSetAppBarContent } from "./app-bar-context"
@@ -486,6 +487,25 @@ export function AgentDetail({
 			pushUpsertGenUiArtifact({ sessionId, record })
 		})
 	}, [pushUpsertGenUiArtifact])
+
+	useEffect(() => {
+		// Generic uiHints reactor: the host broadcasts a tool's manifest-declared
+		// uiHints after a completed dispatch, and we apply them generically here so
+		// surface tools no longer hand-roll their own UI side effects.
+		//   openPanel        → spawn/focus that side-panel tab (same path as a manual
+		//                       open and the show.doc flow).
+		//   focusWidget      → no widget-focus atom exists yet → safe no-op.
+		//   refreshProjection → no renderer-side projection refresh hook exists yet →
+		//                       safe no-op.
+		// Fail-safe by design: an unknown panel resolves to no tab and is skipped;
+		// the reactor never throws.
+		return subscribeToToolUiHints(({ uiHints }) => {
+			if (uiHints.openPanel) {
+				const targetTab = findAvailableSurfaceTab(uiHints.openPanel)
+				if (targetTab) handleSpawnTab(targetTab)
+			}
+		})
+	}, [findAvailableSurfaceTab, handleSpawnTab])
 
 	// No panel restore on load. With spawn-on-demand the in-memory open set is the
 	// source of truth and starts empty, so a fresh session shows chat only. Auto-

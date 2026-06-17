@@ -148,3 +148,49 @@ test("bridge open-side-panel accepts document surfaces without collapsing mixed 
 		cleanup()
 	}
 })
+
+test("bridge invoke-plugin-tool broadcasts palot:tool-ui-hints from the tool's manifest uiHints (generic application)", async () => {
+	const cleanup = setupTempXdg()
+	try {
+		const dispatchMod = await import("./firefly-plugin/dispatch")
+		const ipcMod = await import("./palot-browser-ipc")
+		await ipcMod.resetPalotBrowserIpcStateForTests()
+		// Host tool handlers must be live for the in-process artifacts.open tool.
+		dispatchMod.registerBuiltInHostCommands()
+		const bridge = await ipcMod.ensurePalotBridgeServer()
+		const url = `http://${bridge.host}:${bridge.port}${bridge.path}`
+		const sent: Array<{ channel: string; payload: unknown }> = []
+		ipcMod.registerPalotBrowserWindows(() => [
+			{
+				webContents: {
+					send(channel: string, payload: unknown) {
+						sent.push({ channel, payload })
+					},
+				},
+			},
+		])
+
+		// The Artifacts `open` tool declares uiHints { openPanel: "artifacts" } in
+		// its manifest. The host applies them generically post-dispatch: a single
+		// palot:tool-ui-hints event, no tool hand-rolling its own panel side effect.
+		const response = await postBridgeAction(url, bridge.token, {
+			action: "invoke-plugin-tool",
+			pluginId: "firefly.built-in.surface.artifacts",
+			toolId: "plugin.firefly.built-in.surface.artifacts.open",
+			args: {},
+			sessionId: "ses_uihints",
+		})
+		assert.equal(response.ok, true)
+		assert.equal((response.result as { status: string }).status, "completed")
+
+		const uiHintEvents = sent.filter((event) => event.channel === "palot:tool-ui-hints")
+		assert.equal(uiHintEvents.length, 1)
+		assert.deepEqual(uiHintEvents[0]?.payload, {
+			sessionId: "ses_uihints",
+			toolId: "plugin.firefly.built-in.surface.artifacts.open",
+			uiHints: { openPanel: "artifacts", focusWidget: null, refreshProjection: true },
+		})
+	} finally {
+		cleanup()
+	}
+})

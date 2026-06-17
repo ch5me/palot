@@ -366,6 +366,15 @@ export function subscribeToArtifactPushed(
 	return () => {}
 }
 
+export function subscribeToToolUiHints(
+	callback: (payload: import("../../preload/api").PalotToolUiHintsPayload) => void,
+): () => void {
+	if (isElectron) {
+		return window.elf.palot.onToolUiHints(callback)
+	}
+	return () => {}
+}
+
 export async function readHostClipboardText(): Promise<string> {
 	if (isElectron) {
 		return window.elf.clipboard.readText()
