@@ -789,11 +789,13 @@ function BrowserPanel({ agent, className }: BrowserPanelProps) {
 						</div>
 					)}
 					{browserActors.size === 0 ? (
-						// Single-actor (or no actor) path — one overlay for the scope
+						// Single-actor (or no actor) path — one overlay for the scope.
+						// Pass actor if the latest event carries one so the cursor is colored.
 						<BrowserCursorOverlay
 							events={browserActionEvents}
 							overlayState={browserActionOverlayState}
 							sessionId={agent.sessionId}
+							actor={browserActionEvents.at(-1)?.actor ?? browserActionOverlayState.lastEvent?.actor ?? undefined}
 						/>
 					) : (
 						// Multi-actor path — one overlay per distinct actor so each gets
@@ -805,6 +807,7 @@ function BrowserPanel({ agent, className }: BrowserPanelProps) {
 								events={eventsByActor.get(actor.id) ?? []}
 								overlayState={browserActionOverlayState}
 								sessionId={agent.sessionId}
+								actor={actor}
 							/>
 						))
 					)}

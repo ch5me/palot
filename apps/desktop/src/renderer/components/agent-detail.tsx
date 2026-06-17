@@ -34,6 +34,7 @@ import {
 	// pdfReviewSurfaceEnabledAtom removed — pdf-review is catalog-served (firefly.built-in.surface.pdf-review).
 	// workspaceDockEnabledAtom removed — dock is now the sole session UI (Cleanup phase).
 } from "../atoms/feature-flags"
+import { pushUpsertGenUiArtifactAtom } from "../atoms/genui-artifacts"
 import { useColorScheme } from "../hooks/use-theme"
 import { loadDockLayout, saveDockLayout } from "../surface-host/persistence"
 import type { DockZone } from "../surface-host/types"
@@ -83,6 +84,7 @@ import {
 	fetchOpenInTargets,
 	isElectron,
 	openInTarget,
+	subscribeToArtifactPushed,
 	subscribeToPalotOpenSidePanel,
 	syncPalotUiStateSnapshot,
 } from "../services/backend"
@@ -237,6 +239,7 @@ export function AgentDetail({
 	const openTabIds = useAtomValue(openDockTabsAtom)
 	const spawnDockTab = useSetAtom(spawnDockTabAtom)
 	const closeDockTab = useSetAtom(closeDockTabAtom)
+	const pushUpsertGenUiArtifact = useSetAtom(pushUpsertGenUiArtifactAtom)
 	const openTabIdSet = useMemo(() => new Set(openTabIds), [openTabIds])
 
 	const prevSessionIdRef = useRef(agent.sessionId)
@@ -473,6 +476,16 @@ export function AgentDetail({
 		})
 		return unsubscribe
 	}, [findAvailableSurfaceTab, handleSpawnTab])
+
+	useEffect(() => {
+		// Hydrate the in-memory artifact atom with records pushed from the main process
+		// (e.g. via the show.doc tool).  The record is already persisted by main;
+		// this just ensures the renderer sees the new artifact immediately without a
+		// full list refetch.
+		return subscribeToArtifactPushed(({ sessionId, record }) => {
+			pushUpsertGenUiArtifact({ sessionId, record })
+		})
+	}, [pushUpsertGenUiArtifact])
 
 	// No panel restore on load. With spawn-on-demand the in-memory open set is the
 	// source of truth and starts empty, so a fresh session shows chat only. Auto-

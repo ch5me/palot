@@ -77,6 +77,12 @@ export const sessionBindingSchema = z.object({
 	openCodeSessionId: z.string(),
 	browserLaneId: z.string().nullable(),
 	magicBrowserSessionId: z.string().nullable(),
+	/**
+	 * OpenCode parentID of the session — non-null means this is a sub-agent
+	 * session. Optional for back-compat: absent in records written before this
+	 * field was added; treat undefined as null (root session) at read time.
+	 */
+	parentSessionId: z.string().nullable().optional(),
 	status: sessionBindingStatusSchema,
 	createdAt: z.number(),
 	updatedAt: z.number(),
@@ -118,11 +124,20 @@ export const streamGeometrySnapshotSchema = z.object({
 	zoom: z.number(),
 })
 
+export const actorSchema = z.object({
+	id: z.string(),
+	displayName: z.string(),
+	cursorColor: z.string(),
+	kind: z.enum(["main", "sub"]),
+})
+
 const browserActionBaseSchema = z.object({
 	id: z.string(),
 	sessionId: z.string(),
 	laneId: z.string().nullable(),
 	source: browserActionSourceSchema,
+	/** Actor identity for multi-agent cursor rendering. Optional for back-compat. */
+	actor: actorSchema.nullable().optional(),
 	sequence: z.number(),
 	requestId: z.string().nullable(),
 	causationId: z.string().nullable(),

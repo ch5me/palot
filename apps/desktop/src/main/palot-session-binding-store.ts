@@ -21,6 +21,7 @@ export function attachLaneToBinding(sessionId: string, browserLaneId: string): S
 export function ensureSessionBindingForSession(input: {
 	sessionId: string
 	browserLaneId?: string | null
+	parentSessionId?: string | null
 }): SessionBinding {
 	const existing = getSessionBindingByOpenCodeSession(input.sessionId)
 	if (existing) {
@@ -31,12 +32,20 @@ export function ensureSessionBindingForSession(input: {
 				releasedAt: null,
 			})
 		}
+		// Backfill parentSessionId if we now know it and the record was created earlier without it.
+		if (input.parentSessionId != null && existing.parentSessionId == null) {
+			return upsertSessionBinding({
+				...existing,
+				parentSessionId: input.parentSessionId,
+			})
+		}
 		return existing
 	}
 	return upsertSessionBinding(
 		createSessionBinding({
 			openCodeSessionId: input.sessionId,
 			browserLaneId: input.browserLaneId ?? null,
+			parentSessionId: input.parentSessionId ?? null,
 			status: "attaching",
 		}),
 	)
@@ -87,10 +96,17 @@ export function applyBindingLifecycleEvent(event: Event): SessionBinding | null 
 	switch (event.type) {
 		case "session.created": {
 			const sessionId = event.properties.info.id
-			return ensureSessionBindingForSession({ sessionId })
+			const parentSessionId = (event.properties.info as { parentID?: string }).parentID ?? null
+			return ensureSessionBindingForSession({ sessionId, parentSessionId })
 		}
 		case "session.updated": {
 			const sessionId = event.properties.info.id
+			const parentSessionId = (event.properties.info as { parentID?: string }).parentID ?? null
+			// Backfill parentSessionId on update in case it wasn't present at creation time.
+			const binding = getSessionBindingByOpenCodeSession(sessionId)
+			if (binding && parentSessionId != null && binding.parentSessionId == null) {
+				upsertSessionBinding({ ...binding, parentSessionId })
+			}
 			return markSessionBindingAttached(sessionId)
 		}
 		case "session.idle": {

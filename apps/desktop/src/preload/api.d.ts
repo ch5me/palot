@@ -200,6 +200,12 @@ export interface SessionBinding {
 	openCodeSessionId: string
 	browserLaneId: string | null
 	magicBrowserSessionId: string | null
+	/**
+	 * OpenCode parentID of the session — non-null means this is a sub-agent
+	 * session. Optional for back-compat with records written before this field
+	 * was added; treat absent/undefined as null (root session).
+	 */
+	parentSessionId?: string | null
 	status: SessionBindingStatus
 	createdAt: number
 	updatedAt: number
@@ -211,6 +217,12 @@ export interface SessionBindingRecord {
 	openCodeSessionId: string
 	browserLaneId: string | null
 	magicBrowserSessionId: string | null
+	/**
+	 * OpenCode parentID of the session — non-null means this is a sub-agent
+	 * session. Optional for back-compat with records written before this field
+	 * was added; treat absent/undefined as null (root session).
+	 */
+	parentSessionId?: string | null
 	status: SessionBindingStatus
 	createdAt: number
 	updatedAt: number
@@ -1283,6 +1295,7 @@ export interface ElfAPI {
 		) => Promise<void>
 		onOpenSidePanel: (callback: (payload: PalotOpenSidePanelPayload) => void) => () => void
 		onBrowserActions: (callback: (event: BrowserActionEvent) => void) => () => void
+		onArtifactPushed: (callback: (payload: { sessionId: string; record: GenUiArtifactRecord }) => void) => () => void
 	}
 	onActiveOpenCodeSessionsChanged: (
 		callback: (snapshot: ActiveOpenCodeSessionsSnapshot) => void,

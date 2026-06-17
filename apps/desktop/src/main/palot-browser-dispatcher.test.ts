@@ -168,3 +168,62 @@ test("dispatcher routes click type and scroll through lane helpers", async () =>
 		cleanup()
 	}
 })
+
+// ---------------------------------------------------------------------------
+// Actor identity tests (Phase 4: sub-agent kind)
+// ---------------------------------------------------------------------------
+
+test("actorForBinding: binding without parentSessionId yields kind main + displayName Agent", () => {
+	const { actorForBinding } = require("./palot-browser-dispatcher")
+	const actor = actorForBinding("ses_root", null)
+	assert.equal(actor.kind, "main")
+	assert.equal(actor.displayName, "Agent")
+	assert.equal(actor.id, "ses_root")
+	assert.ok(actor.cursorColor.startsWith("hsl("))
+})
+
+test("actorForBinding: binding with parentSessionId yields kind sub + displayName Sub-agent", () => {
+	const { actorForBinding } = require("./palot-browser-dispatcher")
+	const actor = actorForBinding("ses_child", "ses_parent")
+	assert.equal(actor.kind, "sub")
+	assert.equal(actor.displayName, "Sub-agent")
+	assert.equal(actor.id, "ses_child")
+	assert.ok(actor.cursorColor.startsWith("hsl("))
+})
+
+test("actorForBinding: two different sessionIds produce different cursorColors", () => {
+	const { actorForBinding } = require("./palot-browser-dispatcher")
+	const a = actorForBinding("ses_alpha_111", null)
+	const b = actorForBinding("ses_beta_222", null)
+	assert.notEqual(a.cursorColor, b.cursorColor)
+})
+
+test("dispatcher stamps sub-agent actor on events when binding has parentSessionId", async () => {
+	const cleanup = setupTempXdg()
+	try {
+		const bindingMod = await import("./palot-session-binding")
+		const busMod = await import("./palot-browser-ipc")
+		const dispatcher = await import("./palot-browser-dispatcher")
+		// Create a binding that has a parentSessionId (sub-agent)
+		bindingMod.upsertSessionBinding({
+			...bindingMod.createSessionBinding({
+				openCodeSessionId: "ses_sub",
+				browserLaneId: "lane_sub",
+				status: "attached",
+				parentSessionId: "ses_parent_root",
+			}),
+		})
+		await dispatcher.dispatchBrowserTool({
+			sessionId: "ses_sub",
+			toolName: "browser_navigate",
+			args: { url: "https://example.com" },
+		})
+		const events = busMod.getBrowserActionEvents("ses_sub")
+		const reqEvent = events.find((e) => e.kind === "toolRequest")
+		assert.ok(reqEvent, "toolRequest event must exist")
+		assert.equal(reqEvent!.actor?.kind, "sub")
+		assert.equal(reqEvent!.actor?.displayName, "Sub-agent")
+	} finally {
+		cleanup()
+	}
+})

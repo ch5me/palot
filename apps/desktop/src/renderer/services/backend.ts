@@ -357,6 +357,15 @@ export function subscribeToBrowserActions(callback: (event: BrowserActionEvent) 
 	return () => {}
 }
 
+export function subscribeToArtifactPushed(
+	callback: (payload: { sessionId: string; record: import("../../preload/api").GenUiArtifactRecord }) => void,
+): () => void {
+	if (isElectron) {
+		return window.elf.palot.onArtifactPushed(callback)
+	}
+	return () => {}
+}
+
 export async function readHostClipboardText(): Promise<string> {
 	if (isElectron) {
 		return window.elf.clipboard.readText()

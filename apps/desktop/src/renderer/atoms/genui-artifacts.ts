@@ -233,6 +233,29 @@ export const patchGenUiArtifactPropsAtom = atom(
 	},
 )
 
+/**
+ * Write-only atom: upsert a GenUiArtifactRecord pushed from the main process
+ * (e.g. via the show.doc tool) directly into the in-memory atom family without
+ * going through the async backend round-trip.  The record is already persisted
+ * by the main process handler before the push is emitted.
+ */
+export const pushUpsertGenUiArtifactAtom = atom(
+	null,
+	(get, set, args: { sessionId: string; record: GenUiArtifactRecord }) => {
+		const state = get(sessionGenUiArtifactsFamily(args.sessionId))
+		const record = args.record
+		const alreadyPresent = state.order.includes(record.id)
+		set(sessionGenUiArtifactsFamily(args.sessionId), {
+			order: alreadyPresent ? state.order : [record.id, ...state.order],
+			records: {
+				...state.records,
+				[record.id]: record,
+			},
+		})
+	},
+)
+
+
 export const unpinAllGenUiArtifactsForPlacementAtom = atom(
 	null,
 	async (

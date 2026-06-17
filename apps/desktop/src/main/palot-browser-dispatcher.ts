@@ -38,31 +38,44 @@ import {
 import { ensureMagicBrowserSessionForBinding } from "./palot-magic-browser"
 
 /**
- * Derive a stable Actor for a session so the cursor overlay can render one
- * distinctly-colored cursor per agent. Distinct sessions (e.g. a sub-agent in
- * its own OpenCode session) get distinct colors for free; sub-agent `kind`
- * distinction lands with multi-agent (Phase 4).
+ * Derive a stable cursor color for a session id. Deterministic hash so each
+ * distinct session gets a visually distinct hue; color stays stable across
+ * re-renders and event batches.
  */
-function actorForSession(sessionId: string): Actor {
+function cursorColorForSession(sessionId: string): string {
 	let hash = 0
 	for (let i = 0; i < sessionId.length; i++) {
 		hash = (hash * 31 + sessionId.charCodeAt(i)) >>> 0
 	}
+	return `hsl(${hash % 360} 80% 55%)`
+}
+
+/**
+ * Build an Actor from a resolved session binding. When the binding has a
+ * parentSessionId the session is a sub-agent (kind "sub"); otherwise it is the
+ * root agent (kind "main"). Falls back to a main-kind actor when no binding is
+ * available so the overlay always has something to render.
+ *
+ * @param sessionId - OpenCode session id (used as actor.id and for color hash).
+ * @param parentSessionId - value from SessionBinding.parentSessionId; null/undefined = root session.
+ */
+export function actorForBinding(sessionId: string, parentSessionId: string | null | undefined): Actor {
+	const kind = parentSessionId != null ? "sub" : "main"
 	return {
 		id: sessionId,
-		displayName: "Agent",
-		cursorColor: `hsl(${hash % 360} 80% 55%)`,
-		kind: "main",
+		displayName: kind === "sub" ? "Sub-agent" : "Agent",
+		cursorColor: cursorColorForSession(sessionId),
+		kind,
 	}
 }
 
-function buildToolRequestEvent(input: DispatchBrowserToolInput): BrowserActionEvent {
+function buildToolRequestEvent(input: DispatchBrowserToolInput, actor: Actor): BrowserActionEvent {
 	return {
 		id: `${input.sessionId}:${input.toolName}:toolRequest`,
 		sessionId: input.sessionId,
 		laneId: null,
 		source: "tool_request",
-		actor: actorForSession(input.sessionId),
+		actor,
 		sequence: 0,
 		requestId: `${input.toolName}:${input.sessionId}`,
 		causationId: null,
@@ -81,13 +94,13 @@ function buildToolRequestEvent(input: DispatchBrowserToolInput): BrowserActionEv
 	}
 }
 
-function buildToolResultEvent(input: DispatchBrowserToolInput, summary: string): BrowserActionEvent {
+function buildToolResultEvent(input: DispatchBrowserToolInput, summary: string, actor: Actor): BrowserActionEvent {
 	return {
 		id: `${input.sessionId}:${input.toolName}:toolResult`,
 		sessionId: input.sessionId,
 		laneId: null,
 		source: "automation_runtime",
-		actor: actorForSession(input.sessionId),
+		actor,
 		sequence: 0,
 		requestId: `${input.toolName}:${input.sessionId}`,
 		causationId: null,
@@ -310,7 +323,14 @@ export async function dispatchBrowserTool(input: DispatchBrowserToolInput): Prom
 		}
 	}
 
-	await publishBrowserAction({ event: buildToolRequestEvent(parsedInput) })
+	// Build actor from the resolved binding so the overlay renders the correct
+	// kind ("sub" vs "main") and display name for this session.
+	const actor: Actor = actorForBinding(
+		parsedInput.sessionId,
+		resolved.binding?.parentSessionId ?? null,
+	)
+
+	await publishBrowserAction({ event: buildToolRequestEvent(parsedInput, actor) })
 
 	// Determine if the bound lane is streamed (has CDP). Route accordingly.
 	const lane: BrowserLane | null = await getBrowserLane(resolved.binding.browserLaneId)
@@ -378,7 +398,7 @@ export async function dispatchBrowserTool(input: DispatchBrowserToolInput): Prom
 		}
 	}
 
-	await publishBrowserAction({ event: buildToolResultEvent(parsedInput, resultSummary) })
+	await publishBrowserAction({ event: buildToolResultEvent(parsedInput, resultSummary, actor) })
 	return {
 		status: streamed ? "completed" : "queued",
 		resultSummary,

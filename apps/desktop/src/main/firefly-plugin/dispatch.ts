@@ -682,6 +682,9 @@ export interface ArtifactsHostDeps {
 	openSidePanel: (tab: "artifacts") => Promise<void>
 	getSidePanelState: () => SidePanelStateSnapshot
 	setPluginEnabled: (pluginId: string, enabled: boolean) => { enabled: boolean }
+	// Optional overrides for show.doc — injected in tests, defaults use live stores.
+	showDocUpsertArtifact?: import("./artifacts-show-doc").ShowDocDeps["upsertArtifact"]
+	showDocBroadcastArtifactPushed?: import("./artifacts-show-doc").ShowDocDeps["broadcastArtifactPushed"]
 }
 
 const ARTIFACTS_PLUGIN_ID = "firefly.built-in.surface.artifacts"
@@ -715,6 +718,37 @@ export function registerArtifactsHostHandlers(deps?: Partial<ArtifactsHostDeps>)
 			open: sidePanel.open,
 			active: sidePanel.open && sidePanel.activeTab === "artifacts",
 		})
+	})
+
+	registerHostTool(ARTIFACTS_PLUGIN_ID, "plugin.firefly.built-in.surface.artifacts.show-doc", async ({ args, sessionId }) => {
+		const { executeShowDoc } = await import("./artifacts-show-doc")
+
+		// Resolve deps: allow test injection via ArtifactsHostDeps, otherwise use live stores.
+		const upsertArtifact =
+			deps?.showDocUpsertArtifact ??
+			((sid: string, record: Parameters<import("./artifacts-show-doc").ShowDocDeps["upsertArtifact"]>[1]) => {
+				// eslint-disable-next-line @typescript-eslint/no-var-requires
+				const { getArtifactStore } = require("../palot-runtime/artifact-store") as typeof import("../palot-runtime/artifact-store")
+				return getArtifactStore().upsertArtifact(sid, record)
+			})
+
+		const broadcastArtifactPushed =
+			deps?.showDocBroadcastArtifactPushed ??
+			(async (sid: string, record: import("../../preload/api").GenUiArtifactRecord) => {
+				const { broadcastArtifactPushed: broadcast } = await import("../palot-browser-ipc")
+				await broadcast(sid, record)
+			})
+
+		const result = await executeShowDoc(
+			args as unknown as import("./artifacts-show-doc").ShowDocArgs,
+			sessionId,
+			{
+				upsertArtifact,
+				broadcastArtifactPushed,
+				broadcastOpenSidePanel: openSidePanel,
+			},
+		)
+		return result
 	})
 
 	registerHostCommand(ARTIFACTS_PLUGIN_ID, "open-artifacts", async () => {

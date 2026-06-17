@@ -43,6 +43,7 @@ export const artifactsPluginManifest: PluginManifest = {
 		{ kind: "onCommand", commandId: "toggle-artifacts" },
 		{ kind: "onToolCall", toolId: "plugin.firefly.built-in.surface.artifacts.open" },
 		{ kind: "onToolCall", toolId: "plugin.firefly.built-in.surface.artifacts.state" },
+		{ kind: "onToolCall", toolId: "plugin.firefly.built-in.surface.artifacts.show-doc" },
 	],
 	contributes: {
 		panels: [
@@ -107,6 +108,22 @@ export const artifactsPluginManifest: PluginManifest = {
 				},
 				timeoutMs: 5_000,
 			},
+			{
+				id: "plugin.firefly.built-in.surface.artifacts.show-doc",
+				title: "Show document in Artifacts panel",
+				description:
+					"Open the Artifacts side-panel tab and display a document (markdown or HTML) as a new artifact. " +
+					"Use this to show reports, summaries, or any rich content the agent wants the user to read.",
+				scope: "session",
+				requires: ["host:bridge.ui-state-write", "host:tool.register"],
+				args: {
+					title: z.string().min(1).max(256),
+					markdown: z.string(),
+					format: z.enum(["markdown", "html"]).optional(),
+				},
+				timeoutMs: 10_000,
+				uiHints: { openPanel: "artifacts", refreshProjection: true },
+			},
 		],
 	},
 	capabilities: [
@@ -123,3 +140,4 @@ export const ARTIFACTS_PLUGIN_ID = artifactsPluginManifest.id
 export const ARTIFACTS_PANEL_PROJECTED_ID = `${artifactsPluginManifest.id}.artifacts`
 export const ARTIFACTS_TOOL_OPEN_ID = "plugin.firefly.built-in.surface.artifacts.open"
 export const ARTIFACTS_TOOL_STATE_ID = "plugin.firefly.built-in.surface.artifacts.state"
+export const ARTIFACTS_TOOL_SHOW_DOC_ID = "plugin.firefly.built-in.surface.artifacts.show-doc"

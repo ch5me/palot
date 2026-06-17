@@ -5,6 +5,7 @@ import type {
 	BrowserActionEvent,
 	BrowserLaneHealth,
 	BrowserStateSnapshot,
+	GenUiArtifactRecord,
 	PalotUiStateSnapshot,
 	SessionBinding,
 	SidePanelTabId,
@@ -183,6 +184,13 @@ export async function broadcastOpenSidePanel(tab: SidePanelTabId): Promise<void>
 	const windows = await getPalotBrowserWindows()
 	for (const win of windows) {
 		win.webContents.send("palot:open-side-panel", { tab: parsedTab })
+	}
+}
+
+export async function broadcastArtifactPushed(sessionId: string, record: GenUiArtifactRecord): Promise<void> {
+	const windows = await getPalotBrowserWindows()
+	for (const win of windows) {
+		win.webContents.send("palot:artifact-pushed", { sessionId, record })
 	}
 }
 

@@ -127,6 +127,18 @@ contextBridge.exposeInMainWorld("elf", {
 				ipcRenderer.removeListener("palot:browser-actions", listener)
 			}
 		},
+		onArtifactPushed: (
+			callback: (payload: { sessionId: string; record: import("./api").GenUiArtifactRecord }) => void,
+		) => {
+			const listener = (
+				_event: unknown,
+				payload: { sessionId: string; record: import("./api").GenUiArtifactRecord },
+			) => callback(payload)
+			ipcRenderer.on("palot:artifact-pushed", listener)
+			return () => {
+				ipcRenderer.removeListener("palot:artifact-pushed", listener)
+			}
+		},
 	},
 
 	onActiveOpenCodeSessionsChanged: (

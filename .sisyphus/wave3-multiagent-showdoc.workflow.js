@@ -1,0 +1,112 @@
+export const meta = {
+  name: 'browser-multiagent-showdoc-wave3',
+  description: 'Phase 4: sub-agent actor identity (kind:sub + distinct cursor color/name), cursor overlay visual identity, and the show.doc artifacts tool for the palot Surface Contract',
+  phases: [
+    { title: 'Build', detail: '3 disjoint agents: sub-agent actor identity (main), cursor visual identity (renderer), show.doc (artifacts)' },
+    { title: 'Integration', detail: 'typecheck + build-plugins + lint + tests; reconcile cross-file' },
+  ],
+}
+
+const SHARED = [
+  'Repo: /Users/hassoncs/src/ch5/palot — Electron app at apps/desktop. Goal doc: .sisyphus/goals/current-goal.md. Skill: .agents/skills/surface-contract/SKILL.md (READ IT — the contract you are extending).',
+  'Doctrine: AXI/TOON short tool names, compact output, FAIL FAST with a typed error naming the missing precondition (CH5 #9: NEVER a silent fallback/no-op).',
+  '',
+  'PHASES 0-3.1 ALREADY LANDED (committed). Context:',
+  '- Actor type in apps/desktop/src/preload/api.d.ts: Actor { id: string; displayName: string; cursorColor: string; kind: "main" | "sub" }. BrowserActionEvent has optional actor.',
+  '- apps/desktop/src/main/palot-browser-dispatcher.ts actorForSession(sessionId) currently HARDCODES kind:"main" and derives cursorColor from a hash of sessionId. Both tool-request and tool-result events carry actor.',
+  '- Cursor overlay apps/desktop/src/renderer/components/side-panel/browser-cursor-overlay.tsx is mounted in apps/desktop/plugins/browser/panel/browser-panel.tsx. The panel ALREADY renders one overlay per distinct actor (multi-actor path, browserActors.size > 0, keyed by actor.id, fed eventsByActor.get(actor.id)). useBrowserActions (apps/desktop/src/renderer/hooks/use-browser-actions.ts) builds actors: Map and eventsByActor: Map from event.actor.',
+  '- Session bindings: apps/desktop/src/main/palot-session-binding.ts (SessionBinding shape + createSessionBinding; NO parentID field today) and palot-session-binding-store.ts (applyBindingLifecycleEvent extracts only event.properties.info.id on session.created/updated; ensureSessionBindingForSession).',
+  '- The OpenCode SDK Session (node_modules/@opencode-ai/sdk/dist/gen/types.gen.d.ts ~L469) has parentID?: string, present on session.created/session.updated SSE event properties.info. notification-watcher.ts ALREADY reads parentID into a session map and has isSubAgent()/getRootSession() (not exported).',
+  '- Artifacts surface: apps/desktop/plugins/artifacts/manifest.ts + apps/desktop/plugins/artifacts/panel/artifacts-panel.tsx renders GenUiArtifactRecord from Jotai atom sessionGenUiArtifactListFamily(sessionId), backed by main-process SQLite via window.elf.palot.upsertArtifact (palot-runtime/artifact-store.ts). Today records are created ONLY by genui fenced-block capture in genui-renderer.tsx. There is NO push channel main->renderer to notify the atom of a new record, and NO content-bearing tool.',
+  '- Open a side-panel tab programmatically: broadcastOpenSidePanel(tab) in apps/desktop/src/main/palot-browser-ipc.ts sends "palot:open-side-panel" {tab}; renderer subscribeToPalotOpenSidePanel -> openSidePanelTabAtom (renderer/atoms/ui.ts) spawns+activates the tab. "artifacts" is a valid tab id. Artifacts host handlers live in apps/desktop/src/main/firefly-plugin/dispatch.ts registerArtifactsHostHandlers (~L689).',
+  '',
+  'HARD RULES (all agents):',
+  '- DO NOT run ANY git command. The orchestrator integrates + commits.',
+  '- Edit ONLY the files listed as YOURS. NEVER as-any / ts-ignore / ts-expect-error.',
+  '- Electron dev CANNOT run (repo staging policy: it crashes on load; web build has no window.elf). Prove HEADLESS: cd apps/desktop && bunx tsgo --noEmit, plus bun unit tests and renderToStaticMarkup (SSR) assertions for renderer components. Do NOT attempt to launch Electron or docker.',
+  '- Match surrounding style. Small surgical edits. Return: files changed, new/changed exported signatures, how you consume upstream APIs, blockers.',
+].join('\n')
+
+phase('Build')
+const slices = await parallel([
+  () => agent([SHARED,
+    '',
+    'YOU ARE AGENT ONE — sub-agent actor IDENTITY (main process). Make a sub-agent session carry kind:"sub" + a distinct displayName so its cursor is visually distinguishable from the parent.',
+    'FILES YOU OWN:',
+    '- apps/desktop/src/main/palot-session-binding.ts',
+    '- apps/desktop/src/main/palot-session-binding-store.ts',
+    '- apps/desktop/src/main/palot-browser-dispatcher.ts',
+    '- apps/desktop/src/main/palot-browser-dispatcher.test.ts',
+    '',
+    'Tasks:',
+    '1. Add an optional parentSessionId field to SessionBinding (palot-session-binding.ts) + createSessionBinding; persist it (back-compat: optional, default null). Keep secrets out of the binding.',
+    '2. In palot-session-binding-store.ts applyBindingLifecycleEvent + ensureSessionBindingForSession: extract parentID from the session.created (and session.updated) event properties.info and persist it as parentSessionId on the binding. ensureSessionBindingForSession should accept an optional parentSessionId.',
+    '3. In palot-browser-dispatcher.ts: replace actorForSession(sessionId) with logic that reads the resolved binding (resolvePalotSessionBinding already loads it at dispatch) and builds the Actor from it: kind = binding.parentSessionId ? "sub" : "main"; displayName = kind === "sub" ? "Sub-agent" : "Agent"; cursorColor = deterministic hash of sessionId (keep existing hash so colors stay stable + distinct per session). buildToolRequestEvent/buildToolResultEvent must stamp this actor. Keep a fallback actor when no binding (kind main).',
+    '4. Unit tests: a binding with parentSessionId yields an actor kind:"sub" + "Sub-agent"; without -> "main"+"Agent"; two different sessionIds yield different cursorColor. Update palot-browser-dispatcher.test.ts (it mocks browser-lane-manager — keep all existing exports it imports, e.g. getBrowserLane/ensureBrowserLane/createBrowserLane).',
+    '',
+    'Do NOT touch renderer files, the overlay, manifests, or artifacts. Run cd apps/desktop && bunx tsgo --noEmit. Report the SessionBinding new field + the actor-building function signature for the integration agent.',
+  ].join('\n'), { label: 'sub-agent-identity', model: 'sonnet', phase: 'Build' }),
+
+  () => agent([SHARED,
+    '',
+    'YOU ARE AGENT TWO — cursor VISUAL identity (renderer). Make each actor cursor use its own color + show its name, so two agents are visually distinct. This is the core visible payoff.',
+    'FILES YOU OWN:',
+    '- apps/desktop/src/renderer/components/side-panel/browser-cursor-overlay.tsx',
+    '- apps/desktop/src/renderer/components/side-panel/browser-cursor-overlay.test.tsx',
+    '- apps/desktop/plugins/browser/panel/browser-panel.tsx  (ONLY the overlay-rendering block where BrowserCursorOverlay is mounted — do not touch lane/binding logic)',
+    '',
+    'Tasks:',
+    '1. Add an optional actor?: Actor prop (import Actor from the preload api types) to BrowserCursorOverlay. When present, the cursor element uses actor.cursorColor (inline style for the cursor fill/border and the click ripple) instead of the fixed Tailwind foreground color, and renders a small name label (actor.displayName) next to the cursor. When absent, keep current default styling (back-compat).',
+    '2. In browser-panel.tsx multi-actor path: pass actor={actor} to each BrowserCursorOverlay (the map already has the Actor). Single-actor path: pass the actor if present in overlayState/events, else omit.',
+    '3. SSR proof test (renderToStaticMarkup, the existing pattern in browser-cursor-overlay.test.tsx): feed two overlays with two actors having different cursorColor + displayName; assert BOTH colors and BOTH names appear in the markup. This is the headless proof that two agents render distinctly.',
+    '',
+    'Do NOT touch main-process files, the action bus, the dispatcher, manifests, or artifacts. Run cd apps/desktop && bunx tsgo --noEmit. Keep existing overlay tests passing.',
+  ].join('\n'), { label: 'cursor-visual-identity', model: 'sonnet', phase: 'Build' }),
+
+  () => agent([SHARED,
+    '',
+    'YOU ARE AGENT THREE — the show.doc tool (artifacts surface). A new agent tool that opens an artifacts tab rendering a document/report the agent passes in. This is the "main agent calls a tool to show a document in a new tab" vision piece.',
+    'FILES YOU OWN:',
+    '- apps/desktop/plugins/artifacts/manifest.ts  (add the show.doc tool)',
+    '- apps/desktop/src/main/firefly-plugin/dispatch.ts  (registerArtifactsHostHandlers — add the show.doc handler ONLY; do not touch browser handlers)',
+    '- apps/desktop/src/main/firefly-plugin/artifacts-show-doc.ts  (NEW — the handler logic + record build)',
+    '- apps/desktop/src/main/firefly-plugin/artifacts-show-doc.test.ts  (NEW)',
+    '- apps/desktop/src/renderer/atoms/ (the artifacts atom hydration — add a push subscriber; pick the existing artifacts atom file)',
+    '- apps/desktop/src/preload/index.ts + apps/desktop/src/preload/api.d.ts  (add the push subscription method)',
+    '- apps/desktop/src/main/palot-browser-ipc.ts  (broadcast the artifact-pushed event; reuse the broadcast pattern next to broadcastOpenSidePanel)',
+    '',
+    'Tasks:',
+    '1. Manifest: add tool plugin.firefly.built-in.surface.artifacts.show-doc (short name show.doc, panelId "artifacts", scope session, requires host:bridge.ui-state-write + host:tool.register, args { title: z.string(), markdown: z.string(), format?: z.enum(["markdown","html"]).optional() }, uiHints { openPanel:"artifacts", refreshProjection:true }). Add an onToolCall activation event.',
+    '2. Handler (artifacts-show-doc.ts + wired in registerArtifactsHostHandlers): build a GenUiArtifactRecord (look at palot-runtime/artifact-store.ts for the record shape + the existing upsert path) representing the doc (title + markdown/html body), persist it via the main-side artifact-store, then (a) broadcast a NEW IPC event "palot:artifact-pushed" { sessionId, record } to renderer windows (add broadcastArtifactPushed in palot-browser-ipc.ts mirroring broadcastOpenSidePanel), and (b) broadcastOpenSidePanel("artifacts"). Return ok({ artifactId, opened:true }). Fail-fast typed error if no sessionId.',
+    '3. Renderer hydration: add a subscriber (preload onArtifactPushed in index.ts + api.d.ts typed method) that, on "palot:artifact-pushed", upserts the record into the session artifacts atom family (sessionGenUiArtifactsFamily / sessionGenUiArtifactListFamily) so the panel shows it immediately. Wire the subscriber where other palot subscriptions are set up (find the mount point used by subscribeToPalotOpenSidePanel).',
+    '4. Unit test (artifacts-show-doc.test.ts): handler builds a record with the given title/body, calls the artifact-store upsert (mocked), broadcasts artifact-pushed + open-side-panel (mocked), returns artifactId; missing sessionId -> typed error.',
+    '',
+    'Do NOT touch browser tool handlers, the dispatcher actor logic, the cursor overlay, or the browser panel. Run cd apps/desktop && bunx tsgo --noEmit. Report the new tool id + the new IPC channel name + preload method for the integration agent.',
+  ].join('\n'), { label: 'show-doc-artifacts', model: 'sonnet', phase: 'Build' }),
+])
+
+const one = slices[0]
+const two = slices[1]
+const three = slices[2]
+
+phase('Integration')
+const report = await agent([SHARED,
+  '',
+  'YOU ARE THE INTEGRATION AGENT. Three disjoint agents built Phase 4. Make it compile, build, lint, and unit-test cleanly.',
+  '',
+  'Agent ONE (sub-agent identity) output:', one,
+  '',
+  'Agent TWO (cursor visual identity) output:', two,
+  '',
+  'Agent THREE (show.doc) output:', three,
+  '',
+  'Steps (from /Users/hassoncs/src/ch5/palot):',
+  '1. cd apps/desktop && bun ../../scripts/build-plugins.ts   (manifests changed -> rebuild)',
+  '2. cd apps/desktop && bunx tsgo --noEmit   (fix ALL cross-file/type errors from this wave; edit any wave-touched file to reconcile; no as-any/ts-ignore; re-run until clean. IMPORTANT: there may be PRE-EXISTING errors from concurrent agents in files like firefly-plugin/install/install-orchestrator.ts — those are NOT this wave; report them but do not fix them. Only this waves files must be clean.)',
+  '3. biome check .   (lint; fix issues in changed files)',
+  '4. Run the new + affected tests (headless, no Electron/docker): bun test apps/desktop/src/main/palot-browser-dispatcher.test.ts apps/desktop/src/renderer/components/side-panel/browser-cursor-overlay.test.tsx apps/desktop/src/main/firefly-plugin/artifacts-show-doc.test.ts   (report pass/fail; ignore unrelated pre-existing failures).',
+  '',
+  'DO NOT run any git command. Report: final tsgo status (verbatim if errors, and WHICH file each error is in so the orchestrator can tell wave errors from concurrent-agent errors), build-plugins status, lint status, per-test-file pass/fail, full list of files changed across the wave, the new agent-facing tools (show.doc), and any blockers/TODOs (esp. the deferred two-lane/two-tab panel multiplexing).',
+].join('\n'), { label: 'integrate+verify', model: 'opus', phase: 'Integration' })
+
+return { one, two, three, report }
