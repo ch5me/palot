@@ -43,6 +43,13 @@ const keyId = arg("key-id", "firefly-registry-root-2026")
 const hushKey = arg("hush-key", "FIREFLY_PLUGIN_REGISTRY_SIGNING_KEY")
 const anchorDir = arg("anchor-dir", "apps/desktop/src/shared/firefly-plugin/trust-anchors")
 const dryRun = hasFlag("dry-run")
+// The registry signing key is the marketplace authority credential — used by the
+// firefly-cloud publish signer (a different repo) while palot only bakes the public
+// anchor. That makes it a cross-project cred → global Hush. `--global` routes the
+// private key into the global store (~/.hush) instead of the repo-local one.
+const useGlobal = hasFlag("global")
+const hushScope = useGlobal ? ["--global"] : []
+const hushScopeLabel = useGlobal ? "global" : "repo-local"
 
 if (!/^[a-z0-9-]+$/.test(keyId)) {
 	console.error(`error: --key-id must be kebab-case [a-z0-9-]; got "${keyId}"`)
@@ -60,13 +67,13 @@ const fingerprint = createHash("sha256").update(pubDer).digest("hex")
 const anchorPath = join(repoRoot, anchorDir, `${keyId}.pub.pem`)
 if (dryRun) {
 	console.log(`[dry-run] would write public anchor -> ${anchorPath}`)
-	console.log(`[dry-run] would set hush secret "${hushKey}" (repo-local) from stdin`)
+	console.log(`[dry-run] would set hush secret "${hushKey}" (${hushScopeLabel}) from stdin`)
 } else {
 	mkdirSync(dirname(anchorPath), { recursive: true })
 	writeFileSync(anchorPath, pubPem, { mode: 0o644 })
 
-	// 3. Store the PRIVATE key in repo-local Hush via stdin (AI-safe, never printed).
-	const res = spawnSync("hush", ["set", hushKey], {
+	// 3. Store the PRIVATE key in Hush via stdin (AI-safe, never printed).
+	const res = spawnSync("hush", ["set", ...hushScope, hushKey], {
 		cwd: repoRoot,
 		input: privPem,
 		stdio: ["pipe", "inherit", "inherit"],
@@ -77,10 +84,16 @@ if (dryRun) {
 		process.exit(res.status ?? 1)
 	}
 
-	// 4. Confirm presence (name only, never value).
-	const has = spawnSync("hush", ["has", hushKey], { cwd: repoRoot, stdio: ["ignore", "pipe", "pipe"] })
-	if (has.status !== 0) {
-		console.error(`error: "hush has ${hushKey}" returned non-zero after set — secret not confirmed.`)
+	// 4. Confirm presence by NAME only (never the value). `hush has` does not
+	// support the multi-target global store, so use `inspect` (masked listing)
+	// and grep the key name — works for both repo-local and global scopes.
+	const inspect = spawnSync("hush", ["inspect", ...hushScope], {
+		cwd: repoRoot,
+		encoding: "utf8",
+		stdio: ["ignore", "pipe", "pipe"],
+	})
+	if (inspect.status !== 0 || !inspect.stdout.includes(hushKey)) {
+		console.error(`error: "${hushKey}" not found in ${hushScopeLabel} store after set — not confirmed.`)
 		process.exit(1)
 	}
 }
@@ -91,7 +104,7 @@ console.log("=== Firefly registry signing key minted ===")
 console.log(`key id      : ${keyId}`)
 console.log(`algorithm   : ed25519`)
 console.log(`fingerprint : sha256:${fingerprint}`)
-console.log(`hush secret : ${hushKey} (repo-local, private — never committed)`)
+console.log(`hush secret : ${hushKey} (${hushScopeLabel}, private — never committed)`)
 console.log(`trust anchor: ${join(anchorDir, `${keyId}.pub.pem`)} (public — committed)`)
 console.log("")
 console.log("public key (SPKI PEM, non-secret):")

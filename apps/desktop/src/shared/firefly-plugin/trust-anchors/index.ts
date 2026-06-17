@@ -44,10 +44,10 @@ export const PACKAGED: boolean =
 // ---------------------------------------------------------------------------
 // Inline the content of trust-anchors/firefly-registry-root-2026.pub.pem.
 // This is NOT a secret; the private key lives in Hush only.
-// Fingerprint: sha256:88603741da3fc2bed2de2be603024c64a81de023a1ac1e01d17b427f6559ab5d
+// Fingerprint: sha256:9e19923d7cfe0be270cce00ba74f35f72c9142fca48865fb8de4fcae939495da
 
 const FIREFLY_REGISTRY_ROOT_2026_PEM = `-----BEGIN PUBLIC KEY-----
-MCowBQYDK2VwAyEA4mlP5kEFYssWo30IuWOJtMYIcDR/mnys5axiczkdAQg=
+MCowBQYDK2VwAyEAJTrrP7y+OMn40W7VCL1hAyZ9aPzSbYBiZEUv0RSA1Kc=
 -----END PUBLIC KEY-----
 `
 
@@ -71,7 +71,7 @@ export const ANCHORS: Readonly<Record<string, PackagedAnchorRecord>> = {
 	"firefly-registry-root-2026": {
 		publicKeyPem: FIREFLY_REGISTRY_ROOT_2026_PEM,
 		fingerprintSha256:
-			"88603741da3fc2bed2de2be603024c64a81de023a1ac1e01d17b427f6559ab5d",
+			"9e19923d7cfe0be270cce00ba74f35f72c9142fca48865fb8de4fcae939495da",
 		devOnly: false,
 	},
 } as const

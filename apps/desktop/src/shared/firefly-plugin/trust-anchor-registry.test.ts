@@ -18,11 +18,11 @@ import { ANCHORS } from "./trust-anchors/index"
 
 const COMMITTED_KEY_ID = "firefly-registry-root-2026"
 const COMMITTED_FINGERPRINT =
-	"88603741da3fc2bed2de2be603024c64a81de023a1ac1e01d17b427f6559ab5d"
+	"9e19923d7cfe0be270cce00ba74f35f72c9142fca48865fb8de4fcae939495da"
 
 /** A well-formed ed25519 SPKI PEM distinct from the prod key (ephemeral dev anchor). */
 const DEV_ANCHOR_PEM = `-----BEGIN PUBLIC KEY-----
-MCowBQYDK2VwAyEA4mlP5kEFYssWo30IuWOJtMYIcDR/mnys5axiczkdAQg=
+MCowBQYDK2VwAyEAJTrrP7y+OMn40W7VCL1hAyZ9aPzSbYBiZEUv0RSA1Kc=
 -----END PUBLIC KEY-----
 `
 
@@ -58,7 +58,7 @@ describe("committed firefly-registry-root-2026 anchor", () => {
 		expect(anchor!.devOnly).toBe(false)
 	})
 
-	it("fingerprint matches sha256:88603741…ab5d", () => {
+	it("fingerprint matches sha256:9e19923d…95da", () => {
 		const registry = createDefaultTrustAnchorRegistry({ packaged: false })
 		const anchor = registry.get(COMMITTED_KEY_ID)
 		expect(anchor!.fingerprintSha256).toBe(COMMITTED_FINGERPRINT)

@@ -45,7 +45,7 @@ uses the **newest** active keyId; old keyIds remain trusted until **explicitly r
 
 | keyId | algorithm | fingerprint (sha256 of SPKI DER) | status |
 |---|---|---|---|
-| `firefly-registry-root-2026` | ed25519 | `sha256:88603741da3fc2bed2de2be603024c64a81de023a1ac1e01d17b427f6559ab5d` | **active** |
+| `firefly-registry-root-2026` | ed25519 | `sha256:9e19923d7cfe0be270cce00ba74f35f72c9142fca48865fb8de4fcae939495da` | **active** |
 
 ### Security invariants
 
@@ -151,4 +151,4 @@ console.log('sha256:'+createHash('sha256').update(der).digest('hex'));
 "
 ```
 
-Expected: `sha256:88603741da3fc2bed2de2be603024c64a81de023a1ac1e01d17b427f6559ab5d`
+Expected: `sha256:9e19923d7cfe0be270cce00ba74f35f72c9142fca48865fb8de4fcae939495da`
