@@ -43,6 +43,9 @@ import {
 	type RegistryVersionMetadata,
 	type FetchFn,
 } from "../registry/open-vsx-client"
+import {
+	createFireflyRegistryClient,
+} from "../registry/firefly-registry-client"
 import { parseJsonPluginManifest } from "../../../shared/firefly-plugin/json-manifest"
 import { derivePluginDescriptor, type PluginDescriptor } from "../../../shared/firefly-plugin/descriptor"
 import {
@@ -94,12 +97,15 @@ function isSigningAuthoritySource(kind: SignatureSourceKind): boolean {
 /**
  * Map the orchestrator's internal `registrySource` to the signature source kind
  * used by `resolveDetachedSignature`. Open VSX downloads carry no CH5 signature;
- * a manual local VSIX install resolves its sidecar via the `local-vsix` path.
+ * a manual local VSIX install resolves its sidecar via the `local-vsix` path;
+ * a firefly gallery install carries a served registry signature (signing-authority).
  */
 function signatureSourceKind(
-	registrySource: "open-vsx" | "manual-vsix",
+	registrySource: "open-vsx" | "manual-vsix" | "firefly",
 ): SignatureSourceKind {
-	return registrySource === "open-vsx" ? "open-vsx" : "local-vsix"
+	if (registrySource === "open-vsx") return "open-vsx"
+	if (registrySource === "firefly") return "firefly"
+	return "local-vsix"
 }
 
 /**
@@ -155,7 +161,23 @@ export interface InstallFromLocalVsixInput {
 	expectedSha256?: string
 }
 
-export type InstallInput = InstallFromOpenVsxInput | InstallFromLocalVsixInput
+/**
+ * Input: install from the CH5 firefly gallery by namespace + name (+ optional version).
+ * The gallery serves both the package bytes URL and the registry signature in one
+ * response (D-C2, §6.2), so no separate signature fetch is needed.
+ */
+export interface InstallFromFireflyInput {
+	kind: "firefly"
+	namespace: string
+	name: string
+	/** If omitted, the latest version is fetched. */
+	version?: string
+}
+
+export type InstallInput =
+	| InstallFromOpenVsxInput
+	| InstallFromLocalVsixInput
+	| InstallFromFireflyInput
 
 /**
  * Result of a successful install.
@@ -260,6 +282,8 @@ export interface InstallExtensionOptions {
 	io?: OrchestratorIo
 	/** Open VSX base URL override (for tests). */
 	openVsxBaseUrl?: string
+	/** Firefly gallery base URL override (for tests). Defaults to FIREFLY_CLOUD_URL env var. */
+	fireflyBaseUrl?: string
 	/** Injectable store functions (for tests). Defaults to real extension-store. */
 	store?: ExtensionStoreFns
 	/**
@@ -315,8 +339,10 @@ export async function installExtension(
 
 	let vsixPath: string
 	let tempVsixPath: string | null = null
-	let registrySource: "open-vsx" | "manual-vsix"
+	let registrySource: "open-vsx" | "manual-vsix" | "firefly"
 	let registryMeta: RegistryVersionMetadata | null = null
+	/** ServedSignatureMetadata from the gallery response (firefly installs only). */
+	let galleryServedSignature: ServedSignatureMetadata | null = null
 	/**
 	 * Raw downloaded package bytes, captured pre-extract so the registry
 	 * signature can be verified over them BEFORE the content-addressed dir is
@@ -360,9 +386,50 @@ export async function installExtension(
 		vsixPath = tempVsixPath
 		registrySource = "open-vsx"
 		rawBytes = data
+	} else if (input.kind === "firefly") {
+		// 1d. Firefly gallery install — fetch version metadata + signature in one round-trip
+		log.info("Resolving Firefly gallery version", { namespace: input.namespace, name: input.name, version: input.version })
+		const fireflyClient = createFireflyRegistryClient({
+			baseUrl: options.fireflyBaseUrl,
+			fetch: io.fetch,
+		})
+		const fireflyMeta = input.version
+			? await fireflyClient.getVersion(input.namespace, input.name, input.version)
+			: await fireflyClient.getLatest(input.namespace, input.name)
+
+		// Capture the served signature from the gallery response (D-C2 §6.2).
+		// options.registrySignature overrides for test injection (mirrors open-vsx path).
+		galleryServedSignature = options.registrySignature ?? fireflyMeta.servedSignature
+
+		registryMeta = fireflyMeta
+
+		if (!fireflyMeta.downloadUrl) {
+			throw new Error(
+				`Firefly gallery: no download URL for ${input.namespace}.${input.name}@${fireflyMeta.version}`,
+			)
+		}
+
+		// 1e. Download the package bytes from the gallery download URL
+		log.info("Downloading Firefly package", { url: fireflyMeta.downloadUrl })
+		const response = await io.fetch(fireflyMeta.downloadUrl)
+		if (!response.ok) {
+			throw new Error(
+				`Firefly package download failed: HTTP ${response.status} from ${fireflyMeta.downloadUrl}`,
+			)
+		}
+
+		const rawResp = response as unknown as Response
+		const arrayBuffer = await rawResp.arrayBuffer()
+		const data = Buffer.from(arrayBuffer)
+
+		tempVsixPath = io.writeTemp(data, ".fpk")
+		vsixPath = tempVsixPath
+		registrySource = "firefly"
+		rawBytes = data
 	} else {
-		// 1c. Local VSIX
-		vsixPath = input.vsixPath
+		// 1c. Local VSIX — TypeScript narrows `input` to InstallFromLocalVsixInput here.
+		const localInput = input satisfies InstallFromLocalVsixInput
+		vsixPath = localInput.vsixPath
 		registrySource = "manual-vsix"
 		// Read the raw bytes once, up-front, so the registry signature is verified
 		// over them BEFORE any extraction (A2a).
@@ -378,12 +445,20 @@ export async function installExtension(
 	const trustAnchorRegistry: TrustAnchorRegistry =
 		options.trustAnchorRegistry ?? createDefaultTrustAnchorRegistry()
 
+	// For firefly installs, the signature comes from the gallery response
+	// (galleryServedSignature). For other sources, use options.registrySignature
+	// (local-vsix sidecar override) or null (open-vsx).
+	const resolvedRegistrySignature =
+		registrySource === "firefly"
+			? galleryServedSignature
+			: (options.registrySignature ?? null)
+
 	// resolveDetachedSignature throws integrity_mismatch on a present-but-invalid
 	// signature or a contentSha256 mismatch; returns null when no signature is
 	// resolvable for the source (policy gate below decides if that is permitted).
 	const provenance: ResolvedSignatureProvenance | null = resolveDetachedSignature({
 		source: sourceKind,
-		registryMeta: options.registrySignature ?? null,
+		registryMeta: resolvedRegistrySignature,
 		rawBytes,
 		localPackagePath: input.kind === "local-vsix" ? vsixPath : undefined,
 		trustAnchorRegistry,
@@ -427,9 +502,9 @@ export async function installExtension(
 		// 2. Verify + unpack (signature already verified over rawBytes above)
 		const unpacked: UnpackedVsixResult = await unpackVsix(vsixPath, {
 			packageStoreRoot: options.packageStoreRoot,
-			expectedSha256: input.kind === "open-vsx"
-				? (registryMeta?.sha256 ?? undefined)
-				: (input as InstallFromLocalVsixInput).expectedSha256,
+			expectedSha256: input.kind === "local-vsix"
+				? input.expectedSha256
+				: (registryMeta?.sha256 ?? undefined),
 			io: packageStoreIo,
 		})
 

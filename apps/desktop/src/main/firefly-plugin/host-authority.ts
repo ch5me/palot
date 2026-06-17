@@ -293,6 +293,16 @@ export class ElectronHostAuthority implements HostAuthority {
 				name: input.name,
 				version: input.version,
 			}
+		} else if (input.kind === "firefly") {
+			if (!input.namespace || !input.name) {
+				throw new Error("firefly install requires namespace and name")
+			}
+			installInput = {
+				kind: "firefly",
+				namespace: input.namespace,
+				name: input.name,
+				version: input.version,
+			}
 		} else {
 			if (!input.vsixPath) {
 				throw new Error("local-vsix install requires vsixPath")

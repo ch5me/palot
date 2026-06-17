@@ -85,7 +85,7 @@ export interface CreateExtensionPackageInput {
 	name: string
 	version: string
 	displayName?: string | null
-	registrySource: "open-vsx" | "manual-vsix"
+	registrySource: "open-vsx" | "manual-vsix" | "firefly"
 	vsixPath?: string | null
 	unpackedPath: string
 	signatureState?: SignatureState

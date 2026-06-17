@@ -165,7 +165,7 @@ export interface ImportedThemeContribution {
 	kind: "light" | "dark" | "high-contrast"
 	/** Import provenance for the package store. */
 	source: {
-		registry: "open-vsx" | "manual-vsix"
+		registry: "open-vsx" | "manual-vsix" | "firefly"
 		/** Canonical `publisher.name` external id. */
 		externalId: string
 		/** Published version of the source package. */
@@ -254,9 +254,10 @@ export interface ConvertVscodeThemeOptions {
 	/**
 	 * The registry source to embed in `source.registry`.
 	 * Use `"open-vsx"` for packages fetched from Open VSX;
-	 * `"manual-vsix"` for locally imported VSIX files.
+	 * `"manual-vsix"` for locally imported VSIX files;
+	 * `"firefly"` for packages fetched from the CH5 firefly gallery.
 	 */
-	registry: "open-vsx" | "manual-vsix"
+	registry: "open-vsx" | "manual-vsix" | "firefly"
 	/**
 	 * SHA-256 hex of the theme JSON content, provided by the package store
 	 * after it has read and hashed the file. Pass empty string when not
