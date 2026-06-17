@@ -54,6 +54,7 @@ generic knowledge.
 |---|---|
 | `react-best-practices` | Writing or reviewing renderer components, optimizing re-renders or bundle size |
 | `firefly-plugins` | Adding or changing a Firefly desktop plugin: inline widget, side panel, command, agent tool, theme, host capability token, or the catalog/dispatch wiring. `firefly.built-in.devmux-toolbar` is the worked example |
+| `surface-contract` | The generic human+agent+surface seam: agent-callable surface tools (AXI/TOON), per-turn context projection (`<surface-context>`), the surface action stream + animated cursor, and Magic Browser (iframe vs streamed). The Browser plugin is the reference. Load before touching `web.*` tools, context projectors, the action stream, or browser lanes |
 
 ## Docs / Wiki
 
