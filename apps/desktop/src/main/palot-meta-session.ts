@@ -6,7 +6,9 @@ import {
 	type ChildSession,
 	type MetaSession,
 	type MetaSessionStatus,
+	type RuntimeBlocker,
 	type RuntimeCapabilities,
+	type RuntimeEventPage,
 	type RuntimeKind,
 } from "@ch5me/agent-runtime-contracts"
 import type { Session, SessionStatus } from "@opencode-ai/sdk/v2/client"
@@ -22,6 +24,7 @@ const STORE_DIR = path.join(getConfigDir(), "opencode")
 const STORE_FILE = path.join(STORE_DIR, "meta-sessions.json")
 const STORE_VERSION = 1
 const OPENCODE_RUNTIME_KIND = "opencode"
+const DRY_RUN_RUNTIME_KINDS = ["codex", "claude-code"] as const
 
 const nonEmptyStringSchema = z.string().min(1)
 const isoDateTimeSchema = z.string().datetime({ offset: true, local: false })
@@ -62,6 +65,7 @@ const storedChildSessionSchema = z
 	.object({
 		session: childSessionSchema,
 		workingDirectory: z.string().min(1),
+		dryRunSummary: nonEmptyStringSchema.optional(),
 	})
 	.strict()
 
@@ -78,6 +82,7 @@ type MetaSessionStoreFile = z.infer<typeof metaSessionStoreFileSchema>
 
 export type PalotMetaSessionErrorCode =
 	| "unsupported-runtime-kind"
+	| "unsupported-runtime-operation"
 	| "meta-session-not-found"
 	| "child-session-not-found"
 	| "runtime-session-not-found"
@@ -93,6 +98,8 @@ export type PalotMetaSessionError = Error & {
 	childSessionId?: string
 	runtimeKind?: string
 	runtimeSessionId?: string
+	operation?: string
+	blocker?: RuntimeBlocker
 }
 
 interface MetaSessionClient {
@@ -129,6 +136,13 @@ interface CreateChildSessionInput {
 	workingDirectory?: string
 }
 
+interface CreateChildSessionsInput {
+	parentSessionId: string
+	runtimes: RuntimeKind[]
+	title: string
+	workingDirectory?: string
+}
+
 interface PalotMetaSessionServiceDeps {
 	now?: () => Date
 	storePath?: string
@@ -143,8 +157,17 @@ export interface PalotMetaSessionService {
 	listMetaSessions(): MetaSession[]
 	getMetaSession(metaSessionId: string): MetaSession
 	createChildSession(input: CreateChildSessionInput): Promise<ChildSession>
+	createChildSessions(input: CreateChildSessionsInput): Promise<ChildSession[]>
 	listChildSessions(metaSessionId: string): Promise<ChildSession[]>
 	getChildSession(metaSessionId: string, childSessionId: string): Promise<ChildSession>
+	readChildSessionEvents(
+		metaSessionId: string,
+		childSessionId: string,
+		cursor?: string,
+	): Promise<RuntimeEventPage>
+	sendChildSessionPrompt(metaSessionId: string, childSessionId: string, prompt: string): Promise<never>
+	cancelChildSession(metaSessionId: string, childSessionId: string, reason: string): Promise<never>
+	listChildSessionArtifacts(metaSessionId: string, childSessionId: string): Promise<never>
 	getRuntimeCapabilities(runtimeKind: RuntimeKind): RuntimeCapabilities
 	getStorePath(): string
 }
@@ -248,8 +271,14 @@ function mapOpenCodeStatus(
 	return fallbackStatus
 }
 
+function isDryRunRuntimeKind(
+	runtimeKind: RuntimeKind,
+): runtimeKind is (typeof DRY_RUN_RUNTIME_KINDS)[number] {
+	return DRY_RUN_RUNTIME_KINDS.includes(runtimeKind as (typeof DRY_RUN_RUNTIME_KINDS)[number])
+}
+
 function assertSupportedRuntimeKind(runtimeKind: RuntimeKind): void {
-	if (runtimeKind === OPENCODE_RUNTIME_KIND) return
+	if (runtimeKind === OPENCODE_RUNTIME_KIND || isDryRunRuntimeKind(runtimeKind)) return
 	throw createMetaSessionError(
 		"unsupported-runtime-kind",
 		`Palot meta-session foundation does not support runtime kind "${runtimeKind}" yet`,
@@ -271,6 +300,69 @@ function findMetaSessionOrThrow(store: MetaSessionStoreFile, metaSessionId: stri
 
 function buildChildSessionId(runtimeKind: RuntimeKind, runtimeSessionId: string): string {
 	return `${runtimeKind}:${runtimeSessionId}`
+}
+
+function buildDryRunRuntimeSessionId(runtimeKind: RuntimeKind): string {
+	return `dryrun_${runtimeKind.replace(/-/g, "_")}_${crypto.randomUUID()}`
+}
+
+function buildUnsupportedOperationBlocker(
+	runtimeKind: RuntimeKind,
+	operation: "send" | "cancel" | "artifacts",
+): RuntimeBlocker {
+	const operationMessage = {
+		send: "Send prompts unsupported in Wave 3 dry-run foundation",
+		cancel: "Cancel unsupported in Wave 3 dry-run foundation",
+		artifacts: "Artifacts unsupported in Wave 3 dry-run foundation",
+	} as const
+
+	return {
+		code: "unsupported-operation",
+		scope: "session",
+		message: operationMessage[operation],
+		retryable: false,
+		details: `${runtimeKind} adapter is create/read only in this wave. Mutation authority stays disabled.`,
+	}
+}
+
+function throwUnsupportedOperation(
+	runtimeKind: RuntimeKind,
+	childSessionId: string,
+	operation: "send" | "cancel" | "artifacts",
+): never {
+	const blocker = buildUnsupportedOperationBlocker(runtimeKind, operation)
+	throw createMetaSessionError(
+		"unsupported-runtime-operation",
+		`${runtimeKind} child "${childSessionId}" does not support ${operation} in Wave 3 dry-run mode`,
+		{
+			runtimeKind,
+			childSessionId,
+			operation,
+			blocker,
+		},
+	)
+}
+
+function mapMetaStatusToRuntimeStatus(
+	status: MetaSessionStatus,
+): RuntimeCapabilities["status"] {
+	switch (status) {
+		case "active":
+			return "busy"
+		case "blocked":
+			return "blocked"
+		case "completed":
+		case "failed":
+		case "cancelled":
+			return "offline"
+		case "idle":
+		default:
+			return "ready"
+	}
+}
+
+function buildRuntimeEventId(childSessionId: string, suffix: string): string {
+	return `${childSessionId}:${suffix}`
 }
 
 function updateMetaSessionTimestamp(
@@ -319,6 +411,17 @@ export function createPalotMetaSessionService(
 
 	async function hydrateChildSessionRecord(record: StoredChildSession): Promise<StoredChildSession> {
 		assertSupportedRuntimeKind(record.session.runtimeKind)
+		if (isDryRunRuntimeKind(record.session.runtimeKind)) {
+			const timestamp = record.session.lastEventAt ?? record.session.lastHeartbeatAt ?? record.session.createdAt
+			return storedChildSessionSchema.parse({
+				...record,
+				session: {
+					...record.session,
+					lastHeartbeatAt: record.session.lastHeartbeatAt ?? timestamp,
+					lastEventAt: record.session.lastEventAt ?? timestamp,
+				},
+			})
+		}
 		requireOpenCodeServerUrl()
 		const client = requireOpenCodeClient(record.workingDirectory)
 
@@ -361,6 +464,163 @@ export function createPalotMetaSessionService(
 		})
 	}
 
+	function findChildSessionRecordOrThrow(
+		store: MetaSessionStoreFile,
+		metaSessionId: string,
+		childSessionId: string,
+	): StoredChildSession {
+		findMetaSessionOrThrow(store, metaSessionId)
+		const record = store.childSessions.find(
+			(entry) =>
+				entry.session.parentSessionId === metaSessionId && entry.session.id === childSessionId,
+		)
+		if (!record) {
+			throw createMetaSessionError(
+				"child-session-not-found",
+				`Child session "${childSessionId}" does not exist under meta session "${metaSessionId}"`,
+				{ metaSessionId, childSessionId },
+			)
+		}
+		return record
+	}
+
+	function createDryRunChildSessionRecord(
+		input: CreateChildSessionInput,
+		workingDirectory: string,
+		createdAt: Date,
+	): StoredChildSession {
+		const createdAtIso = toIsoString(createdAt)
+		const runtimeSessionId = buildDryRunRuntimeSessionId(input.runtimeKind)
+		return storedChildSessionSchema.parse({
+			session: {
+				id: buildChildSessionId(input.runtimeKind, runtimeSessionId),
+				parentSessionId: input.parentSessionId,
+				runtimeKind: input.runtimeKind,
+				runtimeSessionId,
+				title: input.title,
+				status: "idle",
+				createdAt: createdAtIso,
+				lastHeartbeatAt: createdAtIso,
+				lastEventAt: createdAtIso,
+			},
+			workingDirectory,
+			dryRunSummary: `${input.runtimeKind} dry-run child reserved. Native session id placeholder only. Send/cancel/artifacts stay blocked in Wave 3.`,
+		})
+	}
+
+	function buildReadOnlyCapabilities(runtimeKind: RuntimeKind): RuntimeCapabilities {
+		return {
+			runtimeKind,
+			status: "ready",
+			canCreateSession: true,
+			canSendPrompt: false,
+			canReadEvents: true,
+			canCancel: false,
+			canListArtifacts: false,
+			canEvaluatePolicy: false,
+			blockers: [
+				buildUnsupportedOperationBlocker(runtimeKind, "send"),
+				buildUnsupportedOperationBlocker(runtimeKind, "cancel"),
+				buildUnsupportedOperationBlocker(runtimeKind, "artifacts"),
+			],
+		}
+	}
+
+	async function buildRuntimeEventPage(record: StoredChildSession): Promise<RuntimeEventPage> {
+		const hydrated = await hydrateChildSessionRecord(record)
+		const occurredAt =
+			hydrated.session.lastEventAt ?? hydrated.session.lastHeartbeatAt ?? hydrated.session.createdAt
+		const runtimeStatus = mapMetaStatusToRuntimeStatus(hydrated.session.status)
+		const events: RuntimeEventPage["events"] = [
+			{
+				eventId: buildRuntimeEventId(hydrated.session.id, "status"),
+				type: "session.status",
+				childSessionId: hydrated.session.id,
+				runtimeKind: hydrated.session.runtimeKind,
+				occurredAt,
+				status: hydrated.session.status,
+				runtimeStatus,
+			},
+		]
+
+		if (hydrated.dryRunSummary) {
+			events.push({
+				eventId: buildRuntimeEventId(hydrated.session.id, "summary"),
+				type: "message",
+				childSessionId: hydrated.session.id,
+				runtimeKind: hydrated.session.runtimeKind,
+				occurredAt,
+				role: "assistant",
+				text: hydrated.dryRunSummary,
+			})
+			for (const operation of ["send", "cancel", "artifacts"] as const) {
+				events.push({
+					eventId: buildRuntimeEventId(hydrated.session.id, `blocker:${operation}`),
+					type: "blocker",
+					childSessionId: hydrated.session.id,
+					runtimeKind: hydrated.session.runtimeKind,
+					occurredAt,
+					blocker: buildUnsupportedOperationBlocker(hydrated.session.runtimeKind, operation),
+				})
+			}
+		} else {
+			events.push({
+				eventId: buildRuntimeEventId(hydrated.session.id, "summary"),
+				type: "message",
+				childSessionId: hydrated.session.id,
+				runtimeKind: hydrated.session.runtimeKind,
+				occurredAt,
+				role: "assistant",
+				text: `OpenCode child attached to runtime session ${hydrated.session.runtimeSessionId}.`,
+			})
+		}
+
+		return {
+			events,
+		}
+	}
+
+	async function createSingleChildSession(input: CreateChildSessionInput): Promise<ChildSession> {
+		assertSupportedRuntimeKind(input.runtimeKind)
+		const workingDirectory = input.workingDirectory ?? defaultWorkingDirectory
+		const store = readStoreFile(storePath)
+		findMetaSessionOrThrow(store, input.parentSessionId)
+		const createdAt = now()
+		const record = isDryRunRuntimeKind(input.runtimeKind)
+			? createDryRunChildSessionRecord(input, workingDirectory, createdAt)
+			: await (async () => {
+					requireOpenCodeServerUrl()
+					const client = requireOpenCodeClient(workingDirectory)
+					const createResult = await client.session.create({ title: input.title })
+					const runtimeSession = parseRuntimeSession(createResult.data, input.title)
+					return storedChildSessionSchema.parse({
+						session: {
+							id: buildChildSessionId(input.runtimeKind, runtimeSession.id),
+							parentSessionId: input.parentSessionId,
+							runtimeKind: input.runtimeKind,
+							runtimeSessionId: runtimeSession.id,
+							title: runtimeSession.title,
+							status: "idle",
+							createdAt:
+								toIsoFromMillis(runtimeSession.time.created) ?? toIsoString(createdAt),
+						},
+						workingDirectory,
+					})
+				})()
+
+		store.childSessions.push(record)
+		updateMetaSessionTimestamp(store, input.parentSessionId, toIsoString(createdAt))
+		writeStoreFile(storePath, store)
+
+		const hydrated = await hydrateChildSessionRecord(record)
+		const nextStore = readStoreFile(storePath)
+		nextStore.childSessions = nextStore.childSessions.map((entry) =>
+			entry.session.id === hydrated.session.id ? hydrated : entry,
+		)
+		writeStoreFile(storePath, nextStore)
+		return hydrated.session
+	}
+
 	return {
 		createMetaSession(input) {
 			const timestamp = toIsoString(now())
@@ -388,39 +648,22 @@ export function createPalotMetaSessionService(
 		},
 
 		async createChildSession(input) {
-			assertSupportedRuntimeKind(input.runtimeKind)
-			const workingDirectory = input.workingDirectory ?? defaultWorkingDirectory
-			const store = readStoreFile(storePath)
-			findMetaSessionOrThrow(store, input.parentSessionId)
-			requireOpenCodeServerUrl()
-			const client = requireOpenCodeClient(workingDirectory)
-			const createdAt = now()
-			const createResult = await client.session.create({ title: input.title })
-			const runtimeSession = parseRuntimeSession(createResult.data, input.title)
-			const record = storedChildSessionSchema.parse({
-				session: {
-					id: buildChildSessionId(input.runtimeKind, runtimeSession.id),
-					parentSessionId: input.parentSessionId,
-					runtimeKind: input.runtimeKind,
-					runtimeSessionId: runtimeSession.id,
-					title: runtimeSession.title,
-					status: "idle",
-					createdAt: toIsoFromMillis(runtimeSession.time.created) ?? toIsoString(createdAt),
-				},
-				workingDirectory,
-			})
+			return createSingleChildSession(input)
+		},
 
-			store.childSessions.push(record)
-			updateMetaSessionTimestamp(store, input.parentSessionId, toIsoString(createdAt))
-			writeStoreFile(storePath, store)
-
-			const hydrated = await hydrateChildSessionRecord(record)
-			const nextStore = readStoreFile(storePath)
-			nextStore.childSessions = nextStore.childSessions.map((entry) =>
-				entry.session.id === hydrated.session.id ? hydrated : entry,
-			)
-			writeStoreFile(storePath, nextStore)
-			return hydrated.session
+		async createChildSessions(input) {
+			const children: ChildSession[] = []
+			for (const runtimeKind of input.runtimes) {
+				children.push(
+					await createSingleChildSession({
+						parentSessionId: input.parentSessionId,
+						runtimeKind,
+						title: input.title,
+						workingDirectory: input.workingDirectory,
+					}),
+				)
+			}
+			return children
 		},
 
 		async listChildSessions(metaSessionId) {
@@ -438,18 +681,7 @@ export function createPalotMetaSessionService(
 
 		async getChildSession(metaSessionId, childSessionId) {
 			const store = readStoreFile(storePath)
-			findMetaSessionOrThrow(store, metaSessionId)
-			const record = store.childSessions.find(
-				(entry) =>
-					entry.session.parentSessionId === metaSessionId && entry.session.id === childSessionId,
-			)
-			if (!record) {
-				throw createMetaSessionError(
-					"child-session-not-found",
-					`Child session "${childSessionId}" does not exist under meta session "${metaSessionId}"`,
-					{ metaSessionId, childSessionId },
-				)
-			}
+			const record = findChildSessionRecordOrThrow(store, metaSessionId, childSessionId)
 			const hydrated = await hydrateChildSessionRecord(record)
 			store.childSessions = store.childSessions.map((entry) =>
 				entry.session.id === hydrated.session.id ? hydrated : entry,
@@ -458,8 +690,40 @@ export function createPalotMetaSessionService(
 			return hydrated.session
 		},
 
+		async readChildSessionEvents(metaSessionId, childSessionId) {
+			const store = readStoreFile(storePath)
+			const record = findChildSessionRecordOrThrow(store, metaSessionId, childSessionId)
+			const hydrated = await hydrateChildSessionRecord(record)
+			store.childSessions = store.childSessions.map((entry) =>
+				entry.session.id === hydrated.session.id ? hydrated : entry,
+			)
+			writeStoreFile(storePath, store)
+			return buildRuntimeEventPage(hydrated)
+		},
+
+		async sendChildSessionPrompt(metaSessionId, childSessionId) {
+			const store = readStoreFile(storePath)
+			const record = findChildSessionRecordOrThrow(store, metaSessionId, childSessionId)
+			throwUnsupportedOperation(record.session.runtimeKind, record.session.id, "send")
+		},
+
+		async cancelChildSession(metaSessionId, childSessionId) {
+			const store = readStoreFile(storePath)
+			const record = findChildSessionRecordOrThrow(store, metaSessionId, childSessionId)
+			throwUnsupportedOperation(record.session.runtimeKind, record.session.id, "cancel")
+		},
+
+		async listChildSessionArtifacts(metaSessionId, childSessionId) {
+			const store = readStoreFile(storePath)
+			const record = findChildSessionRecordOrThrow(store, metaSessionId, childSessionId)
+			throwUnsupportedOperation(record.session.runtimeKind, record.session.id, "artifacts")
+		},
+
 		getRuntimeCapabilities(runtimeKind) {
 			assertSupportedRuntimeKind(runtimeKind)
+			if (isDryRunRuntimeKind(runtimeKind)) {
+				return buildReadOnlyCapabilities(runtimeKind)
+			}
 			const serverUrl = resolveServerUrl()
 			if (!serverUrl) {
 				return {
@@ -506,15 +770,7 @@ export function createPalotMetaSessionService(
 			}
 
 			return {
-				runtimeKind,
-				status: "ready",
-				canCreateSession: true,
-				canSendPrompt: false,
-				canReadEvents: false,
-				canCancel: false,
-				canListArtifacts: false,
-				canEvaluatePolicy: false,
-				blockers: [],
+				...buildReadOnlyCapabilities(runtimeKind),
 			}
 		},
 

@@ -168,6 +168,49 @@ describe("palot-meta-session", () => {
 		rmSync(path.dirname(storePath), { recursive: true, force: true })
 	})
 
+	test("batch child create dispatches OpenCode plus dry-run Codex and Claude children", async () => {
+		const storePath = createTempStorePath()
+		const runtimeSession = buildSession()
+		const service = createPalotMetaSessionService({
+			storePath,
+			now: () => new Date("2026-06-17T12:00:00.000Z"),
+			getServerUrl: () => "http://127.0.0.1:4096",
+			createClient: () =>
+				createMockClient({
+					session: runtimeSession,
+					statuses: {
+						[runtimeSession.id]: { type: "busy" },
+					},
+				}),
+			getSessionBinding: () => createBinding(),
+			workingDirectory: "/repo",
+		})
+
+		const meta = service.createMetaSession({ title: "Meta root" })
+		const children = await service.createChildSessions({
+			parentSessionId: meta.id,
+			runtimes: ["opencode", "codex", "claude-code"],
+			title: "Compare runtimes",
+		})
+
+		expect(children.map((child) => child.runtimeKind)).toEqual([
+			"opencode",
+			"codex",
+			"claude-code",
+		])
+		expect(children[0]?.runtimeSessionId).toBe(runtimeSession.id)
+		expect(children[0]?.status).toBe("active")
+		expect(children[1]?.runtimeSessionId).toMatch(/^dryrun_codex_/)
+		expect(children[1]?.status).toBe("idle")
+		expect(children[2]?.runtimeSessionId).toMatch(/^dryrun_claude_code_/)
+		expect(children[2]?.status).toBe("idle")
+
+		const listed = await service.listChildSessions(meta.id)
+		expect(listed).toHaveLength(3)
+
+		rmSync(path.dirname(storePath), { recursive: true, force: true })
+	})
+
 	test("invalid store fails loud instead of resetting", () => {
 		const storePath = createTempStorePath()
 		writeFileSync(storePath, "{ nope", "utf-8")
@@ -178,7 +221,7 @@ describe("palot-meta-session", () => {
 		rmSync(path.dirname(storePath), { recursive: true, force: true })
 	})
 
-	test("unsupported runtime kinds and missing sessions throw typed errors", async () => {
+	test("missing sessions throw typed errors", async () => {
 		const storePath = createTempStorePath()
 		const service = createPalotMetaSessionService({
 			storePath,
@@ -190,14 +233,8 @@ describe("palot-meta-session", () => {
 
 		expect(() => service.getMetaSession("meta_missing")).toThrow('Meta session "meta_missing" does not exist')
 
-		await expect(
-			service.createChildSession({
-				parentSessionId: meta.id,
-				runtimeKind: "codex",
-				title: "Nope",
-			}),
-		).rejects.toMatchObject({
-			code: "unsupported-runtime-kind",
+		await expect(service.getChildSession(meta.id, "codex:missing")).rejects.toMatchObject({
+			code: "child-session-not-found",
 		} satisfies Partial<PalotMetaSessionError>)
 
 		rmSync(path.dirname(storePath), { recursive: true, force: true })
@@ -237,6 +274,75 @@ describe("palot-meta-session", () => {
 
 		await expect(reader.getChildSession(meta.id, child.id)).rejects.toMatchObject({
 			code: "runtime-session-not-found",
+		} satisfies Partial<PalotMetaSessionError>)
+
+		rmSync(path.dirname(storePath), { recursive: true, force: true })
+	})
+
+	test("dry-run capabilities expose create/read only with explicit blockers", () => {
+		const storePath = createTempStorePath()
+		const service = createPalotMetaSessionService({ storePath })
+
+		for (const runtimeKind of ["codex", "claude-code"] as const) {
+			const capabilities = service.getRuntimeCapabilities(runtimeKind)
+			expect(capabilities.status).toBe("ready")
+			expect(capabilities.canCreateSession).toBe(true)
+			expect(capabilities.canReadEvents).toBe(true)
+			expect(capabilities.canSendPrompt).toBe(false)
+			expect(capabilities.canCancel).toBe(false)
+			expect(capabilities.canListArtifacts).toBe(false)
+			expect(capabilities.blockers.map((blocker) => blocker.code)).toEqual([
+				"unsupported-operation",
+				"unsupported-operation",
+				"unsupported-operation",
+			])
+		}
+
+		rmSync(path.dirname(storePath), { recursive: true, force: true })
+	})
+
+	test("dry-run read events and mutation paths fail loud with typed blocker", async () => {
+		const storePath = createTempStorePath()
+		const service = createPalotMetaSessionService({
+			storePath,
+			now: () => new Date("2026-06-17T12:00:00.000Z"),
+		})
+		const meta = service.createMetaSession({ title: "Meta root" })
+		const child = await service.createChildSession({
+			parentSessionId: meta.id,
+			runtimeKind: "codex",
+			title: "Codex dry-run",
+		})
+
+		const eventPage = await service.readChildSessionEvents(meta.id, child.id)
+		expect(eventPage.events.map((event) => event.type)).toEqual([
+			"session.status",
+			"message",
+			"blocker",
+			"blocker",
+			"blocker",
+		])
+		expect(eventPage.events[1]).toMatchObject({
+			type: "message",
+			text: expect.stringContaining("dry-run child reserved"),
+		})
+
+		await expect(service.sendChildSessionPrompt(meta.id, child.id, "ship it")).rejects.toMatchObject({
+			code: "unsupported-runtime-operation",
+			runtimeKind: "codex",
+			blocker: expect.objectContaining({
+				code: "unsupported-operation",
+			}),
+		})
+
+		await expect(service.cancelChildSession(meta.id, child.id, "stop")).rejects.toMatchObject({
+			code: "unsupported-runtime-operation",
+			operation: "cancel",
+		} satisfies Partial<PalotMetaSessionError>)
+
+		await expect(service.listChildSessionArtifacts(meta.id, child.id)).rejects.toMatchObject({
+			code: "unsupported-runtime-operation",
+			operation: "artifacts",
 		} satisfies Partial<PalotMetaSessionError>)
 
 		rmSync(path.dirname(storePath), { recursive: true, force: true })
