@@ -41,6 +41,8 @@ function fakeGrants(granted: string[]): GrantStore {
 			return granted
 		},
 		async revoke() {},
+		async revokeAll() {},
+		async revokeAllForVersion() {},
 	}
 }
 

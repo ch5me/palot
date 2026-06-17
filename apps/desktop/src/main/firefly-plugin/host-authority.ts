@@ -37,7 +37,12 @@ import type {
 } from "../../shared/firefly-plugin/host-authority-types"
 import { createCloudProjectionCache, type CloudProjectionCache } from "./cloud-projection-cache"
 import { createOpenVsxClient } from "./registry/open-vsx-client"
-import { installExtension, uninstallExtension, applyInstalledTheme } from "./install/install-orchestrator"
+import {
+	installExtension,
+	uninstallExtension,
+	applyInstalledTheme,
+	liveRegisterInstalledPlugin,
+} from "./install/install-orchestrator"
 import { listInstalledExtensions } from "./install/extension-store"
 
 import {
@@ -215,6 +220,16 @@ export class ElectronHostAuthority implements HostAuthority {
 			pluginId,
 			enabled,
 		)
+		// A freshly-installed extension is not registered on the boot-once
+		// supervisor yet, so enabling it must live-register its worker (F4) — the
+		// spawn trust gate lives in registerInstalledExtensionWorker (F3). Fire and
+		// forget: setEnabled is synchronous; failures (no worker bundle / surface-
+		// only extension) are logged inside liveRegisterInstalledPlugin.
+		if (enabled && !supervised.supervised) {
+			void liveRegisterInstalledPlugin(pluginId).then((registered) => {
+				if (registered) broadcastCatalogChanged("set-enabled:live-register")
+			})
+		}
 		broadcastCatalogChanged(`set-enabled:${enabled ? "enable" : "disable"}`)
 		log.info("Plugin set-enabled applied", {
 			pluginId,

@@ -1,18 +1,21 @@
 /**
- * Firefly Plugin Marketplace — Browse/Install UI (Phase 1, §11)
+ * Firefly Plugin Marketplace — Browse/Install UI (§11)
  *
  * Minimal but real marketplace browse surface:
- *   - Search Open VSX for theme extensions
- *   - Install a theme (→ IPC → install orchestrator)
+ *   - Search the Firefly gallery for extensions (themes + code extensions)
+ *   - Install an extension (→ IPC → install orchestrator with capability consent)
  *   - List installed extensions with apply/uninstall controls
  *
  * Modeled on v2-plugins-panel.tsx: same styling, same patterns,
  * same tanstack-query hooks. No new design patterns introduced.
  *
  * Architecture:
- *   - Search results come from Open VSX via main process IPC (gallery-search).
+ *   - Search results come from the gallery via main process IPC (gallery-search).
  *   - Install/uninstall/apply-theme are IPC mutations.
  *   - Installed list is fetched via list-installed IPC.
+ *   - Code extensions that declare capabilities fire the consent dialog before
+ *     install; the approved token set is threaded through to the grant store via
+ *     `consentedCapabilities` in the install mutation input (C3).
  *   - "Apply" registers the theme's CSS tokens and calls useSetTheme so
  *     useThemeEffect injects the real shadcn CSS vars into the DOM immediately.
  */
@@ -60,7 +63,6 @@ function useGallerySearch(query: string, enabled: boolean) {
 		queryFn: () =>
 			getMarketplaceBridge().gallerySearch({
 				query: query || undefined,
-				category: "Themes",
 				size: 20,
 			}),
 		enabled,
@@ -140,7 +142,7 @@ function GalleryEntry({
 					size="sm"
 					type="button"
 					className="shrink-0"
-					title={installed ? "Already installed" : "Install this theme"}
+					title={installed ? "Already installed" : "Install this extension"}
 				>
 					{installing ? (
 						<Loader2Icon className="size-3.5 animate-spin" aria-hidden="true" />
@@ -268,12 +270,19 @@ export function MarketplacePanel({ className }: MarketplacePanelProps) {
 	)
 
 	const installMutation = useMutation({
-		mutationFn: (input: { namespace: string; name: string; version: string }) =>
+		mutationFn: (input: {
+			kind: "open-vsx" | "firefly"
+			namespace: string
+			name: string
+			version: string
+			consentedCapabilities?: readonly string[]
+		}) =>
 			getMarketplaceBridge().install({
-				kind: "open-vsx",
+				kind: input.kind,
 				namespace: input.namespace,
 				name: input.name,
 				version: input.version,
+				consentedCapabilities: input.consentedCapabilities,
 			}),
 		onSuccess: () => {
 			void queryClient.invalidateQueries({ queryKey: ["marketplace", "installed"] })
@@ -281,9 +290,15 @@ export function MarketplacePanel({ className }: MarketplacePanelProps) {
 	})
 
 	// Capability consent gate (P3d). A gallery entry that declares capabilities
-	// (code extensions) opens the consent dialog before install; data-only themes
-	// declare none and install directly. The consent step is deny-by-default.
-	type GalleryItem = { namespace: string; name: string; version: string; displayName: string | null }
+	// (code extensions) opens the consent dialog before install; data-only
+	// extensions declare none and install directly. Deny-by-default.
+	type GalleryItem = {
+		kind: "open-vsx" | "firefly"
+		namespace: string
+		name: string
+		version: string
+		displayName: string | null
+	}
 	const [pendingConsent, setPendingConsent] = useState<{ ext: GalleryItem; items: ConsentItem[] } | null>(null)
 
 	function requestInstall(ext: GalleryItem & { requiredCapabilities?: readonly string[] }) {
@@ -292,7 +307,7 @@ export function MarketplacePanel({ className }: MarketplacePanelProps) {
 			setPendingConsent({ ext, items })
 			return
 		}
-		installMutation.mutate({ namespace: ext.namespace, name: ext.name, version: ext.version })
+		installMutation.mutate({ kind: ext.kind, namespace: ext.namespace, name: ext.name, version: ext.version })
 	}
 
 	const uninstallMutation = useMutation({
@@ -333,7 +348,7 @@ export function MarketplacePanel({ className }: MarketplacePanelProps) {
 					<h3 className="text-sm font-medium text-foreground">Marketplace</h3>
 				</div>
 				<p className="mt-0.5 text-xs text-muted-foreground">
-					Browse and install VS Code themes from Open VSX
+					Browse and install extensions from the Firefly gallery
 				</p>
 				{/* Tab bar */}
 				<div className="mt-2 flex gap-1">
@@ -367,7 +382,7 @@ export function MarketplacePanel({ className }: MarketplacePanelProps) {
 								type="search"
 								value={searchInput}
 								onChange={(e) => setSearchInput(e.target.value)}
-								placeholder="Search themes on Open VSX…"
+								placeholder="Search extensions…"
 								className="w-full rounded-md border border-border bg-input pl-8 pr-3 py-1.5 text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring"
 							/>
 						</div>
@@ -393,11 +408,11 @@ export function MarketplacePanel({ className }: MarketplacePanelProps) {
 							<>
 								<SectionHeader>
 									{gallery.data.totalSize.toLocaleString()} results
-									{activeQuery ? ` for "${activeQuery}"` : " · popular themes"}
+									{activeQuery ? ` for "${activeQuery}"` : " · popular extensions"}
 								</SectionHeader>
 								{gallery.data.extensions.length === 0 ? (
 									<div className="rounded-md border border-dashed border-border bg-muted/10 px-3 py-2 text-xs text-muted-foreground">
-										No themes found. Try a different search term.
+										No extensions found. Try a different search term.
 									</div>
 								) : (
 									<ul className="space-y-2">
@@ -408,6 +423,15 @@ export function MarketplacePanel({ className }: MarketplacePanelProps) {
 												installMutation.isPending &&
 												installMutation.variables?.namespace === ext.namespace &&
 												installMutation.variables?.name === ext.name
+											// Derive source kind from trust/runtime hints when available;
+											// fall back to "open-vsx" for entries without a hint (legacy
+											// Open VSX results). A firefly-gallery adapter populates
+											// trustHint:"signed-third-party" or runtimeHint:"node-worker".
+											const sourceKind: "open-vsx" | "firefly" =
+												ext.runtimeHint === "node-worker" ||
+												ext.trustHint === "signed-third-party"
+													? "firefly"
+													: "open-vsx"
 											return (
 												<GalleryEntry
 													key={extId}
@@ -421,10 +445,12 @@ export function MarketplacePanel({ className }: MarketplacePanelProps) {
 													installing={isInstalling}
 													onInstall={() =>
 														requestInstall({
+															kind: sourceKind,
 															namespace: ext.namespace,
 															name: ext.name,
 															version: ext.version,
 															displayName: ext.displayName,
+															requiredCapabilities: ext.requiredCapabilities,
 														})
 													}
 												/>
@@ -441,7 +467,7 @@ export function MarketplacePanel({ className }: MarketplacePanelProps) {
 							</>
 						) : (
 							<div className="text-xs text-muted-foreground">
-								Type to search for themes on Open VSX.
+								Type to search for extensions in the gallery.
 							</div>
 						)}
 					</>
@@ -461,7 +487,7 @@ export function MarketplacePanel({ className }: MarketplacePanelProps) {
 						) : installedCount === 0 ? (
 							<div className="rounded-md border border-dashed border-border bg-muted/10 px-3 py-3 text-center text-xs text-muted-foreground">
 								<PackageIcon className="mx-auto mb-1 size-5 opacity-40" aria-hidden="true" />
-								No themes installed yet. Browse the gallery to install one.
+								No extensions installed yet. Browse the gallery to install one.
 							</div>
 						) : (
 							<>
@@ -510,10 +536,15 @@ export function MarketplacePanel({ className }: MarketplacePanelProps) {
 						const ext = pendingConsent.ext
 						setPendingConsent(null)
 						if (approved === null) return
-						// approved capabilities flow to the install grant store as granted/user
-						// once the install IPC threads `consentedCapabilities` (the install
-						// orchestrator's persistInstallGrants already accepts it).
-						installMutation.mutate({ namespace: ext.namespace, name: ext.name, version: ext.version })
+						// Thread the approved capability tokens into the install input so the
+						// orchestrator's persistInstallGrants writes them as granted/user (C3).
+						installMutation.mutate({
+							kind: ext.kind,
+							namespace: ext.namespace,
+							name: ext.name,
+							version: ext.version,
+							consentedCapabilities: approved.length > 0 ? approved : undefined,
+						})
 					}}
 				/>
 			) : null}

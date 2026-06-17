@@ -9,9 +9,21 @@
  * `scope` uses the dispatch vocabulary (session | project | app); the design
  * doc's "workspace" maps to "project". An `app`-scoped grant applies in every
  * narrower scope; a session/project grant applies only within its own scope id.
+ *
+ * C5 — Version-keyed grants:
+ *   Grant IDs now embed the plugin version (or `"*"` for version-agnostic rows,
+ *   preserving backward compatibility). A v2 update does NOT silently inherit
+ *   v1 grants because the primary-key composite changes. On update, call
+ *   `revokeAll` / `revokeAllForVersion` so the new consent flow writes fresh
+ *   version-scoped rows.
+ *
+ *   The `resolveGrantedTokens` signature is UNCHANGED for existing callers
+ *   (C2/F3/dispatch). Pass `pluginVersion` to filter to a specific version's
+ *   rows; omitting it returns all matching-scope grants regardless of version
+ *   (the single-version case that was the only case before C5).
  */
 
-import { and, eq } from "drizzle-orm"
+import { and, eq, like } from "drizzle-orm"
 
 import { ensureDb } from "../automation/database"
 import { extensionCapabilityGrants } from "../automation/schema"
@@ -46,6 +58,14 @@ export type GrantedBy = "builtin-policy" | "user" | "admin-policy"
 
 export interface CapabilityGrantRecord {
 	readonly pluginId: string
+	/**
+	 * Semver string of the plugin version this grant is bound to, or `"*"` for
+	 * version-agnostic rows written before C5 landed (backward compat).
+	 *
+	 * C5: omit or pass `"*"` for version-agnostic; pass the exact version string
+	 * to bind the grant so a later update does NOT auto-inherit it.
+	 */
+	readonly pluginVersion?: string
 	readonly scope: GrantScope
 	readonly scopeId: string | null
 	readonly capability: string
@@ -55,14 +75,24 @@ export interface CapabilityGrantRecord {
 	readonly expiresAt: number | null
 }
 
-/** Deterministic primary key. `scopeId` null collapses to `*` (any scope). */
+/**
+ * Deterministic primary key.
+ *
+ * Format (C5): `${pluginId}:v:${pluginVersion ?? "*"}:${scope}:${scopeId ?? "*"}:${capability}`
+ *
+ * The `v:` segment makes the version portion unambiguous in the composite key.
+ * `pluginVersion` defaults to `"*"` (version-agnostic) for backward compatibility
+ * — existing rows written without a version continue to be resolved.
+ */
 export function buildGrantId(input: {
 	pluginId: string
+	pluginVersion?: string
 	scope: GrantScope
 	scopeId: string | null
 	capability: string
 }): string {
-	return `${input.pluginId}:${input.scope}:${input.scopeId ?? "*"}:${input.capability}`
+	const v = input.pluginVersion ?? "*"
+	return `${input.pluginId}:v:${v}:${input.scope}:${input.scopeId ?? "*"}:${input.capability}`
 }
 
 export interface GrantStore {
@@ -77,10 +107,38 @@ export interface GrantStore {
 	 * `grantState === "granted"`, not expired, and either the requested scope or
 	 * an `app`-scoped grant (which applies everywhere). Deny-by-default — denied
 	 * and prompt-required rows never appear here.
+	 *
+	 * C5: when `pluginVersion` is provided, only rows with a matching version
+	 * (or version-agnostic `"*"` rows) are returned. When omitted, all matching-
+	 * scope rows are returned regardless of version (the single-version backward-
+	 * compat case that C2/F3/dispatch rely on).
 	 */
-	resolveGrantedTokens(input: { pluginId: string; scope: GrantScope; scopeId?: string | null; nowMs?: number }): Promise<string[]>
-	/** Remove one grant row. */
-	revoke(input: { pluginId: string; scope: GrantScope; scopeId: string | null; capability: string }): Promise<void>
+	resolveGrantedTokens(input: {
+		pluginId: string
+		scope: GrantScope
+		scopeId?: string | null
+		pluginVersion?: string
+		nowMs?: number
+	}): Promise<string[]>
+	/** Remove one grant row by its composite key. */
+	revoke(input: {
+		pluginId: string
+		pluginVersion?: string
+		scope: GrantScope
+		scopeId: string | null
+		capability: string
+	}): Promise<void>
+	/**
+	 * Revoke ALL grant rows for a plugin (all versions, all scopes, all caps).
+	 * Called on uninstall/disable so a later re-install must re-consent.
+	 */
+	revokeAll(pluginId: string): Promise<void>
+	/**
+	 * Revoke all grant rows for a specific plugin version.
+	 * Called during update to invalidate the old version's grants before writing
+	 * fresh rows for the new version.
+	 */
+	revokeAllForVersion(pluginId: string, pluginVersion: string): Promise<void>
 }
 
 /**
@@ -131,8 +189,13 @@ export function createGrantStore(deps: { db: GrantDb; now?: () => number }): Gra
 	}
 
 	function fromRow(row: typeof extensionCapabilityGrants.$inferSelect): CapabilityGrantRecord {
+		// Extract pluginVersion from the id if it follows the C5 format
+		// `pluginId:v:version:scope:scopeId:capability`. Legacy rows (pre-C5)
+		// have format `pluginId:scope:scopeId:capability` with no `v:` segment.
+		const versionFromId = extractVersionFromId(row.id, row.pluginId)
 		return {
 			pluginId: row.pluginId,
+			pluginVersion: versionFromId ?? undefined,
 			scope: row.scope as GrantScope,
 			scopeId: row.scopeId,
 			capability: row.capability,
@@ -190,6 +253,16 @@ export function createGrantStore(deps: { db: GrantDb; now?: () => number }): Gra
 				// app-scoped grants apply in every narrower scope; otherwise the
 				// scope must match the request.
 				if (row.scope !== "app" && row.scope !== input.scope) continue
+
+				// C5 version filter: when pluginVersion is specified, only return
+				// grants for that version or version-agnostic ("*") rows.
+				if (input.pluginVersion !== undefined) {
+					const rowVersion = extractVersionFromId(row.id, row.pluginId)
+					if (rowVersion !== null && rowVersion !== "*" && rowVersion !== input.pluginVersion) {
+						continue
+					}
+				}
+
 				tokens.add(row.capability)
 			}
 			return [...tokens]
@@ -205,5 +278,54 @@ export function createGrantStore(deps: { db: GrantDb; now?: () => number }): Gra
 					),
 				)
 		},
+
+		async revokeAll(pluginId) {
+			await deps.db
+				.delete(extensionCapabilityGrants)
+				.where(eq(extensionCapabilityGrants.pluginId, pluginId))
+		},
+
+		async revokeAllForVersion(pluginId, pluginVersion) {
+			// Use a LIKE prefix to match all rows for this plugin+version combination.
+			// C5 id format: `${pluginId}:v:${pluginVersion}:...`
+			// The prefix uniquely identifies the version segment because `:v:` is a
+			// fixed delimiter (no plugin id or version may contain `:v:`).
+			const prefix = `${pluginId}:v:${pluginVersion}:%`
+			await deps.db
+				.delete(extensionCapabilityGrants)
+				.where(
+					and(
+						eq(extensionCapabilityGrants.pluginId, pluginId),
+						like(extensionCapabilityGrants.id, prefix),
+					),
+				)
+		},
 	}
+}
+
+// ---------------------------------------------------------------------------
+// Internal helpers
+// ---------------------------------------------------------------------------
+
+/**
+ * Extract the encoded plugin version from a grant row id.
+ *
+ * C5 format: `${pluginId}:v:${version}:${scope}:${scopeId}:${capability}`
+ * Legacy format (pre-C5): `${pluginId}:${scope}:${scopeId}:${capability}`
+ *   (no `v:` segment — identified by the absence of `:v:` after the pluginId).
+ *
+ * Returns `null` for legacy rows (no version encoded), or the version string
+ * (which may be `"*"` for version-agnostic C5 rows).
+ */
+function extractVersionFromId(id: string, pluginId: string): string | null {
+	// C5 ids start with `${pluginId}:v:` — the literal `:v:` sentinel.
+	const c5Prefix = `${pluginId}:v:`
+	if (!id.startsWith(c5Prefix)) {
+		return null // legacy row
+	}
+	const rest = id.slice(c5Prefix.length)
+	// rest = `${version}:${scope}:${scopeId}:${capability}` — version ends at the first `:`
+	const colonIdx = rest.indexOf(":")
+	if (colonIdx === -1) return null
+	return rest.slice(0, colonIdx)
 }

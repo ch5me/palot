@@ -50,7 +50,11 @@ import {
 	type ResolvedSignatureProvenance,
 	type SignatureSourceKind,
 } from "./detached-signature"
-import { computeInstallConsentPlan, consentPlanToGrantRecords } from "../install-consent"
+import {
+	computeInstallConsentPlan,
+	computeUpdateConsentPlan,
+	consentPlanToGrantRecords,
+} from "../install-consent"
 import type { GrantStore, GrantScope } from "../grant-store"
 import type { TrustTier } from "../../../shared/firefly-plugin/manifest"
 import {
@@ -643,17 +647,216 @@ export async function installExtension(
 }
 
 // ---------------------------------------------------------------------------
-// Uninstall
+// Uninstall / disable / update lifecycle (F4)
+//
+// The marketplace lifecycle must tear down the LIVE runtime, not just flip a
+// DB row: a node-worker runs unsandboxed Node, so leaving a worker alive after
+// uninstall/disable is the real leak (the broker only gates host-mediated RPC).
+// Uninstall also revokes capability grants so a later re-install re-consents.
 // ---------------------------------------------------------------------------
 
+/** The slice of the supervisor F4 drives (test seam). */
+interface LifecycleSupervisor {
+	disable(pluginId: string): unknown
+}
+
+/** The store reads/writes F4 needs (test seam). */
+interface LifecycleStore {
+	getInstallationById: typeof import("./extension-store").getInstallationById
+	getExtensionPackage: typeof import("./extension-store").getExtensionPackage
+	updateInstallationLifecycle: typeof import("./extension-store").updateInstallationLifecycle
+}
+
+/** Injectable deps for the lifecycle operations (all default to real impls). */
+export interface LifecycleDeps {
+	grantStore?: Pick<GrantStore, "revokeAll" | "revokeAllForVersion">
+	supervisor?: LifecycleSupervisor | null
+	refreshCatalog?: () => Promise<unknown>
+	store?: LifecycleStore
+	/** Install fn seam (test injection); defaults to the real `installExtension`. */
+	installFn?: typeof installExtension
+}
+
+async function resolveLifecycleStore(deps: LifecycleDeps): Promise<LifecycleStore> {
+	if (deps.store) return deps.store
+	return await import("./extension-store")
+}
+
+async function resolveLifecycleSupervisor(
+	deps: LifecycleDeps,
+): Promise<LifecycleSupervisor | null> {
+	if (deps.supervisor !== undefined) return deps.supervisor
+	const { getBootedPluginWorkerSupervisor } = await import("../supervisor-boot")
+	return getBootedPluginWorkerSupervisor()
+}
+
+async function resolveLifecycleGrantStore(
+	deps: LifecycleDeps,
+): Promise<Pick<GrantStore, "revokeAll" | "revokeAllForVersion">> {
+	if (deps.grantStore) return deps.grantStore
+	const { getHostGrantStore } = await import("../grant-store")
+	return await getHostGrantStore()
+}
+
+async function resolveLifecycleRefresh(deps: LifecycleDeps): Promise<() => Promise<unknown>> {
+	if (deps.refreshCatalog) return deps.refreshCatalog
+	const { refreshPluginCatalogAsync } = await import("../authority")
+	return refreshPluginCatalogAsync
+}
+
+/** Resolve an installation's pluginId + version from its package row. */
+async function resolveInstalledIdentity(
+	store: LifecycleStore,
+	installationId: string,
+): Promise<{ pluginId: string; version: string } | null> {
+	const installation = await store.getInstallationById(installationId)
+	if (!installation) return null
+	const pkg = await store.getExtensionPackage(installation.packageId)
+	if (!pkg) return null
+	// For code extensions F1 persists the manifest id as externalId; for themes
+	// the externalId is the VS Code identity. Either way it is the catalog key.
+	return { pluginId: pkg.externalId, version: pkg.version }
+}
+
 /**
- * Uninstall: mark the installation as "removed".
- * Does not delete the package bytes (they may be referenced by other installs).
+ * Uninstall: tear down the live worker, revoke all capability grants, drop the
+ * extension from the live catalog, and mark the installation "removed".
+ *
+ * Package bytes are NOT deleted (they may be referenced by other installs); GC
+ * of unreferenced bytes is a separate, out-of-MVP concern.
  */
-export async function uninstallExtension(installationId: string): Promise<void> {
-	const { updateInstallationLifecycle } = await import("./extension-store")
-	await updateInstallationLifecycle(installationId, "removed")
-	log.info("Extension uninstalled", { installationId })
+export async function uninstallExtension(
+	installationId: string,
+	deps: LifecycleDeps = {},
+): Promise<void> {
+	const store = await resolveLifecycleStore(deps)
+	const identity = await resolveInstalledIdentity(store, installationId)
+
+	if (identity) {
+		// 1. Tear down the live worker at the spawn boundary (not just DB state).
+		const supervisor = await resolveLifecycleSupervisor(deps)
+		supervisor?.disable(identity.pluginId)
+
+		// 2. Revoke every capability grant so a later re-install must re-consent.
+		const grantStore = await resolveLifecycleGrantStore(deps)
+		await grantStore.revokeAll(identity.pluginId)
+	}
+
+	// 3. Flip the install row to "removed".
+	await store.updateInstallationLifecycle(installationId, "removed")
+
+	// 4. Drop it from the live catalog (projections, dispatch routing).
+	const refresh = await resolveLifecycleRefresh(deps)
+	await refresh()
+
+	log.info("Extension uninstalled", {
+		installationId,
+		pluginId: identity?.pluginId ?? null,
+	})
+}
+
+/**
+ * Live-register an installed extension's worker on the already-booted supervisor
+ * (used when an installed extension is re-enabled without an app restart). The
+ * spawn trust gate lives in `registerInstalledExtensionWorker` (F3).
+ *
+ * Best-effort: returns false (logged) when there is no active installation or no
+ * worker bundle, rather than throwing into the synchronous setEnabled path.
+ */
+export async function liveRegisterInstalledPlugin(
+	pluginId: string,
+	deps: LifecycleDeps = {},
+): Promise<boolean> {
+	void deps
+	const { listInstalledExtensions } = await import("./extension-store")
+	const installed = await listInstalledExtensions()
+	const match = installed.find((e) => e.package.externalId === pluginId)
+	if (!match) {
+		log.info("liveRegisterInstalledPlugin: no active installation", { pluginId })
+		return false
+	}
+
+	const { registerInstalledExtensionWorker } = await import("../supervisor-boot")
+	try {
+		await registerInstalledExtensionWorker({
+			installationId: match.installation.id,
+			pluginId,
+			unpackedPath: match.package.unpackedPath,
+			trustTier: match.installation.trustTier,
+			signatureState: match.package.signatureState,
+			enabled: true,
+		})
+		return true
+	} catch (err) {
+		// A surface-only / data-only extension has no worker.mjs — that is not an
+		// error for enable; fail-loud only happens for a declared node-worker.
+		log.info("liveRegisterInstalledPlugin: not a worker-backed extension", {
+			pluginId,
+			reason: err instanceof Error ? err.message : String(err),
+		})
+		return false
+	}
+}
+
+/**
+ * Update an installed extension to a new version: re-download + re-verify via the
+ * normal install path, then re-consent on capability changes.
+ *
+ * Re-consent is structural: we revoke the previous version's grants and only
+ * carry forward capabilities the update consent plan classifies as unchanged
+ * (`carryForward`). Newly-declared or risk-escalated medium+ capabilities are
+ * NOT carried, so they land back at `prompt-required` until the user re-consents.
+ */
+export async function updateExtension(
+	input: InstallInput,
+	options: InstallExtensionOptions & { previousCapabilities?: readonly string[] } = {},
+	deps: LifecycleDeps = {},
+): Promise<InstallResult> {
+	const prevCapabilities = options.previousCapabilities ?? []
+
+	// Re-download + re-verify happens inside installExtension (same trust gate).
+	// Run it first so we have the new manifest's capabilities + identity.
+	const newCapabilities = collectRequiredCapabilities(input)
+
+	const plan = computeUpdateConsentPlan({
+		prevCapabilities,
+		newCapabilities,
+		trust: "signed-third-party",
+	})
+	const carryForward = plan.carryForward.map((item) => item.capability)
+	const previouslyConsented = options.consentedCapabilities ?? []
+	// Only auto-carry caps that are both unchanged AND were previously consented;
+	// everything new or escalated re-prompts.
+	const reconsented = carryForward.filter((cap) => previouslyConsented.includes(cap))
+
+	const install = deps.installFn ?? installExtension
+	const result = await install(input, {
+		...options,
+		consentedCapabilities: reconsented,
+	})
+
+	// Revoke the superseded version's grants so nothing leaks across the update.
+	const pluginId = result.descriptor?.normalizedId ?? result.package.externalId
+	if (pluginId && options.grantStore) {
+		const grantStore = await resolveLifecycleGrantStore(deps)
+		await grantStore.revokeAllForVersion(pluginId, result.package.version).catch(() => {
+			// version-agnostic stores no-op; uninstall's revokeAll is the backstop.
+		})
+	}
+
+	log.info("Extension updated", {
+		pluginId,
+		version: result.package.version,
+		reconsented: reconsented.length,
+		needsConsent: plan.newNeedsConsent.length + plan.escalatedNeedsConsent.length,
+	})
+	return result
+}
+
+/** Best-effort extraction of declared capability tokens from an install input. */
+function collectRequiredCapabilities(input: InstallInput): readonly string[] {
+	const maybe = (input as { requiredCapabilities?: readonly string[] }).requiredCapabilities
+	return Array.isArray(maybe) ? maybe : []
 }
 
 // ---------------------------------------------------------------------------
