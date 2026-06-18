@@ -137,6 +137,8 @@ import {
 	setUiStateSnapshot,
 } from "./palot-browser-ipc"
 import { openLoomSession as resolveLoomSession } from "./palot-resolver"
+import { createPalotMetaSessionService } from "./palot-meta-session"
+import { buildMetaSessionReviewModel } from "./palot-meta-session-review"
 import { sessionOpenCommand, stateCommand } from "./palot-runtime/commands"
 import { registerPalotArtifactIpc } from "./palot-runtime/ipc"
 import { getLoomSessionState, queueLoomEvent } from "./palot-runtime/session-store"
@@ -161,6 +163,7 @@ import {
 registerPalotBrowserWindows(() => BrowserWindow.getAllWindows())
 
 const log = createLogger("ipc")
+const palotMetaSessionService = createPalotMetaSessionService()
 const ptyController = createPtyController({
 	onData: (event) => {
 		for (const win of BrowserWindow.getAllWindows()) {
@@ -507,6 +510,97 @@ export function registerIpcHandlers(): void {
 			async (_, sessionId: string, delta: { nodeId: string; field: string; value: unknown }) => {
 				stateCommand(sessionId, encodeWirePayload({ delta }))
 			},
+		),
+	)
+
+	ipcMain.handle(
+		"palot:meta-session:list",
+		withLogging("palot:meta-session:list", () => palotMetaSessionService.listMetaSessions()),
+	)
+	ipcMain.handle(
+		"palot:meta-session:create",
+		withLogging("palot:meta-session:create", (_, input: { title: string; parentSessionId?: string }) =>
+			palotMetaSessionService.createMetaSession(input),
+		),
+	)
+	ipcMain.handle(
+		"palot:meta-session:children:list",
+		withLogging("palot:meta-session:children:list", (_, metaSessionId: string) =>
+			palotMetaSessionService.listChildSessions(metaSessionId),
+		),
+	)
+	ipcMain.handle(
+		"palot:meta-session:child:get",
+		withLogging("palot:meta-session:child:get", (_, metaSessionId: string, childSessionId: string) =>
+			palotMetaSessionService.getChildSession(metaSessionId, childSessionId),
+		),
+	)
+	ipcMain.handle(
+		"palot:meta-session:events",
+		withLogging(
+			"palot:meta-session:events",
+			(_, metaSessionId: string, childSessionId: string, cursor?: string) =>
+				palotMetaSessionService.readChildSessionEvents(metaSessionId, childSessionId, cursor),
+		),
+	)
+	ipcMain.handle(
+		"palot:meta-session:review-model",
+		withLogging("palot:meta-session:review-model", async (_, metaSessionId: string) => {
+			const children = await palotMetaSessionService.listChildSessionsForReview(metaSessionId)
+			const eventPagesByChildSessionId = Object.fromEntries(
+				await Promise.all(
+					children.map(async (child) => [
+						child.id,
+						await palotMetaSessionService.readAllChildSessionEvents(metaSessionId, child.id),
+					]),
+				),
+			)
+			return buildMetaSessionReviewModel({ children, eventPagesByChildSessionId })
+		}),
+	)
+	ipcMain.handle(
+		"palot:meta-session:policy:evaluate",
+		withLogging(
+			"palot:meta-session:policy:evaluate",
+			(
+				_,
+				metaSessionId: string,
+				childSessionId: string,
+				operation: "send" | "cancel",
+				input: { policyMode: "dry-run" | "ask" | "enforce"; approvalId?: string; approvedBy?: string },
+			) =>
+				palotMetaSessionService.evaluateChildSessionPolicy(
+					metaSessionId,
+					childSessionId,
+					operation,
+					input,
+				),
+		),
+	)
+	ipcMain.handle(
+		"palot:meta-session:send",
+		withLogging(
+			"palot:meta-session:send",
+			(
+				_,
+				metaSessionId: string,
+				childSessionId: string,
+				prompt: string,
+				input: { policyMode: "dry-run" | "ask" | "enforce"; approvalId?: string; approvedBy?: string },
+			) => palotMetaSessionService.sendChildSessionPrompt(metaSessionId, childSessionId, prompt, input),
+		),
+	)
+	ipcMain.handle(
+		"palot:meta-session:cancel",
+		withLogging(
+			"palot:meta-session:cancel",
+			(
+				_,
+				metaSessionId: string,
+				childSessionId: string,
+				reason: string,
+				input: { policyMode: "dry-run" | "ask" | "enforce"; approvalId?: string; approvedBy?: string },
+			) => palotMetaSessionService.cancelChildSession(metaSessionId, childSessionId, reason, input),
 		),
 	)
 

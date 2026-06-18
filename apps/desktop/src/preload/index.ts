@@ -110,6 +110,44 @@ contextBridge.exposeInMainWorld("elf", {
 			sessionId: string,
 			delta: { nodeId: string; field: string; value: unknown },
 		) => ipcRenderer.invoke("palot:loom-state", sessionId, delta),
+		metaSession: {
+			list: () => ipcRenderer.invoke("palot:meta-session:list"),
+			create: (input: { title: string; parentSessionId?: string }) =>
+				ipcRenderer.invoke("palot:meta-session:create", input),
+			listChildren: (metaSessionId: string) =>
+				ipcRenderer.invoke("palot:meta-session:children:list", metaSessionId),
+			getChild: (metaSessionId: string, childSessionId: string) =>
+				ipcRenderer.invoke("palot:meta-session:child:get", metaSessionId, childSessionId),
+			readEvents: (metaSessionId: string, childSessionId: string, cursor?: string) =>
+				ipcRenderer.invoke("palot:meta-session:events", metaSessionId, childSessionId, cursor),
+			buildReviewModel: (metaSessionId: string) =>
+				ipcRenderer.invoke("palot:meta-session:review-model", metaSessionId),
+			evaluatePolicy: (
+				metaSessionId: string,
+				childSessionId: string,
+				operation: "send" | "cancel",
+				input: import("./api").PalotMetaSessionPolicyGateInput,
+			) =>
+				ipcRenderer.invoke(
+					"palot:meta-session:policy:evaluate",
+					metaSessionId,
+					childSessionId,
+					operation,
+					input,
+				),
+			sendPrompt: (
+				metaSessionId: string,
+				childSessionId: string,
+				prompt: string,
+				input: import("./api").PalotMetaSessionPolicyGateInput,
+			) => ipcRenderer.invoke("palot:meta-session:send", metaSessionId, childSessionId, prompt, input),
+			cancel: (
+				metaSessionId: string,
+				childSessionId: string,
+				reason: string,
+				input: import("./api").PalotMetaSessionPolicyGateInput,
+			) => ipcRenderer.invoke("palot:meta-session:cancel", metaSessionId, childSessionId, reason, input),
+		},
 		onOpenSidePanel: (callback: (payload: import("./api").PalotOpenSidePanelPayload) => void) => {
 			const listener = (
 				_event: unknown,

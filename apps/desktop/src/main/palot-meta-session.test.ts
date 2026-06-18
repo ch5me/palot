@@ -12,6 +12,7 @@ import {
 interface MockClientOptions {
 	session: Session
 	statuses?: Record<string, SessionStatus>
+	statusData?: unknown
 	onPromptAsync?: (args: {
 		sessionID: string
 		parts: Array<{ type: "text"; text: string }>
@@ -51,7 +52,7 @@ function createMockClient(options: MockClientOptions) {
 				return { data: options.session }
 			},
 			status: async () => ({
-				data: options.statuses ?? {},
+				data: options.statusData ?? options.statuses ?? {},
 			}),
 			promptAsync: async (args: {
 				sessionID: string
@@ -297,6 +298,88 @@ describe("palot-meta-session", () => {
 		rmSync(path.dirname(storePath), { recursive: true, force: true })
 	})
 
+	test("invalid runtime status payload fails loud instead of falling back", async () => {
+		const storePath = createTempStorePath()
+		const runtimeSession = buildSession()
+		const service = createPalotMetaSessionService({
+			storePath,
+			getServerUrl: () => "http://127.0.0.1:4096",
+			createClient: () =>
+				createMockClient({
+					session: runtimeSession,
+					statuses: {
+						[runtimeSession.id]: { type: "idle" },
+					},
+				}),
+			workingDirectory: "/repo",
+		})
+		const meta = service.createMetaSession({ title: "Meta root" })
+		const child = await service.createChildSession({
+			parentSessionId: meta.id,
+			runtimeKind: "opencode",
+			title: "OpenCode child",
+		})
+		const reader = createPalotMetaSessionService({
+			storePath,
+			getServerUrl: () => "http://127.0.0.1:4096",
+			createClient: () =>
+				createMockClient({
+					session: runtimeSession,
+					statusData: {
+						[runtimeSession.id]: { state: "busy" },
+					},
+				}),
+			workingDirectory: "/repo",
+		})
+
+		await expect(reader.getChildSession(meta.id, child.id)).rejects.toMatchObject({
+			code: "opencode-response-invalid",
+		})
+
+		rmSync(path.dirname(storePath), { recursive: true, force: true })
+	})
+
+	test("partial retry runtime status fails loud", async () => {
+		const storePath = createTempStorePath()
+		const runtimeSession = buildSession()
+		const service = createPalotMetaSessionService({
+			storePath,
+			getServerUrl: () => "http://127.0.0.1:4096",
+			createClient: () =>
+				createMockClient({
+					session: runtimeSession,
+					statuses: {
+						[runtimeSession.id]: { type: "idle" },
+					},
+				}),
+			workingDirectory: "/repo",
+		})
+		const meta = service.createMetaSession({ title: "Meta root" })
+		const child = await service.createChildSession({
+			parentSessionId: meta.id,
+			runtimeKind: "opencode",
+			title: "OpenCode child",
+		})
+		const reader = createPalotMetaSessionService({
+			storePath,
+			getServerUrl: () => "http://127.0.0.1:4096",
+			createClient: () =>
+				createMockClient({
+					session: runtimeSession,
+					statusData: {
+						[runtimeSession.id]: { type: "retry" },
+					},
+				}),
+			workingDirectory: "/repo",
+		})
+
+		await expect(reader.getChildSession(meta.id, child.id)).rejects.toMatchObject({
+			code: "opencode-response-invalid",
+		})
+
+		rmSync(path.dirname(storePath), { recursive: true, force: true })
+	})
+
 	test("denied policy never reaches prompt adapter path", async () => {
 		const storePath = createTempStorePath()
 		const runtimeSession = buildSession()
@@ -337,6 +420,45 @@ describe("palot-meta-session", () => {
 		rmSync(path.dirname(storePath), { recursive: true, force: true })
 	})
 
+	test("invalid policy mode fails before adapter mutation", async () => {
+		const storePath = createTempStorePath()
+		const runtimeSession = buildSession()
+		let promptCalls = 0
+		const service = createPalotMetaSessionService({
+			storePath,
+			getServerUrl: () => "http://127.0.0.1:4096",
+			createClient: () =>
+				createMockClient({
+					session: runtimeSession,
+					statuses: {
+						[runtimeSession.id]: { type: "idle" },
+					},
+					onPromptAsync: () => {
+						promptCalls += 1
+					},
+				}),
+			workingDirectory: "/repo",
+		})
+		const meta = service.createMetaSession({ title: "Meta root" })
+		const child = await service.createChildSession({
+			parentSessionId: meta.id,
+			runtimeKind: "opencode",
+			title: "OpenCode child",
+		})
+
+		await expect(
+			service.sendChildSessionPrompt(meta.id, child.id, "ship it", {
+				policyMode: "invalid",
+				approvalId: "approval_meta_123",
+			} as unknown as Parameters<typeof service.sendChildSessionPrompt>[3]),
+		).rejects.toMatchObject({
+			code: "opencode-response-invalid",
+		})
+		expect(promptCalls).toBe(0)
+
+		rmSync(path.dirname(storePath), { recursive: true, force: true })
+	})
+
 	test("ask policy logs visible approval gate without adapter mutation", async () => {
 		const storePath = createTempStorePath()
 		const runtimeSession = buildSession()
@@ -368,6 +490,7 @@ describe("palot-meta-session", () => {
 			policyMode: "ask",
 		})
 		const eventPage = await service.readChildSessionEvents(meta.id, child.id)
+		const blockedChild = await service.getChildSession(meta.id, child.id)
 		const policyEvent = eventPage.events.find((event) => event.type === "policy")
 
 		expect(verdict).toMatchObject({
@@ -375,6 +498,7 @@ describe("palot-meta-session", () => {
 			decision: "ask",
 		})
 		expect(promptCalls).toBe(0)
+		expect(blockedChild.status).toBe("blocked")
 		expect(policyEvent).toMatchObject({
 			type: "policy",
 			verdict: expect.objectContaining({
@@ -416,6 +540,7 @@ describe("palot-meta-session", () => {
 		const verdict = await service.sendChildSessionPrompt(meta.id, child.id, "ship it", {
 			policyMode: "enforce",
 			approvalId: "approval_meta_123",
+			approvedBy: "Chris",
 		})
 		const eventPage = await service.readChildSessionEvents(meta.id, child.id)
 		const policyEvent = eventPage.events.find((event) => event.type === "policy")
@@ -427,20 +552,121 @@ describe("palot-meta-session", () => {
 		expect(verdict).toMatchObject({
 			mode: "enforce",
 			decision: "allow",
-			adapterDispatchPermission: {
-				grantedBy: "approval_meta_123",
-			},
-		})
+				adapterDispatchPermission: {
+					approvalId: "approval_meta_123",
+					approvedBy: "Chris",
+					grantedBy: "Chris",
+					operation: "send",
+					target: {
+						childSessionId: child.id,
+						runtimeKind: "opencode",
+						runtimeSessionId: runtimeSession.id,
+					},
+				},
+			})
 		expect(policyEvent).toMatchObject({
 			type: "policy",
 			verdict: expect.objectContaining({
 				decision: "allow",
 				adapterDispatchPermission: expect.objectContaining({
-					grantedBy: "approval_meta_123",
+					approvalId: "approval_meta_123",
+					approvedBy: "Chris",
+					grantedBy: "Chris",
+					operation: "send",
+					target: expect.objectContaining({
+						childSessionId: child.id,
+						runtimeKind: "opencode",
+						runtimeSessionId: runtimeSession.id,
+					}),
 				}),
 			}),
 		})
 		expect(mutationEvent).toBeDefined()
+
+		rmSync(path.dirname(storePath), { recursive: true, force: true })
+	})
+
+	test("enforce policy denies approvedBy without approval id", async () => {
+		const storePath = createTempStorePath()
+		const runtimeSession = buildSession()
+		let promptCalls = 0
+		const service = createPalotMetaSessionService({
+			storePath,
+			now: () => new Date("2026-06-17T12:00:00.000Z"),
+			getServerUrl: () => "http://127.0.0.1:4096",
+			createClient: () =>
+				createMockClient({
+					session: runtimeSession,
+					statuses: {
+						[runtimeSession.id]: { type: "idle" },
+					},
+					onPromptAsync: () => {
+						promptCalls += 1
+					},
+				}),
+			workingDirectory: "/repo",
+		})
+		const meta = service.createMetaSession({ title: "Meta root" })
+		const child = await service.createChildSession({
+			parentSessionId: meta.id,
+			runtimeKind: "opencode",
+			title: "OpenCode child",
+		})
+
+		const verdict = await service.sendChildSessionPrompt(meta.id, child.id, "ship it", {
+			policyMode: "enforce",
+			approvedBy: "Chris",
+		})
+
+		expect(verdict).toMatchObject({
+			mode: "enforce",
+			decision: "deny",
+			reason: "send denied because approval id is missing",
+		})
+		expect(promptCalls).toBe(0)
+
+		rmSync(path.dirname(storePath), { recursive: true, force: true })
+	})
+
+	test("child session events page with explicit cursors", async () => {
+		const storePath = createTempStorePath()
+		const runtimeSession = buildSession()
+		const service = createPalotMetaSessionService({
+			storePath,
+			now: () => new Date("2026-06-17T12:00:00.000Z"),
+			getServerUrl: () => "http://127.0.0.1:4096",
+			createClient: () =>
+				createMockClient({
+					session: runtimeSession,
+					statuses: {
+						[runtimeSession.id]: { type: "idle" },
+					},
+				}),
+			workingDirectory: "/repo",
+		})
+		const meta = service.createMetaSession({ title: "Meta root" })
+		const child = await service.createChildSession({
+			parentSessionId: meta.id,
+			runtimeKind: "opencode",
+			title: "OpenCode child",
+		})
+
+		for (let index = 0; index < 55; index += 1) {
+			await service.evaluateChildSessionPolicy(meta.id, child.id, "send", {
+				policyMode: "dry-run",
+			})
+		}
+
+		const firstPage = await service.readChildSessionEvents(meta.id, child.id)
+		const secondPage = await service.readChildSessionEvents(meta.id, child.id, firstPage.nextCursor)
+
+		expect(firstPage.events).toHaveLength(50)
+		expect(firstPage.nextCursor).toBe("50")
+		expect(secondPage.events.length).toBeGreaterThan(0)
+		expect(secondPage.nextCursor).toBeUndefined()
+		await expect(service.readChildSessionEvents(meta.id, child.id, "10junk")).rejects.toMatchObject({
+			code: "opencode-response-invalid",
+		})
 
 		rmSync(path.dirname(storePath), { recursive: true, force: true })
 	})

@@ -28,6 +28,7 @@ const require = createRequire(import.meta.url)
 const STORE_DIR = path.join(getConfigDir(), "opencode")
 const STORE_FILE = path.join(STORE_DIR, "meta-sessions.json")
 const STORE_VERSION = 1
+const RUNTIME_EVENT_PAGE_SIZE = 50
 const OPENCODE_RUNTIME_KIND = "opencode"
 const DRY_RUN_RUNTIME_KINDS = ["codex", "claude-code"] as const
 
@@ -42,6 +43,23 @@ const metaSessionStatusSchema = z.enum([
 	"cancelled",
 ])
 const runtimeKindSchema = z.enum(["opencode", "claude-code", "codex"])
+const policyGateInputSchema = z
+	.object({
+		policyMode: z.enum(["dry-run", "ask", "enforce"]),
+		approvalId: nonEmptyStringSchema.optional(),
+		approvedBy: nonEmptyStringSchema.optional(),
+	})
+	.strict()
+const runtimeStatusPayloadSchema = z.discriminatedUnion("type", [
+	z.object({ type: z.literal("idle") }).strict(),
+	z.object({ type: z.literal("busy") }).passthrough(),
+	z.object({
+		type: z.literal("retry"),
+		attempt: z.number(),
+		message: z.string(),
+		next: z.number(),
+	}).strict(),
+])
 const metaSessionSchema = z
 	.object({
 		id: nonEmptyStringSchema,
@@ -181,6 +199,7 @@ export interface PalotMetaSessionService {
 	createChildSession(input: CreateChildSessionInput): Promise<ChildSession>
 	createChildSessions(input: CreateChildSessionsInput): Promise<ChildSession[]>
 	listChildSessions(metaSessionId: string): Promise<ChildSession[]>
+	listChildSessionsForReview(metaSessionId: string): Promise<ChildSession[]>
 	getChildSession(metaSessionId: string, childSessionId: string): Promise<ChildSession>
 	evaluateChildSessionPolicy(
 		metaSessionId: string,
@@ -193,6 +212,7 @@ export interface PalotMetaSessionService {
 		childSessionId: string,
 		cursor?: string,
 	): Promise<RuntimeEventPage>
+	readAllChildSessionEvents(metaSessionId: string, childSessionId: string): Promise<RuntimeEventPage>
 	sendChildSessionPrompt(
 		metaSessionId: string,
 		childSessionId: string,
@@ -289,8 +309,26 @@ function parseRuntimeSession(data: unknown, runtimeSessionId: string): Session {
 }
 
 function parseRuntimeStatuses(data: unknown): Record<string, SessionStatus> {
-	if (!data || typeof data !== "object" || Array.isArray(data)) return {}
-	return data as Record<string, SessionStatus>
+	if (!data || typeof data !== "object" || Array.isArray(data)) {
+		throw createMetaSessionError(
+			"opencode-response-invalid",
+			"OpenCode returned invalid session status payload",
+			{ runtimeKind: OPENCODE_RUNTIME_KIND },
+		)
+	}
+	const statuses: Record<string, SessionStatus> = {}
+	for (const [sessionId, value] of Object.entries(data)) {
+		const parsed = runtimeStatusPayloadSchema.safeParse(value)
+		if (!parsed.success) {
+			throw createMetaSessionError(
+				"opencode-response-invalid",
+				`OpenCode returned invalid status for session "${sessionId}"`,
+				{ runtimeKind: OPENCODE_RUNTIME_KIND, runtimeSessionId: sessionId },
+			)
+		}
+		statuses[sessionId] = parsed.data
+	}
+	return statuses
 }
 
 function mapOpenCodeStatus(
@@ -298,6 +336,7 @@ function mapOpenCodeStatus(
 	binding: SessionBinding | null,
 	fallbackStatus: MetaSessionStatus,
 ): MetaSessionStatus {
+	if (fallbackStatus === "blocked") return "blocked"
 	if (runtimeStatus?.type === "busy") return "active"
 	if (runtimeStatus?.type === "retry") return "blocked"
 	if (runtimeStatus?.type === "idle") return "idle"
@@ -427,13 +466,45 @@ function buildRuntimeEventLogId(childSessionId: string): string {
 	return `${childSessionId}:log:${crypto.randomUUID()}`
 }
 
+function parseRuntimeEventCursor(cursor: string | undefined): number {
+	if (!cursor) return 0
+	if (!/^\d+$/.test(cursor)) {
+		throw createMetaSessionError("opencode-response-invalid", `Invalid runtime event cursor "${cursor}"`)
+	}
+	const offset = Number.parseInt(cursor, 10)
+	if (!Number.isSafeInteger(offset) || offset < 0) {
+		throw createMetaSessionError("opencode-response-invalid", `Invalid runtime event cursor "${cursor}"`)
+	}
+	return offset
+}
+
+function pageRuntimeEvents(events: RuntimeEventPage["events"], cursor: string | undefined): RuntimeEventPage {
+	const offset = parseRuntimeEventCursor(cursor)
+	const page = events.slice(offset, offset + RUNTIME_EVENT_PAGE_SIZE)
+	const nextOffset = offset + page.length
+	return {
+		events: page,
+		nextCursor: nextOffset < events.length ? String(nextOffset) : undefined,
+	}
+}
+
 function buildAdapterDispatchPermission(
+	record: StoredChildSession,
+	operation: PolicyOperation,
 	input: PolicyGateInput,
 	timestamp: string,
 ): z.infer<typeof adapterDispatchPermissionSchema> {
 	return adapterDispatchPermissionSchema.parse({
 		grantedAt: timestamp,
 		grantedBy: input.approvedBy ?? input.approvalId ?? "policy-gate",
+		approvalId: input.approvalId,
+		approvedBy: input.approvedBy,
+		operation,
+		target: {
+			childSessionId: record.session.id,
+			runtimeKind: record.session.runtimeKind,
+			runtimeSessionId: record.session.runtimeSessionId,
+		},
 	})
 }
 
@@ -613,7 +684,7 @@ export function createPalotMetaSessionService(
 		}
 	}
 
-	async function buildRuntimeEventPage(record: StoredChildSession): Promise<RuntimeEventPage> {
+	async function buildRuntimeEvents(record: StoredChildSession): Promise<RuntimeEventPage["events"]> {
 		const hydrated = await hydrateChildSessionRecord(record)
 		const occurredAt =
 			hydrated.session.lastEventAt ?? hydrated.session.lastHeartbeatAt ?? hydrated.session.createdAt
@@ -662,27 +733,46 @@ export function createPalotMetaSessionService(
 			})
 		}
 
+		return [...events, ...hydrated.eventLog]
+	}
+
+	async function buildRuntimeEventPage(
+		record: StoredChildSession,
+		cursor?: string,
+	): Promise<RuntimeEventPage> {
+		return pageRuntimeEvents(await buildRuntimeEvents(record), cursor)
+	}
+
+	async function buildFullRuntimeEventPage(record: StoredChildSession): Promise<RuntimeEventPage> {
 		return {
-			events: [...events, ...hydrated.eventLog],
+			events: await buildRuntimeEvents(record),
 		}
 	}
 
-	function buildPolicyVerdict(
-		record: StoredChildSession,
-		operation: PolicyOperation,
-		input: PolicyGateInput,
-		occurredAt: string,
-	): PolicyVerdict {
-		if (isDryRunRuntimeKind(record.session.runtimeKind)) {
-			return {
-				mode: input.policyMode,
-				decision: "deny",
-				reason: `${record.session.runtimeKind} mutation authority stays disabled in Wave 4`,
-				blockers: [buildUnsupportedOperationBlocker(record.session.runtimeKind, operation)],
-			}
+function buildPolicyVerdict(
+	record: StoredChildSession,
+	operation: PolicyOperation,
+	input: PolicyGateInput,
+	occurredAt: string,
+): PolicyVerdict {
+	const parsedInputResult = policyGateInputSchema.safeParse(input)
+	if (!parsedInputResult.success) {
+		throw createMetaSessionError("opencode-response-invalid", "Invalid policy gate input", {
+			runtimeKind: record.session.runtimeKind,
+			childSessionId: record.session.id,
+		})
+	}
+	const parsedInput = parsedInputResult.data
+	if (isDryRunRuntimeKind(record.session.runtimeKind)) {
+		return {
+			mode: parsedInput.policyMode,
+			decision: "deny",
+			reason: `${record.session.runtimeKind} mutation authority stays disabled in Wave 4`,
+			blockers: [buildUnsupportedOperationBlocker(record.session.runtimeKind, operation)],
 		}
+	}
 
-		if (input.policyMode === "dry-run") {
+	if (parsedInput.policyMode === "dry-run") {
 			return {
 				mode: "dry-run",
 				decision: "deny",
@@ -691,7 +781,7 @@ export function createPalotMetaSessionService(
 			}
 		}
 
-		if (input.policyMode === "ask") {
+	if (parsedInput.policyMode === "ask") {
 			return {
 				mode: "ask",
 				decision: "ask",
@@ -700,11 +790,11 @@ export function createPalotMetaSessionService(
 			}
 		}
 
-		if (!input.approvalId && !input.approvedBy) {
+	if (!parsedInput.approvalId) {
 			return {
 				mode: "enforce",
 				decision: "deny",
-				reason: `${operation} denied because approval metadata is missing`,
+				reason: `${operation} denied because approval id is missing`,
 				blockers: [buildApprovalRequiredBlocker(operation)],
 			}
 		}
@@ -714,7 +804,7 @@ export function createPalotMetaSessionService(
 			decision: "allow",
 			reason: `${operation} approved for adapter dispatch`,
 			blockers: [],
-			adapterDispatchPermission: buildAdapterDispatchPermission(input, occurredAt),
+			adapterDispatchPermission: buildAdapterDispatchPermission(record, operation, parsedInput, occurredAt),
 		}
 	}
 
@@ -862,6 +952,14 @@ export function createPalotMetaSessionService(
 			return hydrated.map((entry) => entry.session)
 		},
 
+		async listChildSessionsForReview(metaSessionId) {
+			const store = readStoreFile(storePath)
+			findMetaSessionOrThrow(store, metaSessionId)
+			return store.childSessions
+				.filter((entry) => entry.session.parentSessionId === metaSessionId)
+				.map((entry) => entry.session)
+		},
+
 		async getChildSession(metaSessionId, childSessionId) {
 			const store = readStoreFile(storePath)
 			const record = findChildSessionRecordOrThrow(store, metaSessionId, childSessionId)
@@ -882,6 +980,7 @@ export function createPalotMetaSessionService(
 				...record,
 				session: {
 					...record.session,
+					status: verdict.decision === "ask" ? "blocked" : record.session.status,
 					lastEventAt: occurredAt,
 					lastHeartbeatAt: record.session.lastHeartbeatAt ?? occurredAt,
 				},
@@ -891,15 +990,16 @@ export function createPalotMetaSessionService(
 			return verdict
 		},
 
-		async readChildSessionEvents(metaSessionId, childSessionId) {
+		async readChildSessionEvents(metaSessionId, childSessionId, cursor) {
 			const store = readStoreFile(storePath)
 			const record = findChildSessionRecordOrThrow(store, metaSessionId, childSessionId)
-			const hydrated = await hydrateChildSessionRecord(record)
-			store.childSessions = store.childSessions.map((entry) =>
-				entry.session.id === hydrated.session.id ? hydrated : entry,
-			)
-			writeStoreFile(storePath, store)
-			return buildRuntimeEventPage(hydrated)
+			return buildRuntimeEventPage(record, cursor)
+		},
+
+		async readAllChildSessionEvents(metaSessionId, childSessionId) {
+			const store = readStoreFile(storePath)
+			const record = findChildSessionRecordOrThrow(store, metaSessionId, childSessionId)
+			return buildFullRuntimeEventPage(record)
 		},
 
 		async sendChildSessionPrompt(metaSessionId, childSessionId, prompt, input) {

@@ -1,4 +1,12 @@
 import type { OpenCodeRuntimeDescriptor } from "../shared/opencode-runtime"
+import type {
+	ChildSession,
+	MetaSession,
+	PolicyMode,
+	PolicyVerdict,
+	RuntimeEventPage,
+} from "@ch5me/agent-runtime-contracts"
+import type { MetaSessionReviewModel } from "../shared/palot-meta-session-review-contract"
 
 /**
  * Type definitions for the Electron preload bridge.
@@ -38,6 +46,12 @@ export type BrowserLaneStatus =
 	| "profile-locked"
 
 export type BrowserLaneReadiness = "unknown" | "pending" | "ready" | "failed" | "not-applicable"
+
+export interface PalotMetaSessionPolicyGateInput {
+	policyMode: PolicyMode
+	approvalId?: string
+	approvedBy?: string
+}
 
 export interface BrowserLaneEndpoint {
 	url: string | null
@@ -1340,6 +1354,36 @@ export interface ElfAPI {
 			sessionId: string,
 			delta: { nodeId: string; field: string; value: unknown },
 		) => Promise<void>
+		metaSession: {
+			list: () => Promise<MetaSession[]>
+			create: (input: { title: string; parentSessionId?: string }) => Promise<MetaSession>
+			listChildren: (metaSessionId: string) => Promise<ChildSession[]>
+			getChild: (metaSessionId: string, childSessionId: string) => Promise<ChildSession>
+			readEvents: (
+				metaSessionId: string,
+				childSessionId: string,
+				cursor?: string,
+			) => Promise<RuntimeEventPage>
+			buildReviewModel: (metaSessionId: string) => Promise<MetaSessionReviewModel>
+			evaluatePolicy: (
+				metaSessionId: string,
+				childSessionId: string,
+				operation: "send" | "cancel",
+				input: PalotMetaSessionPolicyGateInput,
+			) => Promise<PolicyVerdict>
+			sendPrompt: (
+				metaSessionId: string,
+				childSessionId: string,
+				prompt: string,
+				input: PalotMetaSessionPolicyGateInput,
+			) => Promise<PolicyVerdict>
+			cancel: (
+				metaSessionId: string,
+				childSessionId: string,
+				reason: string,
+				input: PalotMetaSessionPolicyGateInput,
+			) => Promise<PolicyVerdict>
+		}
 		onOpenSidePanel: (callback: (payload: PalotOpenSidePanelPayload) => void) => () => void
 		onBrowserActions: (callback: (event: BrowserActionEvent) => void) => () => void
 		onArtifactPushed: (callback: (payload: { sessionId: string; record: GenUiArtifactRecord }) => void) => () => void

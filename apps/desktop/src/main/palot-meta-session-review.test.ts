@@ -62,6 +62,7 @@ describe("palot-meta-session-review", () => {
 		expect(model.rows).toEqual([
 			expect.objectContaining({
 				childSessionId: child.id,
+				status: "idle",
 				reviewState: "needs-approval",
 				summary: "send paused for operator approval",
 			}),
@@ -70,6 +71,34 @@ describe("palot-meta-session-review", () => {
 			expect.objectContaining({
 				label: "Needs approval",
 				detail: "send paused for operator approval",
+			}),
+		)
+	})
+
+	test("row status follows latest runtime status event over stale child snapshot", () => {
+		const child = buildChildSession({ status: "idle" })
+		const model = buildMetaSessionReviewModel({
+			children: [child],
+			eventPagesByChildSessionId: {
+				[child.id]: {
+					events: [
+						{
+							type: "session.status",
+							eventId: "evt_status",
+							childSessionId: child.id,
+							runtimeKind: child.runtimeKind,
+							occurredAt: timestamp,
+							status: "blocked",
+							runtimeStatus: "blocked",
+						},
+					],
+				},
+			},
+		})
+
+		expect(model.rows[0]).toEqual(
+			expect.objectContaining({
+				status: "blocked",
 			}),
 		)
 	})
@@ -89,6 +118,13 @@ describe("palot-meta-session-review", () => {
 				adapterDispatchPermission: {
 					grantedAt: "2026-06-17T12:02:00.000Z",
 					grantedBy: "approval_meta_123",
+					approvalId: "approval_meta_123",
+					operation: "send",
+					target: {
+						childSessionId: "opencode:ses_meta_child",
+						runtimeKind: "opencode",
+						runtimeSessionId: "ses_meta_child",
+					},
 				},
 			},
 		})
