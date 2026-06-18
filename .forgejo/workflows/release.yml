@@ -1,0 +1,391 @@
+name: Release
+
+on:
+  push:
+    branches: [main]
+    paths-ignore:
+      - "README.md"
+      - "CONTRIBUTING.md"
+      - "LICENSE"
+      - "docs/**"
+      - ".github/ISSUE_TEMPLATE/**"
+      - ".github/PULL_REQUEST_TEMPLATE/**"
+  workflow_dispatch:
+
+env:
+  BUN_VERSION: "1.3.8"
+  NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+jobs:
+  changeset:
+    name: Changeset
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    outputs:
+      should-release: ${{ steps.decide.outputs.should-release }}
+      version: ${{ steps.version.outputs.version }}
+      tag: ${{ steps.version.outputs.tag }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Install Bun
+        run: |
+          set -euo pipefail
+          curl -fsSL https://bun.sh/install | bash -s -- "bun-v${BUN_VERSION}"
+          echo "${HOME}/.bun/bin" >> "${GITHUB_PATH}"
+
+      - name: Configure private registries
+        run: |
+          set -euo pipefail
+          cat > .npmrc <<EOF
+          @ch5me:registry=https://npm.ch5.me/
+          @chriscode:registry=https://npm.ch5.me/
+          //npm.ch5.me/:_authToken=${NPM_TOKEN}
+          EOF
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile --ignore-scripts
+
+      - name: Apply pending changesets
+        id: changesets
+        run: |
+          set -euo pipefail
+          output_file="${FORGEJO_OUTPUT:-$GITHUB_OUTPUT}"
+          if bunx changeset status --output /tmp/changeset-status.json; then
+            pending_count=$(node -e "const s=require('/tmp/changeset-status.json'); console.log((s.releases || []).length)")
+          else
+            pending_count=0
+          fi
+
+          if [ "$pending_count" -gt 0 ]; then
+            bunx changeset version
+            echo "versioned=true" >> "$output_file"
+          else
+            echo "versioned=false" >> "$output_file"
+          fi
+
+      - name: Commit version updates
+        if: steps.changesets.outputs.versioned == 'true'
+        env:
+          FORGEJO_TOKEN: ${{ secrets.FORGEJO_TOKEN }}
+        run: |
+          set -euo pipefail
+          : "${FORGEJO_TOKEN:?FORGEJO_TOKEN is required to push version commits}"
+          git config user.name "forgejo-actions[bot]"
+          git config user.email "forgejo-actions[bot]@ch5.me"
+          git add .changeset package.json bun.lock apps/desktop/package.json apps/desktop/CHANGELOG.md packages/*/package.json packages/*/CHANGELOG.md
+          git commit -m "chore: version packages [skip ci]"
+          git -c http.extraHeader="Authorization: token ${FORGEJO_TOKEN}" push origin HEAD:main
+
+      - name: Get version from package.json
+        id: version
+        run: |
+          set -euo pipefail
+          output_file="${FORGEJO_OUTPUT:-$GITHUB_OUTPUT}"
+          version=$(node -p "require('./apps/desktop/package.json').version")
+          echo "version=$version" >> "$output_file"
+          echo "tag=v$version" >> "$output_file"
+
+      - name: Decide whether to release
+        id: decide
+        run: |
+          set -euo pipefail
+          output_file="${FORGEJO_OUTPUT:-$GITHUB_OUTPUT}"
+          tag="${{ steps.version.outputs.tag }}"
+          event="${{ github.event_name }}"
+          versioned="${{ steps.changesets.outputs.versioned }}"
+          if [ "$event" = "workflow_dispatch" ] || [ "$versioned" = "true" ] || ! git rev-parse "$tag" >/dev/null 2>&1; then
+            echo "should-release=true" >> "$output_file"
+          else
+            echo "should-release=false" >> "$output_file"
+          fi
+
+  build-js:
+    name: Build JS
+    needs: [changeset]
+    if: needs.changeset.outputs.should-release == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Bun
+        run: |
+          set -euo pipefail
+          curl -fsSL https://bun.sh/install | bash -s -- "bun-v${BUN_VERSION}"
+          echo "${HOME}/.bun/bin" >> "${GITHUB_PATH}"
+
+      - name: Configure private registries
+        run: |
+          set -euo pipefail
+          cat > .npmrc <<EOF
+          @ch5me:registry=https://npm.ch5.me/
+          @chriscode:registry=https://npm.ch5.me/
+          //npm.ch5.me/:_authToken=${NPM_TOKEN}
+          EOF
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Build electron-vite
+        run: bun run build
+        working-directory: apps/desktop
+
+      - name: Upload build output
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-output
+          path: apps/desktop/out
+          retention-days: 1
+
+  package:
+    name: Package (${{ matrix.name }})
+    needs: [changeset, build-js]
+    if: needs.changeset.outputs.should-release == 'true'
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: linux-x64
+            os: ubuntu-latest
+            platform: linux
+            eb-flags: "--linux"
+            artifact-name: release-linux
+          - name: macos-arm64
+            os: macos-latest
+            platform: mac
+            eb-flags: "--mac --arm64"
+            artifact-name: release-macos-arm64
+          - name: macos-x64
+            os: macos-15-intel
+            platform: mac
+            eb-flags: "--mac --x64"
+            artifact-name: release-macos-x64
+          - name: windows-x64
+            os: windows-latest
+            platform: win
+            eb-flags: "--win"
+            artifact-name: release-windows
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Bun
+        run: |
+          set -euo pipefail
+          curl -fsSL https://bun.sh/install | bash -s -- "bun-v${BUN_VERSION}"
+          echo "${HOME}/.bun/bin" >> "${GITHUB_PATH}"
+
+      - name: Configure private registries
+        run: |
+          set -euo pipefail
+          cat > .npmrc <<EOF
+          @ch5me:registry=https://npm.ch5.me/
+          @chriscode:registry=https://npm.ch5.me/
+          //npm.ch5.me/:_authToken=${NPM_TOKEN}
+          EOF
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Download build output
+        uses: actions/download-artifact@v4
+        with:
+          name: build-output
+          path: apps/desktop/out
+
+      - name: Package Electron app
+        run: bun run electron-builder ${{ matrix.eb-flags }} --config electron-builder.yml --publish never
+        working-directory: apps/desktop
+        env:
+          CSC_IDENTITY_AUTO_DISCOVERY: "false"
+
+      - name: Upload artifacts (Linux)
+        if: matrix.platform == 'linux'
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.artifact-name }}
+          path: |
+            apps/desktop/release/*.AppImage
+            apps/desktop/release/*.deb
+            apps/desktop/release/*.rpm
+            apps/desktop/release/latest-linux.yml
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Upload artifacts (macOS)
+        if: matrix.platform == 'mac'
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.artifact-name }}
+          path: |
+            apps/desktop/release/*.dmg
+            apps/desktop/release/*.zip
+            apps/desktop/release/latest-mac.yml
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Upload artifacts (Windows)
+        if: matrix.platform == 'win'
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.artifact-name }}
+          path: |
+            apps/desktop/release/*.exe
+            apps/desktop/release/latest.yml
+          if-no-files-found: error
+          retention-days: 30
+
+  release:
+    name: Publish Release
+    needs: [changeset, package]
+    if: needs.changeset.outputs.should-release == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+          pattern: release-*
+
+      - name: Merge macOS update manifests
+        run: |
+          set -euo pipefail
+          python3 << 'PYEOF'
+          import yaml, os, sys
+
+          arm64_path = "artifacts/release-macos-arm64/latest-mac.yml"
+          x64_path = "artifacts/release-macos-x64/latest-mac.yml"
+
+          if not os.path.exists(arm64_path) or not os.path.exists(x64_path):
+              print("Skipping merge: one or both latest-mac.yml files missing")
+              sys.exit(0)
+
+          with open(arm64_path) as f:
+              arm64 = yaml.safe_load(f)
+          with open(x64_path) as f:
+              x64 = yaml.safe_load(f)
+
+          arm64["files"] = arm64.get("files", []) + x64.get("files", [])
+
+          for p in [arm64_path, x64_path]:
+              with open(p, "w") as f:
+                  yaml.dump(arm64, f, default_flow_style=False, sort_keys=False)
+
+          print(f"Merged latest-mac.yml: {len(arm64['files'])} files")
+          PYEOF
+
+      - name: Collect release files
+        run: |
+          set -euo pipefail
+          mkdir -p release-files
+          find artifacts -type f \( \
+            -name "*.AppImage" -o -name "*.deb" -o -name "*.rpm" \
+            -o -name "*.dmg" -o -name "*.zip" \
+            -o -name "*.exe" \
+            -o -name "latest*.yml" \
+          \) -exec cp {} release-files/ \;
+          echo "Release files:"
+          ls -lh release-files/
+
+      - name: Generate SHA256 checksums
+        run: |
+          set -euo pipefail
+          cd release-files
+          sha256sum * > SHA256SUMS.txt
+          cat SHA256SUMS.txt
+
+      - name: Create git tag
+        env:
+          FORGEJO_TOKEN: ${{ secrets.FORGEJO_TOKEN }}
+          TAG: ${{ needs.changeset.outputs.tag }}
+        run: |
+          set -euo pipefail
+          : "${FORGEJO_TOKEN:?FORGEJO_TOKEN is required to push release tags}"
+          if git rev-parse "$TAG" >/dev/null 2>&1; then
+            echo "Tag $TAG already exists, skipping creation"
+          else
+            git tag "$TAG"
+            git -c http.extraHeader="Authorization: token ${FORGEJO_TOKEN}" push origin "$TAG"
+            echo "Created and pushed tag $TAG"
+          fi
+
+      - name: Extract changelog
+        env:
+          VERSION: ${{ needs.changeset.outputs.version }}
+        run: |
+          set -euo pipefail
+          changelog_file="apps/desktop/CHANGELOG.md"
+          body=""
+          if [ -f "$changelog_file" ]; then
+            body=$(awk "/^## ${VERSION}$/,/^## [0-9]/" "$changelog_file" | head -n -1 | tail -n +2)
+          fi
+          if [ -z "$body" ]; then
+            body="Release $VERSION"
+          fi
+          echo "$body" > /tmp/release-notes.md
+
+      - name: Create Forgejo release
+        env:
+          FORGEJO_TOKEN: ${{ secrets.FORGEJO_TOKEN }}
+          TAG: ${{ needs.changeset.outputs.tag }}
+          VERSION: ${{ needs.changeset.outputs.version }}
+          REPOSITORY: ${{ github.repository }}
+          SERVER_URL: ${{ github.server_url }}
+        run: |
+          set -euo pipefail
+          : "${FORGEJO_TOKEN:?FORGEJO_TOKEN is required to create Forgejo releases}"
+          api_root="${SERVER_URL}/api/v1"
+          body=$(cat /tmp/release-notes.md)
+          payload=$(TAG="$TAG" VERSION="$VERSION" BODY="$body" node <<'NODE'
+          const payload = {
+            tag_name: process.env.TAG,
+            target_commitish: "main",
+            name: `Elf ${process.env.VERSION}`,
+            body: process.env.BODY,
+            draft: false,
+            prerelease: process.env.VERSION.includes("-")
+          }
+          process.stdout.write(JSON.stringify(payload))
+          NODE
+          )
+
+          status=$(curl -sS -o /tmp/forgejo-release.json -w "%{http_code}" \
+            -X POST "${api_root}/repos/${REPOSITORY}/releases" \
+            -H "Authorization: token ${FORGEJO_TOKEN}" \
+            -H "Content-Type: application/json" \
+            --data "$payload")
+
+          case "$status" in
+            200|201)
+              ;;
+            409)
+              curl -fsS -o /tmp/forgejo-release.json \
+                -H "Authorization: token ${FORGEJO_TOKEN}" \
+                "${api_root}/repos/${REPOSITORY}/releases/tags/${TAG}"
+              ;;
+            *)
+              cat /tmp/forgejo-release.json >&2
+              exit 1
+              ;;
+          esac
+
+          release_id=$(node -p "require('/tmp/forgejo-release.json').id")
+          for file in release-files/*; do
+            [ -f "$file" ] || continue
+            name=$(basename "$file")
+            curl -fsS \
+              -X POST "${api_root}/repos/${REPOSITORY}/releases/${release_id}/assets?name=${name}" \
+              -H "Authorization: token ${FORGEJO_TOKEN}" \
+              -H "Content-Type: application/octet-stream" \
+              --data-binary "@${file}" \
+              -o /tmp/forgejo-release-asset.json
+          done
